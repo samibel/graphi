@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 103,
+  "previous_sha256": "de7b4e42d1fc1076c8375bce9dad188df38dc58e18b28cd0cb285ab8c75047ac",
+  "kind": "grade",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "96377f24fd3a3f60ff48306a32b630df31a908d1eda1b24e028e00793ac23d6f",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and supported by the preserved bundle. `command.go:1200-1224` states that `InitDefaultVersionFlag` is called automatically during execution, does nothing when `c.Version` is empty or a `version` flag already exists, creates a Boolean `--version` flag with `-v` only if available, and applies `FlagSetByCobraAnnotation`. `command.go:908-919` supports the execution behavior: it reads the flag with `GetBool(\"version\")`, reports and returns an error for a non-Boolean declaration, and, when true, renders `c.VersionTemplate()` to `c.OutOrStdout()` and returns the template error.\n",
+  "sha256": "0166d24e270dd39e169fe2b7e08e307f535caa1c4b54426731f2cb5ca2f07ada"
+}

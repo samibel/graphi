@@ -1,0 +1,1 @@
+PASS: The preserved args.go:83-91 shows that three arguments exceed the limit of two and return `accepts at most 2 arg(s), received 3`. The response’s citations to lines 86-87 correctly support the check and error.

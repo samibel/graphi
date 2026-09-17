@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/samibel/graphi/cmd/graphi/staticfetch"
-	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 )
 
 func TestStaticfetch_TokenizerDownloadIsHTTPSPinnedAndAtomic(t *testing.T) {

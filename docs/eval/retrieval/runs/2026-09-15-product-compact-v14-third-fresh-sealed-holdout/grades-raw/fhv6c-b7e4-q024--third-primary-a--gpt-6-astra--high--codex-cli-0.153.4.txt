@@ -1,0 +1,1 @@
+PASS: The response correctly explains that getIn uses the nearest ancestor’s non-nil input reader and returns def if none exists, as shown in command.go:414–422. Its additional SetIn and HasParent claims are supported by the cited transcript spans.

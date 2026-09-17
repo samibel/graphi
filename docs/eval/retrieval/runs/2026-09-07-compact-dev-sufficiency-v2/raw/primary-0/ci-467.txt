@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows calls to Traverse and Find and the start of Traverse, but no parsing or matching rules establishing whether flags or positional arguments may appear between the root and subcommand.

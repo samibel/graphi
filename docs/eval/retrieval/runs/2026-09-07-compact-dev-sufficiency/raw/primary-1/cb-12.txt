@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `(*Command).Find(args []string)` as searching downward from the highest node (`command.go:725–727`) and names `findNext` (`command.go:767–768`), but omits the implementations that explain argument processing and subcommand matching.

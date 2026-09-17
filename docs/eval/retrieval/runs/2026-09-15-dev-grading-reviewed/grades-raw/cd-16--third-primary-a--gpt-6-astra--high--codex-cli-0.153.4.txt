@@ -1,0 +1,1 @@
+PASS: The response accurately summarizes the visible declarations, including GenMarkdown’s delegation to GenMarkdownCustom with an identity link handler at lines 51–54. Its descriptions of options, Markdown generation, and tree recursion match the preserved spans, and it explicitly acknowledges the transcript’s truncation.

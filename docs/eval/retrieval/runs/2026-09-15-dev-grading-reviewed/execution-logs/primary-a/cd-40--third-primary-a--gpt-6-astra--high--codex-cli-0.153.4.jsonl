@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-1348-7771-8ee0-735fa378c7dc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ArgAliases` is the last fallback: aliases appear only when **neither subcommands nor `ValidArgs` produce completions** (`site/content/completions/_index.md:166`).\n\n`ValidArgs` supplies predefined noun completions on a command—for example, setting it on `get` makes `kubectl get [tab][tab]` offer resource names (`site/content/completions/_index.md:123–150`; `command.go:82–83`).\n\nThe response does **not** establish that `ValidArgs` is tried only after subcommand names fail; it establishes only that both take precedence over `ArgAliases`."}}
+{"type":"turn.completed","usage":{"input_tokens":17339,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":251,"reasoning_output_tokens":114}}

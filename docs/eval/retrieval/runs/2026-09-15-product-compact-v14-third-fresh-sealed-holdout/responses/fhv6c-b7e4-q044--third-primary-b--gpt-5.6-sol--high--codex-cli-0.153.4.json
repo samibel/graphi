@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q044",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a0d408aa201daac68e5e782565a20392b485e79d4b9ef5f7912a5d25125fd6ee",
+  "bundle_sha256": "b08c1137c40fe10759e695097b355144e2ba5191a0fc0dc505de5d618e9cc66e",
+  "prompt_sha256": "c496e7a168cdc606fa7c3129da82f5acfb3feaffdbac4762aca1449fc244c228",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the parent’s persistent hook to call `SetContext` on the command passed to it:\n\n```go\nrootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {\n    cmd.SetContext(replacementCtx)\n}\n\nchildCmd.Run = func(cmd *cobra.Command, args []string) {\n    ctx := cmd.Context()\n    // use replacementCtx\n}\n```\n\nThis works because an inherited `PersistentPreRun` executes before the child’s `Run` (`site/content/user_guide.md:607-616`), `SetContext` replaces the command’s stored context (`command.go:268-272`), and lifecycle callbacks retrieve it through `cmd.Context()` (`command.go:1027-1033`). If execution began with `ExecuteContext`, make the replacement inside the hook, since `ExecuteContext` initially overwrites the command context (`command.go:1027-1033`).",
+  "responded_at": "2026-09-15T08:30:52Z",
+  "sha256": "4cb58318ebd0aca69957a70b3b7a134ca0a5fe1753bd2020b69026b299dbc4fd"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 21,
+  "previous_sha256": "36ec7d8f07b36a2842bc8e0da107e3efbf35b06d598169c76e8e3b950d4dd550",
+  "kind": "response",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "bf67a8b8bb641f23893d7af84ebf3c43eeedef50c1a40f80fb999e3656c972dc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the global `cobra.EnablePrefixMatching = true` before command execution. It defaults to false (`cobra.go:46`, `cobra.go:54–55`), and the tests enable it with `EnablePrefixMatching = true` (`command_test.go:305–306`). When enabled, matching considers command-name or alias prefixes through `cmd.hasNameOrAliasPrefix(next)` (`command.go:774–775`).\n",
+  "sha256": "22d72fae226e2c32fed383a95edbcb0ea581fcda7f8d269e0480bffdfbab7b86"
+}

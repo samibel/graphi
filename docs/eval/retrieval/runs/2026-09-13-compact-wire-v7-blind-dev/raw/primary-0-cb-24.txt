@@ -1,0 +1,10 @@
+During flag completion, `completions.go:379-381` calls `finalCmd.enforceFlagGroupsForCompletion()` before generating flag completions.
+
+According to `flag_groups.go:220-228`, that method:
+
+- Returns immediately when `DisableFlagParsing` is enabled.
+- Marks the other flags in a group as required when one member is present.
+- Marks every flag in a “one-required” group as required when none are present.
+- Hides the other members of a mutually exclusive group when one is present, preventing shell completion from suggesting them (`flag_groups.go:273-277`).
+
+This reuses the standard completion logic by changing flags’ required/hidden state before it runs.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 105,
+  "previous_sha256": "d3f346835d41feca10152ab4f192c15cc0f0003c0caf2bf3741894ad9c9726a5",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "c527b9800495509e7c858790d9bd8a6cce398b06abd293e3f2c0c33b5ed24850",
+  "outcome": "fail",
+  "rationale": "The candidate accurately and concretely describes the supported man-page traversal from `doc/man_docs.go:46-80`: iterating `cmd.Commands()`, filtering unavailable/additional-help commands, recursively processing eligible children, propagating errors, and generating the parent afterward with `GenMan`. However, the question asks about the documentation generator generally, while the development key’s primary implementation is `GenMarkdownTreeCustom` in `doc/md_docs.go:131-158`, and the bundle preserves only its signatures at lines 125 and 133. The candidate itself acknowledges that Markdown traversal cannot be confirmed. Because the necessary primary implementation—and the YAML/ReST variants—is missing, a fully sufficient response should have been `INSUFFICIENT` rather than answering only the man-page variant.\n",
+  "sha256": "90280c44d0838b22221d9c3a801d45ddd7cc3f4924a3fd072a3edf2343e6d732"
+}

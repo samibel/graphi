@@ -1,0 +1,1 @@
+INSUFFICIENT The sibling test is truncated at `command_test.go:2452`, before sibling configuration, execution, and assertions reveal the intended whitelist behavior.

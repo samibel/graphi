@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-1da3-7592-92b9-768c9d07dc91"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The transcript supports hook ordering and the context setter/getter APIs, but does not establish that the parent’s inherited PersistentPreRun receives the child’s Command instance. That missing fact is necessary to verify that calling cmd.SetContext in the hook changes the context observed by the child’s Run."}}
+{"type":"turn.completed","usage":{"input_tokens":19165,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":139,"reasoning_output_tokens":74}}

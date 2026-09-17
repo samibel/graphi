@@ -1,0 +1,1 @@
+PASS: The named-file summary is accurate and directly grounded in shell_completions.go:21-23, 35-46, and 58-63.

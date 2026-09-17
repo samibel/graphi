@@ -1,0 +1,1 @@
+`SetOut(nil)` clears the command’s `outWriter` (`command.go:290–291`). `OutOrStdout()` then returns the nearest ancestor’s non-nil output writer, or `os.Stdout` if none exists: it calls `getOut(os.Stdout)` (`command.go:374–377`), which checks the current writer, recurses through parents, and finally returns the default (`command.go:394–402`).

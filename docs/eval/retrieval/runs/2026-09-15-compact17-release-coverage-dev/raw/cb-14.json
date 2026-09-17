@@ -1,0 +1,1873 @@
+{
+  "format_version": 2,
+  "harness_version": "task-context-v2-eval/2",
+  "scorer_version": "span-matches-grade3-any/2",
+  "query": {
+    "id": "cb-14",
+    "stratum": "nl_behaviour",
+    "language": "en",
+    "split": "dev",
+    "query": "how does the shell completion request get dispatched to the completion logic",
+    "family_id": "cobra-family-6069545f930ad2e6",
+    "provenance": "dataset:cobra-v1:cb-14",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 193,
+        "end_line": 264,
+        "anchor": "func (c *Command) initCompleteCmd(",
+        "grade": 3,
+        "reason": "initCompleteCmd adds the hidden __complete command that receives the shell's request.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "completions.go",
+        "start_line": 266,
+        "end_line": 520,
+        "anchor": "func (c *Command) getCompletions(",
+        "grade": 3,
+        "reason": "getCompletions is the dispatcher that computes the completions for the request.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "completions.go",
+        "start_line": 26,
+        "end_line": 33,
+        "anchor": "ShellCompRequestCmd",
+        "grade": 2,
+        "reason": "The constants naming the hidden request commands.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      }
+    ]
+  },
+  "grade3_judgements": [
+    {
+      "path": "completions.go",
+      "start_line": 193,
+      "end_line": 264,
+      "anchor": "func (c *Command) initCompleteCmd(",
+      "grade": 3,
+      "reason": "initCompleteCmd adds the hidden __complete command that receives the shell's request.",
+      "annotator": "claude-delegate (SW-258 build)",
+      "reviewer": "orchestrator"
+    },
+    {
+      "path": "completions.go",
+      "start_line": 266,
+      "end_line": 520,
+      "anchor": "func (c *Command) getCompletions(",
+      "grade": 3,
+      "reason": "getCompletions is the dispatcher that computes the completions for the request.",
+      "annotator": "claude-delegate (SW-258 build)",
+      "reviewer": "orchestrator"
+    }
+  ],
+  "retrieval": {
+    "Rows": [
+      {
+        "NodeID": "77f51209539ada60",
+        "DocumentID": "723c220e78da52bb",
+        "Path": "completions.go",
+        "Line": 29,
+        "Span": "29-29",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5995,
+          "LexicalRank": 2,
+          "SemanticRank": 1,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 6995
+        },
+        "Final": 6995
+      },
+      {
+        "NodeID": "091b471b1f1fa20a",
+        "DocumentID": "603986a84c4ab3b2",
+        "Path": "site/content/completions/_index.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5638,
+          "LexicalRank": 32,
+          "SemanticRank": 5,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 6638
+        },
+        "Final": 6638
+      },
+      {
+        "NodeID": "755a04785098a1e2",
+        "DocumentID": "dcbcc1e5470b90a2",
+        "Path": "site/content/completions/zsh.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5961,
+          "LexicalRank": 40,
+          "SemanticRank": 2,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 6461
+        },
+        "Final": 6461
+      },
+      {
+        "NodeID": "964b524d65e17525",
+        "DocumentID": "db7795b87d5f1bfa",
+        "Path": "site/content/user_guide.md",
+        "Line": 740,
+        "Span": "740-740",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5315,
+          "LexicalRank": 0,
+          "SemanticRank": 11,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 6315
+        },
+        "Final": 6315
+      },
+      {
+        "NodeID": "e80604946e1c6ad0",
+        "DocumentID": "7e70566331d77acb",
+        "Path": "site/content/completions/_index.md",
+        "Line": 13,
+        "Span": "13-13",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5760,
+          "LexicalRank": 0,
+          "SemanticRank": 3,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 6260
+        },
+        "Final": 6260
+      },
+      {
+        "NodeID": "e631f5e7f158189c",
+        "DocumentID": "13cadc8ed3add282",
+        "Path": "site/content/completions/_index.md",
+        "Line": 117,
+        "Span": "117-117",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5694,
+          "LexicalRank": 44,
+          "SemanticRank": 4,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 6194
+        },
+        "Final": 6194
+      },
+      {
+        "NodeID": "075158c06dbedb8d",
+        "DocumentID": "b57936a9330552bd",
+        "Path": "completions.go",
+        "Line": 32,
+        "Span": "32-32",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5109,
+          "LexicalRank": 1,
+          "SemanticRank": 19,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 6109
+        },
+        "Final": 6109
+      },
+      {
+        "NodeID": "1ae506878d93ca1b",
+        "DocumentID": "ca8818581f927488",
+        "Path": "site/content/completions/_index.md",
+        "Line": 421,
+        "Span": "421-421",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5445,
+          "LexicalRank": 35,
+          "SemanticRank": 6,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5945
+        },
+        "Final": 5945
+      },
+      {
+        "NodeID": "521da19e190926c0",
+        "DocumentID": "db45e9a84615b8bb",
+        "Path": "site/content/completions/fish.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5406,
+          "LexicalRank": 39,
+          "SemanticRank": 7,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5906
+        },
+        "Final": 5906
+      },
+      {
+        "NodeID": "c629066100fd8965",
+        "DocumentID": "0901c270c0f0c7c9",
+        "Path": "site/content/completions/powershell.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5405,
+          "LexicalRank": 42,
+          "SemanticRank": 8,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5905
+        },
+        "Final": 5905
+      },
+      {
+        "NodeID": "d2aeb22586640d9d",
+        "DocumentID": "6ea519e7b3c9efaa",
+        "Path": ".github/labeler.yml",
+        "Line": 15,
+        "Span": "15-15",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4890,
+          "LexicalRank": 11,
+          "SemanticRank": 23,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 5890
+        },
+        "Final": 5890
+      },
+      {
+        "NodeID": "2ee9d2b70f436639",
+        "DocumentID": "988c736bbcd8d438",
+        "Path": "site/content/completions/_index.md",
+        "Line": 121,
+        "Span": "121-121",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5379,
+          "LexicalRank": 37,
+          "SemanticRank": 9,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5879
+        },
+        "Final": 5879
+      },
+      {
+        "NodeID": "168632ba1678a841",
+        "DocumentID": "5667450f545f23ea",
+        "Path": "site/content/completions/bash.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5336,
+          "LexicalRank": 34,
+          "SemanticRank": 10,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5836
+        },
+        "Final": 5836
+      },
+      {
+        "NodeID": "efc8e78c92ec0bf5",
+        "DocumentID": "5282bc96e29e054c",
+        "Path": "site/content/completions/_index.md",
+        "Line": 517,
+        "Span": "517-517",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4795,
+          "LexicalRank": 30,
+          "SemanticRank": 25,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 5795
+        },
+        "Final": 5795
+      },
+      {
+        "NodeID": "2f4510d366b53452",
+        "DocumentID": "bf6f34276fa6e02c",
+        "Path": "site/content/completions/_index.md",
+        "Line": 482,
+        "Span": "482-482",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5275,
+          "LexicalRank": 38,
+          "SemanticRank": 12,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5775
+        },
+        "Final": 5775
+      },
+      {
+        "NodeID": "ededb7e0d0a52ebd",
+        "DocumentID": "b1b81c54d28e8393",
+        "Path": "site/content/completions/_index.md",
+        "Line": 398,
+        "Span": "398-398",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5262,
+          "LexicalRank": 0,
+          "SemanticRank": 13,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5762
+        },
+        "Final": 5762
+      },
+      {
+        "NodeID": "d401ca7ecadfd4da",
+        "DocumentID": "e3ae0b0165f88f09",
+        "Path": "completions.go",
+        "Line": 683,
+        "Span": "683-683",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5252,
+          "LexicalRank": 0,
+          "SemanticRank": 14,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5752
+        },
+        "Final": 5752
+      },
+      {
+        "NodeID": "c90baa4304ef0228",
+        "DocumentID": "0ca982da69882828",
+        "Path": "site/content/completions/_index.md",
+        "Line": 355,
+        "Span": "355-355",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5218,
+          "LexicalRank": 43,
+          "SemanticRank": 15,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5718
+        },
+        "Final": 5718
+      },
+      {
+        "NodeID": "e679eaddf95b34b4",
+        "DocumentID": "9f5167590d83df3a",
+        "Path": "site/content/completions/_index.md",
+        "Line": 239,
+        "Span": "239-239",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5183,
+          "LexicalRank": 0,
+          "SemanticRank": 16,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5683
+        },
+        "Final": 5683
+      },
+      {
+        "NodeID": "e7898d659512df29",
+        "DocumentID": "01a03e3336e1685d",
+        "Path": "site/content/completions/zsh.md",
+        "Line": 5,
+        "Span": "5-5",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5183,
+          "LexicalRank": 0,
+          "SemanticRank": 17,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5683
+        },
+        "Final": 5683
+      },
+      {
+        "NodeID": "81fa78007aae75ab",
+        "DocumentID": "8219be495a470cd4",
+        "Path": "site/content/completions/_index.md",
+        "Line": 452,
+        "Span": "452-452",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5151,
+          "LexicalRank": 41,
+          "SemanticRank": 18,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5651
+        },
+        "Final": 5651
+      },
+      {
+        "NodeID": "1f01de63a3c9c534",
+        "DocumentID": "2caef2e0857d2d1d",
+        "Path": "site/content/completions/_index.md",
+        "Line": 396,
+        "Span": "396-396",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4949,
+          "LexicalRank": 36,
+          "SemanticRank": 20,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5449
+        },
+        "Final": 5449
+      },
+      {
+        "NodeID": "6a8d19fb32c56620",
+        "DocumentID": "1777aa0918bcb1e9",
+        "Path": "site/content/completions/_index.md",
+        "Line": 290,
+        "Span": "290-290",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4881,
+          "LexicalRank": 0,
+          "SemanticRank": 24,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5381
+        },
+        "Final": 5381
+      },
+      {
+        "NodeID": "16bc67db1e2b0ab6",
+        "DocumentID": "541428d81e09806c",
+        "Path": "site/content/completions/_index.md",
+        "Line": 167,
+        "Span": "167-167",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4535,
+          "LexicalRank": 0,
+          "SemanticRank": 27,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5035
+        },
+        "Final": 5035
+      },
+      {
+        "NodeID": "0d2dd586d9b38302",
+        "DocumentID": "890df8f3e38fdcd6",
+        "Path": "completions.go",
+        "Line": 120,
+        "Span": "120-120",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4517,
+          "LexicalRank": 0,
+          "SemanticRank": 28,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 5017
+        },
+        "Final": 5017
+      },
+      {
+        "NodeID": "5e37d17fbb911b46",
+        "DocumentID": "20098eb6ff83e8fe",
+        "Path": "powershell_completions.go",
+        "Line": 323,
+        "Span": "323-323",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3972,
+          "LexicalRank": 0,
+          "SemanticRank": 48,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 4972
+        },
+        "Final": 4972
+      },
+      {
+        "NodeID": "c49fa485a909fe36",
+        "DocumentID": "1793ba08c89f42ba",
+        "Path": "completions.go",
+        "Line": 126,
+        "Span": "126-126",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4462,
+          "LexicalRank": 0,
+          "SemanticRank": 29,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4962
+        },
+        "Final": 4962
+      },
+      {
+        "NodeID": "c99a3d928cb06944",
+        "DocumentID": "0911a72e204e56ee",
+        "Path": "site/content/completions/_index.md",
+        "Line": 416,
+        "Span": "416-416",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4440,
+          "LexicalRank": 0,
+          "SemanticRank": 30,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4940
+        },
+        "Final": 4940
+      },
+      {
+        "NodeID": "509c8db9e56524fa",
+        "DocumentID": "17002c447528d4fc",
+        "Path": "completions.go",
+        "Line": 43,
+        "Span": "43-43",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4429,
+          "LexicalRank": 7,
+          "SemanticRank": 31,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4929
+        },
+        "Final": 4929
+      },
+      {
+        "NodeID": "f9d7155c601ea8a7",
+        "DocumentID": "b3b308d3b80c3a58",
+        "Path": "completions.go",
+        "Line": 194,
+        "Span": "194-194",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4922,
+          "LexicalRank": 0,
+          "SemanticRank": 21,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4922
+        },
+        "Final": 4922
+      },
+      {
+        "NodeID": "8bdbcaf376c86fa2",
+        "DocumentID": "45b0c3443909f817",
+        "Path": "completions.go",
+        "Line": 98,
+        "Span": "98-98",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4917,
+          "LexicalRank": 0,
+          "SemanticRank": 22,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4917
+        },
+        "Final": 4917
+      },
+      {
+        "NodeID": "5a97a4445e1ec222",
+        "DocumentID": "676dd0464ac1f849",
+        "Path": "zsh_completions.go",
+        "Line": 31,
+        "Span": "31-31",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4388,
+          "LexicalRank": 0,
+          "SemanticRank": 32,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4888
+        },
+        "Final": 4888
+      },
+      {
+        "NodeID": "14a0349afbca71d4",
+        "DocumentID": "989c7af2245636d9",
+        "Path": "completions.go",
+        "Line": 64,
+        "Span": "64-64",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4314,
+          "LexicalRank": 8,
+          "SemanticRank": 33,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4814
+        },
+        "Final": 4814
+      },
+      {
+        "NodeID": "efc235804b8c7485",
+        "DocumentID": "e7b9bebde1b962d1",
+        "Path": "site/content/completions/_index.md",
+        "Line": 272,
+        "Span": "272-272",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4287,
+          "LexicalRank": 45,
+          "SemanticRank": 34,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4787
+        },
+        "Final": 4787
+      },
+      {
+        "NodeID": "69192dcb6f33ae7e",
+        "DocumentID": "dfc3f67f02920c0b",
+        "Path": "bash_completionsV2.go",
+        "Line": 31,
+        "Span": "31-31",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4721,
+          "LexicalRank": 0,
+          "SemanticRank": 26,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4721
+        },
+        "Final": 4721
+      },
+      {
+        "NodeID": "f99e84f7559cfc4e",
+        "DocumentID": "5e67752c864d8ea8",
+        "Path": "zsh_completions.go",
+        "Line": 42,
+        "Span": "42-42",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4174,
+          "LexicalRank": 0,
+          "SemanticRank": 38,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4674
+        },
+        "Final": 4674
+      },
+      {
+        "NodeID": "de6141d72eb2cc21",
+        "DocumentID": "6bc047cf79b9a7c7",
+        "Path": "site/content/completions/zsh.md",
+        "Line": 19,
+        "Span": "19-19",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4101,
+          "LexicalRank": 0,
+          "SemanticRank": 39,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4601
+        },
+        "Final": 4601
+      },
+      {
+        "NodeID": "ee250d8942c5e1ed",
+        "DocumentID": "cf2cd30c4d91dd16",
+        "Path": "site/content/completions/_index.md",
+        "Line": 92,
+        "Span": "92-92",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4068,
+          "LexicalRank": 0,
+          "SemanticRank": 40,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4568
+        },
+        "Final": 4568
+      },
+      {
+        "NodeID": "1bbb2147a6815f08",
+        "DocumentID": "9e349b6d0fc82f11",
+        "Path": "zsh_completions.go",
+        "Line": 36,
+        "Span": "36-36",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4061,
+          "LexicalRank": 0,
+          "SemanticRank": 41,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4561
+        },
+        "Final": 4561
+      },
+      {
+        "NodeID": "7fafd5dcd622d129",
+        "DocumentID": "c514503c76b73100",
+        "Path": "zsh_completions.go",
+        "Line": 25,
+        "Span": "25-25",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4045,
+          "LexicalRank": 0,
+          "SemanticRank": 42,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4545
+        },
+        "Final": 4545
+      },
+      {
+        "NodeID": "4217165a065d7f9b",
+        "DocumentID": "975e874fc655b8ca",
+        "Path": "site/content/completions/bash.md",
+        "Line": 5,
+        "Span": "5-5",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4024,
+          "LexicalRank": 0,
+          "SemanticRank": 43,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4524
+        },
+        "Final": 4524
+      },
+      {
+        "NodeID": "e69e7c6ad51def83",
+        "DocumentID": "5a5758d4745e39f0",
+        "Path": "completions.go",
+        "Line": 105,
+        "Span": "105-105",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4000,
+          "LexicalRank": 0,
+          "SemanticRank": 46,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4500
+        },
+        "Final": 4500
+      },
+      {
+        "NodeID": "86f10ca37e133d26",
+        "DocumentID": "122a92554a995dc2",
+        "Path": "completions.go",
+        "Line": 60,
+        "Span": "60-60",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3984,
+          "LexicalRank": 13,
+          "SemanticRank": 47,
+          "RRF": 0,
+          "Graph": 500,
+          "Classification": 0,
+          "Final": 4484
+        },
+        "Final": 4484
+      },
+      {
+        "NodeID": "09d2122b47b1204d",
+        "DocumentID": "",
+        "Path": "completions.go",
+        "Line": 266,
+        "Span": "266-266",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3453,
+          "LexicalRank": 10,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 4453
+        },
+        "Final": 4453
+      },
+      {
+        "NodeID": "1398922a805ca15a",
+        "DocumentID": "",
+        "Path": "shell_completions.go",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3453,
+          "LexicalRank": 4,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 4453
+        },
+        "Final": 4453
+      },
+      {
+        "NodeID": "2e3039abf01798a7",
+        "DocumentID": "",
+        "Path": "completions.go",
+        "Line": 534,
+        "Span": "534-534",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3453,
+          "LexicalRank": 9,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 4453
+        },
+        "Final": 4453
+      },
+      {
+        "NodeID": "5cb4a65877c0b0c1",
+        "DocumentID": "",
+        "Path": "completions.go",
+        "Line": 149,
+        "Span": "149-149",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3453,
+          "LexicalRank": 3,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 1000,
+          "Classification": 0,
+          "Final": 4453
+        },
+        "Final": 4453
+      },
+      {
+        "NodeID": "353d3548d87c9566",
+        "DocumentID": "33938997b8af8452",
+        "Path": "completions_test.go",
+        "Line": 26,
+        "Span": "26-26",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4200,
+          "LexicalRank": 0,
+          "SemanticRank": 35,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4200
+        },
+        "Final": 4200
+      },
+      {
+        "NodeID": "91668e1b845e3860",
+        "DocumentID": "d029de637d432424",
+        "Path": "site/content/active_help.md",
+        "Line": 132,
+        "Span": "132-132",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4193,
+          "LexicalRank": 0,
+          "SemanticRank": 36,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4193
+        },
+        "Final": 4193
+      },
+      {
+        "NodeID": "d16622779cbbe873",
+        "DocumentID": "970f94421cc11147",
+        "Path": "completions_test.go",
+        "Line": 40,
+        "Span": "40-40",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4176,
+          "LexicalRank": 0,
+          "SemanticRank": 37,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4176
+        },
+        "Final": 4176
+      }
+    ],
+    "Summary": {
+      "RetrievalVersion": "retrieval/7",
+      "Strategy": "semantic_first",
+      "WeightsHash": "b6ccb635",
+      "ModelFingerprint": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+      "IndexFingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:3e5e59dde9c77f4165c529134c988ad8",
+      "Query": "how does the shell completion request get dispatched to the completion logic",
+      "Limit": 50,
+      "CandidateK": 50,
+      "RRFk": 60,
+      "RRFScale": 1000000,
+      "MaxPerFile": 3
+    },
+    "Degradation": "ready",
+    "Reason": ""
+  },
+  "bundle": {
+    "outcome": "partial",
+    "summary": "task_context/2: 5 seed(s) for \"how does the shell completion request get dispatched to the completion logic\" — 8 related, 0 callers, 0 callees, 0 tests, 6 configs, 8 files, risk medium (task_context/2; retrieval/7; weights b6ccb635; model static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b; 1200/1200 snippet tokens; context-definitions/3; 10 candidate(s) considered; strategy semantic_first; degradation: ready)",
+    "items": [
+      {
+        "ref_id": "77f51209539ada60",
+        "rank": 9437484,
+        "reason": "primary: constant cobra.ShellCompRequestCmd (completions.go:29) score 300 [seed 1, search]",
+        "evidence_ref_ids": [
+          "e1",
+          "e50"
+        ]
+      },
+      {
+        "ref_id": "091b471b1f1fa20a",
+        "rank": 9437444,
+        "reason": "primary: type completions.Generating shell completions (site/content/completions/_index.md:1) score 260 [seed 2, search]",
+        "evidence_ref_ids": [
+          "e2",
+          "e51"
+        ]
+      },
+      {
+        "ref_id": "755a04785098a1e2",
+        "rank": 9437404,
+        "reason": "primary: type completions.. (site/content/completions/zsh.md:1) score 220 [seed 3, search]",
+        "evidence_ref_ids": [
+          "e3",
+          "e52"
+        ]
+      },
+      {
+        "ref_id": "964b524d65e17525",
+        "rank": 9437364,
+        "reason": "primary: type content.Generating shell completions (site/content/user_guide.md:740) score 180 [seed 4, search]",
+        "evidence_ref_ids": [
+          "e4",
+          "e53"
+        ]
+      },
+      {
+        "ref_id": "e80604946e1c6ad0",
+        "rank": 9437324,
+        "reason": "primary: type completions.Creating your own completion command (site/content/completions/_index.md:13) score 140 [seed 5, search]",
+        "evidence_ref_ids": [
+          "e5",
+          "e54"
+        ]
+      },
+      {
+        "ref_id": "e631f5e7f158189c",
+        "rank": 9437284,
+        "reason": "candidate: type completions.Customizing completions (site/content/completions/_index.md:117) score 100 [seed 6, search]",
+        "evidence_ref_ids": [
+          "e6",
+          "e55"
+        ]
+      },
+      {
+        "ref_id": "075158c06dbedb8d",
+        "rank": 9437244,
+        "reason": "candidate: constant cobra.ShellCompNoDescRequestCmd (completions.go:32) score 60 [seed 7, search]",
+        "evidence_ref_ids": [
+          "e7",
+          "e56"
+        ]
+      },
+      {
+        "ref_id": "1ae506878d93ca1b",
+        "rank": 9437204,
+        "reason": "candidate: type completions.Bash completion V2 (site/content/completions/_index.md:421) score 20 [seed 8, search]",
+        "evidence_ref_ids": [
+          "e8",
+          "e57"
+        ]
+      },
+      {
+        "ref_id": "168632ba1678a841",
+        "rank": 9437185,
+        "reason": "candidate: type completions.. (site/content/completions/bash.md:1) score 1 [seed 13, search]",
+        "evidence_ref_ids": [
+          "e13",
+          "e62"
+        ]
+      },
+      {
+        "ref_id": "2ee9d2b70f436639",
+        "rank": 9437185,
+        "reason": "candidate: type completions.Completion of nouns (site/content/completions/_index.md:121) score 1 [seed 12, search]",
+        "evidence_ref_ids": [
+          "e12",
+          "e61"
+        ]
+      },
+      {
+        "ref_id": "2f4510d366b53452",
+        "rank": 9437185,
+        "reason": "candidate: type completions.Zsh completions standardization (site/content/completions/_index.md:482) score 1 [seed 15, search]",
+        "evidence_ref_ids": [
+          "e15",
+          "e64"
+        ]
+      },
+      {
+        "ref_id": "521da19e190926c0",
+        "rank": 9437185,
+        "reason": "candidate: type completions.. (site/content/completions/fish.md:1) score 1 [seed 9, search]",
+        "evidence_ref_ids": [
+          "e9",
+          "e58"
+        ]
+      },
+      {
+        "ref_id": "c629066100fd8965",
+        "rank": 9437185,
+        "reason": "candidate: type completions.. (site/content/completions/powershell.md:1) score 1 [seed 10, search]",
+        "evidence_ref_ids": [
+          "e10",
+          "e59"
+        ]
+      },
+      {
+        "ref_id": "d2aeb22586640d9d",
+        "rank": 9437185,
+        "reason": "candidate: variable .github.\"area/shell-completion\" (.github/labeler.yml:15) score 1 [seed 11, search]",
+        "evidence_ref_ids": [
+          "e11",
+          "e60"
+        ]
+      },
+      {
+        "ref_id": "efc8e78c92ec0bf5",
+        "rank": 9437185,
+        "reason": "candidate: type completions.PowerShell completions (site/content/completions/_index.md:517) score 1 [seed 14, search]",
+        "evidence_ref_ids": [
+          "e14",
+          "e63"
+        ]
+      },
+      {
+        "ref_id": "f9d7155c601ea8a7",
+        "rank": 8388713,
+        "reason": "related: method cobra.Command.initCompleteCmd (completions.go:194) score 105 [calls 0, hierarchy 0, refs 75, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e16",
+          "e17",
+          "e18",
+          "e65"
+        ]
+      },
+      {
+        "ref_id": "e9a16971e14be503",
+        "rank": 8388698,
+        "reason": "related: file site/content/completions/_index.md (site/content/completions/_index.md:1) score 90 [calls 0, hierarchy 0, refs 0, other 60, same-file 30]",
+        "evidence_ref_ids": [
+          "e19",
+          "e20"
+        ]
+      },
+      {
+        "ref_id": "69192dcb6f33ae7e",
+        "rank": 8388683,
+        "reason": "related: function cobra.genBashComp (bash_completionsV2.go:31) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e21"
+        ]
+      },
+      {
+        "ref_id": "7c0b8d04ca258149",
+        "rank": 8388683,
+        "reason": "related: function cobra.genZshComp (zsh_completions.go:87) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "992616769cb3da8e",
+        "rank": 8388683,
+        "reason": "related: function cobra.genFishComp (fish_completions.go:25) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e23"
+        ]
+      },
+      {
+        "ref_id": "b67fd942b8152c62",
+        "rank": 8388683,
+        "reason": "related: function cobra.genPowerShellComp (powershell_completions.go:28) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e24"
+        ]
+      },
+      {
+        "ref_id": "30f2f59972f2bb1d",
+        "rank": 8388668,
+        "reason": "related: file site/content/completions/zsh.md (site/content/completions/zsh.md:1) score 60 [calls 0, hierarchy 0, refs 0, other 30, same-file 30]",
+        "evidence_ref_ids": [
+          "e25"
+        ]
+      },
+      {
+        "ref_id": "6ab43010c4a0e33c",
+        "rank": 8388668,
+        "reason": "related: file site/content/user_guide.md (site/content/user_guide.md:1) score 60 [calls 0, hierarchy 0, refs 0, other 30, same-file 30]",
+        "evidence_ref_ids": [
+          "e26"
+        ]
+      },
+      {
+        "ref_id": "config:.github/dependabot.yml",
+        "rank": 4194305,
+        "reason": "config: .github/dependabot.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e28"
+        ]
+      },
+      {
+        "ref_id": "config:.github/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e29"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e30"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/size-labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/size-labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e31"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/test.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/test.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e32"
+        ]
+      },
+      {
+        "ref_id": "config:.golangci.yml",
+        "rank": 4194305,
+        "reason": "config: .golangci.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e33"
+        ]
+      },
+      {
+        "ref_id": "file:completions.go",
+        "rank": 3145893,
+        "reason": "file: completions.go score 165 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e34"
+        ]
+      },
+      {
+        "ref_id": "file:site/content/completions/_index.md",
+        "rank": 3145818,
+        "reason": "file: site/content/completions/_index.md score 90 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e35"
+        ]
+      },
+      {
+        "ref_id": "file:bash_completionsV2.go",
+        "rank": 3145803,
+        "reason": "file: bash_completionsV2.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e36"
+        ]
+      },
+      {
+        "ref_id": "file:fish_completions.go",
+        "rank": 3145803,
+        "reason": "file: fish_completions.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e37"
+        ]
+      },
+      {
+        "ref_id": "file:powershell_completions.go",
+        "rank": 3145803,
+        "reason": "file: powershell_completions.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e38"
+        ]
+      },
+      {
+        "ref_id": "file:zsh_completions.go",
+        "rank": 3145803,
+        "reason": "file: zsh_completions.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e39"
+        ]
+      },
+      {
+        "ref_id": "file:site/content/completions/zsh.md",
+        "rank": 3145788,
+        "reason": "file: site/content/completions/zsh.md score 60 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e40"
+        ]
+      },
+      {
+        "ref_id": "file:site/content/user_guide.md",
+        "rank": 3145788,
+        "reason": "file: site/content/user_guide.md score 60 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e41"
+        ]
+      },
+      {
+        "ref_id": "risk",
+        "rank": 2097152,
+        "reason": "risk: medium — fan-in 10, 4 dependent file(s)",
+        "evidence_ref_ids": [
+          "e1"
+        ]
+      },
+      {
+        "ref_id": "read-1",
+        "rank": 1048584,
+        "reason": "read 1: completions.go",
+        "evidence_ref_ids": [
+          "e42"
+        ]
+      },
+      {
+        "ref_id": "read-2",
+        "rank": 1048583,
+        "reason": "read 2: site/content/completions/_index.md",
+        "evidence_ref_ids": [
+          "e43"
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "ref_id": "e1",
+        "path": "completions.go",
+        "line": 29,
+        "span": "29-29",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e2",
+        "path": "site/content/completions/_index.md",
+        "line": 1,
+        "span": "1-1",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e3",
+        "path": "site/content/completions/zsh.md",
+        "line": 1,
+        "span": "1-1",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e4",
+        "path": "site/content/user_guide.md",
+        "line": 740,
+        "span": "740-740",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e5",
+        "path": "site/content/completions/_index.md",
+        "line": 13,
+        "span": "13-13",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e6",
+        "path": "site/content/completions/_index.md",
+        "line": 117,
+        "span": "117-117",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e7",
+        "path": "completions.go",
+        "line": 32,
+        "span": "32-32",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e8",
+        "path": "site/content/completions/_index.md",
+        "line": 421,
+        "span": "421-421",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e9",
+        "path": "site/content/completions/fish.md",
+        "line": 1,
+        "span": "1-1",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e10",
+        "path": "site/content/completions/powershell.md",
+        "line": 1,
+        "span": "1-1",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e11",
+        "path": ".github/labeler.yml",
+        "line": 15,
+        "span": "15-15",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e12",
+        "path": "site/content/completions/_index.md",
+        "line": 121,
+        "span": "121-121",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e13",
+        "path": "site/content/completions/bash.md",
+        "line": 1,
+        "span": "1-1",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e14",
+        "path": "site/content/completions/_index.md",
+        "line": 517,
+        "span": "517-517",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e15",
+        "path": "site/content/completions/_index.md",
+        "line": 482,
+        "span": "482-482",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e16",
+        "path": "completions.go",
+        "line": 196,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e17",
+        "path": "completions.go",
+        "line": 204,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e18",
+        "path": "completions.go",
+        "line": 256,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e19",
+        "path": "site/content/completions/_index.md",
+        "line": 1,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e20",
+        "path": "site/content/completions/_index.md",
+        "line": 13,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e21",
+        "path": "bash_completionsV2.go",
+        "line": 32,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e22",
+        "path": "zsh_completions.go",
+        "line": 88,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e23",
+        "path": "fish_completions.go",
+        "line": 31,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e24",
+        "path": "powershell_completions.go",
+        "line": 34,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e25",
+        "path": "site/content/completions/zsh.md",
+        "line": 1,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e26",
+        "path": "site/content/user_guide.md",
+        "line": 740,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e28",
+        "path": ".github/dependabot.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e29",
+        "path": ".github/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e30",
+        "path": ".github/workflows/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e31",
+        "path": ".github/workflows/size-labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e32",
+        "path": ".github/workflows/test.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e33",
+        "path": ".golangci.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e34",
+        "path": "completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e35",
+        "path": "site/content/completions/_index.md",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e36",
+        "path": "bash_completionsV2.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e37",
+        "path": "fish_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e38",
+        "path": "powershell_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e39",
+        "path": "zsh_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e40",
+        "path": "site/content/completions/zsh.md",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e41",
+        "path": "site/content/user_guide.md",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e42",
+        "path": "completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e43",
+        "path": "site/content/completions/_index.md",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e50",
+        "path": "completions.go",
+        "line": 27,
+        "span": "27-29",
+        "role": "snippet",
+        "snippet": "\t// ShellCompRequestCmd is the name of the hidden command that is used to request\n\t// completion results from the program.  It is used by the shell completion scripts.\n\tShellCompRequestCmd = \"__complete\"",
+        "text_hash": "d82ea331eaf2c5fc"
+      },
+      {
+        "ref_id": "e51",
+        "path": "site/content/completions/_index.md",
+        "line": 1,
+        "span": "1-7",
+        "role": "snippet",
+        "snippet": "# Generating shell completions\n\nCobra can generate shell completions for multiple shells.\nThe currently supported shells are:\n- Bash\n- Zsh\n- fish",
+        "text_hash": "2139e7a29b837bb7"
+      },
+      {
+        "ref_id": "e52",
+        "path": "site/content/completions/zsh.md",
+        "line": 1,
+        "span": "1-7",
+        "role": "snippet",
+        "snippet": "## Generating Zsh Completion For Your cobra.Command\n\nPlease refer to [Shell Completions](_index.md) for details.\n\n## Zsh completions standardization\n\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backwards-compatible, some small changes in behavior were introduced.",
+        "text_hash": "154ac2dc05a1901e"
+      },
+      {
+        "ref_id": "e53",
+        "path": "site/content/user_guide.md",
+        "line": 734,
+        "span": "734-746",
+        "role": "snippet",
+        "snippet": "\n## Generating documentation for your command\n\nCobra can generate documentation based on subcommands, flags, etc.\nRead more about it in the [docs generation documentation](docgen/_index.md).\n\n## Generating shell completions\n\nCobra can generate a shell-completion file for the following shells: bash, zsh, fish, PowerShell.\nIf you add more information to your commands, these completions can be amazingly powerful and flexible.\nRead more about it in [Shell Completions](completions/_index.md).\n\n## Providing Active Help",
+        "text_hash": "fdebb3bcb681007e"
+      },
+      {
+        "ref_id": "e54",
+        "path": "site/content/completions/_index.md",
+        "line": 7,
+        "span": "7-19",
+        "role": "snippet",
+        "snippet": "- fish\n- PowerShell\n\nCobra will automatically provide your program with a fully functional `completion` command,\nsimilarly to how it provides the `help` command.\n\n## Creating your own completion command\n\nIf you do not wish to use the default `completion` command, you can choose to\nprovide your own, which will take precedence over the default one. (This also provides\nbackwards-compatibility with programs that already have their own `completion` command.)\n\nIf you are using the `cobra-cli` generator,",
+        "text_hash": "9b1946b83603521a"
+      },
+      {
+        "ref_id": "e55",
+        "path": "site/content/completions/_index.md",
+        "line": 111,
+        "span": "111-123",
+        "role": "snippet",
+        "snippet": "\nTo tell Cobra to completely disable descriptions for completions:\n```\nrootCmd.CompletionOptions.DisableDescriptions = true\n```\n\n# Customizing completions\n\nThe generated completion scripts will automatically handle completing commands and flags.  However, you can make your completions much more powerful by providing information to complete your program's nouns and flag values.\n\n## Completion of nouns\n\n### Static completion of nouns",
+        "text_hash": "bba9fc3cb1912676"
+      },
+      {
+        "ref_id": "e56",
+        "path": "completions.go",
+        "line": 30,
+        "span": "30-32",
+        "role": "snippet",
+        "snippet": "\t// ShellCompNoDescRequestCmd is the name of the hidden command that is used to request\n\t// completion results without their description.  It is used by the shell completion scripts.\n\tShellCompNoDescRequestCmd = \"__completeNoDesc\"",
+        "text_hash": "391a09008b8c74f0"
+      },
+      {
+        "ref_id": "e57",
+        "path": "site/content/completions/_index.md",
+        "line": 415,
+        "span": "415-427",
+        "role": "snippet",
+        "snippet": "```\n### Bash legacy dynamic completions\n\nFor backward compatibility, Cobra still supports its bash legacy dynamic completion solution.\nPlease refer to [Bash Completions](bash.md) for details.\n\n### Bash completion V2\n\nCobra provides two versions for bash completion.  The original bash completion (which started it all!) can be used by calling\n`GenBashCompletion()` or `GenBashCompletionFile()`.\n\nA new V2 bash completion version is also available.  This version can be used by calling `GenBashCompletionV2()` or\n`GenBashCompletionFileV2()`.  The V2 version does **not** support the legacy dynamic completion",
+        "text_hash": "372853297952e82b"
+      },
+      {
+        "ref_id": "e58",
+        "path": "site/content/completions/fish.md",
+        "line": 1,
+        "span": "1-4",
+        "role": "snippet",
+        "snippet": "## Generating Fish Completions For Your cobra.Command\n\nPlease refer to [Shell Completions](_index.md) for details.\n",
+        "text_hash": "81d3148890dea003"
+      },
+      {
+        "ref_id": "e59",
+        "path": "site/content/completions/powershell.md",
+        "line": 1,
+        "span": "1-3",
+        "role": "snippet",
+        "snippet": "# Generating PowerShell Completions For Your Own cobra.Command\n\nPlease refer to [Shell Completions](_index.md#powershell-completions) for details.",
+        "text_hash": "d0fc9b0e7efd780c"
+      },
+      {
+        "ref_id": "e60",
+        "path": ".github/labeler.yml",
+        "line": 9,
+        "span": "9-17",
+        "role": "snippet",
+        "snippet": "\"area/flags\": ./args*.go\n\n# changes to Github workflows\n\"area/github\": .github/**/*\n\n# changes to shell completions\n\"area/shell-completion\":\n  - ./*completions*\n",
+        "text_hash": "6d4d1481c7537557"
+      },
+      {
+        "ref_id": "e61",
+        "path": "site/content/completions/_index.md",
+        "line": 115,
+        "span": "115-127",
+        "role": "snippet",
+        "snippet": "```\n\n# Customizing completions\n\nThe generated completion scripts will automatically handle completing commands and flags.  However, you can make your completions much more powerful by providing information to complete your program's nouns and flag values.\n\n## Completion of nouns\n\n### Static completion of nouns\n\nCobra allows you to provide a pre-defined list of completion choices for your nouns using the `ValidArgs` field.\nFor example, if you want `kubectl get [tab][tab]` to show a list of valid \"nouns\" you have to set them.\nSome simplified code from `kubectl get` looks like:",
+        "text_hash": "590b5cb827b7c897"
+      },
+      {
+        "ref_id": "e62",
+        "path": "site/content/completions/bash.md",
+        "line": 1,
+        "span": "1-7",
+        "role": "snippet",
+        "snippet": "# Generating Bash Completions For Your cobra.Command\n\nPlease refer to [Shell Completions](_index.md) for details.\n\n## Bash legacy dynamic completions\n\nFor backward compatibility, Cobra still supports its legacy dynamic completion solution (described below).  Unlike the `ValidArgsFunction` solution, the legacy solution will only work for Bash shell-completion and not for other shells. This legacy solution can be used along-side `ValidArgsFunction` and `RegisterFlagCompletionFunc()`, as long as both solutions are not used for the same command.  This provides a path to gradually migrate from the legacy solution to the new solution.",
+        "text_hash": "94315e89261b9eac"
+      },
+      {
+        "ref_id": "e63",
+        "path": "site/content/completions/_index.md",
+        "line": 511,
+        "span": "511-523",
+        "role": "snippet",
+        "snippet": "  * `MarkFlagFilename()` and `MarkPersistentFlagFilename()` (filtering by file extension)\n  * `MarkFlagDirname()` and `MarkPersistentFlagDirname()` (filtering by directory)\n* Similarly, the following completion directives are not supported and will be ignored for `fish`:\n  * `ShellCompDirectiveFilterFileExt` (filtering by file extension)\n  * `ShellCompDirectiveFilterDirs` (filtering by directory)\n\n## PowerShell completions\n\nCobra supports native PowerShell completions generated from the root `cobra.Command`. You can use the `command.GenPowerShellCompletion()` or `command.GenPowerShellCompletionFile()` functions. To include descriptions use `command.GenPowerShellCompletionWithDesc()` and `command.GenPowerShellCompletionFileWithDesc()`. Cobra will provide the description automatically based on usage information. You can choose to make this option configurable by your users.\n\nThe script is designed to support all three PowerShell completion modes:\n\n* TabCompleteNext (default windows style - on each key press the next option is displayed)",
+        "text_hash": "f1a3799c703987f0"
+      },
+      {
+        "ref_id": "e64",
+        "path": "site/content/completions/_index.md",
+        "line": 480,
+        "span": "480-481",
+        "role": "snippet",
+        "snippet": "  * You should instead use `RegisterFlagCompletionFunc()`.\n",
+        "text_hash": "db5d849924c0c1d5"
+      },
+      {
+        "ref_id": "e65",
+        "path": "completions.go",
+        "line": 193,
+        "span": "193-264",
+        "role": "snippet",
+        "snippet": "// initCompleteCmd adds a special hidden command that can be used to request custom completions.\nfunc (c *Command) initCompleteCmd(args []string) {\n\tcompleteCmd := \u0026Command{\n\t\tUse:                   fmt.Sprintf(\"%s [command-line]\", ShellCompRequestCmd),\n\t\tAliases:               []string{ShellCompNoDescRequestCmd},\n\t\tDisableFlagsInUseLine: true,\n\t\tHidden:                true,\n\t\tDisableFlagParsing:    true,\n\t\tArgs:                  MinimumNArgs(1),\n\t\tShort:                 \"Request shell completion choices for the specified command-line\",\n\t\tLong: fmt.Sprintf(\"%[2]s is a special command that is used by the shell completion logic\\n%[1]s\",\n\t\t\t\"to request completion choices for the specified command-line.\", ShellCompRequestCmd),\n\t\tRun: func(cmd *Command, args []string) {\n\t\t\tfinalCmd, completions, directive, err := cmd.getCompletions(args)\n\t\t\tif err != nil {\n\t\t\t\tCompErrorln(err.Error())\n\t\t\t\t// Keep going for multiple reasons:\n\t\t\t\t// 1- There could be some valid completions even though there was an error\n\t\t\t\t// 2- Even without completions, we need to print the directive\n\t\t\t}\n\n\t\t\tnoDescriptions := (cmd.CalledAs() == ShellCompNoDescRequestCmd)\n\t\t\tfor _, comp := range completions {\n\t\t\t\tif GetActiveHelpConfig(finalCmd) == activeHelpGlobalDisable {\n\t\t\t\t\t// Remove all activeHelp entries in this case\n\t\t\t\t\tif strings.HasPrefix(comp, activeHelpMarker) {\n\t\t\t\t\t\tcontinue\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif noDescriptions {\n\t\t\t\t\t// Remove any description that may be included following a tab character.\n\t\t\t\t\tcomp = strings.Split(comp, \"\\t\")[0]\n\t\t\t\t}\n\n\t\t\t\t// Make sure we only write the first line to the output.\n\t\t\t\t// This is needed if a description contains a linebreak.\n\t\t\t\t// Otherwise the shell scripts will interpret the other lines as new flags\n\t\t\t\t// and could therefore provide a wrong completion.\n\t\t\t\tcomp = strings.Split(comp, \"\\n\")[0]\n\n\t\t\t\t// Finally trim the completion.  This is especially important to get rid\n\t\t\t\t// of a trailing tab when there are no description following it.\n\t\t\t\t// For example, a sub-command without a description should not be completed\n\t\t\t\t// with a tab at the end (or else zsh will show a -- following it\n\t\t\t\t// although there is no description).\n\t\t\t\tcomp = strings.TrimSpace(comp)\n\n\t\t\t\t// Print each possible completion to stdout for the completion script to consume.\n\t\t\t\tfmt.Fprintln(finalCmd.OutOrStdout(), comp)\n\t\t\t}\n\n\t\t\t// As the last printout, print the completion directive for the completion script to parse.\n\t\t\t// The directive integer must be that last character following a single colon (:).\n\t\t\t// The completion script expects :\u003cdirective\u003e\n\t\t\tfmt.Fprintf(finalCmd.OutOrStdout(), \":%d\\n\", directive)\n\n\t\t\t// Print some helpful info to stderr for the user to understand.\n\t\t\t// Output from stderr must be ignored by the completion script.\n\t\t\tfmt.Fprintf(finalCmd.ErrOrStderr(), \"Completion ended with directive: %s\\n\", directive.string())\n\t\t},\n\t}\n\tc.AddCommand(completeCmd)\n\tsubCmd, _, err := c.Find(args)\n\tif err != nil || subCmd.Name() != ShellCompRequestCmd {\n\t\t// Only create this special command if it is actually being called.\n\t\t// This reduces possible side-effects of creating such a command;\n\t\t// for example, having this command would cause problems to a\n\t\t// cobra program that only consists of the root command, since this\n\t\t// command would cause the root command to suddenly have a subcommand.\n\t\tc.RemoveCommand(completeCmd)\n\t}\n}",
+        "text_hash": "0ad0a598fdabc620"
+      }
+    ],
+    "confidence": {
+      "distribution": {
+        "confirmed": 1
+      },
+      "top": "confirmed",
+      "method": "edge_tiers"
+    },
+    "limits": {
+      "cap_applied": 40,
+      "total_available": 46,
+      "dropped": 6,
+      "truncated": true,
+      "next": "some candidate sources were omitted; ask a narrower follow-up for missing details"
+    }
+  },
+  "score": {
+    "covered": true,
+    "item_count": 40,
+    "evidence_citation_count": 58,
+    "snippet_count": 16,
+    "emitted_snippet_whitespace_tokens": 1200,
+    "engine_reported_snippet_tokens": 1200,
+    "engine_reported_token_budget": 1200,
+    "engine_minus_emitted_snippet_tokens": 0,
+    "item_cap_applied": 40,
+    "items_available": 46,
+    "items_dropped": 6,
+    "truncated": true,
+    "grade3_judgements": 2,
+    "matches": [
+      {
+        "evidence_ref_id": "e16",
+        "evidence_path": "completions.go",
+        "evidence_line": 196,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "completions.go",
+        "judgement_start_line": 193,
+        "judgement_end_line": 264,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e17",
+        "evidence_path": "completions.go",
+        "evidence_line": 204,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "completions.go",
+        "judgement_start_line": 193,
+        "judgement_end_line": 264,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e18",
+        "evidence_path": "completions.go",
+        "evidence_line": 256,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "completions.go",
+        "judgement_start_line": 193,
+        "judgement_end_line": 264,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e65",
+        "evidence_path": "completions.go",
+        "evidence_line": 193,
+        "evidence_span": "193-264",
+        "evidence_role": "snippet",
+        "judgement_path": "completions.go",
+        "judgement_start_line": 193,
+        "judgement_end_line": 264,
+        "judgement_grade": 3
+      }
+    ]
+  }
+}

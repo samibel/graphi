@@ -1,0 +1,1 @@
+PASS: It gives the correct GenManTree call, scope, nil-header support, delegated options, and documented filename caveat.

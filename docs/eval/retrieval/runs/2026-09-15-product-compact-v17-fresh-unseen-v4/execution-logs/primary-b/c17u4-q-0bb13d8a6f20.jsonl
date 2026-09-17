@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-3a8a-7322-8633-a08d93e468f0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`activeHelpEnvVar`:\n\n1. Appends `\"_ACTIVE_HELP\"` to the program name.\n2. Uppercases the entire result.\n3. Replaces every character except `A–Z`, `0–9`, and `_` with `_`.\n\nEvidence: `active_help.go:23-33` defines the suffix and regexp `[^A-Z0-9_]`; `active_help.go:60-67` applies `strings.ToUpper(...)` followed by `ReplaceAllString(..., \"_\")`.\n\nFor example, `my-app` becomes `MY_APP_ACTIVE_HELP`."}}
+{"type":"turn.completed","usage":{"input_tokens":16535,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":122,"reasoning_output_tokens":0}}

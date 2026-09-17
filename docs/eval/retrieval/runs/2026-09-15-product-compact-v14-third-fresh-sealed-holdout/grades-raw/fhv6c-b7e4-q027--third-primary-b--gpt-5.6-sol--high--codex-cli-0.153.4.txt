@@ -1,0 +1,1 @@
+PASS: The response correctly explains that SetIn(nil) clears the explicit reader, so InOrStdin follows parent input fallback and ultimately returns os.Stdin. All cited command.go ranges exist in the transcript and support that behavior.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5e-b240-7a91-aa54-32286ec59c31"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It panics with `group id '<ID>' is not defined for subcommand '<command path>'`.\n\nIn `command.go:1170–1181`, `checkCommandGroups()` checks each child’s nonempty `GroupID` against its parent’s `ContainsGroup()` and recursively checks descendants, so this applies at any nesting depth. `ContainsGroup()` searches only that parent’s defined groups (`command.go:1346–1354`). The validation is called after all commands have been created (`command.go:1072–1075`), and its comment identifies an undefined group as a coding error."}}
+{"type":"turn.completed","usage":{"input_tokens":17397,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":126,"reasoning_output_tokens":0}}

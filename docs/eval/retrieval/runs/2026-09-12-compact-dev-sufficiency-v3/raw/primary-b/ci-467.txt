@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows calls to Traverse and Find but omits their argument and flag handling, so it cannot establish which arguments or flags may precede a subcommand.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acf-226f-7472-96b4-ef32affe1ed9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response omits the essential exit with status 1 behavior identified by the reviewed spans. The preserved bundle lacks that exit behavior, so it cannot support a complete answer."}}
+{"type":"turn.completed","usage":{"input_tokens":17974,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":40,"reasoning_output_tokens":0}}

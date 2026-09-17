@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac4-ebee-7222-aeb3-10e82ad3cf2e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT — the response only includes the heading stating that supported shells follow (`site/content/active_help.md:20`), but omits the shell list and any Bash version constraint."}}
+{"type":"turn.completed","usage":{"input_tokens":16401,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

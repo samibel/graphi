@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 87,
+  "previous_sha256": "dc2aa6ce37738d5b5d29bdb9f03010ff719c9753672678c08a758827449ee246",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "12a8b4c78db73852fc5e41e44870dc41bc6d84b4cf5d280662e87b987a7d5618",
+  "outcome": "pass",
+  "rationale": "PASS: The answer correctly covers registration, error cases, locking, storage, and retrieval from completions.go:35-36 and 132-160.\n",
+  "sha256": "91f53f40d96411101c8ade9f598353c0fa03fddf810ff7bfad26e82d8c6129ab"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 163,
+  "previous_sha256": "1b76e3676a1a766843672cd839344df46799fbe5cb9b1a3b87442eecf05b0b65",
+  "kind": "grade",
+  "query_id": "cb-19",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f42a1d25373037e69d730e4e7b22a0235a335dfb77b7c0fb08e1027af8469712",
+  "outcome": "fail",
+  "rationale": "The answer includes unsupported lifecycle claims. The bundle supports the high-level chain `Execute -\u003e ExecuteC -\u003e execute`, root-only execution (`command.go:1057`), `cmd.execute(flags)` (`command.go:1115`), flag parsing (`command.go:888`), and the shown pre-run/validation/Run ordering (`command.go:940-989`). However, it does not show that `ExecuteC` “resolves the target command” or how `TraverseChildren` affects that resolution; the only preserved evidence is the isolated line `if c.TraverseChildren` (`command.go:1087`). It also says persistent hooks run “next” after parsing despite the missing `command.go:889-939` region, so the preserved bytes cannot establish that no intervening lifecycle stages exist. Because the candidate presents these as concrete facts rather than marking the missing evidence insufficient, it does not meet the blind-support requirement.\n",
+  "sha256": "5f9e7743f8b843dea64903975f20b9f4b59fbf7e9e9ecd292aeccbdc28ec6380"
+}

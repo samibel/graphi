@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how can I make every parent's persistent hooks run instead of only the first
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 8d6e24d0adbd; read in order (291/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"cobra.go","start_line":64,"end_line":66,"text":"// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.\n// By default this is disabled, which means only the first run hook to be found is executed.\nvar EnableTraverseRunHooks = defaultTraverseRunHooks"},{"path":"site/content/user_guide.md","start_line":686,"end_line":693,"text":"Inside subCmd PostRun with args: [arg1 arg2]\nInside subCmd PersistentPostRun with args: [arg1 arg2]\n```\n\nBy default, only the first persistent hook found in the command chain is executed.\nThat is why in the above output, the `rootCmd PersistentPostRun` was not called for a child command.\nSet `EnableTraverseRunHooks` global variable to `true` if you want to execute all parents' persistent hooks.\n"},{"path":"command.go","start_line":1302,"end_line":1304,"text":"// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {"},{"path":"command.go","start_line":1725,"end_line":1735,"text":"// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.pflags.SetOutput(c.flagErrorBuf)\n\t}\n\treturn c.pflags\n}"},{"path":"command.go","start_line":852,"end_line":858,"text":"// VisitParents visits all parents of the command and invokes fn on each parent.\nfunc (c *Command) VisitParents(fn func(*Command)) {\n\tif c.HasParent() {\n\t\tfn(c.Parent())\n\t\tc.Parent().VisitParents(fn)\n\t}\n}"},{"path":"command.go","start_line":1631,"end_line":1634,"text":"// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":1055,"end_line":1059,"text":"\t}\n\n\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {\n\t\treturn c.Root().ExecuteC()"},{"path":"command.go","start_line":944,"end_line":945,"text":"\t\t\t// - Execute all persistent pre-runs from the root parent till this command.\n\t\t\t// - Execute all persistent post-runs from this command till the root parent."},{"path":"completions.go","start_line":67,"end_line":70,"text":"\t// should be used as file extension filters.\n\t// For flags, using Command.MarkFlagFilename() and Command.MarkPersistentFlagFilename()\n\t// is a shortcut to using this directive explicitly.  The BashCompFilenameExt\n\t// annotation can also be used to obtain the same behavior for flags."}],"provenance":{"input_sha256":"5f4b14caaa52cd4af29bd0051a4ea14e491f30733a636856befc18ec91a068ea","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

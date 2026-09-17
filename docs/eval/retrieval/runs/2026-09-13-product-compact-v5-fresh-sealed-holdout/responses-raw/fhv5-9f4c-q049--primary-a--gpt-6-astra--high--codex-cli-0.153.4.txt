@@ -1,0 +1,2 @@
+- **Legacy custom completions written in Bash**, including the `BashCompCustom` flag annotation, are unsupported and ignored by Zsh. Replace them with `ValidArgsFunction` and `RegisterFlagCompletionFunc()`, which support multiple shells. Evidence: `site/content/completions/_index.md`, lines 477–478.
+- **`MarkFlagCustom()`** is also unsupported and ignored by Zsh. Replace it with `RegisterFlagCompletionFunc()`. Evidence: `site/content/completions/_index.md`, lines 479–480.

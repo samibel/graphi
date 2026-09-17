@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7d789c7cf8a2025bf1c14ad21c0637892fbdb2c434ee5dbf50939b007ec6f4eb
+QUERY ID: fhv5-9f4c-q046
+
+QUESTION:
+How is the program-specific Active Help environment variable named and consumed by application completion code?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/active_help.md:93-103 anchor="<PROGRAM>_ACTIVE_HELP" reason=The uppercase sanitized program name gets the suffix, and completion callbacks should read it through GetActiveHelpConfig rather than directly.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 66e474a91af6; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/active_help.md","start_line":3,"end_line":6,"text":"Active Help is a framework provided by Cobra which allows a program to define messages (hints, warnings, etc) that will be printed during program usage.  It aims to make it easier for your users to learn how to use your program.  If configured by the program, Active Help is printed when the user triggers shell completion.\n\nFor example, \n```"},{"path":"site/content/active_help.md","start_line":66,"end_line":67,"text":"**Hint**: As can be seen in the above example, a good place to use Active Help messages is when the normal completion system does not provide any suggestions. In such cases, Active Help nicely supplements the normal shell completions.\n"},{"path":"active_help.go","start_line":40,"end_line":44,"text":"// the array.  Each time this function is called with the same array, the new\n// ActiveHelp line will be shown below the previous ones when completion is triggered.\nfunc AppendActiveHelp(compArray []string, activeHelpStr string) []string {\n\treturn append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))\n}"},{"path":"active_help.go","start_line":59,"end_line":59,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment"},{"path":"active_help.go","start_line":46,"end_line":46,"text":"// GetActiveHelpConfig returns the value of the ActiveHelp environment variable"},{"path":"site/content/active_help.md","start_line":143,"end_line":144,"text":"When debugging with the `__complete` command, if you want to specify different Active Help configurations, you should use the active help environment variable.  That variable is named `<PROGRAM>_ACTIVE_HELP` where any non-ASCII-alphanumeric characters are replaced by an `_`.  For example, we can test deactivating some Active Help as shown below:\n```"},{"path":"active_help.go","start_line":60,"end_line":60,"text":"// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the"},{"path":"site/content/active_help.md","start_line":94,"end_line":94,"text":"variable.  That variable is named `<PROGRAM>_ACTIVE_HELP` where `<PROGRAM>` is the name of your "},{"path":"active_help.go","start_line":49,"end_line":49,"text":"// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP"}],"provenance":{"input_sha256":"7da3d118e27f78ea4e04185afaf16b19691b49115a6ce47b371039c3640baeec","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response establishes `<PROGRAM>_ACTIVE_HELP` naming (`site/content/active_help.md:143-144`) but omits the completion code showing how `GetActiveHelpConfig` consumes it.
+----- END THE RATER'S RESPONSE -----

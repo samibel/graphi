@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q008",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "f687b5b3875d5b689edae431a6b9724a43688b9614119fe32f125989d657f808",
+  "bundle_sha256": "db4b974783db4db660750e1093555ac5c1785879e270305fdf52ee35d5d9ae4e",
+  "prompt_sha256": "84b8191aa32e1609c679e15ed526506d55bc6a05dc7b13479fb55ed9a2e8c999",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ExactValidArgs` returns an error unless there are exactly `n` positional arguments and every positional argument appears in the command’s `ValidArgs` field (`args.go:125-131`). Its deprecation note recommends replacing it with `MatchAll(ExactArgs(n), OnlyValidArgs)`.",
+  "responded_at": "2026-09-13T12:31:34Z",
+  "sha256": "63be62fcea50ae0e2ad92db07464fc8bed82a2f514420e7c8c63cc9e8f707373"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d2-a97d-70f3-b6e5-50349df5e7fe"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the deprecated compatibility behavior: assigning the same writer to usage output (`c.outWriter`) and error output (`c.errWriter`). Its documented nil fallback and citations are supported by the preserved `command.go` span."}}
+{"type":"turn.completed","usage":{"input_tokens":17783,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":93,"reasoning_output_tokens":39}}

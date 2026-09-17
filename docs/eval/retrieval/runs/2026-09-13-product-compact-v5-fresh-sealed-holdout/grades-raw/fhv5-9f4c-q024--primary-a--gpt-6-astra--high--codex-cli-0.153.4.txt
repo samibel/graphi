@@ -1,0 +1,1 @@
+PASS: The response directly answers that a partial required-together group causes an error, supported by the preserved documentation at flag_groups.go:31–32. Its citation exists and it makes no unsupported claims.

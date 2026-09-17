@@ -1,0 +1,242 @@
+{
+  "cb-01:primary-a": {
+    "outcome": "pass",
+    "rationale": "command.go:1052-1093 shows ExecuteC's signature, initialization and Find/Traverse selection; the cited wrappers directly delegate as stated."
+  },
+  "cb-01:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved ExecuteC body supports every described setup and command-selection step, and command.go:1038-1049 supports both wrappers."
+  },
+  "cb-02:primary-a": {
+    "outcome": "pass",
+    "rationale": "flag_groups.go:65-77 contains the named marker, persistent merge, per-flag annotations and panic paths; the validation collection is also visible."
+  },
+  "cb-02:primary-b": {
+    "outcome": "pass",
+    "rationale": "The marker body explicitly appends each group annotation after looking up existing flags, supporting the API and multiple-group explanation."
+  },
+  "cb-03:primary-a": {
+    "outcome": "pass",
+    "rationale": "doc/md_docs.go:125-158 directly shows delegation, identity/empty handlers, recursive child filtering, filename construction and error returns."
+  },
+  "cb-03:primary-b": {
+    "outcome": "pass",
+    "rationale": "The full preserved tree-generator implementation supports the described recursion, skipped help topics, file creation and Markdown-writing behavior."
+  },
+  "cb-04:primary-a": {
+    "outcome": "pass",
+    "rationale": "completions.go:132-160 shows the callback signature, missing/duplicate errors, locked registration and read-locked retrieval; the cross-shell comment is preserved."
+  },
+  "cb-04:primary-b": {
+    "outcome": "pass",
+    "rationale": "The registration and accessor bodies support the concrete API, callback contract and locking claims, with shell_completions.go:52-53 supporting portability."
+  },
+  "cb-07:primary-a": {
+    "outcome": "pass",
+    "rationale": "The named file's preserved validators show all three annotation groups, the all-flags-exist gate and sorted errors for partially set required groups."
+  },
+  "cb-07:primary-b": {
+    "outcome": "pass",
+    "rationale": "flag_groups.go:81-165 supports the file identification and each stated validation rule, including DisableFlagParsing and deterministic missing names."
+  },
+  "cb-08:primary-a": {
+    "outcome": "pass",
+    "rationale": "The GenMan comment/signature and complete fillHeader body support the file purpose, nil header, title/section/date defaults and invalid-epoch error."
+  },
+  "cb-08:primary-b": {
+    "outcome": "pass",
+    "rationale": "doc/man_docs.go:82-141 preserves the options, GenMan contract and header-default implementation described in the answer."
+  },
+  "cb-09:primary-a": {
+    "outcome": "pass",
+    "rationale": "The preserved shell_completions.go package/import and helper comments/bodies support required-flag behavior and persistent filename filtering."
+  },
+  "cb-09:primary-b": {
+    "outcome": "pass",
+    "rationale": "The named file explicitly documents required and persistent-required completion behavior and shows the filename-extension helper delegation."
+  },
+  "cb-11:primary-a": {
+    "outcome": "pass",
+    "rationale": "command.go:1147-1168 fully identifies and implements required-flag validation, including the annotation/Changed test and DisableFlagParsing bypass."
+  },
+  "cb-11:primary-b": {
+    "outcome": "pass",
+    "rationale": "The complete ValidateRequiredFlags excerpt supports the validator location and missing-flag error mechanism; the answer correctly limits its call-site claim."
+  },
+  "cb-13:primary-a": {
+    "outcome": "pass",
+    "rationale": "SuggestionsFor and findSuggestions are preserved with distance/prefix/explicit-name tests, disabled behavior, default distance 2 and output formatting."
+  },
+  "cb-13:primary-b": {
+    "outcome": "pass",
+    "rationale": "command.go:750-762 and 832-850 directly support all described suggestion criteria and formatting, agreeing with the development key."
+  },
+  "cb-14:primary-a": {
+    "outcome": "pass",
+    "rationale": "The hidden-command comments and Run handler show dispatch to getCompletions(args), error reporting with continued processing and CalledAs-based description selection."
+  },
+  "cb-14:primary-b": {
+    "outcome": "pass",
+    "rationale": "completions.go:202-217 directly shows the request handler calling getCompletions and preserving results/directives despite an error; request-command comments supply context."
+  },
+  "cb-16:primary-a": {
+    "outcome": "pass",
+    "rationale": "cobra.go:187-213 identifies ld as the distance implementation and shows lowercasing/matrix setup; command.go:836-837 preserves its suggestion call."
+  },
+  "cb-16:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved ld comment and body support the location and matrix description, and the preserved caller shows the distance threshold comparison."
+  },
+  "cb-20:primary-a": {
+    "outcome": "pass",
+    "rationale": "command.go:1849-1863 shows the persistent-flag merge and documents collecting all parents; LocalFlags visibly invokes it and nonpersistent propagation is documented."
+  },
+  "cb-20:primary-b": {
+    "outcome": "pass",
+    "rationale": "The merge body adds own and collected parent persistent flags to Flags, while the preserved updateParentsPflags comment and local accessors support the remaining claims."
+  },
+  "cb-21:primary-a": {
+    "outcome": "pass",
+    "rationale": "The complete AddCommand body directly shows self-child rejection, parent assignment, length bookkeeping, normalization propagation and appending."
+  },
+  "cb-21:primary-b": {
+    "outcome": "pass",
+    "rationale": "command.go:1302-1329 contains the concrete AddCommand operation and every stated parent-pointer and command-list update."
+  },
+  "cb-22:primary-a": {
+    "outcome": "pass",
+    "rationale": "GenManTreeFromOpts visibly recurses through available non-help children before current-page setup, providing a correct tree-walk explanation supported by the development key."
+  },
+  "cb-22:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved man generator supports recursive child-first traversal, filtering and error propagation; the answer confines Markdown/YAML claims to their visible loops."
+  },
+  "cb-25:primary-a": {
+    "outcome": "pass",
+    "rationale": "CompletionOptions.DisableDefaultCmd is documented as the disabling switch, and the preserved InitDefaultCompletionCmd guard immediately returns when set."
+  },
+  "cb-25:primary-b": {
+    "outcome": "pass",
+    "rationale": "The field comment and initialization guard directly support setting CompletionOptions.DisableDefaultCmd to true before initialization."
+  },
+  "cb-26:primary-a": {
+    "outcome": "pass",
+    "rationale": "active_help.go:46-62 documents the program-specific variable naming and global COBRA_ACTIVE_HELP=0 override, and the body reads them accordingly."
+  },
+  "cb-26:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved GetActiveHelpConfig documentation/body and global-name constant support the exact environment-variable names, normalization and override."
+  },
+  "cb-27:primary-a": {
+    "outcome": "pass",
+    "rationale": "The preserved package switch and lookup branch support enabling prefix matching, preferring exact name/alias matches and requiring a unique prefix match."
+  },
+  "cb-27:primary-b": {
+    "outcome": "pass",
+    "rationale": "cobra.go:55 names the switch and command.go:770-786 directly shows exact-match precedence and the single-prefix-match condition."
+  },
+  "cb-30:primary-a": {
+    "outcome": "pass",
+    "rationale": "GenManTree's preserved signature, documentation and wrapper body support the concrete invocation, nil header, output directory, options and filename-collision caveat."
+  },
+  "cb-30:primary-b": {
+    "outcome": "pass",
+    "rationale": "doc/man_docs.go:33-47 explicitly supports the API, descendant coverage, nil header and options passed to GenManTreeFromOpts."
+  },
+  "cb-32:primary-a": {
+    "outcome": "pass",
+    "rationale": "command.go:1030-1041 preserves Execute's exact implementation and documentation plus ExecuteContext's context assignment and delegation."
+  },
+  "cb-32:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved Execute body returns only ExecuteC's error, and adjacent documentation/context wrapper support the other statements."
+  },
+  "cb-33:primary-a": {
+    "outcome": "pass",
+    "rationale": "The complete Flags body and its documentation support lazy initialization and applicable-set scope; visible LocalFlags/InheritedFlags calls support the merge distinction."
+  },
+  "cb-33:primary-b": {
+    "outcome": "pass",
+    "rationale": "command.go:1641-1680 and 1696-1712 support Flags initialization/output, documented scope and the narrower local/inherited accessor descriptions."
+  },
+  "cb-35:primary-a": {
+    "outcome": "pass",
+    "rationale": "The preserved default-completion initializer and Bash help support generation purpose, creation guards, configuration and session command; GenBashCompletion writes to a writer."
+  },
+  "cb-35:primary-b": {
+    "outcome": "pass",
+    "rationale": "completions.go:683-728 and bash_completions.go:686-697 directly support the described default command, Bash dependency/example and generator sequence."
+  },
+  "ci-1133:primary-a": {
+    "outcome": "pass",
+    "rationale": "command.go:1795-1798 shows the named Flag accessor starting with Flags().Lookup, supporting the concrete single-flag operation in the development key."
+  },
+  "ci-1133:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved Flag signature/lookup and Flags signature support obtaining a named flag from the command object; the answer makes no unsupported typed-getter claim."
+  },
+  "ci-1222:primary-a": {
+    "outcome": "pass",
+    "rationale": "The complete RegisterFlagCompletionFunc implementation supports the concrete Go callback signature, registration procedure and unknown/duplicate-flag errors."
+  },
+  "ci-1222:primary-b": {
+    "outcome": "pass",
+    "rationale": "completions.go:132-146 directly supplies the callback contract and registration mechanism that the development key accepts for flag completion."
+  },
+  "ci-1236:primary-a": {
+    "outcome": "pass",
+    "rationale": "The complete CalledAs body returns the recorded name only for a called command, providing the command-checking accessor explicitly accepted by the development key."
+  },
+  "ci-1236:primary-b": {
+    "outcome": "pass",
+    "rationale": "command.go:1517-1522 directly supports checking CalledAs for a recorded invocation name; the answer correctly does not claim root-to-child selection retrieval."
+  },
+  "ci-1358:primary-a": {
+    "outcome": "pass",
+    "rationale": "The preserved marker body supports defining existing flags before grouping, persistent merging, appended annotations and unknown-flag panic; completion hiding is documented."
+  },
+  "ci-1358:primary-b": {
+    "outcome": "pass",
+    "rationale": "flag_groups.go:65-86 and 223-224 support the concrete mutually-exclusive marker invocation, existence requirement, validation role and completion effect."
+  },
+  "ci-1408:primary-a": {
+    "outcome": "pass",
+    "rationale": "The preserved Flags documentation explicitly includes parent persistent flags and Flag begins with its lookup, supporting the concrete subcommand-access operation."
+  },
+  "ci-1408:primary-b": {
+    "outcome": "pass",
+    "rationale": "command.go:1641-1643 and 1795-1796 support accessing a parent's persistent flag through the subcommand; local nonpersistent exclusion is explicitly documented."
+  },
+  "ci-2249:primary-a": {
+    "outcome": "pass",
+    "rationale": "HasInheritedFlags and InheritedFlags bodies support both concrete checks, local-shadow exclusion and merge; HasAvailableInheritedFlags documents excluding hidden/deprecated flags."
+  },
+  "ci-2249:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved boolean accessor, parent-set construction and availability accessor support the proposed inherited-flag assertions and filtering behavior."
+  },
+  "ci-678:primary-a": {
+    "outcome": "pass",
+    "rationale": "SetArgs([]string) is directly preserved and stores c.args, supporting the test-argument procedure identified as the answer by the development key; output setters are also shown."
+  },
+  "ci-678:primary-b": {
+    "outcome": "pass",
+    "rationale": "The preserved SetArgs body supports providing test arguments, and the shown boolflag declaration grounds the example; the omitted execution step is explicitly acknowledged."
+  },
+  "ci-771:primary-a": {
+    "outcome": "fail",
+    "rationale": "The development key requires a custom shell adapter's __complete protocol and response/directive handling. The answer offers existing-shell callback APIs and explicitly lacks the adapter details; the prompt omits the wire format."
+  },
+  "ci-771:primary-b": {
+    "outcome": "fail",
+    "rationale": "Portable callback API recommendations for the four supported shells do not explain creating another shell's integration. The required __complete invocation, completion-line/directive parsing and stderr handling are absent."
+  },
+  "ci-943:primary-a": {
+    "outcome": "pass",
+    "rationale": "The Version field documentation and InitDefaultVersionFlag guard explicitly support the nonempty-version condition, existing-flag exception and optional shorthand."
+  },
+  "ci-943:primary-b": {
+    "outcome": "pass",
+    "rationale": "command.go:108-112 and 1202-1209 preserve all stated version-flag conditions and support setting the command's Version field to enable the automatic flag."
+  }
+}

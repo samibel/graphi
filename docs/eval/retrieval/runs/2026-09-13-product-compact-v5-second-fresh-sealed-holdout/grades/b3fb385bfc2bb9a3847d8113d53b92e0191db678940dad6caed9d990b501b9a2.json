@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q056",
+  "response_sha256": "b3fb385bfc2bb9a3847d8113d53b92e0191db678940dad6caed9d990b501b9a2",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies the root command as retaining the group ID, supported by `c.Root().completionCommandGroupID = groupID` in the supplied `command.go:341-345` span.",
+  "graded_at": "2026-09-13T15:45:47Z",
+  "sha256": "510300c4d89f20df4150403cf77af93288b7dff56194b9330ab1a64c0e810f39"
+}

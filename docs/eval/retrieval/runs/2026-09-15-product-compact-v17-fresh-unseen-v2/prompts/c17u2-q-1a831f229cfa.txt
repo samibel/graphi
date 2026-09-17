@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Why is a non-runnable node being treated as an extra help topic rather than a normal command?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s); query ca3aee850db5; read in order (303/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1577,"end_line":1598,"text":"\n// IsAdditionalHelpTopicCommand determines if a command is an additional\n// help topic command; additional help topic command is determined by the\n// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated.\n// Concrete example: https://github.com/spf13/cobra/issues/393#issuecomment-282741924.\nfunc (c *Command) IsAdditionalHelpTopicCommand() bool {\n\t// if a command is runnable, deprecated, or hidden it is not a 'help' command\n\tif c.Runnable() || len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\t// if any non-help sub commands are found, the command is not a 'help' command\n\tfor _, sub := range c.commands {\n\t\tif !sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn false\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no non-help sub commands\n\treturn true\n}"},{"path":"command.go","start_line":1549,"end_line":1553,"text":"\n// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"site/content/user_guide.md","start_line":541,"end_line":553,"text":"### Defining your own help\n\nYou can provide your own Help command or your own template for the default command to use\nwith the following functions:\n\n```go\ncmd.SetHelpCommand(cmd *Command)\ncmd.SetHelpFunc(f func(*Command, []string))\ncmd.SetHelpTemplate(s string)\n```\n\nThe latter two will also apply to any children commands.\n"},{"path":"command.go","start_line":449,"end_line":476,"text":"\n// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}\n\n// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"}],"provenance":{"input_sha256":"cb91f809723d869e70974d9e187dd2aa1d4558b79ec542e8f341230104c1d825","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

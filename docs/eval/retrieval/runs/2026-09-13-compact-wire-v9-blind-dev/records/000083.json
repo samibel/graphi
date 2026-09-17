@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 83,
+  "previous_sha256": "0f611e3bdfe9cc598c7f0163f33153d58d1f8b3e1e4b8f8c30fc3399fc8fd1c5",
+  "kind": "grade",
+  "query_id": "cb-02",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "9435ae99fc54d8e9e6da2ba589ec3661c2505c22d8e6ffa4f99f7e76f3f0267a",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and supported by the preserved response. `flag_groups.go` lines 63–77 explicitly state that the method causes an error when more than one flag in the set is invoked, calls `mergePersistentFlags`, looks up each flag, panics when a flag is missing, sets the `mutuallyExclusive` annotation using `strings.Join(flagNames, \" \")`, and appends existing annotations so flags can belong to multiple groups. `flag_groups.go` lines 25–29 supplies the exact annotation value `cobra_annotation_mutually_exclusive`, while lines 79–88 identify `ValidateFlagGroups` as validating mutually-exclusive logic and show that validation returns early when `DisableFlagParsing` is true.\n",
+  "sha256": "f2422c293af6bbd1d6c8674606c11ab56d1a860fa55712c6df20ce6a15cc6f17"
+}

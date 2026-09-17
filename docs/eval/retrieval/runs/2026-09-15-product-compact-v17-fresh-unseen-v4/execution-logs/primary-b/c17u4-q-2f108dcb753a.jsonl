@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-6747-7342-8fd5-c670347727de"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ValidArgs` provides completion candidates for the first positional argument; `ValidArgsFunction` dynamically provides candidates for any positional argument, including the first (`zsh_completions.go:61-64`).\n\nThey may not both be configured on one command: `command.go:86-87` explicitly states, “Only one of ValidArgs and ValidArgsFunction can be used for a command.”"}}
+{"type":"turn.completed","usage":{"input_tokens":16546,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":84,"reasoning_output_tokens":0}}

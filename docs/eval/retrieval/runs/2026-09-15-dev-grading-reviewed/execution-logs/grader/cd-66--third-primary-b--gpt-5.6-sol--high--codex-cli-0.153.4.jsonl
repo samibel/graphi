@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-5cac-7a03-b3a4-5b57eeb4e4a6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes ContainsGroup scanning c.commandgroups, returning true for a matching ID and false otherwise. Both cited ranges exist in the transcript and support the method behavior and Group.ID field."}}
+{"type":"turn.completed","usage":{"input_tokens":17862,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":44,"reasoning_output_tokens":0}}

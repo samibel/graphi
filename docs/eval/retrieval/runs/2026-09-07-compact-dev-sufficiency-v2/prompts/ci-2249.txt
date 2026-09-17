@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to test inherited flags?
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"How to test inherited flags?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":1766,"end_line":1769,"text":"// HasInheritedFlags checks if the command has flags inherited from its parent command.\nfunc (c *Command) HasInheritedFlags() bool {\n\treturn c.InheritedFlags().HasFlags()\n}"},{"path":"command.go","start_line":1696,"end_line":1707,"text":"func (c *Command) InheritedFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n\n\tif c.iflags == nil {\n\t\tc.iflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.iflags.SetOutput(c.flagErrorBuf)\n\t}\n\n\tlocal := c.LocalFlags()"},{"path":"command.go","start_line":1720,"end_line":1723,"text":"// NonInheritedFlags returns all flags which were not inherited from parent commands.\nfunc (c *Command) NonInheritedFlags() *flag.FlagSet {\n\treturn c.LocalFlags()\n}"},{"path":"command.go","start_line":1788,"end_line":1792,"text":"// HasAvailableInheritedFlags checks if the command has flags inherited from its parent command which are\n// not hidden or deprecated.\nfunc (c *Command) HasAvailableInheritedFlags() bool {\n\treturn c.InheritedFlags().HasAvailableFlags()\n}"},{"path":"command_test.go","start_line":1688,"end_line":1690,"text":"func TestNormPassedOnInherited(t *testing.T) {\n\ttoUpper := func(f *pflag.FlagSet, name string) pflag.NormalizedName {\n\t\treturn pflag.NormalizedName(strings.ToUpper(name))"},{"path":"command_test.go","start_line":754,"end_line":755,"text":"func TestChildFlagShadowsParentPersistentFlag(t *testing.T) {\n\tparent := \u0026Command{Use: \"parent\", Run: emptyRun}"},{"path":"doc/man_docs_test.go","start_line":153,"end_line":154,"text":"func TestManPrintFlagsHidesShortDeprecated(t *testing.T) {\n\tc := \u0026cobra.Command{}"},{"path":"command_test.go","start_line":2161,"end_line":2162,"text":"func TestMergeCommandLineToFlags(t *testing.T) {\n\tpflag.Bool(\"boolflag\", false, \"\")"}],"provenance":{"input_sha256":"a731f9b46f2da81df02956913936f84965980cbc557a2f78a74b87dd51260f5d","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

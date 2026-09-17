@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d8-c3b2-7353-b36c-069c3388bfc4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Set this option on your root command:\n\n```go\nrootCmd.CompletionOptions.DisableDefaultCmd = true\n```\n\nEvidence: `completions.go:103-107` defines `CompletionOptions.DisableDefaultCmd` as preventing creation of the default `completion` command. `InitDefaultCompletionCmd` checks it and returns without adding the command (`completions.go:683-687`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16412,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":83,"reasoning_output_tokens":0}}

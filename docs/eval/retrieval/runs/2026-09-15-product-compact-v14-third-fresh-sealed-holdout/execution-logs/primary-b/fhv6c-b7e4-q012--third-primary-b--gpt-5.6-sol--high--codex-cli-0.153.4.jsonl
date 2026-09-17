@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-e78c-7f91-87e3-aa980013364a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`cobra_test.go` is in package `cobra` (line 15) and the supplied excerpts show:\n\n- `assertNoErr(t *testing.T, e error)` (lines 22–26), a helper that calls `t.Error(e)` when the error is non-nil.\n- `TestAddTemplateFunctions(t *testing.T)` (lines 28–42), which registers template functions via `AddTemplateFunc` and `AddTemplateFuncs`, applies them to a `Command` usage template, and verifies that `UsageString()` equals `\"Hello, world.\"`.\n\nThe response is marked `\"truncated\": true`, so it does not establish whether the file contains additional declarations."}}
+{"type":"turn.completed","usage":{"input_tokens":15979,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":228,"reasoning_output_tokens":83}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q024",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "53e69a41ca3a0bc723700cdc80b9f49396848280457a273cb1f1c2549a79e04a",
+  "bundle_sha256": "2d80de156b714c2e1099e9d09a9a0bccd298b634c66b07cc2254ba6d0acedc38",
+  "prompt_sha256": "238af655e4b91c02365308b90b83d2aea504a1b8a24da743f9d8a851dc77adf9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "If `SetIn` was not called, `getIn(def)` recursively checks the command’s parent (`c.parent.getIn(def)`) while `HasParent()` is true. It therefore inherits the nearest ancestor’s non-nil `inReader`; if no ancestor has one, it returns the provided default reader (`command.go:414–422`). `SetIn` stores the reader in `c.inReader` (`command.go:300–304`), and `HasParent` means `c.parent != nil` (`command.go:1631–1634`).",
+  "responded_at": "2026-09-15T08:29:46Z",
+  "sha256": "65590c7b2b675277ce834d4819fb84952970455da5b62ac98303f2063663eeb7"
+}

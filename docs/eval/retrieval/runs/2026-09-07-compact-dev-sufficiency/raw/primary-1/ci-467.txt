@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows test setup with `TraverseChildren: true` and root flags (`command_test.go:2188–2190,2210–2211`) plus a `Traverse(args)` call (`command.go:1088`), but no argument sequence, assertions, or parsing implementation establishes whether arguments or flags may appear before a subcommand.

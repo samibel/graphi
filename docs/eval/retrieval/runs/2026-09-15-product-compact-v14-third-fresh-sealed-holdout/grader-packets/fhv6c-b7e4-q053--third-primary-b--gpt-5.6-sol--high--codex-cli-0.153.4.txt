@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 47c89a718541973e97f7da623376e06f96b995f1cac96d85646b137a9654d44e
+QUERY ID: fhv6c-b7e4-q053
+
+QUESTION:
+How do I install the cobra-cli application generator?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- README.md:95-106 anchor="go install github.com/spf13/cobra-cli@latest" reason=The usage section explains the generator's purpose and gives its Go install command.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 544ab1d03740; read in order (255/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/user_guide.md","start_line":30,"end_line":36,"text":"## Using the Cobra Generator\n\nCobra-CLI is its own program that will create your application and add any commands you want.\nIt's the easiest way to incorporate Cobra into your application.\n\nFor complete details on using the Cobra generator, please refer to [The Cobra-CLI Generator README](https://github.com/spf13/cobra-cli/blob/main/README.md)\n"},{"path":"README.md","start_line":95,"end_line":109,"text":"# Usage\n`cobra-cli` is a command line program to generate cobra applications and command files.\nIt will bootstrap your application scaffolding to rapidly\ndevelop a Cobra-based application. It is the easiest way to incorporate Cobra into your application.\n\nIt can be installed by running:\n\n```\ngo install github.com/spf13/cobra-cli@latest\n```\n\nFor complete details on using the Cobra-CLI generator, please read [The Cobra Generator README](https://github.com/spf13/cobra-cli/blob/main/README.md)\n\nFor complete details on using the Cobra library, please read the [The Cobra User Guide](site/content/user_guide.md).\n"},{"path":"site/content/user_guide.md","start_line":507,"end_line":508,"text":"    Cobra is a CLI library for Go that empowers applications.\n    This application is a tool to generate the needed files"},{"path":"README.md","start_line":81,"end_line":94,"text":"# Installing\nUsing Cobra is easy. First, use `go get` to install the latest version\nof the library.\n\n```\ngo get -u github.com/spf13/cobra@latest\n```\n\nNext, include Cobra in your application:\n\n```go\nimport \"github.com/spf13/cobra\"\n```\n"},{"path":"site/content/user_guide.md","start_line":561,"end_line":568,"text":"embeds the usage as part of its output.\n\n    $ cobra-cli --invalid\n    Error: unknown flag: --invalid\n    Usage:\n      cobra-cli [command]\n\n    Available Commands:"},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"},{"path":"README.md","start_line":2,"end_line":5,"text":"\nCobra is a library for creating powerful modern CLI applications.\n\nCobra is used in many Go projects such as [Kubernetes](https://kubernetes.io/),"},{"path":"cobra.go","start_line":52,"end_line":56,"text":"// EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing\n// to automatically enable in CLI tools.\n// Set this to true to enable it.\nvar EnablePrefixMatching = defaultPrefixMatching\n"}],"provenance":{"input_sha256":"e426a363f7ceb4718978bb44a17a70a8699d16c0c20454d77bca8f1ec0e45718","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Install the generator with:
+
+```sh
+go install github.com/spf13/cobra-cli@latest
+```
+
+Evidence: `README.md`, lines 95–105, identifies `cobra-cli` as the application generator and provides this installation command.
+----- END THE RATER'S RESPONSE -----

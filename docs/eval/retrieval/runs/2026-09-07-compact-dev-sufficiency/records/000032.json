@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 32,
+  "previous_sha256": "8a58fb58af38d5ad805c9cc23f018c47eac4b0f33bdbc5654dbbe49feee6317e",
+  "kind": "response",
+  "query_id": "ci-1970",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "94413268d88e7f02cb4a27d1f2cdc4f7cc2554328081cd4c805eec32993aa8b7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response exposes `cmd.Flags()` returning a `*flag.FlagSet` (`command.go:1643`) and related flag-set accessors, but omits the iteration or listing API needed to obtain a list of the flags.\n",
+  "sha256": "a6e243a77d8a962ca64052d9fcf8989b7d9bbf3962221f4a1063395b53d9a38e"
+}

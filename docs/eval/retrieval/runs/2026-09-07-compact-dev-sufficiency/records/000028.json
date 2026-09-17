@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 28,
+  "previous_sha256": "df8604f162912629b495c6eb56505c06cd437736cefe8d1c64f92552edd32a8a",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "b947e73b2d71a797fd303af99ab1db6077d5676e0434822b7410a2db2139167c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For flag completion, register a Go callback with `cmd.RegisterFlagCompletionFunc(flagName, callback)`. The callback has signature `func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective)` and returns completion strings plus a shell directive; registration returns an error (`completions.go:133`, `site/content/completions/_index.md:351`). Implement your candidate selection using `args` and `toComplete` inside that callback. The supplied snippets do not define the available directive values or show positional-argument completion registration.\n",
+  "sha256": "49389836904ed6303c1754840ceeb0a967428610968acdbe7cb24acaab3d9b54"
+}

@@ -1,0 +1,1 @@
+`OnInitialize` retains the supplied functions by appending them to the package-level `initializers` slice, declared as `var initializers []func()` (`cobra.go:42`). Its body uses `initializers = append(initializers, y...)` (`cobra.go:99–101`), preserving previously registered functions and adding the new ones for later execution.

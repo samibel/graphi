@@ -1,0 +1,16 @@
+`args_test.go` is a Go test file in package `cobra` (`args_test.go:15`). It contains:
+
+- Assertion helpers that verify argument-validation errors and exact messages:
+  - `validOnlyWithInvalidArgs` (`44–53`)
+  - `noArgsWithArgs` (`55–64`)
+  - `minimumNArgsWithLessArgs` (`66–75`)
+  - `maximumNArgsWithMoreArgs` (`77–86`)
+  - `exactArgsWithInvalidCount` (`88–97`)
+  - `rangeArgsWithInvalidCount` (`99–108`)
+
+- Tests that construct commands with argument validators, execute them, and check results. Examples include:
+  - `TestNoArgs`, testing successful execution with `NoArgs` (`112–116`)
+  - `TestExactArgs_WithInvalidCount_WithValidOnly_WithInvalidArgs`, combining `OnlyValidArgs` and `ExactArgs(2)` through `MatchAll` (`326–330`)
+  - `TestRangeArgs_WithInvalidCount_WithValidOnly_WithInvalidArgs`, combining `OnlyValidArgs` and `RangeArgs(2, 4)` (`376–380`)
+
+The response is truncated, so it does not expose every declaration in the file.

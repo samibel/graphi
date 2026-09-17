@@ -1,0 +1,9 @@
+`(*Command).ValidateFlagGroups` gathers each flag’s set/unset status for `oneRequired` groups, then calls `validateOneRequiredFlagGroups` and propagates its error (`flag_groups.go:78–109`).
+
+When no member is set, the reported error is:
+
+```text
+at least one of the flags in the group [%v] is required
+```
+
+Here `%v` is filled with `flagList` (`flag_groups.go:183`). Validation returns the first error encountered; if `DisableFlagParsing` is enabled, it skips validation and returns `nil` (`flag_groups.go:78–109`).

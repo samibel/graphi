@@ -1,0 +1,8 @@
+In `findFlag` (`completions.go:841–857`), when `len(name) == 1`, it:
+
+1. Tries `cmd.Flags().ShorthandLookup(name)` first.
+2. If absent, tries `cmd.InheritedFlags().ShorthandLookup(name)`.
+3. Replaces `name` with the matching flag’s long name, `short.Name`, or returns `nil` if neither lookup succeeds.
+4. Finally calls `cmd.Flag(name)`.
+
+The comment at lines 844–845 explains the conversion: `cmd.Flag()` only accepts long flag names.

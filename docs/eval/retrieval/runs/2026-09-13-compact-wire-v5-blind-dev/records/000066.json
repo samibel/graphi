@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 66,
+  "previous_sha256": "460bb5d2879eced9411e2dd6dd2e5403f6f43d3b5d2d098f489d39dc4c7fb532",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "396b8ef14bd44c036156dbe3f0b8d5bb6645f40fefa0f69aa50ad58d1285b375",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`InitDefaultCompletionCmd` adds Cobra's default `completion` command, which generates an autocompletion script for a selected shell (`completions.go:678-715`). It does nothing when disabled, when the command has no subcommands, or when a command/alias named `completion` already exists. Its behavior is controlled by `CompletionOptions`, including whether the command is hidden and whether descriptions or the `--no-descriptions` flag are disabled (`completions.go:678-715`; constants at `completions.go:93-102`).\n",
+  "sha256": "78dcf1e6e32bbd96781c8570f3de9d1a2891395d3a2d084a5528dd1bd1a0a3a8"
+}

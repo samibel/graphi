@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `gen(buf, c)` being called in `bash_completions.go:690`, but omits `gen`’s implementation, including its recursive naming logic and function-body generation.

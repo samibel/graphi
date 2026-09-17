@@ -1,0 +1,1 @@
+PASS: The response correctly describes local-first, recursive parent help resolution; default persistent-flag merging and rendering through OutOrStdout(); template-error reporting via PrintErrln; and Help() invoking the resolved function with empty arguments and returning nil. Both cited ranges exist and support these claims.

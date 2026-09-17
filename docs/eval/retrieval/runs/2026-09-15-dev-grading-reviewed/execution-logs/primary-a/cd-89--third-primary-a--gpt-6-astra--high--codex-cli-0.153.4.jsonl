@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-3017-7ed1-b38a-2cf80acd244e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Set `HiddenDefaultCmd` on your root command, and leave `DisableDefaultCmd` false:\n\n```go\nrootCmd.CompletionOptions.HiddenDefaultCmd = true\n```\n\nEvidence: `site/content/completions/_index.md:94–104` explicitly documents this setting on the root command. `completions.go:106–107` says `DisableDefaultCmd` prevents creation, while `completions.go:114–115` says `HiddenDefaultCmd` makes the default command hidden."}}
+{"type":"turn.completed","usage":{"input_tokens":17290,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":107,"reasoning_output_tokens":0}}

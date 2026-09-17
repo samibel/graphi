@@ -1,0 +1,10 @@
+Unknown-command suggestions are computed as follows:
+
+- If `DisableSuggestions` is true, none are produced (`command.go:750-753`).
+- A non-positive `SuggestionsMinimumDistance` is reset to `2` (`command.go:754-756`).
+- `SuggestionsFor` examines each available child command (`command.go:831-835`) and suggests its name when any condition holds:
+  - its case-insensitive Levenshtein distance from the typed name is at most `SuggestionsMinimumDistance`;
+  - its name starts with the typed name, case-insensitively;
+  - the typed name case-insensitively equals an entry in that command’s `SuggestFor` list (`command.go:835-845`).
+- The command name is the first word of its `Use` string (`command.go:1495-1503`).
+- Matches are returned in command traversal order and formatted under `Did you mean this?`, one per indented line (`command.go:757-765`).

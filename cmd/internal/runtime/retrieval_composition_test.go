@@ -72,11 +72,15 @@ func TestComposeRetrieval_PreservesProductionIdentityAndExplain(t *testing.T) {
 	if got.Rows[0].DocumentID != "doc-target-v2" {
 		t.Errorf("DocumentID = %q, want persisted semantic identity", got.Rows[0].DocumentID)
 	}
-	if got.Rows[0].Region != "semantic_prefix" || got.Summary.Strategy != "semantic_first" {
+	if got.Rows[0].Region != "evidence_ranked" || got.Summary.Strategy != "semantic_first" {
 		t.Errorf("semantic-first provenance was not preserved through the production adapter: row=%+v summary=%+v", got.Rows[0], got.Summary)
 	}
 	if got.Rows[0].Explain.SemanticRank == 0 || got.Rows[0].Explain.Final != got.Rows[0].Final {
 		t.Errorf("explain was not preserved through the composition adapter: %+v", got.Rows[0])
+	}
+	explain := got.Rows[0].Explain
+	if explain.Base != 10000 || explain.Final != explain.Base+explain.RRF+explain.Graph+explain.Classification {
+		t.Fatalf("production adapter lost score arithmetic: %+v", explain)
 	}
 	if got.Summary.ModelFingerprint != emb.ID() {
 		t.Errorf("ModelFingerprint = %q, want %q", got.Summary.ModelFingerprint, emb.ID())

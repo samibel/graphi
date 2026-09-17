@@ -1,0 +1,1 @@
+PASS: The response accurately describes the bundled code at doc/rest_docs.go:179–183: empty lines remain unprefixed, non-empty lines receive the prefix at line start, and newlines reset bol. Its statement that space-containing lines receive the prefix is also supported.

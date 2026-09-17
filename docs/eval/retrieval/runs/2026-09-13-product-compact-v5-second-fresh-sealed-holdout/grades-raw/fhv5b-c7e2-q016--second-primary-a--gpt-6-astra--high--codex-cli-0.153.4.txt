@@ -1,0 +1,1 @@
+PASS: The response accurately describes saving both writers, redirecting them to one buffer, calling CheckErr(c.Usage()), restoring the originals, and returning bb.String(). Its citations and observation that restoration is explicit rather than deferred are supported by command.go:477–495.

@@ -1,0 +1,1 @@
+`indentString` preserves empty lines without adding the prefix. In `doc/rest_docs.go:179–183`, it adds the prefix only when `bol && c != '\n'`, appends every character unchanged, and sets `bol = c == '\n'`. Lines containing spaces still receive the prefix.

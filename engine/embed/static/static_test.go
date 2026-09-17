@@ -1679,6 +1679,25 @@ func newSyntheticModel(t testing.TB, dim int, padding any) *static.Model {
 	return m
 }
 
+func TestStatic_QueryDiagnosticsUseTheIDsThatProduceTheVector(t *testing.T) {
+	m := newSyntheticModel(t, 4, nil)
+
+	got, err := m.EmbedQueryWithDiagnostics(t.Context(), "? hello ?")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := m.Embed(t.Context(), []string{"? hello ?"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.UnknownTokens == nil || *got.UnknownTokens != 2 {
+		t.Fatalf("unknown tokens=%v, want 2", got.UnknownTokens)
+	}
+	if !reflect.DeepEqual(got.Vectors, want) {
+		t.Fatalf("diagnostic vector=%v ordinary vector=%v", got.Vectors, want)
+	}
+}
+
 // sha256Hex is a test helper that returns the lower-case hex SHA-256 of b.
 func sha256Hex(b []byte) string {
 	sum := sha256.Sum256(b)

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q053",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "c0c335cfcee5a6139face81894053faaa9317d26b14f0812039174d0288fc3a3",
+  "bundle_sha256": "81f6c8b3791aaa256103724914fe3d1f29c7ab69585dfdb155cdd79f49912439",
+  "prompt_sha256": "c5e8911fe42b51408b1c0a0fca5f10bd7e49e529e87e07713bf01359083717ca",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Enable `Command.TraverseChildren` by setting it to `true`. Cobra will then parse local flags on each parent before executing the descendant target.\n\nBy default, only the target command’s local flags are parsed and parent local flags are ignored (`site/content/user_guide.md`, lines 290–292). The `TraverseChildren bool` declaration confirms that it “parses flags on all parents before executing child command” (`command.go`, lines 224–225).",
+  "responded_at": "2026-09-13T15:28:11Z",
+  "sha256": "24596572e50c22837c49acf061985d6ad5fb6b1823068decb95cc6db49a2b37e"
+}

@@ -1,0 +1,3 @@
+Yes, but not with the default help flag. `InitDefaultHelpFlag` defines `--help` and `-h` as the same boolean via `c.Flags().BoolP("help", "h", ...)` (`command.go:1183–1198`), and execution only reads `GetBool("help")` (`command.go:894–905`).
+
+To distinguish them, define a custom `help` flag before initialization and handle `-h` separately. Cobra permits this override: initialization happens late “to allow for user overriding” (`command.go:883–886`), and `InitDefaultHelpFlag` does nothing when a `help` flag already exists (`command.go:1183–1188`).

@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 1ff5357ea4f9ebd636bae2c8e1410703b80f955af496f844fa221e36f685e516
+QUERY ID: fhv5-9f4c-q003
+
+QUESTION:
+How does activeHelpEnvVar derive the environment-variable name for a program?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- active_help.go:59-67 anchor="activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")" reason=It appends the suffix, uppercases the result, and replaces non-ASCII-alphanumeric name characters with underscores.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query b16edefccfa6; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"active_help.go","start_line":59,"end_line":60,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"active_help.go","start_line":46,"end_line":57,"text":"// GetActiveHelpConfig returns the value of the ActiveHelp environment variable\n// <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the root command in upper\n// case, with all non-ASCII-alphanumeric characters replaced by `_`.\n// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP\n// is set to \"0\".\nfunc GetActiveHelpConfig(cmd *Command) string {\n\tactiveHelpCfg := os.Getenv(activeHelpGlobalEnvVar)\n\tif activeHelpCfg != activeHelpGlobalDisable {\n\t\tactiveHelpCfg = os.Getenv(activeHelpEnvVar(cmd.Root().Name()))\n\t}\n\treturn activeHelpCfg\n}"},{"path":"active_help.go","start_line":60,"end_line":60,"text":"// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the"},{"path":"active_help.go","start_line":33,"end_line":33,"text":"var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)"},{"path":"active_help.go","start_line":62,"end_line":62,"text":"func activeHelpEnvVar(name string) string {"},{"path":"active_help.go","start_line":24,"end_line":31,"text":"const (\n\tactiveHelpMarker = \"_activeHelp_ \"\n\t// The below values should not be changed: programs will be using them explicitly\n\t// in their user documentation, and users will be using them explicitly.\n\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\"\n\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\"\n\tactiveHelpGlobalDisable = \"0\"\n)"},{"path":"command.go","start_line":1526,"end_line":1528,"text":"func (c *Command) hasNameOrAliasPrefix(prefix string) bool {\n\tif strings.HasPrefix(c.Name(), prefix) {\n\t\tc.commandCalledAs.name = c.Name()"},{"path":"site/content/active_help.md","start_line":94,"end_line":94,"text":"variable.  That variable is named `<PROGRAM>_ACTIVE_HELP` where `<PROGRAM>` is the name of your "},{"path":"command.go","start_line":66,"end_line":69,"text":"\t// SuggestFor is an array of command names for which this command will be suggested -\n\t// similar to aliases but only suggests.\n\tSuggestFor []string\n"}],"provenance":{"input_sha256":"c1d9e979b0b0ffbd34a890951b9023321276fe78fdc4bd6d010a862673b13629","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+It uppercases the program name, replaces characters outside `A–Z`, `0–9`, and `_` with `_`, then appends `_ACTIVE_HELP` (documented in `active_help.go:46–48`; replacement regex at line 33; suffix at lines 24–31).
+
+The caller supplies `cmd.Root().Name()` (`active_help.go:54`), and `Command.Name()` takes the part of `Use` before the first space (`command.go:1495–1503`).
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,1 @@
+PASS: The response accurately distinguishes inclusion versus omission of shorthand, preserves the branch-specific default-value handling, and explains usage normalization and the empty-message deprecation limitation. All claims and citations are supported by the bundle.

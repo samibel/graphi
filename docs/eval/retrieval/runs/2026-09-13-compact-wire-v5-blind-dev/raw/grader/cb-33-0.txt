@@ -1,0 +1,1 @@
+PASS: Flags, related local/inherited views, lazy initialization, and ResetFlags are accurately described from command.go:1641-1659, 1695-1701, and 1737-1749.

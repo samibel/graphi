@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 30,
+  "previous_sha256": "8a7784138e6952a67462c6b4487f2943f6bc7f730a99f813c2740aabf758ada2",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "bf383789dfd90513ade011e5f6303e9c0d73db5539ffab210db8a3050f7fb0d7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For already defined flags, call `cmd.MarkFlagsMutuallyExclusive(\"foo\", \"bar\")`. This variadic method marks the named set so using more than one flag violates the constraint (`flag_groups.go:64–66`). All flags in the group must be defined for the group to be considered (`flag_groups.go:128–129`). During completion, when one group member is present, the other members are marked hidden (`flag_groups.go:223`).\n",
+  "sha256": "0086d9d3081db3ee2ddb32f2e93977e52e66203e9feaf293b0cb02569b25eb8e"
+}

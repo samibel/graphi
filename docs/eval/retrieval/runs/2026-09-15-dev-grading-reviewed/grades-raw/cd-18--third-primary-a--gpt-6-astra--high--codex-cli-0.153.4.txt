@@ -1,0 +1,1 @@
+PASS: The response accurately describes the visible declarations, including defaultLinkHandler’s ReST link format and GenReST’s delegation to GenReSTCustom with that handler. All cited ranges support their attached claims, and the response acknowledges the transcript’s truncation.

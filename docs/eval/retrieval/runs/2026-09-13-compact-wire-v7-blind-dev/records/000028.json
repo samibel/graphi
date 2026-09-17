@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 28,
+  "previous_sha256": "6b417e9542bd4b410b653604584ba58b173232ebce5ec3c90bc9dbdcd106ac9b",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "4c40dc938739cf4110942198f0e4bec704cb734de8f23fa2aec1f83ca326cdee",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define a callback returning completion candidates and a `ShellCompDirective`, then register it for an existing flag:\n\n```go\nerr := cmd.RegisterFlagCompletionFunc(\"output\", func(\n    cmd *Command,\n    args []string,\n    toComplete string,\n) ([]string, ShellCompDirective) {\n    return []string{\"json\", \"yaml\"}, directive\n})\n```\n\nThe required signature appears in `completions.go:133`:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n```\n\nFor constant choices, use `FixedCompletions(choices, directive)`, which creates that callback (`completions.go:124-130`):\n\n```go\nerr := cmd.RegisterFlagCompletionFunc(\n    \"output\",\n    FixedCompletions([]string{\"json\", \"yaml\"}, directive),\n)\n```\n\n`RegisterFlagCompletionFunc` returns an error if the flag does not exist or already has a completion function (`completions.go:134-143`). A registered function can be retrieved with `GetFlagCompletionFunc` (`completions.go:148-160`).",
+  "sha256": "b9b6f2e8fd3744641ab9a4aaa2576763b99f047d53061fa701e6abbaa6a6ec2b"
+}

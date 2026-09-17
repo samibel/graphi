@@ -1,0 +1,1 @@
+PASS: The transcript shows OnInitialize appending functions to initializers and preRun invoking every function in registration order. It also supports the response’s claim that c.preRun() is called after the runnable check, and all cited locations exist and support their attached claims.

@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved implementation: it returns an error immediately for the first invalid positional argument, strips tab-separated descriptions before comparison, appends suggestions based on args[0], and returns nil when all arguments are valid or ValidArgs is empty. The cited transcript locations support these claims.

@@ -30,12 +30,17 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 )
 
 const (
 	// QrelBlindSmokeContractVersion identifies this evaluation's record shapes
 	// and decision procedure. A change to either requires a new version.
 	QrelBlindSmokeContractVersion = "sw280-qrel-blind-smoke-evaluation/1"
+	// QrelBlindSmokeContractVersion2 identifies the alternative record shape
+	// that binds a second-response transcript. Version 1 remains the default.
+	QrelBlindSmokeContractVersion2 = "sw280-qrel-blind-smoke-evaluation/2"
 
 	// QrelBlindSmokeEvaluationName is the ONLY permitted name for this
 	// evaluation. CheckQrelBlindSmokeWording requires it and rejects the
@@ -92,6 +97,27 @@ const timeLayout = time.RFC3339
 // readings a reader might use — "not no_hit" and "carries a grade-3 span" — are
 // BOTH computed, and a disagreement between them is refused rather than
 // resolved silently, because which one was used would then decide N.
+//
+// The development split does NOT behave this way, and the asymmetry is
+// deliberate (SW-282 AC-1). `AnswerableQueries` in population.go resolves the
+// same disagreement in favour of the contractual reading and carries on. The
+// difference is what the count is for:
+//
+//   - Here, N fixes the pre-registered minimum passing count k BEFORE any
+//     holdout response is opened. An ambiguous N would mean an ambiguous k, and
+//     a k that could be argued after the fact is not pre-registered at all. The
+//     only safe answer is to stop the run.
+//   - On the development split nothing is pre-registered. A development
+//     population is a measured quantity, not a commitment, and refusing every
+//     development measurement because one query is ambiguous would block the
+//     work that resolves the ambiguity. So the contract is read and the
+//     excluded query is named (`cb-31` on cobra-v2, five grade-2 judgements and
+//     no grade-3 span) in
+//     docs/eval/retrieval/answerable-population.json.
+//
+// Neither behaviour may be generalised over the other: relaxing this function
+// would let a disputed N choose k, and tightening AnswerableQueries would stop
+// development on an ambiguity it exists to record.
 func AnswerableHoldout(ds *Dataset) ([]Query, error) {
 	if ds == nil {
 		return nil, fmt.Errorf("retrieval %s: no dataset", QrelBlindSmokeEvaluationName)
@@ -155,6 +181,19 @@ type PassCountDerivation struct {
 // DerivePassCount derives k from N and records the derivation. The typed
 // UnsatisfiableBoundError is returned unchanged for N below the cliff.
 func DerivePassCount(n int, datasetSHA256, nSource string) (PassCountDerivation, error) {
+	return derivePassCount(QrelBlindSmokeContractVersion, n, datasetSHA256, nSource)
+}
+
+// DerivePassCountForContract records the unchanged k derivation under an
+// explicitly selected blind-evaluation contract version.
+func DerivePassCountForContract(contractVersion string, n int, datasetSHA256, nSource string) (PassCountDerivation, error) {
+	if contractVersion != QrelBlindSmokeContractVersion && contractVersion != QrelBlindSmokeContractVersion2 {
+		return PassCountDerivation{}, fmt.Errorf("retrieval %s: derivation contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, contractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	return derivePassCount(contractVersion, n, datasetSHA256, nSource)
+}
+
+func derivePassCount(contractVersion string, n int, datasetSHA256, nSource string) (PassCountDerivation, error) {
 	k, err := MinimumPassCount(n)
 	if err != nil {
 		return PassCountDerivation{}, err
@@ -164,7 +203,7 @@ func DerivePassCount(n int, datasetSHA256, nSource string) (PassCountDerivation,
 		return PassCountDerivation{}, err
 	}
 	derivation := PassCountDerivation{
-		ContractVersion:  QrelBlindSmokeContractVersion,
+		ContractVersion:  contractVersion,
 		Evaluation:       QrelBlindSmokeEvaluationName,
 		NSource:          nSource,
 		DatasetSHA256:    datasetSHA256,
@@ -188,8 +227,8 @@ func DerivePassCount(n int, datasetSHA256, nSource string) (PassCountDerivation,
 // ValidatePassCountDerivation re-derives k from the recorded N and refuses any
 // value that was not produced by MinimumPassCount.
 func ValidatePassCountDerivation(d PassCountDerivation) error {
-	if d.ContractVersion != QrelBlindSmokeContractVersion {
-		return fmt.Errorf("retrieval %s: derivation contract_version=%q, want %q", QrelBlindSmokeEvaluationName, d.ContractVersion, QrelBlindSmokeContractVersion)
+	if d.ContractVersion != QrelBlindSmokeContractVersion && d.ContractVersion != QrelBlindSmokeContractVersion2 {
+		return fmt.Errorf("retrieval %s: derivation contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, d.ContractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
 	}
 	if d.Evaluation != QrelBlindSmokeEvaluationName {
 		return fmt.Errorf("retrieval %s: derivation evaluation=%q, want %q", QrelBlindSmokeEvaluationName, d.Evaluation, QrelBlindSmokeEvaluationName)
@@ -197,7 +236,7 @@ func ValidatePassCountDerivation(d PassCountDerivation) error {
 	if d.Floor != FloorString() || d.LevelBasisPoints != QrelBlindSmokeLevelBasisPoints {
 		return fmt.Errorf("retrieval %s: derivation floor=%q level=%d, want %q and %d", QrelBlindSmokeEvaluationName, d.Floor, d.LevelBasisPoints, FloorString(), QrelBlindSmokeLevelBasisPoints)
 	}
-	want, err := DerivePassCount(d.N, d.DatasetSHA256, d.NSource)
+	want, err := derivePassCount(d.ContractVersion, d.N, d.DatasetSHA256, d.NSource)
 	if err != nil {
 		return err
 	}
@@ -244,6 +283,7 @@ type PreconditionRecord struct {
 	TokenizerID                string        `json:"tokenizer_id"`
 	TokenizerVocabularySHA256  string        `json:"tokenizer_vocabulary_sha256"`
 	MeasurementContractVersion string        `json:"measurement_contract_version"`
+	FollowupMaxLines           int           `json:"followup_max_lines,omitempty"`
 	ClaimWordingSHA256         string        `json:"claim_wording_sha256"`
 	Inputs                     []FrozenInput `json:"inputs"`
 	SHA256                     string        `json:"sha256"`
@@ -265,11 +305,35 @@ func FrozenClaimWording() string {
 	return ClaimTemplateExample + "\n" + RequiredClaimLimitation + "\n" + MeasurementContractVersion
 }
 
+// SecondResponseClaimWording binds the otherwise unchanged claim grammar to
+// the alternative measurement contract identity.
+func SecondResponseClaimWording() string {
+	return ClaimTemplateExample + "\n" + RequiredClaimLimitation + "\n" + MeasurementContractVersion2
+}
+
 // ValidatePreconditionRecord is the REFUSAL TO START. Every named field must be
 // present and well-shaped; there is no partial-record mode.
 func ValidatePreconditionRecord(rec PreconditionRecord) error {
-	if rec.ContractVersion != QrelBlindSmokeContractVersion {
-		return fmt.Errorf("retrieval %s: precondition contract_version=%q, want %q", QrelBlindSmokeEvaluationName, rec.ContractVersion, QrelBlindSmokeContractVersion)
+	wantClaimWording := ""
+	switch rec.ContractVersion {
+	case QrelBlindSmokeContractVersion:
+		if rec.FollowupMaxLines != 0 {
+			return fmt.Errorf("retrieval %s: precondition under %s has followup_max_lines=%d, but the second-response contract is not adopted under this version", QrelBlindSmokeEvaluationName, QrelBlindSmokeContractVersion, rec.FollowupMaxLines)
+		}
+		if rec.MeasurementContractVersion != MeasurementContractVersion {
+			return fmt.Errorf("retrieval %s: precondition under %s has measurement_contract_version=%q, want %q", QrelBlindSmokeEvaluationName, QrelBlindSmokeContractVersion, rec.MeasurementContractVersion, MeasurementContractVersion)
+		}
+		wantClaimWording = FrozenClaimWording()
+	case QrelBlindSmokeContractVersion2:
+		if rec.FollowupMaxLines != compactv9.FollowupMaxLines {
+			return fmt.Errorf("retrieval %s: precondition under %s has followup_max_lines=%d, want %d", QrelBlindSmokeEvaluationName, QrelBlindSmokeContractVersion2, rec.FollowupMaxLines, compactv9.FollowupMaxLines)
+		}
+		if rec.MeasurementContractVersion != MeasurementContractVersion2 {
+			return fmt.Errorf("retrieval %s: precondition under %s has measurement_contract_version=%q, want %q", QrelBlindSmokeEvaluationName, QrelBlindSmokeContractVersion2, rec.MeasurementContractVersion, MeasurementContractVersion2)
+		}
+		wantClaimWording = SecondResponseClaimWording()
+	default:
+		return fmt.Errorf("retrieval %s: precondition contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, rec.ContractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
 	}
 	if rec.Evaluation != QrelBlindSmokeEvaluationName {
 		return fmt.Errorf("retrieval %s: precondition evaluation=%q, want %q", QrelBlindSmokeEvaluationName, rec.Evaluation, QrelBlindSmokeEvaluationName)
@@ -311,10 +375,7 @@ func ValidatePreconditionRecord(rec PreconditionRecord) error {
 	if rec.ComparatorVersion != BlindEvalComparatorVersion {
 		return fmt.Errorf("retrieval %s: precondition comparator_version=%q, want %q", QrelBlindSmokeEvaluationName, rec.ComparatorVersion, BlindEvalComparatorVersion)
 	}
-	if rec.MeasurementContractVersion != MeasurementContractVersion {
-		return fmt.Errorf("retrieval %s: precondition measurement_contract_version=%q, want %q", QrelBlindSmokeEvaluationName, rec.MeasurementContractVersion, MeasurementContractVersion)
-	}
-	if rec.ClaimWordingSHA256 != SHA256Hex([]byte(FrozenClaimWording())) {
+	if rec.ClaimWordingSHA256 != SHA256Hex([]byte(wantClaimWording)) {
 		return fmt.Errorf("retrieval %s: precondition claim_wording_sha256 does not match the frozen claim wording", QrelBlindSmokeEvaluationName)
 	}
 	seen := map[string]bool{}
@@ -361,9 +422,10 @@ type InputHashComparison struct {
 // HashComparisonResult is the end-of-run comparison AC-1 requires and AC-13
 // makes the enforcement of "nothing changed after the evaluation ran".
 type HashComparisonResult struct {
-	ComparedAt  string                `json:"compared_at"`
-	Comparisons []InputHashComparison `json:"comparisons"`
-	AllMatch    bool                  `json:"all_match"`
+	ContractVersion string                `json:"contract_version,omitempty"`
+	ComparedAt      string                `json:"compared_at"`
+	Comparisons     []InputHashComparison `json:"comparisons"`
+	AllMatch        bool                  `json:"all_match"`
 }
 
 // ReadFileSHA256 is the seam the end-of-run comparison reads files through, so
@@ -377,7 +439,7 @@ func CompareFrozenInputs(rec PreconditionRecord, read ReadFileSHA256, at time.Ti
 	if read == nil {
 		return HashComparisonResult{}, fmt.Errorf("retrieval %s: end-of-run comparison needs a reader", QrelBlindSmokeEvaluationName)
 	}
-	result := HashComparisonResult{ComparedAt: at.UTC().Format(timeLayout), AllMatch: true}
+	result := HashComparisonResult{ContractVersion: rec.ContractVersion, ComparedAt: at.UTC().Format(timeLayout), AllMatch: true}
 	frozen := append([]FrozenInput{
 		{Role: "dataset", Path: rec.DatasetPath, SHA256: rec.DatasetSHA256},
 	}, rec.Inputs...)
@@ -422,11 +484,14 @@ type PreRegisteredQuery struct {
 	// pre-registered bundle bytes and query text and requires the committed
 	// prompt file to be byte-identical, so the digest is a pure function of
 	// pre-registered content either way.
-	PromptSHA256      string              `json:"prompt_sha256,omitempty"`
-	BundleSHA256      string              `json:"bundle_sha256"`
-	BundleByteCount   int                 `json:"bundle_byte_count"`
-	BundleBoundary    PayloadBoundary     `json:"bundle_boundary"`
-	BundleTokenCounts []PayloadTokenCount `json:"bundle_token_counts"`
+	PromptSHA256        string              `json:"prompt_sha256,omitempty"`
+	BundleSHA256        string              `json:"bundle_sha256"`
+	BundleByteCount     int                 `json:"bundle_byte_count"`
+	BundleBoundary      PayloadBoundary     `json:"bundle_boundary"`
+	BundleTokenCounts   []PayloadTokenCount `json:"bundle_token_counts"`
+	FollowupSHA256      string              `json:"followup_sha256,omitempty"`
+	FollowupByteCount   int                 `json:"followup_byte_count,omitempty"`
+	FollowupTokenCounts []PayloadTokenCount `json:"followup_token_counts,omitempty"`
 }
 
 // PreRegistration is written and committed BEFORE the first rater response
@@ -483,9 +548,24 @@ func validateParticipant(p Participant, wantRole string) error {
 // ValidatePreRegistration checks the record's internal consistency, re-derives
 // k from N, and refuses a population that does not match the pre-registered
 // query list.
-func ValidatePreRegistration(pre PreRegistration) error {
-	if pre.ContractVersion != QrelBlindSmokeContractVersion {
-		return fmt.Errorf("retrieval %s: pre-registration contract_version=%q, want %q", QrelBlindSmokeEvaluationName, pre.ContractVersion, QrelBlindSmokeContractVersion)
+func ValidatePreRegistration(pre PreRegistration, preconditions ...PreconditionRecord) error {
+	if pre.ContractVersion != QrelBlindSmokeContractVersion && pre.ContractVersion != QrelBlindSmokeContractVersion2 {
+		return fmt.Errorf("retrieval %s: pre-registration contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, pre.ContractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	if len(preconditions) > 1 {
+		return fmt.Errorf("retrieval %s: pre-registration validation received %d precondition records, want at most one", QrelBlindSmokeEvaluationName, len(preconditions))
+	}
+	if len(preconditions) == 1 {
+		precondition := preconditions[0]
+		if err := ValidatePreconditionRecord(precondition); err != nil {
+			return err
+		}
+		if pre.PreconditionSHA256 != precondition.SHA256 {
+			return fmt.Errorf("retrieval %s: pre-registration names precondition %q, but the supplied record addresses to %q", QrelBlindSmokeEvaluationName, pre.PreconditionSHA256, precondition.SHA256)
+		}
+		if pre.ContractVersion != precondition.ContractVersion {
+			return fmt.Errorf("retrieval %s: pre-registration contract_version=%q does not match its precondition contract_version=%q", QrelBlindSmokeEvaluationName, pre.ContractVersion, precondition.ContractVersion)
+		}
 	}
 	if pre.Evaluation != QrelBlindSmokeEvaluationName {
 		return fmt.Errorf("retrieval %s: pre-registration evaluation=%q, want %q", QrelBlindSmokeEvaluationName, pre.Evaluation, QrelBlindSmokeEvaluationName)
@@ -503,6 +583,9 @@ func ValidatePreRegistration(pre PreRegistration) error {
 	_ = recordedAt
 	if err := ValidatePassCountDerivation(pre.Derivation); err != nil {
 		return err
+	}
+	if pre.Derivation.ContractVersion != pre.ContractVersion {
+		return fmt.Errorf("retrieval %s: pre-registration contract_version=%q does not match its derivation contract_version=%q", QrelBlindSmokeEvaluationName, pre.ContractVersion, pre.Derivation.ContractVersion)
 	}
 	if len(pre.PrimaryRaters) != 2 {
 		return fmt.Errorf("retrieval %s: %d primary raters recorded, want exactly 2", QrelBlindSmokeEvaluationName, len(pre.PrimaryRaters))
@@ -560,6 +643,37 @@ func ValidatePreRegistration(pre PreRegistration) error {
 		if len(q.BundleTokenCounts) != 2 {
 			return fmt.Errorf("retrieval %s: query %q records %d token counts, want the whitespace counter and the pinned real tokenizer", QrelBlindSmokeEvaluationName, q.QueryID, len(q.BundleTokenCounts))
 		}
+		followupFields := 0
+		if q.FollowupSHA256 != "" {
+			followupFields++
+		}
+		if q.FollowupByteCount != 0 {
+			followupFields++
+		}
+		if len(q.FollowupTokenCounts) != 0 {
+			followupFields++
+		}
+		switch pre.ContractVersion {
+		case QrelBlindSmokeContractVersion:
+			if followupFields != 0 {
+				return fmt.Errorf("retrieval %s: query %q records follow-up fields under %s, which accepts only the one-response bundle", QrelBlindSmokeEvaluationName, q.QueryID, QrelBlindSmokeContractVersion)
+			}
+		case QrelBlindSmokeContractVersion2:
+			if followupFields != 0 && followupFields != 3 {
+				return fmt.Errorf("retrieval %s: query %q under %s must record followup_sha256, followup_byte_count and followup_token_counts all together or all absent", QrelBlindSmokeEvaluationName, q.QueryID, QrelBlindSmokeContractVersion2)
+			}
+			if followupFields == 3 {
+				if !isLowerHexDigest(q.FollowupSHA256, 64) {
+					return fmt.Errorf("retrieval %s: query %q under %s has a malformed followup_sha256", QrelBlindSmokeEvaluationName, q.QueryID, QrelBlindSmokeContractVersion2)
+				}
+				if q.FollowupByteCount <= 0 {
+					return fmt.Errorf("retrieval %s: query %q under %s has an empty follow-up read", QrelBlindSmokeEvaluationName, q.QueryID, QrelBlindSmokeContractVersion2)
+				}
+				if len(q.FollowupTokenCounts) != 2 {
+					return fmt.Errorf("retrieval %s: query %q under %s records %d follow-up token counts, want the whitespace counter and the pinned real tokenizer", QrelBlindSmokeEvaluationName, q.QueryID, QrelBlindSmokeContractVersion2, len(q.FollowupTokenCounts))
+				}
+			}
+		}
 	}
 	address, err := ContentAddress(pre, func(v *PreRegistration) { v.SHA256 = "" })
 	if err != nil {
@@ -611,8 +725,8 @@ var permittedRaterInputs = map[string]bool{
 
 // ValidateRaterResponse checks one response in isolation.
 func ValidateRaterResponse(r RaterResponse) error {
-	if r.ContractVersion != QrelBlindSmokeContractVersion {
-		return fmt.Errorf("retrieval %s: response contract_version=%q, want %q", QrelBlindSmokeEvaluationName, r.ContractVersion, QrelBlindSmokeContractVersion)
+	if r.ContractVersion != QrelBlindSmokeContractVersion && r.ContractVersion != QrelBlindSmokeContractVersion2 {
+		return fmt.Errorf("retrieval %s: response contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, r.ContractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
 	}
 	if r.Evaluation != QrelBlindSmokeEvaluationName {
 		return fmt.Errorf("retrieval %s: response evaluation=%q, want %q", QrelBlindSmokeEvaluationName, r.Evaluation, QrelBlindSmokeEvaluationName)
@@ -690,8 +804,8 @@ type Grade struct {
 
 // ValidateGrade checks one grade in isolation.
 func ValidateGrade(g Grade) error {
-	if g.ContractVersion != QrelBlindSmokeContractVersion {
-		return fmt.Errorf("retrieval %s: grade contract_version=%q, want %q", QrelBlindSmokeEvaluationName, g.ContractVersion, QrelBlindSmokeContractVersion)
+	if g.ContractVersion != QrelBlindSmokeContractVersion && g.ContractVersion != QrelBlindSmokeContractVersion2 {
+		return fmt.Errorf("retrieval %s: grade contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, g.ContractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
 	}
 	if g.Evaluation != QrelBlindSmokeEvaluationName {
 		return fmt.Errorf("retrieval %s: grade evaluation=%q, want %q", QrelBlindSmokeEvaluationName, g.Evaluation, QrelBlindSmokeEvaluationName)
@@ -745,6 +859,10 @@ func ValidateGrade(g Grade) error {
 // the digest chain, which a later record genuinely cannot forge backwards, plus
 // an explicit statement of what the chain does NOT establish.
 type DisclosureRecord struct {
+	// ContractVersion is absent on adjudications sealed before version 2
+	// existed; an absent value is version 1 and is only accepted in a
+	// version-1 run.
+	ContractVersion           string   `json:"contract_version,omitempty"`
 	QueryID                   string   `json:"query_id"`
 	AdjudicatorResponseSHA256 string   `json:"adjudicator_response_sha256"`
 	DisclosedArtifactSHA256   []string `json:"disclosed_artifact_sha256"`
@@ -768,9 +886,13 @@ const (
 
 // Adjudication is one adjudicated query.
 type Adjudication struct {
-	QueryID    string           `json:"query_id"`
-	Response   RaterResponse    `json:"response"`
-	Disclosure DisclosureRecord `json:"disclosure"`
+	// ContractVersion is absent on adjudications sealed before version 2
+	// existed; an absent value is version 1 and is only accepted in a
+	// version-1 run.
+	ContractVersion string           `json:"contract_version,omitempty"`
+	QueryID         string           `json:"query_id"`
+	Response        RaterResponse    `json:"response"`
+	Disclosure      DisclosureRecord `json:"disclosure"`
 }
 
 // ---------------------------------------------------------------------------
@@ -883,6 +1005,26 @@ func checkResponseIdentity(pre PreRegistration, r RaterResponse) error {
 	}
 }
 
+// legacyContractVersion reads an absent contract_version — a record sealed
+// before the field existed — as version 1. The run-version check then
+// refuses it in any version-2 run, which is the only place it could mislead.
+func legacyContractVersion(got string) string {
+	if got == "" {
+		return QrelBlindSmokeContractVersion
+	}
+	return got
+}
+
+func checkRunContractVersion(record, queryID, got, want string) error {
+	if got != QrelBlindSmokeContractVersion && got != QrelBlindSmokeContractVersion2 {
+		return fmt.Errorf("retrieval %s: query %s %s contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, queryID, record, got, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	if got != want {
+		return fmt.Errorf("retrieval %s: query %s %s contract_version=%q differs from the pre-registration contract_version=%q", QrelBlindSmokeEvaluationName, queryID, record, got, want)
+	}
+	return nil
+}
+
 // CheckPrecedence proves, from the artifacts alone, that the pre-registration
 // preceded every response and that every response was answered from the
 // pre-registered inputs. It fails on a response that is missing from the
@@ -901,6 +1043,9 @@ func CheckPrecedence(a EvaluationArtifacts) error {
 	slots := map[string]bool{}
 	for _, r := range a.Responses {
 		if err := ValidateRaterResponse(r); err != nil {
+			return err
+		}
+		if err := checkRunContractVersion("response", r.QueryID, r.ContractVersion, pre.ContractVersion); err != nil {
 			return err
 		}
 		if r.PreRegistrationSHA256 != pre.SHA256 {
@@ -964,14 +1109,23 @@ func CheckGradeBinding(a EvaluationArtifacts) error {
 	}
 	responses := map[string]RaterResponse{}
 	for _, r := range a.Responses {
+		if err := checkRunContractVersion("response", r.QueryID, r.ContractVersion, a.PreRegistration.ContractVersion); err != nil {
+			return err
+		}
 		responses[r.SHA256] = r
 	}
 	for _, adj := range a.Adjudications {
+		if err := checkRunContractVersion("adjudicator response", adj.QueryID, adj.Response.ContractVersion, a.PreRegistration.ContractVersion); err != nil {
+			return err
+		}
 		responses[adj.Response.SHA256] = adj.Response
 	}
 	graded := map[string]bool{}
 	for _, g := range a.Grades {
 		if err := ValidateGrade(g); err != nil {
+			return err
+		}
+		if err := checkRunContractVersion("grade", g.QueryID, g.ContractVersion, a.PreRegistration.ContractVersion); err != nil {
 			return err
 		}
 		r, ok := responses[g.ResponseSHA256]
@@ -1033,11 +1187,20 @@ func CheckAdjudicationOrder(a EvaluationArtifacts) error {
 	}
 	seen := map[string]bool{}
 	for _, adj := range a.Adjudications {
+		if err := checkRunContractVersion("adjudication", adj.QueryID, legacyContractVersion(adj.ContractVersion), a.PreRegistration.ContractVersion); err != nil {
+			return err
+		}
+		if err := checkRunContractVersion("disclosure", adj.QueryID, legacyContractVersion(adj.Disclosure.ContractVersion), a.PreRegistration.ContractVersion); err != nil {
+			return err
+		}
 		if seen[adj.QueryID] {
 			return fmt.Errorf("retrieval %s: query %s is adjudicated twice", QrelBlindSmokeEvaluationName, adj.QueryID)
 		}
 		seen[adj.QueryID] = true
 		if err := ValidateRaterResponse(adj.Response); err != nil {
+			return err
+		}
+		if err := checkRunContractVersion("adjudicator response", adj.QueryID, adj.Response.ContractVersion, a.PreRegistration.ContractVersion); err != nil {
 			return err
 		}
 		if adj.Response.Role != RaterRoleAdjudicator {
@@ -1515,11 +1678,14 @@ func EvaluateQrelBlindSmoke(a EvaluationArtifacts, comparison HashComparisonResu
 	if err := ValidatePreconditionRecord(a.Precondition); err != nil {
 		return EvaluationOutcome{}, err
 	}
-	if err := ValidatePreRegistration(a.PreRegistration); err != nil {
+	if err := ValidatePreRegistration(a.PreRegistration, a.Precondition); err != nil {
 		return EvaluationOutcome{}, err
 	}
 	if a.PreRegistration.PreconditionSHA256 != a.Precondition.SHA256 {
 		return EvaluationOutcome{}, fmt.Errorf("retrieval %s: the pre-registration names precondition %q but the supplied record addresses to %q", QrelBlindSmokeEvaluationName, a.PreRegistration.PreconditionSHA256, a.Precondition.SHA256)
+	}
+	if comparison.ContractVersion != "" && comparison.ContractVersion != a.PreRegistration.ContractVersion {
+		return EvaluationOutcome{}, fmt.Errorf("retrieval %s: end-of-run hash comparison contract_version=%q differs from the pre-registration contract_version=%q", QrelBlindSmokeEvaluationName, comparison.ContractVersion, a.PreRegistration.ContractVersion)
 	}
 	if err := CheckPrecedence(a); err != nil {
 		return EvaluationOutcome{}, err
@@ -1532,7 +1698,7 @@ func EvaluateQrelBlindSmoke(a EvaluationArtifacts, comparison HashComparisonResu
 	}
 
 	out := EvaluationOutcome{
-		ContractVersion:       QrelBlindSmokeContractVersion,
+		ContractVersion:       a.PreRegistration.ContractVersion,
 		Evaluation:            QrelBlindSmokeEvaluationName,
 		PreconditionSHA256:    a.Precondition.SHA256,
 		PreRegistrationSHA256: a.PreRegistration.SHA256,
@@ -1647,7 +1813,7 @@ func EvaluateQrelBlindSmoke(a EvaluationArtifacts, comparison HashComparisonResu
 // participants and no pass count, because none of those exist yet.
 func UnsatisfiableOutcome(precondition PreconditionRecord, n int, reason error) EvaluationOutcome {
 	return EvaluationOutcome{
-		ContractVersion:    QrelBlindSmokeContractVersion,
+		ContractVersion:    precondition.ContractVersion,
 		Evaluation:         QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
 		N:                  n,
@@ -1664,6 +1830,12 @@ func UnsatisfiableOutcome(precondition PreconditionRecord, n int, reason error) 
 // re-derived from N, the pass count is recounted, and the release result is
 // recomputed from the comparison.
 func ValidateEvaluationOutcome(got EvaluationOutcome, a EvaluationArtifacts) error {
+	if got.ContractVersion != QrelBlindSmokeContractVersion && got.ContractVersion != QrelBlindSmokeContractVersion2 {
+		return fmt.Errorf("retrieval %s: outcome contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, got.ContractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	if got.ContractVersion != a.PreRegistration.ContractVersion {
+		return fmt.Errorf("retrieval %s: outcome contract_version=%q differs from the pre-registration contract_version=%q", QrelBlindSmokeEvaluationName, got.ContractVersion, a.PreRegistration.ContractVersion)
+	}
 	want, err := EvaluateQrelBlindSmoke(a, got.EndOfRunComparison)
 	if err != nil {
 		return err

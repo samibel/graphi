@@ -1,0 +1,49 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f9f0c4449a14e6997db68dd0ceeed2a0c4251cfd02599d23be0b8f544ef77e5f
+FOLLOW-UP READ CONTENT ADDRESS: 50bf6f386507d278a4eb2f3d74c2fc470501edeefab6539c230ebff85470e6da
+QUERY ID: c17u4-q-178ab4315fe0
+
+QUESTION:
+How is an unexpected positional argument reported when a command accepts none?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:41-47 anchor="func NoArgs(cmd *Command, args []string) error" reason=The validator reports the first argument and command path, otherwise succeeds.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"6 ranked source span(s); query c3b0bf93c9dd; read in order (312/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/user_guide.md","start_line":372,"end_line":384,"text":"- Number of arguments:\n  - `NoArgs` - report an error if there are any positional args.\n  - `ArbitraryArgs` - accept any number of args.\n  - `MinimumNArgs(int)` - report an error if less than N positional args are provided.\n  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args.\n  - `RangeArgs(min, max)` - report an error if the number of args is not between `min` and `max`.\n- Content of the arguments:\n  - `OnlyValidArgs` - report an error if there are any positional args not specified in the `ValidArgs` field of `Command`, which can optionally be set to a list of valid values for positional args.\n\nIf `Args` is undefined or `nil`, it defaults to `ArbitraryArgs`.\n\nMoreover, `MatchAll(pargs ...PositionalArgs)` enables combining existing checks with arbitrary other checks."},{"path":"args.go","start_line":21,"end_line":22,"text":"\ntype PositionalArgs func(cmd *Command, args []string) error"},{"path":"zsh_completions.go","start_line":60,"end_line":68,"text":"// been disabled.\n// To achieve the same behavior across all shells, one can use\n// ValidArgs (for the first argument only) or ValidArgsFunction for\n// any argument (can include the first one also).\n//\n// Deprecated\nfunc (c *Command) MarkZshCompPositionalArgumentWords(argPosition int, words ...string) error {\n\treturn nil\n}"},{"path":"zsh_completions.go","start_line":49,"end_line":57,"text":"// default for every argument. One can disable file completion on a per-argument\n// basis by using ValidArgsFunction and ShellCompDirectiveNoFileComp.\n// To achieve file extension filtering, one can use ValidArgsFunction and\n// ShellCompDirectiveFilterFileExt.\n//\n// Deprecated\nfunc (c *Command) MarkZshCompPositionalArgumentFile(argPosition int, patterns ...string) error {\n\treturn nil\n}"},{"path":"command.go","start_line":1138,"end_line":1144,"text":"\nfunc (c *Command) ValidateArgs(args []string) error {\n\tif c.Args == nil {\n\t\treturn ArbitraryArgs(c, args)\n\t}\n\treturn c.Args(c, args)\n}"},{"path":"args.go","start_line":82,"end_line":91,"text":"\n// MaximumNArgs returns an error if there are more than N args.\nfunc MaximumNArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) > n {\n\t\t\treturn fmt.Errorf(\"accepts at most %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"}],"provenance":{"input_sha256":"1eb23a32af677b9d0ec68842a107ab5c3573779416dafd714f3cf7928d3fae78","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/user_guide.md:367-421"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/user_guide.md","start_line":367,"end_line":421,"text":"## Positional and Custom Arguments\n\nValidation of positional arguments can be specified using the `Args` field of `Command`.\nThe following validators are built in:\n\n- Number of arguments:\n  - `NoArgs` - report an error if there are any positional args.\n  - `ArbitraryArgs` - accept any number of args.\n  - `MinimumNArgs(int)` - report an error if less than N positional args are provided.\n  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args.\n  - `RangeArgs(min, max)` - report an error if the number of args is not between `min` and `max`.\n- Content of the arguments:\n  - `OnlyValidArgs` - report an error if there are any positional args not specified in the `ValidArgs` field of `Command`, which can optionally be set to a list of valid values for positional args.\n\nIf `Args` is undefined or `nil`, it defaults to `ArbitraryArgs`.\n\nMoreover, `MatchAll(pargs ...PositionalArgs)` enables combining existing checks with arbitrary other checks.\nFor instance, if you want to report an error if there are not exactly N positional args OR if there are any positional\nargs that are not in the `ValidArgs` field of `Command`, you can call `MatchAll` on `ExactArgs` and `OnlyValidArgs`, as\nshown below:\n\n```go\nvar cmd = \u0026cobra.Command{\n  Short: \"hello\",\n  Args: cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),\n  Run: func(cmd *cobra.Command, args []string) {\n    fmt.Println(\"Hello, World!\")\n  },\n}\n```\n\nIt is possible to set any custom validator that satisfies `func(cmd *cobra.Command, args []string) error`.\nFor example:\n\n```go\nvar cmd = \u0026cobra.Command{\n  Short: \"hello\",\n  Args: func(cmd *cobra.Command, args []string) error {\n    // Optionally run one of the validators provided by cobra\n    if err := cobra.MinimumNArgs(1)(cmd, args); err != nil {\n        return err\n    }\n    // Run the custom validation logic\n    if myapp.IsValidColor(args[0]) {\n      return nil\n    }\n    return fmt.Errorf(\"invalid color specified: %s\", args[0])\n  },\n  Run: func(cmd *cobra.Command, args []string) {\n    fmt.Println(\"Hello, World!\")\n  },\n}\n```\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT
+`site/content/user_guide.md:373` says `NoArgs` reports an error for any positional argument, but the responses omit its implementation and the error message used to report the unexpected argument.
+----- END THE RATER'S RESPONSE -----

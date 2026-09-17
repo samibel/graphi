@@ -1,0 +1,1 @@
+PASS: The caller procedure and generator behavior are concrete and fully supported by the supplied doc/man_docs.go comments, signature, and body.

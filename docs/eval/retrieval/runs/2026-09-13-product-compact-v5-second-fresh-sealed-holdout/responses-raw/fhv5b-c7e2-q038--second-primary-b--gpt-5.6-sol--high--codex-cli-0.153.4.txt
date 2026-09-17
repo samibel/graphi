@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the `writeFlagHandler` logic that maps filename, custom-handler, and subdirectory annotation keys to legacy Bash completion handlers.

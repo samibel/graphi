@@ -1,0 +1,9 @@
+Cobra checks whether `c.Deprecated` is nonempty and prints a warning using `c.Printf` (`command.go`, lines 879–881):
+
+```go
+if len(c.Deprecated) > 0 {
+    c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)
+}
+```
+
+The warning includes the quoted command name and its deprecation message: `Command "name" is deprecated, <message>`.

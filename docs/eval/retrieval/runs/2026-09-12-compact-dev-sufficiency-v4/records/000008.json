@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 8,
+  "previous_sha256": "ec031367a30e0dc22036a81a813fb05ebbb74e9b28897b362fc424026ab0e213",
+  "kind": "response",
+  "query_id": "cb-11",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "70353ad789ba5c9048d0eef0b2da269e3331beacba384d3dc3e8b627462d1827",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Required flags are validated by `(*Command).ValidateRequiredFlags()` in `command.go:1146–1148`; its comment says it checks that all required flags are present and returns an error otherwise. The snippet also shows it visiting the flags with `flags.VisitAll` at `command.go:1154`. Required flags are marked through `MarkFlagRequired` in `shell_completions.go:21–26`. The response does not show the execution-site call, so it does not establish the precise ordering relative to command hooks.\n",
+  "sha256": "042229fbde9a0aebc1822d52cbfeb4a3a3749ee3519411403d87179fab47e1ad"
+}

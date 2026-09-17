@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q043",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "d3d5a503526b254174c392efeda7aedca418cf585306f6ca67c8cdaeb80ecfd9",
+  "bundle_sha256": "886f995592a120429448548c4726258cd38f7d8b151a902f58322d3928fe8f47",
+  "prompt_sha256": "daabbf017c8d694d82019a73358b09a808adc9d1c044608c8734e0bcfa17b14a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows routing for three APIs in `powershell_completions.go`, but only names `GenPowerShellCompletionFileWithDesc()` in `site/content/completions/_index.md:519` without showing its implementation or helper call.",
+  "responded_at": "2026-09-13T15:26:48Z",
+  "sha256": "a50390793ec2cfc5fc88e9c9fd8aa88ffc46bfc37794b49789cabc03dc435796"
+}

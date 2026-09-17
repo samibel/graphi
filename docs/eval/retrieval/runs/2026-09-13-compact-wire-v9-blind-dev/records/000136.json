@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 136,
+  "previous_sha256": "729077a57bc793a283f29e58b020ba7769cb406f46c7573b44b9c1c2e5267eaa",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f199f48ca38d77e26073db94a751da68c6fd178abaa5ba479cdd71c2b1a90825",
+  "outcome": "pass",
+  "rationale": "The candidate concretely gives the exact callback signature supported by `command.go:87-89`, correctly shows assigning it to `ValidArgsFunction` for positional arguments, and correctly uses `RegisterFlagCompletionFunc` for flags as supported by `completions.go:132-146`. Its statement about missing-flag and duplicate-registration errors is explicitly supported by that span. The `FixedCompletions(choices, directive)` alternative is supported by `completions.go:124-127`. It also appropriately notes that the preserved bundle does not expose the directive constants or meanings, since the only directive-constant source is the bare `completions.go:54` line.\n",
+  "sha256": "0ff39ad4aabe0296293a6ae75e1c3d124162a1db935f4eeef4919719b276031c"
+}

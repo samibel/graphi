@@ -1,0 +1,1 @@
+PASS: The response directly states that DisableFlagParsing disables parsing and passes all flags to the command as arguments, exactly supported by the cited command.go:236–237 span in the bundle.

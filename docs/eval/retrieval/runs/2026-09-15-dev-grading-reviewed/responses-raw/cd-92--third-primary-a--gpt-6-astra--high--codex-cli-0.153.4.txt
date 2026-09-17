@@ -1,0 +1,10 @@
+Configure completion options through the **root command’s `CompletionOptions` field** (`site/content/completions/_index.md:94–95`).
+
+`CompletionOptions` contains four boolean fields (`completions.go:104–116`):
+
+| Field | Effect |
+|---|---|
+| `DisableDefaultCmd` | Prevents creation of the default `completion` command. |
+| `DisableNoDescFlag` | Prevents creation of `--no-descriptions` for shells supporting descriptions. |
+| `DisableDescriptions` | Turns off completion descriptions for shells supporting them. |
+| `HiddenDefaultCmd` | Hides the default `completion` command. |

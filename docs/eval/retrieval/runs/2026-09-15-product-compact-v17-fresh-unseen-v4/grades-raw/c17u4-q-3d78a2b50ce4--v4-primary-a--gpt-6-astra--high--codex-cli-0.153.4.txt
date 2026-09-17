@@ -1,0 +1,1 @@
+FAIL: The response’s child-target and flag claims are supported by the bundle, but it omits the essential reviewed behavior: invoking root help for the child displays the child’s long description without error. The bundle does not contain that test or its long-description assertion.

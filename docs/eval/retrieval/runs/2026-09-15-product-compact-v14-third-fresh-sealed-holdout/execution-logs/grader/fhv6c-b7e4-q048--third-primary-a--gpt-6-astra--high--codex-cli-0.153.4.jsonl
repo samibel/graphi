@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-56f0-7083-925c-d4bf71a3f188"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer where to attach the function or when it runs. The transcript shows only that GenBashCompletion embeds c.BashCompletionFunction; it does not establish root-command attachment or invocation when built-in completion cannot resolve a completion."}}
+{"type":"turn.completed","usage":{"input_tokens":18433,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

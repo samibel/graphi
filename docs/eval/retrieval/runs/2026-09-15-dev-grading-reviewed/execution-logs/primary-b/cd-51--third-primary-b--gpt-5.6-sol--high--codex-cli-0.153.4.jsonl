@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-86bb-76a1-b65a-8bc74043eed9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Append the description to each completion value, separated by a tab (`\\t`). This works with `ValidArgs`, `ValidArgsFunction`, and `RegisterFlagCompletionFunc()` (`site/content/completions/_index.md:371-372`).\n\n```go\nValidArgs: []string{\n    \"bash\\tCompletions for bash\",\n    \"zsh\\tCompletions for zsh\",\n}\n```\n\nA dynamic example returns values such as `\"harbor\\tAn image registry\"` from `ValidArgsFunction` (`site/content/completions/_index.md:374-381`). Note that descriptions in Bash require completion V2 (`site/content/completions/_index.md:357-358`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17116,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":146,"reasoning_output_tokens":0}}

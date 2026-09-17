@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 15,
+  "previous_sha256": "8cd3640fc5c09706c82e6606d904cc4ad86a642508564cc06124503ebaafee8b",
+  "kind": "response",
+  "query_id": "cb-20",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "6ce2bd547cb237202c2b2920bad32b8afe525d0ef5cb948478b8dd92b1fdf695",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Persistent flags propagate when a child’s applicable flags are assembled:\n\n- `PersistentFlags()` stores flags declared persistently on the current command (`command.go:1725-1735`).\n- `mergePersistentFlags()` calls `updateParentsPflags()`, then adds both the command’s own persistent flags and `parentsPflags` to `c.Flags()` (`command.go:1847-1853`).\n- Individual lookup similarly checks the current command first, then refreshes and searches `parentsPflags` (`persistentFlag`, `command.go:1805-1816`).\n\nThus, a child receives missing persistent flags collected from its parents, while non-persistent local flags explicitly do not propagate (`LocalNonPersistentFlags`, `command.go:1654-1666`).",
+  "sha256": "7631cc28266e3de12326709c3fd92ae5efde567f4a02e89120fda646e7ac64be"
+}

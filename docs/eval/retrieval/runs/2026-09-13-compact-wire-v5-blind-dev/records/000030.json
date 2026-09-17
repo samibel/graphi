@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 30,
+  "previous_sha256": "a167b83486a0c68c12fd9734accca3c18acda29518158f088b101e51cabb4445",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "398642063923a4531ef7d61aa4c0e07e363c153c20e3834efc6e91bfedc9bbb9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "After defining the flags, call `cmd.MarkFlagsMutuallyExclusive(\"flagA\", \"flagB\", ...)`. Cobra merges persistent flags, verifies every name exists, and annotates every member with the space-joined group; invoking the command with more than one member then errors (`flag_groups.go:62-78`). A missing flag name causes a panic, and separate calls create separate groups so a flag can belong to multiple groups (`flag_groups.go:67-77`).\n",
+  "sha256": "8919832b7110ba48f41f751b709929f4bf5f11866172c4672c9db0522a8ff0bf"
+}

@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: a50390793ec2cfc5fc88e9c9fd8aa88ffc46bfc37794b49789cabc03dc435796
+QUERY ID: fhv5b-c7e2-q043
+
+QUESTION:
+How are the four public PowerShell completion APIs routed through common writer and file helpers?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- powershell_completions.go:288-325 anchor="return c.genPowerShellCompletionFile(filename, true)" reason=Common helpers render to a buffer or create a file; public variants select file versus writer and false versus true for descriptions before delegating.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query d3d5a503526b; read in order (320/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"site/content/completions/_index.md","start_line":511,"end_line":523,"text":"  * `MarkFlagFilename()` and `MarkPersistentFlagFilename()` (filtering by file extension)\n  * `MarkFlagDirname()` and `MarkPersistentFlagDirname()` (filtering by directory)\n* Similarly, the following completion directives are not supported and will be ignored for `fish`:\n  * `ShellCompDirectiveFilterFileExt` (filtering by file extension)\n  * `ShellCompDirectiveFilterDirs` (filtering by directory)\n\n## PowerShell completions\n\nCobra supports native PowerShell completions generated from the root `cobra.Command`. You can use the `command.GenPowerShellCompletion()` or `command.GenPowerShellCompletionFile()` functions. To include descriptions use `command.GenPowerShellCompletionWithDesc()` and `command.GenPowerShellCompletionFileWithDesc()`. Cobra will provide the description automatically based on usage information. You can choose to make this option configurable by your users.\n\nThe script is designed to support all three PowerShell completion modes:\n\n* TabCompleteNext (default windows style - on each key press the next option is displayed)"},{"path":"powershell_completions.go","start_line":310,"end_line":314,"text":"// GenPowerShellCompletion generates powershell completion file without descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenPowerShellCompletion(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, false)\n}"},{"path":"powershell_completions.go","start_line":288,"end_line":293,"text":"func (c *Command) genPowerShellCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)\n\tgenPowerShellComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"},{"path":"powershell_completions.go","start_line":321,"end_line":325,"text":"// GenPowerShellCompletionWithDesc generates powershell completion file with descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, true)\n}"},{"path":"powershell_completions.go","start_line":295,"end_line":303,"text":"func (c *Command) genPowerShellCompletionFile(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer outFile.Close()\n\n\treturn c.genPowerShellCompletion(outFile, includeDesc)\n}"},{"path":"powershell_completions.go","start_line":38,"end_line":48,"text":"\tWriteStringAndCheck(buf, fmt.Sprintf(`# powershell completion for %-36[1]s -*- shell-script -*-\n\nfunction __%[1]s_debug {\n    if ($env:BASH_COMP_DEBUG_FILE) {\n        \"$args\" | Out-File -Append -FilePath \"$env:BASH_COMP_DEBUG_FILE\"\n    }\n}\n\nfilter __%[1]s_escapeStringWithSpecialChars {\n`+\"    $_ -replace '\\\\s|#|@|\\\\$|;|,|''|\\\\{|\\\\}|\\\\(|\\\\)|\\\"|`|\\\\||<|>|&','`$&'\"+`\n}"},{"path":"completions.go","start_line":815,"end_line":822,"text":"\t\tLong: fmt.Sprintf(`Generate the autocompletion script for powershell.\n\nTo load completions in your current shell session:\n\n\t%[1]s completion powershell | Out-String | Invoke-Expression\n\nTo load completions for every new session, add the output of the above command\nto your powershell profile."},{"path":"completions.go","start_line":827,"end_line":827,"text":"\t\t\tif noDesc {"},{"path":"powershell_completions.go","start_line":305,"end_line":308,"text":"// GenPowerShellCompletionFile generates powershell completion file without descriptions.\nfunc (c *Command) GenPowerShellCompletionFile(filename string) error {\n\treturn c.genPowerShellCompletionFile(filename, false)\n}"},{"path":"powershell_completions.go","start_line":305,"end_line":305,"text":"// GenPowerShellCompletionFile generates powershell completion file without descriptions."}],"provenance":{"input_sha256":"592b67984324c443286fba57b9db5fbed59471143d18b2b173a81d88b6bfd19b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows routing for three APIs in `powershell_completions.go`, but only names `GenPowerShellCompletionFileWithDesc()` in `site/content/completions/_index.md:519` without showing its implementation or helper call.
+----- END THE RATER'S RESPONSE -----

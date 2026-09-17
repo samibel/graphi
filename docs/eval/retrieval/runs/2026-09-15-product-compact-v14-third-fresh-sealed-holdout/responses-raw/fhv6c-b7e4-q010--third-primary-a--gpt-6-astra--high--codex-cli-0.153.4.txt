@@ -1,0 +1,7 @@
+`resetCommandLineFlagSet()` is defined in `command_test.go`, lines 70–72. It replaces `pflag.CommandLine` with a new flag set named `os.Args[0]`, using `pflag.ExitOnError`:
+
+```go
+func resetCommandLineFlagSet() {
+	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
+}
+```

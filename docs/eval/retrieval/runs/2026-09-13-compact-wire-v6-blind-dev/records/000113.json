@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 113,
+  "previous_sha256": "5eb43136cba9cebae71cf70bf3445bdfade1aa4074b52f96e48fead08553341c",
+  "kind": "grade",
+  "query_id": "cb-24",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "981c7dbad1bf5df385d25263c581551afe653794a7fccc1d8eb148c63e099dcb",
+  "outcome": "fail",
+  "rationale": "FAIL: It describes only mutually exclusive groups, omitting required-together and one-required completion behavior and the getCompletions call that applies enforcement.",
+  "sha256": "466f5026856b447652cb5a88bf232bfe8f641edd7ceeb9ed29d84add1a64996c"
+}

@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved callback’s non-empty-args return, prefix filtering of both described choices, and default directive for matching completions. Both cited locations exist in the transcript and support the callback definition and signature match.

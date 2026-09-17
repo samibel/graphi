@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+In shell_completions.go, what annotation does MarkFlagCustom install and what portability warning accompanies it?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 87ba2b24f59e; read in order (247/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"shell_completions.go","start_line":71,"end_line":79,"text":"// MarkFlagCustom adds the BashCompCustom annotation to the named flag, if it exists.\n// The bash completion script will call the bash function f for the flag.\n//\n// This will only work for bash completion.\n// It is recommended to instead use c.RegisterFlagCompletionFunc(...) which allows\n// to register a Go function which will work across all shells.\nfunc MarkFlagCustom(flags *pflag.FlagSet, name string, f string) error {\n\treturn flags.SetAnnotation(name, BashCompCustom, []string{f})\n}"},{"path":"shell_completions.go","start_line":48,"end_line":56,"text":"// MarkFlagCustom adds the BashCompCustom annotation to the named flag, if it exists.\n// The bash completion script will call the bash function f for the flag.\n//\n// This will only work for bash completion.\n// It is recommended to instead use c.RegisterFlagCompletionFunc(...) which allows\n// to register a Go function which will work across all shells.\nfunc (c *Command) MarkFlagCustom(name string, f string) error {\n\treturn MarkFlagCustom(c.Flags(), name, f)\n}"},{"path":"bash_completions.go","start_line":536,"end_line":537,"text":"func prepareCustomAnnotationsForFlags(cmd *Command) {\n\tflagCompletionMutex.RLock()"},{"path":"bash_completions.go","start_line":543,"end_line":543,"text":"\t\t// of __<prefix>_go_custom_completion"},{"path":"completions.go","start_line":719,"end_line":720,"text":"If it is not installed already, you can install it via your OS's package manager.\n"},{"path":"command.go","start_line":98,"end_line":98,"text":"\t// For portability with other shells, it is recommended to instead use ValidArgsFunction"},{"path":"command.go","start_line":1834,"end_line":1834,"text":"\t// Print warnings if they occurred (e.g. deprecated flag messages)."},{"path":"shell_completions.go","start_line":35,"end_line":40,"text":"// MarkFlagRequired instructs the various shell completion implementations to\n// prioritize the named flag when performing completion,\n// and causes your command to report an error if invoked without the flag.\nfunc MarkFlagRequired(flags *pflag.FlagSet, name string) error {\n\treturn flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{\"true\"})\n}"},{"path":"shell_completions.go","start_line":68,"end_line":69,"text":"\treturn flags.SetAnnotation(name, BashCompFilenameExt, extensions)\n}"},{"path":"shell_completions.go","start_line":54,"end_line":54,"text":"func (c *Command) MarkFlagCustom(name string, f string) error {"}],"provenance":{"input_sha256":"4a3742fd462224796815c2bf961fe47c6eb5f5046cc3796da8df1d49e35e4bee","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

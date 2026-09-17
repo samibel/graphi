@@ -1,0 +1,47 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp/graphi-v8-blind-empty
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a098b5-881a-77d2-a6fc-538b383e4bca
+--------
+user
+You are the independent grader for one preregistered development-only blind sufficiency record. Grade only the candidate answer correctness and sufficiency for the question using the development answer key below. Every factual claim required for a correct answer must be supported by the exact preserved bundle bytes inside the sealed prompt. External repository knowledge cannot repair missing bundle evidence. Pass only a concrete, correct, supported answer; otherwise fail. Cite the supporting or missing bundle evidence in the rationale. Do not disclose the answer key or other answers. Return only the required JSON object.
+
+--- SEALED ANSWERER PROMPT ---
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+which environment variable controls active help
+
+----- BEGIN task_context/compact-dev/8 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query da9f10990037; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/8","sources":[{"path":"site/content/active_help.md","start_line":1,"end_line":2,"text":"# Active Help\n"},{"path":"active_help.go","start_line":45,"end_line":57,"text":"\n// GetActiveHelpConfig returns the value of the ActiveHelp environment variable\n// \u003cPROGRAM\u003e_ACTIVE_HELP where \u003cPROGRAM\u003e is the name of the root command in upper\n// case, with all non-ASCII-alphanumeric characters replaced by `_`.\n// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP\n// is set to \"0\".\nfunc GetActiveHelpConfig(cmd *Command) string {\n\tactiveHelpCfg := os.Getenv(activeHelpGlobalEnvVar)\n\tif activeHelpCfg != activeHelpGlobalDisable {\n\t\tactiveHelpCfg = os.Getenv(activeHelpEnvVar(cmd.Root().Name()))\n\t}\n\treturn activeHelpCfg\n}"},{"path":"active_help.go","start_line":59,"end_line":67,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format \u003cPROGRAM\u003e_ACTIVE_HELP where \u003cPROGRAM\u003e is the name of the\n// root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`.\nfunc activeHelpEnvVar(name string) string {\n\t// This format should not be changed: users will be using it explicitly.\n\tactiveHelpEnvVar := strings.ToUpper(fmt.Sprintf(\"%s%s\", name, activeHelpEnvVarSuffix))\n\tactiveHelpEnvVar = activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")\n\treturn activeHelpEnvVar\n}"},{"path":"active_help.go","start_line":49,"end_line":49,"text":"// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP"},{"path":"active_help.go","start_line":26,"end_line":28,"text":"\t// The below values should not be changed: programs will be using them explicitly\n\t// in their user documentation, and users will be using them explicitly.\n\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\""},{"path":"active_help.go","start_line":29,"end_line":29,"text":"\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\""},{"path":"active_help.go","start_line":24,"end_line":31,"text":"const (\n\tactiveHelpMarker = \"_activeHelp_ \"\n\t// The below values should not be changed: programs will be using them explicitly\n\t// in their user documentation, and users will be using them explicitly.\n\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\"\n\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\"\n\tactiveHelpGlobalDisable = \"0\"\n)"},{"path":"site/content/active_help.md","start_line":88,"end_line":89,"text":"## User control of Active Help\n"},{"path":"active_help.go","start_line":60,"end_line":60,"text":"// variable.  It has the format \u003cPROGRAM\u003e_ACTIVE_HELP where \u003cPROGRAM\u003e is the name of the"},{"path":"active_help.go","start_line":33,"end_line":33,"text":"var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)"}],"provenance":{"input_sha256":"2c45a717e411a9600ede99edc93846735290e8221292b5900fe10150131c11c7","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/8 RESPONSE BYTES -----
+
+--- CANDIDATE ANSWER ---
+Active Help is controlled per program by `<PROGRAM>_ACTIVE_HELP` (`active_help.go:45-47, 59-66`). The global variable `COBRA_ACTIVE_HELP=0` disables it regardless of the program-specific value (`active_help.go:49-55`, with constants at lines 29-30).
+--- DEVELOPMENT ANSWER KEY ---
+{"id":"cb-26","query":"which environment variable controls active help","stratum":"config_docs","judgements":[{"path":"active_help.go","start_line":59,"end_line":67,"anchor":"func activeHelpEnvVar(","grade":3,"reason":"activeHelpEnvVar derives the <PROGRAM>_ACTIVE_HELP variable name.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"},{"path":"site/content/active_help.md","start_line":88,"end_line":131,"anchor":"## User control of Active Help","grade":3,"reason":"The docs section that names the environment variable and its values.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"},{"path":"active_help.go","start_line":46,"end_line":57,"anchor":"func GetActiveHelpConfig(","grade":2,"reason":"GetActiveHelpConfig reads the variable.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"},{"path":"active_help.go","start_line":24,"end_line":31,"anchor":"activeHelpEnvVarSuffix","grade":2,"reason":"The constants that spell the variable suffix.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"}]}
+
+codex
+{"outcome":"pass","rationale":"The candidate correctly identifies the program-specific variable as `<PROGRAM>_ACTIVE_HELP`, supported by `active_help.go:45-47` and `active_help.go:59-67`, which specify its format and derivation. It also correctly notes that `COBRA_ACTIVE_HELP=0` globally disables Active Help, supported by `active_help.go:49-55` and the constants at `active_help.go:29-30`."}
+tokens used
+3.873
+{"outcome":"pass","rationale":"The candidate correctly identifies the program-specific variable as `<PROGRAM>_ACTIVE_HELP`, supported by `active_help.go:45-47` and `active_help.go:59-67`, which specify its format and derivation. It also correctly notes that `COBRA_ACTIVE_HELP=0` globally disables Active Help, supported by `active_help.go:49-55` and the constants at `active_help.go:29-30`."}

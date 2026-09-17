@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q033",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "4ccf55d66d723e5261021423d2529af031e29dc257883400937fb361601b71b4",
+  "bundle_sha256": "47a53910ab1acbc8ff233ca07574e4e910c5d508b3ddb77dab270a85e5cc0b51",
+  "prompt_sha256": "6cff021747e1c59563c93c7cd820a527257441d5b146749a145c7d03c6728fa6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The command inherits the nearest ancestor’s non-empty custom prefix. In `command.go:611–621`, `ErrPrefix()` returns its own `c.errPrefix` if non-empty; otherwise, it recursively calls `c.parent.ErrPrefix()`. If no command in that chain has a non-empty prefix, it returns `\"Error:\"`.\n\n`SetErrPrefix(s)` stores the custom value in `c.errPrefix` (`command.go:357–360`); an empty value therefore does not override inheritance.",
+  "responded_at": "2026-09-13T15:25:21Z",
+  "sha256": "63710493fd378db600046adfc64a1d82cf0de387f671ce8448e8f5c38512c496"
+}

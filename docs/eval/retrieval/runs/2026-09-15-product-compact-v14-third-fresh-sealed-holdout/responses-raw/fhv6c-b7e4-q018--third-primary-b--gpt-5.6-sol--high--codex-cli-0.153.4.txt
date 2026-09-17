@@ -1,0 +1,12 @@
+`doc/cmd_test.go` is in package `doc` (line 15) and defines Cobra command fixtures plus test helpers:
+
+- `emptyRun` is a no-op Cobra command handler (line 24).
+- `init` configures persistent/local string, integer, and boolean flags on `rootCmd`, `echoCmd`, `timesCmd`, and `printCmd` (lines 26–40).
+- Command variables:
+  - `rootCmd`: root command with short/long descriptions and `emptyRun` (lines 47–52).
+  - `echoCmd`: `echo` command, alias `say`, with description and example (lines 54–60).
+  - `echoSubCmd`: `echosub` subcommand using `emptyRun` (lines 62–67).
+  - `timesCmd`: repeat-echo command, suggested for `counts`, using `emptyRun` (lines 69–75).
+  - `deprecatedCmd`: deprecated command directing users to `echo` (lines 77–82).
+  - `printCmd`: print command with short/long descriptions (lines 84–88).
+- `checkStringOmits` fails a test when `got` contains the supposedly omitted string (lines 101–105).

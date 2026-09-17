@@ -1,0 +1,11 @@
+`flag_groups.go` belongs to package `cobra` (`flag_groups.go:15`) and implements command flag-group validation.
+
+`(*Command).ValidateFlagGroups` (`flag_groups.go:79–109`):
+
+- Skips validation when `DisableFlagParsing` is enabled.
+- Collects status for required-together, one-required, and mutually-exclusive groups.
+- Validates those groups in that order, returning the first error.
+
+`processFlagForGroupAnnotation` (`flag_groups.go:121–142`) reads annotations, splits each group’s space-separated flag names, ignores groups containing undefined flags, and records each flag’s `Changed` state. `hasAllFlags` performs the existence check (`flag_groups.go:111–119`).
+
+Other declared functionality includes `MarkFlagsRequiredTogether` (`flag_groups.go:33`), the three validators (`flag_groups.go:144`, `167`, `188`), and completion enforcement via `enforceFlagGroupsForCompletion` (`flag_groups.go:225`).

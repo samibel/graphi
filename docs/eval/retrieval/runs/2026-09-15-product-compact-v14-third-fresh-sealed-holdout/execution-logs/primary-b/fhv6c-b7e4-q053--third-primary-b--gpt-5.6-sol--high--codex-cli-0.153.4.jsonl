@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-2146-7b40-915b-398f5ee3a912"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Install the generator with:\n\n```sh\ngo install github.com/spf13/cobra-cli@latest\n```\n\nEvidence: `README.md`, lines 95–105, identifies `cobra-cli` as the application generator and provides this installation command."}}
+{"type":"turn.completed","usage":{"input_tokens":16323,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":54,"reasoning_output_tokens":0}}

@@ -35,16 +35,19 @@ import (
 	"strings"
 	"time"
 
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 	"github.com/samibel/graphi/internal/eval/retrieval"
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 // Blind-evaluation phases. The flag accepts exactly these three values.
 const (
-	blindEvalFreeze  = "freeze"
-	blindEvalCapture = "capture"
-	blindEvalSeal    = "seal"
-	blindEvalDecide  = "decide"
+	blindEvalFreeze     = "freeze"
+	blindEvalCapture    = "capture"
+	blindEvalSeal       = "seal"
+	blindEvalDecide     = "decide"
+	blindEvalContractV1 = "1"
+	blindEvalContractV2 = "2"
 )
 
 // BlindEvalPhases is the closed set of accepted phases, exported so the
@@ -54,16 +57,24 @@ var BlindEvalPhases = []string{blindEvalFreeze, blindEvalCapture, blindEvalSeal,
 // blindEvalOptions is everything the mode reads. Every field is a location or
 // an identity; none of them is a threshold, a waiver or a retry.
 type blindEvalOptions struct {
-	phase    string
-	dir      string
-	root     string
-	dataset  string
-	repoName string
-	checkout string
-	embedder string
+	phase           string
+	contractVersion string
+	dir             string
+	root            string
+	dataset         string
+	repoName        string
+	checkout        string
+	embedder        string
 }
 
 func runBlindEval(o blindEvalOptions, stdout, stderr io.Writer) int {
+	if o.contractVersion == "" {
+		o.contractVersion = blindEvalContractV1
+	}
+	if o.contractVersion != blindEvalContractV1 && o.contractVersion != blindEvalContractV2 {
+		fmt.Fprintln(stderr, "retrieval-eval: -blind-eval-contract must be one of 1, 2")
+		return exitUsage
+	}
 	switch o.phase {
 	case blindEvalFreeze:
 		return runBlindEvalFreeze(o, stdout, stderr)
@@ -89,6 +100,18 @@ func blindEvalFrozenInputs(runDirRelative string) []struct{ role, path string } 
 		{retrieval.PreconditionInputGradingRubric, filepath.ToSlash(filepath.Join(runDirRelative, "grading-rubric.md"))},
 		{"methodology", "docs/eval/retrieval/methodology.md"},
 	}
+}
+
+func blindEvalFrozenInputsForContract(runDirRelative, contractVersion string) []struct{ role, path string } {
+	inputs := blindEvalFrozenInputs(runDirRelative)
+	if contractVersion == blindEvalContractV2 {
+		for i := range inputs {
+			if inputs[i].role == "methodology" {
+				inputs[i].path = "docs/eval/retrieval/methodology-v2.md"
+			}
+		}
+	}
+	return inputs
 }
 
 func runBlindEvalFreeze(o blindEvalOptions, stdout, stderr io.Writer) int {
@@ -121,8 +144,18 @@ func runBlindEvalFreeze(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: the %s refuses to freeze: the candidate worktree at %s has uncommitted changes, so candidate_sha %s would not name the code this evaluation runs\n", retrieval.QrelBlindSmokeEvaluationName, o.root, head)
 		return exitError
 	}
+	contractVersion := retrieval.QrelBlindSmokeContractVersion
+	measurementContractVersion := retrieval.MeasurementContractVersion
+	claimWording := retrieval.FrozenClaimWording()
+	followupMaxLines := 0
+	if o.contractVersion == blindEvalContractV2 {
+		contractVersion = retrieval.QrelBlindSmokeContractVersion2
+		measurementContractVersion = retrieval.MeasurementContractVersion2
+		claimWording = retrieval.SecondResponseClaimWording()
+		followupMaxLines = compactv9.FollowupMaxLines
+	}
 	record := retrieval.PreconditionRecord{
-		ContractVersion:            retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:            contractVersion,
 		Evaluation:                 retrieval.QrelBlindSmokeEvaluationName,
 		FreezeCommit:               head,
 		FreezeTimestamp:            time.Now().UTC().Format(time.RFC3339),
@@ -134,11 +167,12 @@ func runBlindEvalFreeze(o blindEvalOptions, stdout, stderr io.Writer) int {
 		ComparatorVersion:          retrieval.BlindEvalComparatorVersion,
 		TokenizerID:                tokenizerPinID(),
 		TokenizerVocabularySHA256:  tokenizerPinVocabularySHA256(),
-		MeasurementContractVersion: retrieval.MeasurementContractVersion,
-		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(retrieval.FrozenClaimWording())),
+		MeasurementContractVersion: measurementContractVersion,
+		FollowupMaxLines:           followupMaxLines,
+		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(claimWording)),
 	}
 	read := retrieval.RepoFileSHA256Reader(o.root)
-	for _, input := range blindEvalFrozenInputs(filepath.ToSlash(runDirRelative)) {
+	for _, input := range blindEvalFrozenInputsForContract(filepath.ToSlash(runDirRelative), o.contractVersion) {
 		sha, err := read(input.path)
 		if err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: freeze input %s (%s): %v\n", input.role, input.path, err)
@@ -211,7 +245,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 	// "Records" means an artifact on disk, not a line on stderr: printing the
 	// typed error and exiting left automation unable to tell the mandatory
 	// refusal apart from a run that was interrupted or never started.
-	derivation, err := retrieval.DerivePassCount(len(population), dataset.SHA256,
+	derivation, err := retrieval.DerivePassCountForContract(precondition.ContractVersion, len(population), dataset.SHA256,
 		"count of answerable holdout queries in the sealed dataset: split=holdout, stratum!=no_hit, at least one grade-3 span")
 	if err != nil {
 		outcome := retrieval.UnsatisfiableOutcome(precondition, len(population), err)
@@ -270,6 +304,17 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
+	if precondition.ContractVersion == retrieval.QrelBlindSmokeContractVersion2 {
+		repository := os.DirFS(o.checkout)
+		for i := range captured {
+			followup, err := retrieval.CaptureFollowupRead(repository, captured[i].QueryID, captured[i].Payload, counter)
+			if err != nil {
+				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+				return exitError
+			}
+			captured[i].FollowupRead = followup
+		}
+	}
 
 	// The field is named precondition_record_commit, so it must name the
 	// commit that CONTAINS the precondition record. It used to be copied from
@@ -284,7 +329,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		return exitError
 	}
 	pre := retrieval.PreRegistration{
-		ContractVersion:    retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:    precondition.ContractVersion,
 		Evaluation:         retrieval.QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
 		PreconditionCommit: preconditionCommit,
@@ -297,7 +342,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 	}
 	for _, bundle := range captured {
 		q := byID[bundle.QueryID]
-		prompt, err := retrieval.BuildRaterPrompt(q.ID, q.Text, bundle.Payload)
+		prompt, err := retrieval.BuildRaterTranscriptPrompt(q.ID, q.Text, bundle)
 		if err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
@@ -319,17 +364,12 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
-		pre.Queries = append(pre.Queries, retrieval.PreRegisteredQuery{
-			QueryID:           q.ID,
-			FamilyID:          q.FamilyID,
-			Stratum:           q.Stratum,
-			QueryTextSHA256:   retrieval.SHA256Hex([]byte(q.Text)),
-			PromptSHA256:      retrieval.SHA256Hex(prompt.Bytes),
-			BundleSHA256:      bundle.Payload.SHA256,
-			BundleByteCount:   bundle.Payload.ByteCount,
-			BundleBoundary:    bundle.Payload.Boundary,
-			BundleTokenCounts: bundle.Payload.TokenCounts,
-		})
+		registered := preRegisteredQueryFromBundle(q, prompt, bundle)
+		if err := retrieval.CheckPreRegisteredBundleBinding(pre.ContractVersion, registered, bundle); err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		pre.Queries = append(pre.Queries, registered)
 	}
 	if err := retrieval.WriteBlindEvalJSON(filepath.Join(o.dir, retrieval.BlindEvalProvenanceFile), provenance); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
@@ -352,7 +392,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
-	if err := retrieval.ValidatePreRegistration(sealed); err != nil {
+	if err := retrieval.ValidatePreRegistration(sealed, precondition); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
@@ -363,6 +403,26 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "retrieval-eval: captured %d task_context/2 bundles and pre-registered N=%d k=%d (record sha256 %s)\n",
 		len(captured), sealed.Derivation.N, sealed.Derivation.K, sealed.SHA256)
 	return exitOK
+}
+
+func preRegisteredQueryFromBundle(q retrieval.Query, prompt retrieval.RaterPrompt, bundle retrieval.CapturedCandidateBundle) retrieval.PreRegisteredQuery {
+	registered := retrieval.PreRegisteredQuery{
+		QueryID:           q.ID,
+		FamilyID:          q.FamilyID,
+		Stratum:           q.Stratum,
+		QueryTextSHA256:   retrieval.SHA256Hex([]byte(q.Text)),
+		PromptSHA256:      prompt.SHA256,
+		BundleSHA256:      bundle.Payload.SHA256,
+		BundleByteCount:   bundle.Payload.ByteCount,
+		BundleBoundary:    bundle.Payload.Boundary,
+		BundleTokenCounts: append([]retrieval.PayloadTokenCount(nil), bundle.Payload.TokenCounts...),
+	}
+	if bundle.FollowupRead != nil {
+		registered.FollowupSHA256 = bundle.FollowupRead.SHA256
+		registered.FollowupByteCount = bundle.FollowupRead.ByteCount
+		registered.FollowupTokenCounts = append([]retrieval.PayloadTokenCount(nil), bundle.FollowupRead.TokenCounts...)
+	}
+	return registered
 }
 
 // blindEvalParticipants is the declared panel, read from the run directory
@@ -403,6 +463,10 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 	}
 	artifacts, err := retrieval.LoadEvaluationArtifacts(o.dir)
 	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	if err := checkPreRegisteredCapturedBundles(o.dir, artifacts.PreRegistration); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
@@ -479,6 +543,22 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 	return exitOK
 }
 
+// checkPreRegisteredCapturedBundles is the command boundary that reopens every
+// captured bundle and compares both response slices with the identities frozen
+// before rating. It runs both before sealing and again before deciding.
+func checkPreRegisteredCapturedBundles(dir string, pre retrieval.PreRegistration) error {
+	for _, query := range pre.Queries {
+		bundle, err := loadCapturedBundle(dir, query.QueryID)
+		if err != nil {
+			return err
+		}
+		if err := retrieval.CheckPreRegisteredBundleBinding(pre.ContractVersion, query, bundle); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // runDirectoryInsideRepository resolves the run directory relative to the
 // repository root and REFUSES a path that escapes it.
 //
@@ -504,6 +584,25 @@ func runDirectoryInsideRepository(root, dir string) (string, error) {
 	if rel == ".." || strings.HasPrefix(rel, "../") || filepath.IsAbs(rel) {
 		return "", fmt.Errorf("run directory %s resolves to %s, which is outside the repository at %s; the evaluation's inputs and artifacts must be files git can be asked about", dir, rel, absRoot)
 	}
+	physicalRoot, err := resolveExistingPath(absRoot)
+	if err != nil {
+		return "", fmt.Errorf("resolve repository root %s physically: %w", absRoot, err)
+	}
+	physicalDir, err := resolveExistingPath(absDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve run directory %s physically: %w", dir, err)
+	}
+	physicalRel, err := filepath.Rel(physicalRoot, physicalDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve physical run directory %s relative to repository %s: %w", physicalDir, physicalRoot, err)
+	}
+	physicalRel = filepath.ToSlash(physicalRel)
+	if physicalRel == ".." || strings.HasPrefix(physicalRel, "../") || filepath.IsAbs(physicalRel) {
+		return "", fmt.Errorf("run directory %s resolves physically to %s, which is outside the repository at %s; evaluation inputs and artifacts must remain in the committed repository tree", dir, physicalDir, physicalRoot)
+	}
+	if physicalRel != rel {
+		return "", fmt.Errorf("run directory %s resolves through a symlink to %s instead of repository path %s; the candidate-binding exclusion must name one physical, symlink-free directory", rel, physicalRel, rel)
+	}
 	// Inside the repository is not enough. The run directory is the one path
 	// the candidate binding excludes from its comparison against the frozen
 	// candidate, so a run directory at the root — or any directory that
@@ -519,6 +618,34 @@ func runDirectoryInsideRepository(root, dir string) (string, error) {
 		return "", fmt.Errorf("run directory %s holds candidate source (%s); the candidate binding excludes the run directory from its comparison against the frozen candidate, so a run directory over the implementation excludes the very code the binding exists to pin", rel, swallowed)
 	}
 	return rel, nil
+}
+
+// resolveExistingPath evaluates symlinks in path while permitting the final
+// run directory (and any of its new descendants) not to exist yet during the
+// freeze phase. The nearest existing ancestor is resolved physically and the
+// missing suffix is then appended without interpretation.
+func resolveExistingPath(path string) (string, error) {
+	path = filepath.Clean(path)
+	current := path
+	var missing []string
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			for i := len(missing) - 1; i >= 0; i-- {
+				resolved = filepath.Join(resolved, missing[i])
+			}
+			return filepath.Clean(resolved), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return "", err
+		}
+		missing = append(missing, filepath.Base(current))
+		current = parent
+	}
 }
 
 // runDirectoryHoldsCandidateSource names the first candidate source file found

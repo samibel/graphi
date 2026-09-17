@@ -1,0 +1,9 @@
+Cobra finds the subcommand recursively from the current (normally root) command:
+
+1. `Command.Find` removes flags from the remaining arguments with `stripFlags(innerArgs, c)`.
+2. It treats the first non-flag argument as the candidate subcommand name (`nextSubCmd := argsWOflags[0]`).
+3. `findNext` searches `c.commands` for an exact command-name match or alias via `commandNameMatches(cmd.Name(), next)` or `cmd.HasAlias(next)`.
+4. If prefix matching is enabled, it collects name/alias prefix matches and accepts one only when exactly one command matches.
+5. When found, `Find` removes that argument with `argsMinusFirstX` and repeats against the matched command’s children. If no match exists—or no non-flag arguments remain—it returns the current command and remaining arguments.
+
+Evidence: `command.go:724-748` (`Find`, `innerfind`) and `command.go:767-786` (`findNext`).

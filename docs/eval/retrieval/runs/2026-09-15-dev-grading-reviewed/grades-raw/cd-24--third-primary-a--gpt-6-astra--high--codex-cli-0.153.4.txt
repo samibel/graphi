@@ -1,0 +1,1 @@
+PASS: The response identifies both transcript-supported ErrHelp cases: the help flag is true, or neither Run nor RunE is defined. Its citations and qualifications about flag parsing and version handling match the preserved transcript.

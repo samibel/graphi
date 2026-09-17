@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How would I create a custom Zsh Completion, but for another shell?
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"14 ranked source span(s) for \"How would I create a custom Zsh Completion, but for another shell?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"site/content/completions/zsh.md","start_line":6,"end_line":8,"text":"\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backwards-compatible, some small changes in behavior were introduced.\n"},{"path":"site/content/completions/_index.md","start_line":476,"end_line":477,"text":"\n* Custom completions implemented in Bash scripting (legacy) are not supported and will be ignored for `zsh` (including the use of the `BashCompCustom` flag annotation)."},{"path":"site/content/user_guide.md","start_line":741,"end_line":742,"text":"\nCobra can generate a shell-completion file for the following shells: bash, zsh, fish, PowerShell."},{"path":"zsh_completions.go","start_line":31,"end_line":32,"text":"func (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)"},{"path":"zsh_completions.go","start_line":80,"end_line":80,"text":"func (c *Command) genZshCompletion(w io.Writer, includeDesc bool) error {"},{"path":"site/content/completions/powershell.md","start_line":1,"end_line":2,"text":"# Generating PowerShell Completions For Your Own cobra.Command\n"},{"path":"site/content/completions/_index.md","start_line":1,"end_line":2,"text":"# Generating shell completions\n"},{"path":"site/content/completions/_index.md","start_line":452,"end_line":453,"text":"## Zsh completions\n"},{"path":"site/content/completions/_index.md","start_line":351,"end_line":351,"text":"cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {"},{"path":"site/content/completions/_index.md","start_line":516,"end_line":518,"text":"\n## PowerShell completions\n"},{"path":"completions.go","start_line":28,"end_line":28,"text":"\t// completion results from the program.  It is used by the shell completion scripts."},{"path":"site/content/completions/_index.md","start_line":7,"end_line":9,"text":"- fish\n- PowerShell\n"},{"path":"site/content/completions/_index.md","start_line":416,"end_line":417,"text":"### Bash legacy dynamic completions\n"},{"path":"site/content/user_guide.md","start_line":1,"end_line":2,"text":"# User Guide\n"}],"provenance":{"input_sha256":"0e16621a75ca53fbd4932e6499b95a7cccc458f7033234e3507cc47f763845c1","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

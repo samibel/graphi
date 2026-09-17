@@ -1,0 +1,92 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 91d84f7dd3215f9fa7aee022e3496362fe1e93f93aabcc958a1745746ba955ce
+QUERY ID: fhv5-9f4c-q041
+
+QUESTION:
+How does flag-group validation build group state and sequence the three group-rule validators?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- flag_groups.go:79-109 anchor="processFlagForGroupAnnotation(flags, pflag, mutuallyExclusive, mutuallyExclusiveGroupStatus)" reason=It skips when parsing is disabled, visits flags into separate required-together, one-required, and exclusive state maps, then validates them in that order and returns the first error.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query bdccb835f1cc; read in order (242/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":42,"end_line":44,"text":"type Group struct {\n\tID    string\n\tTitle string"},{"path":"flag_groups.go","start_line":225,"end_line":226,"text":"func (c *Command) enforceFlagGroupsForCompletion() {\n\tif c.DisableFlagParsing {"},{"path":"flag_groups.go","start_line":234,"end_line":239,"text":"\tc.Flags().VisitAll(func(pflag *flag.Flag) {\n\t\tprocessFlagForGroupAnnotation(flags, pflag, requiredAsGroup, groupStatus)\n\t\tprocessFlagForGroupAnnotation(flags, pflag, oneRequired, oneRequiredGroupStatus)\n\t\tprocessFlagForGroupAnnotation(flags, pflag, mutuallyExclusive, mutuallyExclusiveGroupStatus)\n\t})\n"},{"path":"flag_groups.go","start_line":79,"end_line":109,"text":"// ValidateFlagGroups validates the mutuallyExclusive/oneRequired/requiredAsGroup logic and returns the\n// first error encountered.\nfunc (c *Command) ValidateFlagGroups() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tflags := c.Flags()\n\n\t// groupStatus format is the list of flags as a unique ID,\n\t// then a map of each flag name and whether it is set or not.\n\tgroupStatus := map[string]map[string]bool{}\n\toneRequiredGroupStatus := map[string]map[string]bool{}\n\tmutuallyExclusiveGroupStatus := map[string]map[string]bool{}\n\tflags.VisitAll(func(pflag *flag.Flag) {\n\t\tprocessFlagForGroupAnnotation(flags, pflag, requiredAsGroup, groupStatus)\n\t\tprocessFlagForGroupAnnotation(flags, pflag, oneRequired, oneRequiredGroupStatus)\n\t\tprocessFlagForGroupAnnotation(flags, pflag, mutuallyExclusive, mutuallyExclusiveGroupStatus)\n\t})\n\n\tif err := validateRequiredFlagGroups(groupStatus); err != nil {\n\t\treturn err\n\t}\n\tif err := validateOneRequiredFlagGroups(oneRequiredGroupStatus); err != nil {\n\t\treturn err\n\t}\n\tif err := validateExclusiveFlagGroups(mutuallyExclusiveGroupStatus); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}"},{"path":"flag_groups.go","start_line":121,"end_line":122,"text":"func processFlagForGroupAnnotation(flags *flag.FlagSet, pflag *flag.Flag, annotation string, groupStatus map[string]map[string]bool) {\n\tgroupInfo, found := pflag.Annotations[annotation]"},{"path":"flag_groups.go","start_line":143,"end_line":154,"text":"\nfunc validateRequiredFlagGroups(data map[string]map[string]bool) error {\n\tkeys := sortedKeys(data)\n\tfor _, flagList := range keys {\n\t\tflagnameAndStatus := data[flagList]\n\n\t\tunset := []string{}\n\t\tfor flagname, isSet := range flagnameAndStatus {\n\t\t\tif !isSet {\n\t\t\t\tunset = append(unset, flagname)\n\t\t\t}\n\t\t}"},{"path":"flag_groups.go","start_line":144,"end_line":144,"text":"func validateRequiredFlagGroups(data map[string]map[string]bool) error {"},{"path":"flag_groups.go","start_line":167,"end_line":167,"text":"func validateOneRequiredFlagGroups(data map[string]map[string]bool) error {"},{"path":"flag_groups.go","start_line":188,"end_line":188,"text":"func validateExclusiveFlagGroups(data map[string]map[string]bool) error {"},{"path":"completions.go","start_line":379,"end_line":381,"text":"\t// Enforce flag groups before doing flag completions\n\tfinalCmd.enforceFlagGroupsForCompletion()\n"},{"path":"completions.go","start_line":275,"end_line":275,"text":"\t// Find the real command for which completion must be performed"},{"path":"command.go","start_line":978,"end_line":978,"text":"\tif err := c.ValidateFlagGroups(); err != nil {"}],"provenance":{"input_sha256":"a851000b6ac4315824168a346f658086c71e93218ef765632c2a5cafbf412ef5","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`ValidateFlagGroups` in `flag_groups.go:81–109`:
+
+1. Returns `nil` immediately if `c.DisableFlagParsing` is true.
+2. Gets `c.Flags()` and creates three `map[string]map[string]bool` maps: `groupStatus`, `oneRequiredGroupStatus`, and `mutuallyExclusiveGroupStatus`. The comment describes each outer key as a flag-list group ID and each inner map as flag names mapped to whether they are set.
+3. Visits every flag with `flags.VisitAll`, calling `processFlagForGroupAnnotation` for each of `requiredAsGroup`, `oneRequired`, and `mutuallyExclusive`, passing the corresponding state map. The helper reads `pflag.Annotations[annotation]` (`flag_groups.go:121–122`); its remaining population logic is not shown.
+4. Runs validators in this exact order:
+   - `validateRequiredFlagGroups(groupStatus)`
+   - `validateOneRequiredFlagGroups(oneRequiredGroupStatus)`
+   - `validateExclusiveFlagGroups(mutuallyExclusiveGroupStatus)`
+
+Each validator’s error is returned immediately, so later validators run only if earlier ones succeed. If all succeed, validation returns `nil` (`flag_groups.go:99–108`).
+----- END THE RATER'S RESPONSE -----

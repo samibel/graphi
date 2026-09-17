@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-0bcd-7cc0-990f-092f2994dc7b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `command.go`, `(*Command).IsAvailableCommand` (lines 1559–1576) makes a command unavailable if:\n\n- `len(c.Deprecated) != 0` or `c.Hidden`.\n- It has a parent and is that parent’s help command: `c.Parent().helpCommand == c`.\n- It is neither runnable nor has any available subcommands.\n\nAfter passing the first two exclusions, it is available when **`c.Runnable() || c.HasAvailableSubCommands()`**:\n\n- `Runnable()` means `c.Run != nil || c.RunE != nil` (lines 1549–1553).\n- `HasAvailableSubCommands()` means at least one subcommand’s `IsAvailableCommand()` returns true (lines 1614–1628)."}}
+{"type":"turn.completed","usage":{"input_tokens":17235,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":164,"reasoning_output_tokens":0}}

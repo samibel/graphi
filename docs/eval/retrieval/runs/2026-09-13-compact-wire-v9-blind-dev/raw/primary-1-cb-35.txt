@@ -1,0 +1,5 @@
+Completion is built in and customizable:
+
+- `Command.InitDefaultCompletionCmd()` adds a default `completion` command unless it is disabled, the command has no subcommands, or the program already defines one (`completions.go:678–685`).
+- The command name is `completion`; it supports `--no-descriptions`, defaulting to `false` (`completions.go:95–102`).
+- Generated scripts automatically complete commands and flags. Noun completion can use `ValidArgs`, while descriptions can be globally disabled with `rootCmd.CompletionOptions.DisableDescriptions = true` (`site/content/completions/_index.md:112–127`).

@@ -1,0 +1,1 @@
+FAIL: The response omits the essential `runShellCheck` helper that runs generated Bash through shellcheck and returns its result. That behavior is absent from the preserved transcript, so the bundle cannot support the required description.

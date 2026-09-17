@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 31,
+  "previous_sha256": "644a978dcd263aa2196537df2f28f670fb2573ba88c2323f8ac0076095d9c216",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "5842107b084e247e234071f4c63b056420cd399d0e57a25413b9e0875d52c3e2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the global flag as a persistent flag on the parent/root command, then access it from the subcommand with:\n\n```go\nf := subCommand.Flag(\"flag-name\")\n```\n\n`Command.Flag` “climbs up the command tree” and, if the flag is not local, calls `persistentFlag` ([command.go:1794–1803]). That method checks the command’s persistent flags and inherited parent flags via `parentsPflags.Lookup(name)` ([command.go:1805–1816]). Thus, only persistent parent flags are inherited; local non-persistent flags do not persist to subcommands ([command.go:1655–1666]).",
+  "sha256": "3e09263f80ab77d60e8de1ef720de85a45065f1e9a0ea7b9fb1217ae9d2dbfeb"
+}

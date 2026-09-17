@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-23e8-7412-ba8d-743e123817a8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies templateFuncs and its built-ins, explains registration and rendering through tmpl, and accurately summarizes the shown version and help template fallback behavior. Its citations match supporting transcript spans, and it correctly notes that the default help template is only partially shown."}}
+{"type":"turn.completed","usage":{"input_tokens":18010,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":84,"reasoning_output_tokens":26}}

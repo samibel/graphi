@@ -1,0 +1,1 @@
+PASS: The response identifies Parent() as returning c.parent at command.go:1842–1845. Its additional descriptions of VisitParents traversing ancestors and Root recursively finding the root are supported by the cited preserved spans.

@@ -1,0 +1,1 @@
+PASS: The response correctly states that any command with a parent qualifies; otherwise, at least one available child that is not an additional help topic is required. The availability explanation and both citations are supported by the preserved bundle.

@@ -1,0 +1,8 @@
+`shell_completions.go` belongs to package `cobra` (`shell_completions.go:15`) and provides flag-marking helpers for shell completion:
+
+- `MarkFlagRequired` sets `BashCompOneRequiredFlag` to `"true"` (`lines 35–40`).
+- `MarkFlagFilename` and `Command.MarkPersistentFlagFilename` restrict completion to specified file extensions (`lines 42–46`, `58–63`).
+- `MarkFlagDirname` sets `BashCompSubdirsInDir` to restrict completion to directories (`lines 94–98`).
+- `MarkFlagCustom` attaches a Bash-only completion function using `BashCompCustom`; its comment recommends `Command.RegisterFlagCompletionFunc` for cross-shell support (`lines 71–79`).
+
+Command methods also exist for required, custom, and directory-name flag marking (`lines 24, 31, 54, 83`).

@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 07ff455e1f69108106bdceaeb499e52d5ab6e7cca90b588af522c6432241f820
+QUERY ID: fhv5b-c7e2-q022
+
+QUESTION:
+In doc/rest_docs.go, how does GenReSTTreeCustom order recursion, file prepending, and page generation?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/rest_docs.go:143-170 anchor="io.WriteString(f, filePrepender(filename))" reason=It recursively handles eligible non-help children first, creates an underscore-based .rst file, writes the custom prelude, then delegates page content to GenReSTCustom.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 39669b5ce2a3; read in order (318/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"doc/rest_docs.go","start_line":142,"end_line":170,"text":"\n// GenReSTTreeCustom is the the same as GenReSTTree, but\n// with custom filePrepender and linkHandler.\nfunc GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error {\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenReSTTreeCustom(c, dir, filePrepender, linkHandler); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", \"_\") + \".rst\"\n\tfilename := filepath.Join(dir, basename)\n\tf, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer f.Close()\n\n\tif _, err := io.WriteString(f, filePrepender(filename)); err != nil {\n\t\treturn err\n\t}\n\tif err := GenReSTCustom(cmd, f, linkHandler); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}"},{"path":"site/content/docgen/rest.md","start_line":14,"end_line":24,"text":"\nfunc main() {\n\tcmd := &cobra.Command{\n\t\tUse:   \"test\",\n\t\tShort: \"my test program\",\n\t}\n\terr := doc.GenReSTTree(cmd, \"/tmp\")\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n}"},{"path":"site/content/docgen/rest.md","start_line":87,"end_line":98,"text":"\nThe `filePrepender` will prepend the return value given the full filepath to the rendered ReST file. A common use case is to add front matter to use the generated documentation with [Hugo](https://gohugo.io/):\n\n```go\nconst fmTemplate = `---\ndate: %s\ntitle: \"%s\"\nslug: %s\nurl: %s\n---\n`\nfilePrepender := func(filename string) string {"},{"path":"site/content/docgen/_index.md","start_line":1,"end_line":17,"text":"# Documentation generation\n\n- [Man page docs](man.md)\n- [Markdown docs](md.md)\n- [Rest docs](rest.md)\n- [Yaml docs](yaml.md)\n\n## Options\n### `DisableAutoGenTag`\n\nYou may set `cmd.DisableAutoGenTag = true`\nto _entirely_ remove the auto generated string \"Auto generated by spf13/cobra...\"\nfrom any documentation source.\n\n### `InitDefaultCompletionCmd`\n\nYou may call `cmd.InitDefaultCompletionCmd()` to document the default autocompletion command."},{"path":"completions.go","start_line":62,"end_line":73,"text":"\t// ShellCompDirectiveNoFileComp indicates that the shell should not provide\n\t// file completion even when no completion is provided.\n\tShellCompDirectiveNoFileComp\n\n\t// ShellCompDirectiveFilterFileExt indicates that the provided completions\n\t// should be used as file extension filters.\n\t// For flags, using Command.MarkFlagFilename() and Command.MarkPersistentFlagFilename()\n\t// is a shortcut to using this directive explicitly.  The BashCompFilenameExt\n\t// annotation can also be used to obtain the same behavior for flags.\n\tShellCompDirectiveFilterFileExt\n\n\t// ShellCompDirectiveFilterDirs indicates that only directory names should"}],"provenance":{"input_sha256":"703f66e1f4338cd248829a464d5dfeaa643ddc4e440ca00355ca6e797554a988","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`GenReSTTreeCustom` uses post-order traversal:
+
+1. It recursively processes each available, non-help child command first via `GenReSTTreeCustom(c, ...)` (`doc/rest_docs.go:146–153`).
+2. It then creates the current command’s `.rst` file, whose basename comes from `cmd.CommandPath()` with spaces replaced by underscores (`doc/rest_docs.go:156–162`).
+3. It writes `filePrepender(filename)` to the new file (`doc/rest_docs.go:165–167`).
+4. Finally, it generates the current command’s page content with `GenReSTCustom(cmd, f, linkHandler)` (`doc/rest_docs.go:168–170`).
+
+Thus, children are fully generated before their parent; within each file, prepended content is written before the generated ReST page.
+----- END THE RATER'S RESPONSE -----

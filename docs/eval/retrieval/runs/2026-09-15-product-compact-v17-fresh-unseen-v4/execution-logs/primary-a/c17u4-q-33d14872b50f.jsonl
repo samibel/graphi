@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-d5af-73a2-80eb-b462bfe70750"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `SetHelpFunc` on the command with a function of type `func(*Command, []string)`:\n\n```go\ncmd.SetHelpFunc(func(c *cobra.Command, args []string) {\n    // Write your application's help output.\n})\n```\n\n`SetHelpFunc` stores the callback in `c.helpFunc` (`command.go:321–325`). `HelpFunc()` uses that callback, otherwise inherits the parent’s function, otherwise uses the default (`command.go:449–468`). Thus, setting it on the root command also applies to children unless they override it, as documented in `site/content/user_guide.md:541–553`."}}
+{"type":"turn.completed","usage":{"input_tokens":17877,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":137,"reasoning_output_tokens":0}}

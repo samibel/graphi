@@ -1,0 +1,24 @@
+{
+  "primary": [
+    {
+      "id": "codex-v4-primary-a-20260912",
+      "provider": "openai",
+      "model": "gpt-6-astra"
+    },
+    {
+      "id": "codex-v4-primary-b-20260912",
+      "provider": "openai",
+      "model": "gpt-6-astra"
+    }
+  ],
+  "grader": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "adjudicator": {
+    "id": "codex-v4-adjudicator-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  }
+}

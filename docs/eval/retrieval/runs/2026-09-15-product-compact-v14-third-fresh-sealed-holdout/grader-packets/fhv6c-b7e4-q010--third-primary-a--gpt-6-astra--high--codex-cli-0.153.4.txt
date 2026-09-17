@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 91bcd08ed10b5067b64c8e583416952db41ef1fe3b3054905a370d091be3b617
+QUERY ID: fhv6c-b7e4-q010
+
+QUESTION:
+resetCommandLineFlagSet
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:70-72 anchor="func resetCommandLineFlagSet(" reason=The complete helper declaration resets pflag's process-wide command-line set to a fresh instance.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query e157588bfbbd; read in order (322/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command_test.go","start_line":70,"end_line":72,"text":"func resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)\n}"},{"path":"command.go","start_line":163,"end_line":191,"text":"\t// that we can use on every pflag set and children commands\n\tglobNormFunc func(f *flag.FlagSet, name string) flag.NormalizedName\n\n\t// usageFunc is usage func defined by user.\n\tusageFunc func(*Command) error\n\t// usageTemplate is usage template defined by user.\n\tusageTemplate string\n\t// flagErrorFunc is func defined by user and it's called when the parsing of\n\t// flags returns an error.\n\tflagErrorFunc func(*Command, error) error\n\t// helpTemplate is help template defined by user.\n\thelpTemplate string\n\t// helpFunc is help func defined by user.\n\thelpFunc func(*Command, []string)\n\t// helpCommand is command with usage 'help'. If it's not defined by user,\n\t// cobra uses default help command.\n\thelpCommand *Command\n\t// helpCommandGroupID is the group id for the helpCommand\n\thelpCommandGroupID string\n\n\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n\n\t// versionTemplate is the version template defined by user.\n\tversionTemplate string\n\n\t// errPrefix is the error message prefix defined by user.\n\terrPrefix string\n"},{"path":"command.go","start_line":1302,"end_line":1322,"text":"// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {\n\t\tif cmds[i] == c {\n\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}\n\t\tcmds[i].parent = c\n\t\t// update max lengths\n\t\tusageLen := len(x.Use)\n\t\tif usageLen > c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(x.CommandPath())\n\t\tif commandPathLen > c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(x.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t\t// If global normalization function exists, update all children"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1737,"end_line":1749,"text":"// ResetFlags deletes all flags from command.\nfunc (c *Command) ResetFlags() {\n\tc.flagErrorBuf = new(bytes.Buffer)\n\tc.flagErrorBuf.Reset()\n\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.flags.SetOutput(c.flagErrorBuf)\n\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.pflags.SetOutput(c.flagErrorBuf)\n\n\tc.lflags = nil\n\tc.iflags = nil\n\tc.parentsPflags = nil\n}"}],"provenance":{"input_sha256":"39dd6df8e513175bbe8cecb6ec6ff521fb565b005f946087434520c1c7a190f9","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`resetCommandLineFlagSet()` is defined in `command_test.go`, lines 70–72. It replaces `pflag.CommandLine` with a new flag set named `os.Args[0]`, using `pflag.ExitOnError`:
+
+```go
+func resetCommandLineFlagSet() {
+	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
+}
+```
+----- END THE RATER'S RESPONSE -----

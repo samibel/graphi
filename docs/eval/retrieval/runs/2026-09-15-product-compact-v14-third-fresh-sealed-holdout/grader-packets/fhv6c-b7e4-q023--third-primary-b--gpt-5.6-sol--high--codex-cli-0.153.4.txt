@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: bd1a535fc1c8e80194c6f349634de2119f4f33ba700bb3b27022bb363e71a141
+QUERY ID: fhv6c-b7e4-q023
+
+QUESTION:
+What streams does the deprecated SetOutput method affect when it is reset to nil?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:1994-2000 anchor="func TestSetOutput(" reason=The test resets SetOutput to nil and verifies that ordinary output resolves back to standard output; the method itself sets both output and error writers.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 5a9dfbbec93e; read in order (210/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":280,"end_line":286,"text":"// SetOutput sets the destination for usage and error messages.\n// If output is nil, os.Stderr is used.\n// Deprecated: Use SetOut and/or SetErr instead\nfunc (c *Command) SetOutput(output io.Writer) {\n\tc.outWriter = output\n\tc.errWriter = output\n}"},{"path":"command.go","start_line":374,"end_line":377,"text":"// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"command.go","start_line":288,"end_line":292,"text":"// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"},{"path":"command.go","start_line":394,"end_line":402,"text":"func (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":1321,"end_line":1326,"text":"\t\t}\n\t\t// If global normalization function exists, update all children\n\t\tif c.globNormFunc != nil {\n\t\t\tx.SetGlobalNormalizationFunc(c.globNormFunc)\n\t\t}\n\t\tc.commands = append(c.commands, x)"},{"path":"command.go","start_line":389,"end_line":392,"text":"// InOrStdin returns input to stdin\nfunc (c *Command) InOrStdin() io.Reader {\n\treturn c.getIn(os.Stdin)\n}"},{"path":"command.go","start_line":874,"end_line":876,"text":"func (c *Command) execute(a []string) (err error) {\n\tif c == nil {\n\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")"},{"path":"command.go","start_line":99,"end_line":103,"text":"\tBashCompletionFunction string\n\n\t// Deprecated defines, if this command is deprecated and should print this string when used.\n\tDeprecated string\n"},{"path":"command.go","start_line":1737,"end_line":1747,"text":"// ResetFlags deletes all flags from command.\nfunc (c *Command) ResetFlags() {\n\tc.flagErrorBuf = new(bytes.Buffer)\n\tc.flagErrorBuf.Reset()\n\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.flags.SetOutput(c.flagErrorBuf)\n\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.pflags.SetOutput(c.flagErrorBuf)\n\n\tc.lflags = nil\n\tc.iflags = nil"}],"provenance":{"input_sha256":"1b203858bbd7f1e5b65ac5112984899d7968850d04f8d5c4aab688adea3f4d53","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Both streams: it resets both the command’s output and error destinations. In `command.go:283-286`, `SetOutput` assigns `output` to both `c.outWriter` and `c.errWriter`; when nil, they fall back to their defaults (stdout for output, stderr for errors).
+----- END THE RATER'S RESPONSE -----

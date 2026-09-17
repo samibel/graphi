@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-4af3-73a2-b571-c390444ddef1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetIn` sets a command’s input source:\n\n```go\nfunc (c *Command) SetIn(newIn io.Reader) {\n    c.inReader = newIn\n}\n```\n\nIt stores the supplied `io.Reader` in `c.inReader` (`command.go:302–304`). Its documentation says that if `newIn` is `nil`, `os.Stdin` is used (`command.go:300–301`); the fallback implementation is not shown."}}
+{"type":"turn.completed","usage":{"input_tokens":17262,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":101,"reasoning_output_tokens":0}}

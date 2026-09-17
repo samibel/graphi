@@ -1,0 +1,1 @@
+`trimRightSpace` removes trailing characters classified as whitespace by `unicode.IsSpace`. In `cobra.go`, lines 159–161, it calls `strings.TrimRightFunc(s, unicode.IsSpace)`.

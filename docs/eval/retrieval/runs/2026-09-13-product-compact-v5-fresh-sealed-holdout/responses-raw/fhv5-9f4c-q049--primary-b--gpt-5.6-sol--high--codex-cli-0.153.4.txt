@@ -1,0 +1,6 @@
+The documented unsupported mechanisms are:
+
+- Legacy custom completions written in Bash, including the `BashCompCustom` flag annotation. Zsh ignores them. Replace them with `ValidArgsFunction` and `RegisterFlagCompletionFunc()`.
+- `MarkFlagCustom()`. Zsh ignores it. Replace it with `RegisterFlagCompletionFunc()`.
+
+Evidence: `site/content/completions/_index.md`, lines 475–481.

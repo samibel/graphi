@@ -1,0 +1,1 @@
+The concrete Version setting and conditions are supported by the preserved field comment at command.go:108-109. The execution-time initialization and no-op cases are explicitly described at 1201-1203. The answer properly limits the conclusion because no application configuration is in the bundle.

@@ -1,0 +1,5 @@
+`AllChildCommandsHaveGroup` reports whether every relevant child command has a group.
+
+In `command.go:1336-1344`, it iterates over `c.commands` and returns `false` when a child is either available (`sub.IsAvailableCommand()`) or is `c.helpCommand`, but has an empty `sub.GroupID`. Otherwise, it returns `true`.
+
+“Available” excludes deprecated, hidden, and help commands, and requires the command to be runnable or have available subcommands (`command.go:1560-1576`).

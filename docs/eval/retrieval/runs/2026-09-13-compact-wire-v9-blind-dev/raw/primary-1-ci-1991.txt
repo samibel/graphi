@@ -1,0 +1,10 @@
+Call `cmd.Flag(name)`, which searches the current command and its parents, then read the returned flag’s `Value`:
+
+```go
+f := cmd.Flag("name")
+if f != nil {
+    value := f.Value
+}
+```
+
+Evidence: `command.go:1794-1803` says `Flag` “climbs up the command tree” and checks `c.Flags().Lookup(name)` followed by `c.persistentFlag(name)`. `command.go:1641-1653` states that `Flags()` includes flags declared by all parents.

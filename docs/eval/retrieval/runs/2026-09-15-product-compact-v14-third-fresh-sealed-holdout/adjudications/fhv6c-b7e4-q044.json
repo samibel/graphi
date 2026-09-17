@@ -1,0 +1,39 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "query_id": "fhv6c-b7e4-q044",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv6c-b7e4-q044",
+    "rater_id": "third-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+    "query_text_sha256": "a0d408aa201daac68e5e782565a20392b485e79d4b9ef5f7912a5d25125fd6ee",
+    "bundle_sha256": "b08c1137c40fe10759e695097b355144e2ba5191a0fc0dc505de5d618e9cc66e",
+    "prompt_sha256": "c496e7a168cdc606fa7c3129da82f5acfb3feaffdbac4762aca1449fc244c228",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "Define the parent’s inherited `PersistentPreRun` to call `SetContext` on the command passed to the hook; the child’s `Run` then reads that replacement through `Context()`:\n\n```go\nrootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {\n    ctx := context.WithValue(cmd.Context(), key, value)\n    cmd.SetContext(ctx)\n}\n\nchildCmd.Run = func(cmd *cobra.Command, args []string) {\n    ctx := cmd.Context()\n    // use ctx\n}\n```\n\nEvidence:\n\n- Persistent hooks are inherited by children and run before `Run` (`site/content/user_guide.md:607-615`).\n- `SetContext` sets the command context (`command.go:268-272`).\n- `Context()` returns that stored context (`command.go:258-266`).\n\nThus, when the inherited hook receives the executing child as `cmd`, setting its context makes the new context visible to that child’s subsequent `Run` callback.",
+    "responded_at": "2026-09-15T08:36:21Z",
+    "sha256": "5f17d8d0d3b68f247eab945f5d11f7e3ffcf5928137a200e663bc2ec48978958"
+  },
+  "disclosure": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "query_id": "fhv6c-b7e4-q044",
+    "adjudicator_response_sha256": "5f17d8d0d3b68f247eab945f5d11f7e3ffcf5928137a200e663bc2ec48978958",
+    "disclosed_artifact_sha256": [
+      "1854c1c848fb1191020e066c81df6660d8f27f49f67466b3f227c5d932103b3b",
+      "4cb58318ebd0aca69957a70b3b7a134ca0a5fe1753bd2020b69026b299dbc4fd",
+      "aba8487aa783a8b010700a1dd57d9180df4305bcfbc5f5e1594e8808c21fd3e8",
+      "b092a64f6e52b8bd78b25d18a18c34fb0aed752c5875d1dda1559b533049fa56"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

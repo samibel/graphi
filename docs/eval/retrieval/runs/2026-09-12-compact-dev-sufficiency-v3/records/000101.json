@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 101,
+  "previous_sha256": "1066c64622a84e70369cc9c174a333d612f147accb2c2ad63583bcd1837a6e5b",
+  "kind": "grade",
+  "query_id": "cb-16",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "ff06eb2b67618cf3f233f5d45d56208144c64f9106b212c4690c6b60cefdc14a",
+  "outcome": "pass",
+  "rationale": "cobra.go:187-213 identifies ld as the distance implementation and shows lowercasing/matrix setup; command.go:836-837 preserves its suggestion call.\n",
+  "sha256": "1c9ca93a59509f4bad6c9ac12435e2db5dc9eb6d2414177f38b81ac983d94942"
+}

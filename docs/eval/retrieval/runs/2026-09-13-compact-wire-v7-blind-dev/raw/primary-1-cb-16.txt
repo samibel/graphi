@@ -1,0 +1,9 @@
+The Levenshtein distance is computed by `ld` in `cobra.go:188-221`. It builds the distance matrix `d`, fills it using insertion/deletion/substitution costs, and returns `d[len(s)][len(t)]`.
+
+It is invoked for command suggestions in `command.go:836`:
+
+```go
+levenshteinDistance := ld(typedName, cmd.Name(), true)
+```
+
+The result is compared with `c.SuggestionsMinimumDistance` at `command.go:837`.

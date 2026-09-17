@@ -1,0 +1,1 @@
+When launched from Explorer on Windows, if `MousetrapHelpText` is non-empty, the command prints that text (`command_win.go:31–32`, `mousetrap.StartedByExplorer()` and `c.Print(MousetrapHelpText)`). The default message tells the user to open `cmd.exe` and run the tool there (`cobra.go:67–75`). Its configured display duration defaults to five seconds (`cobra.go:77–83`).

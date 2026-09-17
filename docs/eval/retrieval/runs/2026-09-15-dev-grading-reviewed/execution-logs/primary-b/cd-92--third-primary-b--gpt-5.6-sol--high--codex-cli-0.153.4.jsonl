@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-5eee-71a1-8c53-f71fe37e03a1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`CompletionOptions` controls Cobra’s default shell-completion behavior and must be set on the root command (`site/content/completions/_index.md:94-95`). It defines four boolean options (`completions.go:104-116`):\n\n- `DisableDefaultCmd`: prevents creation of the default `completion` command.\n- `DisableNoDescFlag`: prevents creation of `--no-descriptions` for shells supporting descriptions.\n- `DisableDescriptions`: disables all supported completion descriptions.\n- `HiddenDefaultCmd`: hides the default `completion` command."}}
+{"type":"turn.completed","usage":{"input_tokens":16361,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":116,"reasoning_output_tokens":0}}

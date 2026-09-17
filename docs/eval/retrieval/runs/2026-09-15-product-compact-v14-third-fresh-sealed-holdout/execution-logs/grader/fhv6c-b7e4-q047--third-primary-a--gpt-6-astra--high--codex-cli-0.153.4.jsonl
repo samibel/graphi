@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-419c-7730-889f-9f0d7bddcd3c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies the hidden `__complete` command for inspecting output and correctly explains program-defined enabling values, `<PROGRAM>_ACTIVE_HELP=0` suppression, and the `COBRA_ACTIVE_HELP=0` override. These behaviors and the cited locations are supported by the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":18934,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":113,"reasoning_output_tokens":48}}

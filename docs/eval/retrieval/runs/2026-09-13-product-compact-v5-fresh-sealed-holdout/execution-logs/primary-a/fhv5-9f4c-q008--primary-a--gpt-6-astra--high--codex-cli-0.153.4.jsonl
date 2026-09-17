@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-6011-7c12-a99a-4dadceef08ea"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ExactValidArgs(n)` returns an error if there are not exactly `n` positional arguments or if any positional argument is absent from `Command.ValidArgs` (`args.go`, lines 125–126).\n\nIts deprecation note recommends `MatchAll(ExactArgs(n), OnlyValidArgs)` (`args.go`, line 128), which is also what its implementation returns (line 130)."}}
+{"type":"turn.completed","usage":{"input_tokens":17185,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":83,"reasoning_output_tokens":0}}

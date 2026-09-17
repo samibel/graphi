@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q020",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "f4f566cf0bf53368c030b72c57f45c7e6eb755930863ae20c30061738701cd75",
+  "bundle_sha256": "19c60bf2066e800f3ae2fb5a44b4160bbb7c159828a9d8541ecca2348cf71c5c",
+  "prompt_sha256": "6834412b84dd5f1cbecc110088d1e9af7e7865d5848898f7deddec36350f64b6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`indentString` preserves empty lines without adding the prefix. In `doc/rest_docs.go:179–183`, it adds the prefix only when `bol \u0026\u0026 c != '\\n'`, appends every character unchanged, and sets `bol = c == '\\n'`. Lines containing spaces still receive the prefix.",
+  "responded_at": "2026-09-13T12:33:15Z",
+  "sha256": "663730efd20d6e7a8d8aa14e47ca6ce5e5143d647bf9884e7c363510d231763d"
+}

@@ -1,0 +1,1 @@
+PASS: It accurately describes InitDefaultCompletionCmd's guards and the generated command's principal settings.

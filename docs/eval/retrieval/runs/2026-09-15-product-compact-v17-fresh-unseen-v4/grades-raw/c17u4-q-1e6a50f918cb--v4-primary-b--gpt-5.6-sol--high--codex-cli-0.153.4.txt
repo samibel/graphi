@@ -1,0 +1,1 @@
+PASS: The response identifies template registration of `rpad` and explains how it constructs a left-aligned width format and applies it to the string, adding right-side spaces to the minimum width. All claims and citations are supported by the preserved `cobra.go` spans.

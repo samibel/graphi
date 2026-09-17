@@ -1,0 +1,254 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "scope": "development_diagnostic_not_release",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "record_head_sha256": "e7bd5e7cb0d6485fd6bee1229a11b20c07c545c49a17c697178144d47a08aaeb",
+  "n": 40,
+  "k": 36,
+  "passed": 29,
+  "complete": true,
+  "diagnostic_pass": false,
+  "queries": [
+    {
+      "query_id": "cb-01",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-02",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-03",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-04",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-07",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-08",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-09",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-11",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-12",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "cb-13",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-14",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-15",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "cb-16",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-19",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "cb-20",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-21",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-22",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-24",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "cb-25",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-26",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-27",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-28",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "cb-30",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-32",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-33",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-35",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-467",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "ci-511",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "ci-678",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-771",
+      "pass": false,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-943",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1133",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1222",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1236",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1358",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1408",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1970",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "ci-1991",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    },
+    {
+      "query_id": "ci-2249",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-2314",
+      "pass": false,
+      "complete": true,
+      "reason": "non-answered primary response fails mechanically and is not adjudicated"
+    }
+  ],
+  "sha256": "6e54c67756499a41072e84c9f1b69454743ad3372ec8d6a161ac7f14f9ee22da"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 28,
+  "previous_sha256": "6fdc3300fd018dcc4405a6b09822e068b1570ce4022ce8e50bad3cf69ce2992c",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c4df74db8790a9745e3ce2e9412d8b22c63aab3198037851cf5343238d72aab7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define a callback returning completion candidates and a `ShellCompDirective`.\n\n```go\ncmd.ValidArgsFunction = func(\n    cmd *Command,\n    args []string,\n    toComplete string,\n) ([]string, ShellCompDirective) {\n    return []string{\"candidate1\", \"candidate2\"}, directive\n}\n```\n\nFor a flag, register the same callback shape:\n\n```go\nerr := cmd.RegisterFlagCompletionFunc(\"format\",\n    func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n        return []string{\"json\", \"yaml\"}, directive\n    },\n)\n```\n\nEvidence:\n\n- Positional completion uses `Command.ValidArgsFunction` with that exact signature: `command.go:87-89`.\n- Flag completion uses `RegisterFlagCompletionFunc(flagName, callback)`: `completions.go:132-146`. It errors if the flag does not exist or already has a registered function.\n- Static candidates can use `FixedCompletions(choices, directive)`: `completions.go:124-127`.\n- Completion scripts query the hidden `__complete` or `__completeNoDesc` commands: `completions.go:26-33`.\n\nThe response does not include the available directive constants, so `directive` must be replaced with an appropriate `ShellCompDirective` defined elsewhere in the repository.",
+  "sha256": "be2f9ecab4c2773422d020f3c97fa863a2c6c6c0089bf84aa0b14c3ab9b3fa52"
+}

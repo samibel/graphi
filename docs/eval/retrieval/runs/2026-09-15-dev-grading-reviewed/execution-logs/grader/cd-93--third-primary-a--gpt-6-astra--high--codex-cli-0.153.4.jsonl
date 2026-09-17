@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a484-7309-7991-b843-ed6f325673c8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript supports the response’s PostRun signature, PostRunE description, hook order, persistent-hook inheritance and traversal behavior, and finalizer helper. The cited locations support these claims, and the response correctly leaves the helper’s invocation timing unspecified."}}
+{"type":"turn.completed","usage":{"input_tokens":19122,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":236,"reasoning_output_tokens":179}}

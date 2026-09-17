@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 54,
+  "previous_sha256": "869c68023dad9ebd594cec4f41d291f11551a4e11eed5021b11b35814e4ab84d",
+  "kind": "response",
+  "query_id": "cb-19",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "f441498706fb71a223883780770a9420fb375ca91509cdacf98b624d0f7b4062",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows `Execute` delegating to `ExecuteC` and isolated pre-run fragments, but omits command resolution, parsing and validation, and the ordered calls to the persistent and ordinary Run hooks needed to describe the lifecycle.\n",
+  "sha256": "0650980adf3fdcc48706e6ed3fa09387721b064e354c0dc890708a744155cf86"
+}

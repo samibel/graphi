@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-15-compact17-fresh-sealed-holdout",
+  "status": "curated_sealed_pre_capture",
+  "candidate": {
+    "commit": "2d65df335544c2c66c0ff12e8f79db4f6c53e72b",
+    "tree": "9af24c26ba6b5b221e70f7e8998c351b640776f8",
+    "product_identity": "task_context/2-compact/17",
+    "token_budget": 1200
+  },
+  "corpus": {
+    "repo": "spf13/cobra",
+    "commit": "a0a6ae020bb3899ff0276067863e50523f897370"
+  },
+  "dataset": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout/sealed-dataset.json",
+    "sha256": "8b194e4bb2bec052458d77e0e49e86269d7b1a0d4357c1f68f26009c455d3562",
+    "reuse_determination": "eligible unchanged never-captured seal",
+    "source_curation_commit": "b54c06fdcf59521cff9fdc56e04387f70874a83f",
+    "n": 64,
+    "unique_query_ids": 64,
+    "unique_family_ids": 64,
+    "split": "holdout",
+    "relevant_min_grade": 3,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "natural_language": 11,
+      "architecture_flow": 11,
+      "config_convention": 10,
+      "ambiguous": 10
+    },
+    "schema_label_mapping": {
+      "natural_language": "nl_behaviour",
+      "config_convention": "config_docs"
+    }
+  },
+  "decision_rule": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "measurement_contract_version": "sw266-measurement-contract/2",
+    "n": 64,
+    "k": 56,
+    "confidence_level_basis_points": 9500,
+    "method": "two-sided exact Clopper-Pearson interval",
+    "lower_bound_floor": "3/4",
+    "candidate_token_budget": 1200,
+    "evidence_grade": 3
+  },
+  "frozen_public_inputs": {
+    "methodology_sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+    "threat_model_sha256": "b0ff78d9a8944794471ba243f36914454c81d2fdb2b41a3c10b9be2afe1221b1",
+    "budgets_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+    "targets_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+    "grading_rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c"
+  },
+  "answer_span_ceiling_audit": {
+    "version": "answer-span-ceiling/1",
+    "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+    "ceiling_tokens": 1200,
+    "answerable_queries": 64,
+    "grade3_spans": 64,
+    "spans_over_ceiling": 0,
+    "all_complete_feasible": 64
+  },
+  "stage_order_invariant": "Freeze and complete, hash, and commit every candidate capture, generated prompt, and preserved bundle before any primary, rater, grader, or adjudicator execution.",
+  "stage_flags": {
+    "dataset_curated": true,
+    "dataset_sealed": true,
+    "candidate_capture_performed": false,
+    "prompt_disclosure_performed": false,
+    "primary_execution_performed": false,
+    "rating_or_grading_performed": false,
+    "adjudicator_execution_performed": false
+  }
+}

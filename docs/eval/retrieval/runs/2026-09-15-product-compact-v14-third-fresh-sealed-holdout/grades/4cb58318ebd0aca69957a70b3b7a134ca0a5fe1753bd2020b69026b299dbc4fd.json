@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q044",
+  "response_sha256": "4cb58318ebd0aca69957a70b3b7a134ca0a5fe1753bd2020b69026b299dbc4fd",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The transcript supports hook ordering and the context setter/getter APIs, but does not establish that the parent’s inherited PersistentPreRun receives the child’s Command instance. That missing fact is necessary to verify that calling cmd.SetContext in the hook changes the context observed by the child’s Run.",
+  "graded_at": "2026-09-15T08:34:42Z",
+  "sha256": "aba8487aa783a8b010700a1dd57d9180df4305bcfbc5f5e1594e8808c21fd3e8"
+}

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+When ContainsGroup checks a requested value, does it compare against group titles or group IDs?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 93cd74150354; read in order (297/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1345,"end_line":1359,"text":"\n// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// AddGroup adds one or more command groups to this parent command.\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}"},{"path":"command.go","start_line":1169,"end_line":1181,"text":"\n// checkCommandGroups checks if a command has been added to a group that does not exists.\n// If so, we panic because it indicates a coding error that should be corrected.\nfunc (c *Command) checkCommandGroups() {\n\tfor _, sub := range c.commands {\n\t\t// if Group is not defined let the developer know right away\n\t\tif sub.GroupID != \"\" && !c.ContainsGroup(sub.GroupID) {\n\t\t\tpanic(fmt.Sprintf(\"group id '%s' is not defined for subcommand '%s'\", sub.GroupID, sub.CommandPath()))\n\t\t}\n\n\t\tsub.checkCommandGroups()\n\t}\n}"},{"path":"command.go","start_line":1424,"end_line":1434,"text":"\n// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":40,"end_line":45,"text":"\n// Group Structure to manage groups for commands\ntype Group struct {\n\tID    string\n\tTitle string\n}"},{"path":"command.go","start_line":1330,"end_line":1334,"text":"\n// Groups returns a slice of child command groups.\nfunc (c *Command) Groups() []*Group {\n\treturn c.commandgroups\n}"},{"path":"command.go","start_line":1072,"end_line":1074,"text":"\t// Now that all commands have been created, let's make sure all groups\n\t// are properly created also\n\tc.checkCommandGroups()"},{"path":"command.go","start_line":55,"end_line":56,"text":"\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"cobra.go","start_line":143,"end_line":146,"text":"// Eq takes two types and checks whether they are equal. Supported types are int and string. Unsupported types will panic.\nfunc Eq(a interface{}, b interface{}) bool {\n\tav := reflect.ValueOf(a)\n\tbv := reflect.ValueOf(b)"}],"provenance":{"input_sha256":"0d3f2e00d661bec7487ee38f733ee7fbadbe612560fa09616a5540229dd3481b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

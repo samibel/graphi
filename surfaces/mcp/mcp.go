@@ -5,7 +5,10 @@
 // zero outbound network activity (local-first contract). It exposes structural
 // queries and search as MCP tools and dispatches every call to the SAME shared
 // client, then returns the canonical serialized bytes. The serialized result is
-// therefore byte-identical to the CLI for identical inputs (MCP↔CLI parity).
+// therefore byte-identical to the CLI for identical inputs except
+// task_context/2: that version deliberately projects the shared canonical
+// engine result into MCP structuredContent to avoid charging agents for a
+// second JSON encoding of the same evidence.
 //
 // Layering: mcp is a surface. It imports surfaces/client only and holds no
 // query/traversal/ordering/serialization logic of its own.
@@ -119,6 +122,14 @@ func WithRepository(repo client.Repository) ServerOption {
 	return func(s *Server) { s.initialRepo = repo }
 }
 
+// WithEvaluationLexicalCompactControl is restricted to offline qualification
+// harnesses. It projects the declared lexical control through compact/17 while
+// retaining lexical_only provenance. The default product server never enables
+// it and continues to return the canonical non-ready fallback unchanged.
+func WithEvaluationLexicalCompactControl() ServerOption {
+	return func(s *Server) { s.evaluationLexicalCompactControl = true }
+}
+
 // Server is the MCP stdio handler bound to a shared surface client.
 type Server struct {
 	// bound is atomically replaced as MCP roots bind or change. Stable and Labs
@@ -129,6 +140,9 @@ type Server struct {
 	// initialRepo is the repository a pre-bound server was constructed over
 	// (WithRepository); the binder path carries it per Binding instead.
 	initialRepo client.Repository
+	// evaluationLexicalCompactControl is an explicit offline-evaluation seam;
+	// no request or environment variable can enable it.
+	evaluationLexicalCompactControl bool
 
 	// embedderRegistry is the embed.Registry the semantic_status tool call
 	// (SW-265) resolves through the shared surfaces/client.SemanticStatus

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 43,
+  "previous_sha256": "7da9883741a544794f6d745e5ba742204ee3898194411692880a259c6575ec1f",
+  "kind": "response",
+  "query_id": "cb-03",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "e56d6b42bb471aff0e5b790857fb613e6cc938f6fd3195ec4ed9183a9c2ca554",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GenMarkdownTree(cmd *cobra.Command, dir string) error` generates a Markdown page for the command and all descendants in the supplied directory (`doc/md_docs.go:119–126`). Its comment warns that hyphens in command names can cause ambiguous output filenames. `GenMarkdownTreeCustom` is the variant accepting custom `filePrepender` and `linkHandler` functions (`doc/md_docs.go:131–134`). The related page generator, `GenMarkdownCustom`, writes the command path, short description, optional synopsis, runnable usage, examples, options, and SEE ALSO links (`doc/md_docs.go:56–97`); the full tree-generation body is not included.\n",
+  "sha256": "26f40dd17f17c1c9ba4f36c57721f74a2c11ed6a772335b4e218ecad5e08817a"
+}

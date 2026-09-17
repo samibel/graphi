@@ -1,0 +1,30 @@
+retrieval-eval: indexing /absolute/path/to/pinned/cobra
+retrieval-eval: embedder "ollama:qwen3-embedding:0.6b@ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d:ctx=8192:runtime=0.33.3:query=qwen3-code-v1:compute=cpu:adapter=2" active; generating vectors
+retrieval-eval: generation pass embedded=768 reused=0 excluded=170 failed=0 purged=0 (id=ollama:qwen3-embedding:0.6b@ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d:ctx=8192:runtime=0.33.3:query=qwen3-code-v1:compute=cpu:adapter=2)
+retrieval-eval: semantic ready (model=ollama:qwen3-embedding:0.6b@ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d:ctx=8192:runtime=0.33.3:query=qwen3-code-v1:compute=cpu:adapter=2, dim=1024, rows=768)
+retrieval-eval: name-only semantic control ready (model=ollama:qwen3-embedding:0.6b@ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d:ctx=8192:runtime=0.33.3:query=qwen3-code-v1:compute=cpu:adapter=2, rows=768, universe=v3-eligible)
+retrieval-eval: indexed 938 nodes, 4036 edges, 58 files in 221ms
+retrieval-eval: baseline lexical over 44 queries
+retrieval-eval: baseline hybrid_v1 over 44 queries
+retrieval-eval: baseline semantic_name_only over 44 queries
+retrieval-eval: baseline oracle_upper_bound over 44 queries
+retrieval-eval: baseline chunk_only over 44 queries
+retrieval-eval: baseline fusion over 44 queries
+retrieval-eval: baseline semantic_first over 44 queries
+retrieval-eval: wrote /private/tmp/graphi-qwen-cpu120-dev-report.json
+retrieval-eval: wrote the raw-sample run directory to docs/eval/retrieval/runs/2026-09-06-qwen-dev/qwen-cpu120
+retrieval-eval: cobra @ a0a6ae020bb3899ff0276067863e50523f897370, dataset cobra-v2-dev (44 queries), candidate 5d0ef8729be141e901e996d8660ec5bfe6dd182d+dirty, runner local
+retrieval-eval:   lexical              top1 0.146  recall@5 0.141  recall@10 0.174  mrr@10 0.166  ndcg@10 0.163  (41/44 scored)
+retrieval-eval:   hybrid_v1            top1 0.415  recall@5 0.313  recall@10 0.391  mrr@10 0.514  ndcg@10 0.382  (41/44 scored)
+retrieval-eval:   semantic_name_only   top1 0.366  recall@5 0.340  recall@10 0.410  mrr@10 0.470  ndcg@10 0.395  (41/44 scored)
+retrieval-eval:   oracle_upper_bound   top1 1.000  recall@5 1.000  recall@10 1.000  mrr@10 1.000  ndcg@10 1.000  (41/44 scored)
+retrieval-eval:   chunk_only           top1 0.415  recall@5 0.313  recall@10 0.391  mrr@10 0.514  ndcg@10 0.382  (41/44 scored)
+retrieval-eval:   fusion               top1 0.537  recall@5 0.406  recall@10 0.496  mrr@10 0.646  ndcg@10 0.499  (41/44 scored)
+retrieval-eval:   semantic_first       top1 0.537  recall@5 0.416  recall@10 0.525  mrr@10 0.619  ndcg@10 0.511  (41/44 scored)
+retrieval-eval:   lexical              index 221ms  p50 247us  p95 414us  rss 346.578125MB
+retrieval-eval:   hybrid_v1            index 221ms  p50 2800us  p95 4606us  rss 346.578125MB
+retrieval-eval:   semantic_name_only   index 221ms  p50 36944us  p95 109268us  rss 346.578125MB
+retrieval-eval:   oracle_upper_bound   index not_applicable  p50 0us  p95 1us  rss 346.578125MB
+retrieval-eval:   chunk_only           index 221ms  p50 2919us  p95 4826us  rss 346.578125MB
+retrieval-eval:   fusion               index 221ms  p50 43431us  p95 115896us  rss 346.578125MB
+retrieval-eval:   semantic_first       index 221ms  p50 44274us  p95 122559us  rss 346.578125MB

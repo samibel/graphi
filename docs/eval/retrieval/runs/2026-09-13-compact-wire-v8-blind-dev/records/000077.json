@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 77,
+  "previous_sha256": "8e8079225f375fd21ae4d05c4a151c4080477cb31abf9475c5c3221f9e72b9ec",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "fc7eb689df6c82d893574290bd348448d0536621fb2f3d1785042843a6cbbd1d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Register a callback with `OnInitialize` and read the flag there:\n\n```go\nfunc init() {\n    OnInitialize(func() {\n        value, err := cmd.Flags().GetBool(\"flag-name\")\n        // use value\n    })\n}\n```\n\nThis works because `Execute` calls `ParseFlags` first (`command.go:883-890`), then `preRun` (`command.go:926`), which invokes registered initializers (`command.go:1015-1019`). Persistent flags are available to descendant commands (`site/content/user_guide.md:270-273`), and `Command.Flag(name)` explicitly searches normal flags and then persistent flags (`command.go:1794-1803`).",
+  "sha256": "c58c1872d00f24e306d0b9b6ee637912f6899f19f63825dacaaca430307805bb"
+}

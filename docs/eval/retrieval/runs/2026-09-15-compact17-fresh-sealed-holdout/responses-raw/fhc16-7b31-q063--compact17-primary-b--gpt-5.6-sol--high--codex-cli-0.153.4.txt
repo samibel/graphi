@@ -1,0 +1,1 @@
+It compares against group IDs. In `command.go:1347-1352`, `ContainsGroup(groupID string)` checks `if x.ID == groupID`; the `Group` struct separately defines `ID` and `Title` (`command.go:42-44`).

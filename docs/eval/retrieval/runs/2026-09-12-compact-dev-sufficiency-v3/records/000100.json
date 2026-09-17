@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 100,
+  "previous_sha256": "b78b3cdea09fcd36839e6bca403c3b65e974067a12f92f60ae9cb96d853f60f9",
+  "kind": "grade",
+  "query_id": "cb-14",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "8438fb81efdd0eabd8993a3503d9403ffb7a428b11b49db2f3cadc3b5a817b13",
+  "outcome": "pass",
+  "rationale": "completions.go:202-217 directly shows the request handler calling getCompletions and preserving results/directives despite an error; request-command comments supply context.\n",
+  "sha256": "1066c64622a84e70369cc9c174a333d612f147accb2c2ad63583bcd1837a6e5b"
+}

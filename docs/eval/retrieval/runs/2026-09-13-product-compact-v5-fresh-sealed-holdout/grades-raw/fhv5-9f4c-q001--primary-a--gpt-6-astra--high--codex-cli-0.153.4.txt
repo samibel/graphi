@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the appended string as activeHelpMarker immediately followed by activeHelpStr and explains that existing completion entries retain their order. The implementation and comments at active_help.go:38–44 support these claims and the stated ordering of successive ActiveHelp lines.

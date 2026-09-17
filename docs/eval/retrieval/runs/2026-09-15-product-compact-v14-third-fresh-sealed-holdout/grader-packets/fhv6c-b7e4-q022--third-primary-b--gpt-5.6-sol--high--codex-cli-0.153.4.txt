@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: dcbbe3647bd9ce2fb9f6b32d21ec3509b304d140348aa532fb5ef1eacbbbe5f4
+QUERY ID: fhv6c-b7e4-q022
+
+QUESTION:
+zsh_completions_test.go
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- zsh_completions_test.go:23-33 anchor="func TestZshCompletionWithActiveHelp(" reason=The file's test establishes that generated Zsh completion leaves Active Help enabled.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"2 ranked source span(s); query 365ef0af29a8; read in order (37/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"zsh_completions_test.go","start_line":15,"end_line":15,"text":"package cobra"},{"path":"zsh_completions_test.go","start_line":23,"end_line":33,"text":"func TestZshCompletionWithActiveHelp(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\n\tbuf := new(bytes.Buffer)\n\tassertNoErr(t, c.GenZshCompletion(buf))\n\toutput := buf.String()\n\n\t// check that active help is not being disabled\n\tactiveHelpVar := activeHelpEnvVar(c.Name())\n\tcheckOmit(t, output, fmt.Sprintf(\"%s=0\", activeHelpVar))\n}"}],"provenance":{"input_sha256":"fdebb49c5ae6a499ed987ba66aa28f7a1b6912acbc37886cb1bdf4def4b5a183","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`zsh_completions_test.go` belongs to package `cobra` ([line 15](zsh_completions_test.go:15)).
+
+It declares `TestZshCompletionWithActiveHelp`, which:
+
+- Creates a `Command` named `"c"` with `emptyRun`.
+- Generates Zsh completion output into a `bytes.Buffer` via `GenZshCompletion`.
+- Computes the command’s active-help environment variable with `activeHelpEnvVar(c.Name())`.
+- Uses `checkOmit` to verify the generated output does not contain `<activeHelpVar>=0`, ensuring active help remains enabled ([lines 23–33](zsh_completions_test.go:23)).
+----- END THE RATER'S RESPONSE -----

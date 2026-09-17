@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-bf8b-70f0-b95c-b8f87838a709"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response includes only the heading from `site/content/user_guide.md` (lines 1–2), with no guidance on wiring commands in nested Go packages or avoiding import cycles."}}
+{"type":"turn.completed","usage":{"input_tokens":17388,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

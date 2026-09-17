@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 82,
+  "previous_sha256": "ffddfed91be4dc93e7f828a0b7e1cbea04dbdcba366777168f09dcb35f1b86fa",
+  "kind": "grade",
+  "query_id": "cb-01",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "f866c210ffae93128f905a123709eb671780f8b747937c2a05643629d3250293",
+  "outcome": "pass",
+  "rationale": "The named method and its signature are concretely located at preserved command.go:1051-1052. The nil-context default is visible at 1053-1054, and the cited ExecuteContextC and Execute bodies support the additional context-setting and error-only-wrapper claims.\n",
+  "sha256": "24a36ea5a7ddadedb34e3e17537b9311aacd2ab3a4d2242d86e9807d79b6ba2b"
+}

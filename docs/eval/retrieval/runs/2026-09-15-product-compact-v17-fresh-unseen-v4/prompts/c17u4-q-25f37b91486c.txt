@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Which conditions make a command unavailable, and what positive condition ultimately makes it available?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query a9743869ee53; read in order (284/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1559,"end_line":1576,"text":"\n// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"command.go","start_line":1614,"end_line":1634,"text":"\n// HasAvailableSubCommands determines if a command has available sub commands that\n// need to be shown in the usage/help default template under 'available commands'.\nfunc (c *Command) HasAvailableSubCommands() bool {\n\t// return true on the first found available (non deprecated/help/hidden)\n\t// sub command\n\tfor _, sub := range c.commands {\n\t\tif sub.IsAvailableCommand() {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no available (non deprecated/help/hidden)\n\t// sub commands\n\treturn false\n}\n\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":227,"end_line":227,"text":"\t// Hidden defines, if this command is hidden and should NOT show up in the list of available commands."},{"path":"command.go","start_line":1549,"end_line":1553,"text":"\n// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"command.go","start_line":1841,"end_line":1845,"text":"\n// Parent returns a commands parent command.\nfunc (c *Command) Parent() *Command {\n\treturn c.parent\n}"},{"path":"doc/man_docs.go","start_line":219,"end_line":223,"text":"\t\tseealsos := make([]string, 0)\n\t\tif cmd.HasParent() {\n\t\t\tparentPath := cmd.Parent().CommandPath()\n\t\t\tdashParentPath := strings.ReplaceAll(parentPath, \" \", \"-\")\n\t\t\tseealso := fmt.Sprintf(\"**%s(%s)**\", dashParentPath, header.Section)"},{"path":"doc/md_docs.go","start_line":94,"end_line":102,"text":"\t\t\t\t}\n\t\t\t})\n\t\t}\n\n\t\tchildren := cmd.Commands()\n\t\tsort.Sort(byName(children))\n\n\t\tfor _, child := range children {\n\t\t\tif !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {"},{"path":"command.go","start_line":1771,"end_line":1775,"text":"// HasAvailableFlags checks if the command contains any flags (local plus persistent from the entire\n// structure) which are not hidden or deprecated.\nfunc (c *Command) HasAvailableFlags() bool {\n\treturn c.Flags().HasAvailableFlags()\n}"}],"provenance":{"input_sha256":"cdd39e0f78d61a6b2c309f43a270e7e0395d09d0a5bcbb20b6734388f3c1855e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

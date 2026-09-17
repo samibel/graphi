@@ -1,0 +1,1 @@
+The exact Execute declaration and complete wrapper body at command.go:1038-1040 directly support discarding the command result and returning the error. The preceding comment at 1036-1037 supports command-tree matching, and 1030-1032 shows ExecuteContext setting context before delegation.

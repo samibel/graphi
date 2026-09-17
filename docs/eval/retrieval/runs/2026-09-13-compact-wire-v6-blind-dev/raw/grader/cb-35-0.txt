@@ -1,0 +1,1 @@
+PASS: It correctly summarizes creation conditions and key configuration of the default completion command.

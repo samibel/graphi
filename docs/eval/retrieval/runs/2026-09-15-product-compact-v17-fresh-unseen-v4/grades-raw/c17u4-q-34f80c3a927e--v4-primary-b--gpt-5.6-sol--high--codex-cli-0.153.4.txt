@@ -1,0 +1,1 @@
+PASS: The response directly identifies SetHelpCommand(customHelpCmd) and explains that it assigns the supplied command to c.helpCommand, matching command.go:326-330. Both citations resolve within the bundle, and the automatic help-command claim is supported by the included user guide span.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-f5e6-7000-8412-1d4ffd2e2a25"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response omits the built-in usage template lines that format command groups, ungrouped commands, local/global flags, and additional help topics."}}
+{"type":"turn.completed","usage":{"input_tokens":16495,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":47}}

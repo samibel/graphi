@@ -1,0 +1,1 @@
+PASS: The opt-in assignment, false default, warning, and gated prefix lookup are all present in cobra.go:45-56 and command.go:774-777.

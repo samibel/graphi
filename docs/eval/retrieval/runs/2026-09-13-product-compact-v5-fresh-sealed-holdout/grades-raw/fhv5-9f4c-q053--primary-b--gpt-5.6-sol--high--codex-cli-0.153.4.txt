@@ -1,0 +1,1 @@
+FAIL: The response does not answer the question, and the preserved bundle omits CONTRIBUTING.md:16–27 containing the required bug-report information and feature-request guidance.

@@ -1,0 +1,1 @@
+PASS: The response accurately states that nonCompletableFlag returns true for hidden flags or flags with a nonempty Deprecated string. The cited transcript also confirms matching flags, including inherited flags, are skipped before writeFlag or writeShortFlag.

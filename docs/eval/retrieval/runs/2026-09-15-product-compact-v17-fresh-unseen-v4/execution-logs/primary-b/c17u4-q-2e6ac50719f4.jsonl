@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-4c24-7540-a464-07d7129a3be2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `completions.go` lines 103–116, `CompletionOptions` provides four independent switches:\n\n- `DisableDefaultCmd`: prevents creation of the default `completion` command.\n- `DisableNoDescFlag`: prevents creation of the `--no-descriptions` flag.\n- `DisableDescriptions`: turns off all completion descriptions for supporting shells.\n- `HiddenDefaultCmd`: hides the default `completion` command."}}
+{"type":"turn.completed","usage":{"input_tokens":16456,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":0}}

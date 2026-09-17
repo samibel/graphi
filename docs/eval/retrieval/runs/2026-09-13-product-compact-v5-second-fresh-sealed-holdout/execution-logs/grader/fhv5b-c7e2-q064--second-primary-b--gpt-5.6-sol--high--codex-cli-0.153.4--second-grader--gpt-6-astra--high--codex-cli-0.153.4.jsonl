@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b73-de77-7430-a6ad-d356c4ff7637"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies creation of the command-named ContinueOnError flag set, conditional creation of the error buffer, and assignment of that buffer as the flag set’s output, all supported by command.go:1641–1653 in the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18284,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}

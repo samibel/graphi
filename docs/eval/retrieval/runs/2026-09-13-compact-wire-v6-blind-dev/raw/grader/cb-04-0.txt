@@ -1,0 +1,1 @@
+PASS: It correctly describes registration, both error cases, and mutex-protected storage in the supplied global map.

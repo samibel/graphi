@@ -1,0 +1,7 @@
+In `command.go`, `getErr(def io.Writer)` returns:
+
+1. Its own `c.errWriter` if non-nil (lines 405–406).
+2. Otherwise, `c.parent.getErr(def)` if it has a parent, recursively inheriting the nearest ancestor’s non-nil error writer (lines 408–409).
+3. Otherwise, the supplied `def` writer (line 411).
+
+`ErrOrStderr()` supplies `os.Stderr` as that default (lines 384–387).

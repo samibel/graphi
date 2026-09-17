@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that CompErrorln appends a newline and delegates to CompError at completions.go:898–901. Its explanation of the error/debug prefixes, stderr output, and conditional file logging is supported by the preserved CompError and CompDebug spans.

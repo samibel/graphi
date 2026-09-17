@@ -1,0 +1,28 @@
+Define a callback returning completion candidates and a `ShellCompDirective`, then register it for an existing flag:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("output", func(
+    cmd *Command,
+    args []string,
+    toComplete string,
+) ([]string, ShellCompDirective) {
+    return []string{"json", "yaml"}, directive
+})
+```
+
+The required signature appears in `completions.go:133`:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```
+
+For constant choices, use `FixedCompletions(choices, directive)`, which creates that callback (`completions.go:124-130`):
+
+```go
+err := cmd.RegisterFlagCompletionFunc(
+    "output",
+    FixedCompletions([]string{"json", "yaml"}, directive),
+)
+```
+
+`RegisterFlagCompletionFunc` returns an error if the flag does not exist or already has a completion function (`completions.go:134-143`). A registered function can be retrieved with `GetFlagCompletionFunc` (`completions.go:148-160`).

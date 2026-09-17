@@ -1,0 +1,1 @@
+Yes. `RangeArgs(min, max)` accepts both endpoints: argument counts equal to `min` or `max` return `nil`. It rejects only when `len(args) < min || len(args) > max`, returning `"accepts between %d and %d arg(s), received %d"` (`args.go`, lines 104–109).

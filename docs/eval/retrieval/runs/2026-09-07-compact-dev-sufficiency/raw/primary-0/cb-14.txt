@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies a hidden request command used by shell scripts (`completions.go:27–28`) but omits its handler and the calls that dispatch the request into completion logic.

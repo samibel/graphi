@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-b116-7e70-a30b-414c508d821d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`exactArgsWithInvalidCount(err error, t *testing.T)` is a test helper in `args_test.go:88–97` that checks an argument-count error:\n\n- If `err` is nil, it calls `t.Fatal(\"Expected an error\")` (lines 89–91).\n- It requires `err.Error()` to equal `\"accepts 2 arg(s), received 3\"` (lines 92–93).\n- If the message differs, it calls `t.Fatalf(\"Expected %q, got %q\", expected, got)` (lines 94–96)."}}
+{"type":"turn.completed","usage":{"input_tokens":16907,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":124,"reasoning_output_tokens":0}}

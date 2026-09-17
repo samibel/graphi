@@ -1,0 +1,1 @@
+PASS: The response accurately states all three append conditions and the parent-prefixed use-line construction, directly supported by the preserved command.go:1436–1451 transcript.

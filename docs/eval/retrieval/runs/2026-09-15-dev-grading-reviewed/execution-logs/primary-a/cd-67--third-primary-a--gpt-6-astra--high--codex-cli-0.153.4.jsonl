@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-1ba4-7db0-bc44-1c9e4e612c63"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).NameAndAliases() string` returns the command name followed by all aliases, separated by `\", \"` (`command.go:1540–1543`):\n\n```go\nreturn strings.Join(append([]string{c.Name()}, c.Aliases...), \", \")\n```\n\nThe name is `c.Use` up to the first space, or the entire value if no space exists (`Name()`, `command.go:1495–1503`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17328,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":97,"reasoning_output_tokens":0}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q024",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "2e7da363e7adc7c5cafc0d43a49efefefd89b01b84dee831ac4a95e5b6182312",
+  "bundle_sha256": "b694ba64a3f147277071a4bf970f8c1cfef9fb1ad3e19196cf1c8cb700ce94fc",
+  "prompt_sha256": "fa30d1a0405c6c75c68c7cbe089d9893136dd2fc6f99c92f4e4c88467b2ce80f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `SetHelpCommand` on the parent/root command, passing your replacement command:\n\n```go\ncmd.SetHelpCommand(customHelpCmd)\n```\n\nEvidence: `site/content/user_guide.md:538-551` says help is “a command like any other” and lists `cmd.SetHelpCommand(cmd *Command)` under “Defining your own help.” Also, `command.go:1067-1068` says default help is initialized last “to allow for user overriding.”",
+  "responded_at": "2026-09-15T18:37:45Z",
+  "sha256": "81555c3427c5b751f3abfdcb7b992b4d2b5882803e1ca66d3fd0dab11dfa77ed"
+}

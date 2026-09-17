@@ -1,0 +1,1 @@
+PASS: The response accurately describes ordered, comma-separated names for combined flags, the Default fallback when no recognized flags are set, and the overriding decimal error string for d >= shellCompDirectiveMaxValue, all supported by completions.go:162–191.

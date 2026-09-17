@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q040",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "f20dc3eabd1aade4252482640ad90810b7399baeafd89282a46844dd6b4a945a",
+  "bundle_sha256": "e403f82a8a83e32dad3387f92b886df69ac36c675779819d870bfff056e93da1",
+  "prompt_sha256": "240e7723752309bfa31f7655c08a8d1d01fc5f769a6f1acda5bab1e9351cecb6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes only the `AddCommand` declaration at `command.go:1302-1303`, not its implementation showing parent linkage, layout metadata, normalization, or sorting-state changes.",
+  "responded_at": "2026-09-13T12:35:53Z",
+  "sha256": "721e2b8c8e7c11fe1a9d4e8e7257a88e83e1c62bf14c47c87315d41edf070abc"
+}

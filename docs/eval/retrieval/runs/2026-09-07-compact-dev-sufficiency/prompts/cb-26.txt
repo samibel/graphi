@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+which environment variable controls active help
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"16 ranked source span(s) for \"which environment variable controls active help\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"active_help_test.go","start_line":319,"end_line":320,"text":"func TestDisableActiveHelp(t *testing.T) {\n\trootCmd := \u0026Command{"},{"path":"active_help_test.go","start_line":266,"end_line":267,"text":"func TestConfigActiveHelp(t *testing.T) {\n\trootCmd := \u0026Command{"},{"path":"active_help.go","start_line":46,"end_line":46,"text":"// GetActiveHelpConfig returns the value of the ActiveHelp environment variable"},{"path":"site/content/active_help.md","start_line":142,"end_line":143,"text":"\nWhen debugging with the `__complete` command, if you want to specify different Active Help configurations, you should use the active help environment variable.  That variable is named `\u003cPROGRAM\u003e_ACTIVE_HELP` where any non-ASCII-alphanumeric characters are replaced by an `_`.  For example, we can test deactivating some Active Help as shown below:"},{"path":"site/content/active_help.md","start_line":87,"end_line":89,"text":"\n## User control of Active Help\n"},{"path":"active_help.go","start_line":59,"end_line":59,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment"},{"path":"active_help.go","start_line":33,"end_line":33,"text":"var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)"},{"path":"active_help.go","start_line":28,"end_line":28,"text":"\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\""},{"path":"active_help.go","start_line":29,"end_line":29,"text":"\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\""},{"path":"site/content/active_help.md","start_line":1,"end_line":2,"text":"# Active Help\n"},{"path":"active_help_test.go","start_line":25,"end_line":25,"text":"\tactiveHelpMessage  = \"This is an activeHelp message\""},{"path":"site/content/active_help.md","start_line":19,"end_line":20,"text":"\nActive Help is currently only supported for the following shells:"},{"path":"active_help_test.go","start_line":26,"end_line":26,"text":"\tactiveHelpMessage2 = \"This is the rest of the activeHelp message\""},{"path":"active_help.go","start_line":25,"end_line":25,"text":"\tactiveHelpMarker = \"_activeHelp_ \""},{"path":"site/content/user_guide.md","start_line":745,"end_line":747,"text":"\n## Providing Active Help\n"},{"path":"command.go","start_line":862,"end_line":862,"text":"\tif c.HasParent() {"}],"provenance":{"input_sha256":"89b9c993677f9a77e42055021b4be7157cd27d8dc2861e63b781895d28c87413","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

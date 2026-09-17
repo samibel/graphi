@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Why must setup messages be removed from stdout when generating a completion script?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 154f2aaa193e; read in order (270/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":859,"end_line":882,"text":"\n// CompDebug prints the specified string to the same file as where the\n// completion script prints its logs.\n// Note that completion printouts should never be on stdout as they would\n// be wrongly interpreted as actual completion choices by the completion script.\nfunc CompDebug(msg string, printToStdErr bool) {\n\tmsg = fmt.Sprintf(\"[Debug] %s\", msg)\n\n\t// Such logs are only printed when the user has set the environment\n\t// variable BASH_COMP_DEBUG_FILE to the path of some file to be used.\n\tif path := os.Getenv(\"BASH_COMP_DEBUG_FILE\"); path != \"\" {\n\t\tf, err := os.OpenFile(path,\n\t\t\tos.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)\n\t\tif err == nil {\n\t\t\tdefer f.Close()\n\t\t\tWriteStringAndCheck(f, msg)\n\t\t}\n\t}\n\n\tif printToStdErr {\n\t\t// Must print to stderr for this not to be read by the completion script.\n\t\tfmt.Fprint(os.Stderr, msg)\n\t}\n}"},{"path":"cobra.go","start_line":239,"end_line":244,"text":"\n// WriteStringAndCheck writes a string into a buffer, and checks if the error is not nil.\nfunc WriteStringAndCheck(b io.StringWriter, s string) {\n\t_, err := b.WriteString(s)\n\tCheckErr(err)\n}"},{"path":"site/content/completions/_index.md","start_line":270,"end_line":270,"text":"***Important:*** You should **not** leave traces that print directly to stdout in your completion code as they will be interpreted as completion choices by the completion script.  Instead, use the cobra-provided debugging traces functions mentioned above."},{"path":"command.go","start_line":373,"end_line":377,"text":"\n// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"command.go","start_line":279,"end_line":292,"text":"\n// SetOutput sets the destination for usage and error messages.\n// If output is nil, os.Stderr is used.\n// Deprecated: Use SetOut and/or SetErr instead\nfunc (c *Command) SetOutput(output io.Writer) {\n\tc.outWriter = output\n\tc.errWriter = output\n}\n\n// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"}],"provenance":{"input_sha256":"e01005e9e940635905795679c0168665bf7cc01774426bed6a695cce0b76ba68","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

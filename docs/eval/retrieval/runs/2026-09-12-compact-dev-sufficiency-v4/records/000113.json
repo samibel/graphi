@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 113,
+  "previous_sha256": "32fab3028d63b2bb85b07a3076dfd1517d04d9d4f31938a1bd629ea220b9d5d4",
+  "kind": "grade",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "22f11969369d5671ebc48788bcfaffb7488ce2ed8f815f691455fd3495faaf1a",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-27:primary-a\nOutcome: pass\nRationale: Gives the correct package-level EnablePrefixMatching=true setting and connects it to the shown name/alias-prefix candidate condition.\n",
+  "sha256": "d38a2e8d9b20274006e999644028f6aa7890d208f7644722d7489c03c83011cf"
+}

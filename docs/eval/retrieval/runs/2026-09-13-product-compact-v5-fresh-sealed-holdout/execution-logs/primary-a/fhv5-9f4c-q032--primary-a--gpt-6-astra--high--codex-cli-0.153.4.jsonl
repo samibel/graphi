@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-5f46-7a63-9dcc-b4ba1064d5f2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response identifies `CompletionOptions.DisableDefaultCmd` as preventing creation (`completions.go:106–107`), but omits the conditions following `completions.go:679` and the body of `InitDefaultCompletionCmd`, so the complete set of conditions is missing."}}
+{"type":"turn.completed","usage":{"input_tokens":17273,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":65,"reasoning_output_tokens":0}}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 83,
+  "previous_sha256": "bb435d08736a0ce1ba033439ec15072e9673d9c4890c280aa23a44077c4276a6",
+  "kind": "grade",
+  "query_id": "cb-02",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "cd59ef9cbf1361dc52d09bf137f15574bea44d1fd616038981145d702c992f31",
+  "outcome": "pass",
+  "rationale": "flag_groups.go:65-77 contains the named marker, persistent merge, per-flag annotations and panic paths; the validation collection is also visible.\n",
+  "sha256": "1beb9fac451749745a925d2b7fb29436d5f3f453b19160eb1f269395203b03bd"
+}

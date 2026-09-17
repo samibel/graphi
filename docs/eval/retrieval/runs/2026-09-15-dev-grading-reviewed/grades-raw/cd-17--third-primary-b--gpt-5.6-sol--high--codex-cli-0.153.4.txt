@@ -1,0 +1,1 @@
+FAIL: The response claims `GenYamlCustom` populates the document’s examples, but lines 92–107 only show an example-length check; the assignment and branch body are absent. That behavior cannot be verified from the preserved transcript.

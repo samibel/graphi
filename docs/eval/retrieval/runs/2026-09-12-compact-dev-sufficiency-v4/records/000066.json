@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 66,
+  "previous_sha256": "12f7f40d8dd3f6c073bbaff5f5a6ab5d356f5625aa2cb7ce84abd4be0e302498",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "9ee7569f478b187c30f96822d6ac41497e6df99610318c221f6bb8503369009a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The default `completion` command generates shell autocompletion scripts (`completions.go:697–702`; its name is defined at line 98). `InitDefaultCompletionCmd` adds it unless `CompletionOptions.DisableDefaultCmd` is true, the command has no subcommands, or a child already has the completion name or alias (`completions.go:678–692`). The generated command takes no arguments, disables file suggestions through `NoFileCompletions`, and obtains visibility and grouping from completion options and `completionCommandGroupID` (`completions.go:703–708`). The snippet begins constructing a `bash` subcommand, while the supplied generator declarations expose `GenBashCompletion(w)` and `GenBashCompletionFileV2(filename, includeDesc)` (`completions.go:713–715`, `bash_completions.go:685–687`, `bash_completionsV2.go:381–383`).\n",
+  "sha256": "366effb530b227dcdf85e139568fd5568d9381c1ba3d5dd415b53e7356f72035"
+}

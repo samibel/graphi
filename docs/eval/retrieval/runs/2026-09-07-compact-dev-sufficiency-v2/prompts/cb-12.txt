@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does cobra find the subcommand for the given arguments
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"how does cobra find the subcommand for the given arguments\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"completions.go","start_line":468,"end_line":474,"text":"\t\t\t// Always complete ValidArgs, even if we are completing a subcommand name.\n\t\t\t// This is for commands that have both subcommands and ValidArgs.\n\t\t\tif len(finalCmd.ValidArgs) \u003e 0 {\n\t\t\t\tif len(finalArgs) == 0 {\n\t\t\t\t\t// ValidArgs are only for the first argument\n\t\t\t\t\tfor _, validArg := range finalCmd.ValidArgs {\n\t\t\t\t\t\tif strings.HasPrefix(validArg, toComplete) {"},{"path":"command.go","start_line":1079,"end_line":1087,"text":"\tif c.args == nil \u0026\u0026 filepath.Base(os.Args[0]) != \"cobra.test\" {\n\t\targs = os.Args[1:]\n\t}\n\n\t// initialize the hidden command to be used for shell completion\n\tc.initCompleteCmd(args)\n\n\tvar flags []string\n\tif c.TraverseChildren {"},{"path":"command.go","start_line":726,"end_line":728,"text":"func (c *Command) Find(args []string) (*Command, []string, error) {\n\tvar innerfind func(*Command, []string) (*Command, []string)\n"},{"path":"command.go","start_line":750,"end_line":753,"text":"func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}"},{"path":"args.go","start_line":25,"end_line":25,"text":"// - root commands with no subcommands can take arbitrary arguments"},{"path":"command.go","start_line":767,"end_line":767,"text":"func (c *Command) findNext(next string) *Command {"},{"path":"command.go","start_line":1571,"end_line":1571,"text":"\tif c.Runnable() || c.HasAvailableSubCommands() {"},{"path":"command.go","start_line":1426,"end_line":1426,"text":"func (c *Command) CommandPath() string {"}],"provenance":{"input_sha256":"d3b0246e2aee36ab4f0271e8988861e431b1fe1758af257bf734f5f99178c778","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

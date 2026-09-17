@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-6d05-70b3-b3e6-52df80bfad13"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`RemoveCommand` repairs the parent’s cached maximum child lengths: `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen`. After clearing removed children’s `parent` pointers and replacing `c.commands` with the survivors, it resets these caches to zero and recomputes them from each remaining child’s `Use`, `CommandPath()`, and `Name()` (`command.go`, `RemoveCommand`, lines 1362–1393; comment: `// recompute all lengths`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17357,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that the child inherits the root’s help template through recursive parent lookup, supported by command.go:584–596. Its description of SetHelpTemplate is supported by command.go:347–350.

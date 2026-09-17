@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-1e6a50f918cb",
+  "response_sha256": "d036d52aa1124209622fef86e57b7b6177d00ae34b61be451cb420cbf489537e",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response identifies template registration of `rpad` and explains how it constructs a left-aligned width format and applies it to the string, adding right-side spaces to the minimum width. All claims and citations are supported by the preserved `cobra.go` spans.",
+  "graded_at": "2026-09-15T20:43:13Z",
+  "sha256": "1a73d1a0696e28b275ef6253e5c9ce7f826c42cfdc1954cdd085ecdff74f9484"
+}

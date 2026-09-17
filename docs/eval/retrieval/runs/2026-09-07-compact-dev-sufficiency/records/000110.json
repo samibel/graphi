@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 110,
+  "previous_sha256": "2bc936fe4c4e1d034e23ad6de472ff08985149e55482908ed0f03991201f707b",
+  "kind": "grade",
+  "query_id": "cb-33",
+  "slot": 0,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "ac2566417576ce8f30b95fef9062b0b28e2cc445f3ab860109629df54012aaf6",
+  "outcome": "pass",
+  "rationale": "The exact requested accessor is visible at command.go:1641-1645, including its documented scope and lazy FlagSet initialization. The LocalFlags and InheritedFlags descriptions are expressly supported by the preserved comments and declarations at 1668-1670 and 1695-1697.\n",
+  "sha256": "d08724f0f406f0f5d5d3b7938dc208f3b8743afc0aa977ca44b800ce2bfe3a61"
+}

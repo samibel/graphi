@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 65,
+  "previous_sha256": "d6d99b32b025cfdcee2394a4475b41810afe6a5f248d913cfeb97e60b89ee05c",
+  "kind": "response",
+  "query_id": "cb-33",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "1c2fd88c13d8c506e4e2c622f22f55cd54f62b9a3d0e37348ce4f64aee666d71",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Flags modify command behavior and support POSIX-compliant syntax plus Go’s `flag` package. Commands may define persistent flags inherited by children or flags available only locally (`README.md:68-74`).\n\nIn `command.go`:\n\n- `Command.Flags()` returns the complete applicable `FlagSet`, including local and persistent flags from the command and its parents (`command.go:1641-1653`).\n- `Command.LocalFlags()` gathers flags set on the current command, excluding inherited parent persistent flags unless shadowed (`command.go:1668-1693`).\n- `Command.LocalNonPersistentFlags()` filters local flags to those that do not persist to subcommands (`command.go:1655-1666`).",
+  "sha256": "5991f11abbcf1e4ee4735a8c7ca6ee06ad3316134fd7eca3374e14e145cc8a2d"
+}

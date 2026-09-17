@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+In what order does VisitParents invoke its callback up a command tree?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 8f0dbfc29460; read in order (218/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":851,"end_line":858,"text":"\n// VisitParents visits all parents of the command and invokes fn on each parent.\nfunc (c *Command) VisitParents(fn func(*Command)) {\n\tif c.HasParent() {\n\t\tfn(c.Parent())\n\t\tc.Parent().VisitParents(fn)\n\t}\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":1841,"end_line":1845,"text":"\n// Parent returns a commands parent command.\nfunc (c *Command) Parent() *Command {\n\treturn c.parent\n}"},{"path":"command.go","start_line":287,"end_line":292,"text":"\n// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1514,"end_line":1522,"text":"\n// CalledAs returns the command name or alias that was used to invoke\n// this command or an empty string if the command has not been called.\nfunc (c *Command) CalledAs() string {\n\tif c.commandCalledAs.called {\n\t\treturn c.commandCalledAs.name\n\t}\n\treturn \"\"\n}"},{"path":"doc/md_docs.go","start_line":131,"end_line":133,"text":"// GenMarkdownTreeCustom is the the same as GenMarkdownTree, but\n// with custom filePrepender and linkHandler.\nfunc GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {"},{"path":"command.go","start_line":58,"end_line":58,"text":"\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are"}],"provenance":{"input_sha256":"417a93422476148c2f9d605003bef33a673917a96e08936a6b365808abae0907","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

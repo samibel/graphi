@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 74,
+  "previous_sha256": "8a100f90658d8ed1419098dcf777ad5154ab8aa6a4d1c76bb1b25a3e5b8edeca",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "83a113d878b7634c25c6607d8b87507899611dc8e899edc62f17c8fe86ceb381",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a child command with parent persistent flags configured, test the returned `FlagSet` directly:\n\n- Call `child.InheritedFlags()` and assert the parent flag is present with `Lookup(name)`.\n- Assert a same-named local flag is excluded: `InheritedFlags()` adds a parent flag only when both `c.iflags.Lookup(f.Name)` and `local.Lookup(f.Name)` are nil ([command.go:1695–1718]).\n- Assert `child.HasInheritedFlags()` is true when that set contains flags ([command.go:1766–1769]).\n- For hidden/deprecated flags, use `child.HasAvailableInheritedFlags()`, which delegates to `InheritedFlags().HasAvailableFlags()` ([command.go:1788–1792]).\n- Optionally capture rendered defaults by setting the inherited set’s output to a buffer and calling `PrintDefaults()`, as demonstrated in [doc/rest_docs.go:39–46].",
+  "sha256": "d51d678bcae735ddec6bc3231800b0afe8336516b1bf213b87c808dd3a3f1659"
+}

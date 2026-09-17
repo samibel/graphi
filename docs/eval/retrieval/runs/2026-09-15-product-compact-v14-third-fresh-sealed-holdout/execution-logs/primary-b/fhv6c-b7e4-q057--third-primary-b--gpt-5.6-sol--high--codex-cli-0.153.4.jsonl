@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-4a73-7fb2-934e-66ed8b80098a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains a command display-name annotation key in `command.go`, but no plugin manifest or plugin display name."}}
+{"type":"turn.completed","usage":{"input_tokens":16249,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":88,"reasoning_output_tokens":55}}

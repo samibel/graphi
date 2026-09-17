@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q035",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "21b98d7e94c5a98b4be87c88ac455d089ccd89602448c2744f81fa41109e5b49",
+  "bundle_sha256": "9372892a09ef3d44f1ea5a1e2807b91f8d94f1f681b4b5b6b0e53bec799c18e8",
+  "prompt_sha256": "ffd25f9a87492ddc7b3458d17e3c78d956231bc4477ee486fd87a7f05f01486f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `LocalFlags()` applying `c.globNormFunc` via `SetNormalizeFunc` in `command.go:1680–1682`, but contains no test or assertion showing how normalization on that view is verified.",
+  "responded_at": "2026-09-15T08:30:15Z",
+  "sha256": "837ff7fb2946845a16405de47024b4befc8959ff8a83765b6fb8fc8983295ebe"
+}

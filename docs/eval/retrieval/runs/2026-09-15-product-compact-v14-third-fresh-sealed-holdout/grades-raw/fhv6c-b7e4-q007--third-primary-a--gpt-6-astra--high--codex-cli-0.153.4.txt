@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper’s nil-error check, exact expected message "accepts 2 arg(s), received 3", and fatal assertion on mismatch. All cited lines exist in the preserved args_test.go:88–97 span and support the attached claims.

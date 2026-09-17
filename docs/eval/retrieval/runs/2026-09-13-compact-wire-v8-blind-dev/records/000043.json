@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 43,
+  "previous_sha256": "7855148386b996f90c8f1bc99dd57d9ac7c47a991a2e1240dd4ba78e23cde78a",
+  "kind": "response",
+  "query_id": "cb-03",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c09fa44544f9d3f565854d8d90986cd814f7f020be3f0b9b23d49764e361645d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GenMarkdownTree(cmd, dir)` generates one Markdown file for the command and each eligible descendant.\n\nIt delegates to `GenMarkdownTreeCustom` using an empty file prepender and an identity link handler ([doc/md_docs.go:119–129]). The recursive implementation:\n\n- Skips unavailable commands and additional help topics ([doc/md_docs.go:134–138]).\n- Processes descendants before the current command ([doc/md_docs.go:133–143]).\n- Names files from `cmd.CommandPath()`, replacing spaces with `_` and appending `.md` ([doc/md_docs.go:145–146], [doc/md_docs.go:30]).\n- Creates each file in `dir`, writes the prepender, then generates content with `GenMarkdownCustom` ([doc/md_docs.go:147–157]).\n\nThe documentation warns that command names containing `-` can cause filename collisions, such as `cmd sub third` versus `cmd sub-third` ([doc/md_docs.go:119–125]).",
+  "sha256": "2bee5c587f4598ab6f59cbfce0dd45432c5dc34012d5dfc4187a75f6ce30f49c"
+}

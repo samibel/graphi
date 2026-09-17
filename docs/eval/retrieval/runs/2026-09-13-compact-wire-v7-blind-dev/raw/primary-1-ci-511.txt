@@ -1,0 +1,12 @@
+Register the initializer with `OnInitialize`. It runs after flags are parsed:
+
+```go
+OnInitialize(func() {
+    f := cmd.Flag("my-flag")
+    // read f's parsed value here
+})
+```
+
+Evidence: `Execute` calls `c.ParseFlags(a)` first (`command.go:887`), then `c.preRun()` (`command.go:926`), which invokes all registered initializers (`command.go:1015-1019`). `Command.Flag(name)` searches both local and persistent flags up the command tree (`command.go:1794-1803`).
+
+A normal Go `init()` runs too early; it should register the callback, not read the parsed value.

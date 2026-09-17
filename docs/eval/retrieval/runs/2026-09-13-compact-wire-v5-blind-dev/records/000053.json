@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 53,
+  "previous_sha256": "275184d3e6e6e2ae6974ed9a694abaac0ac1f4cfaed21ca68f3149229cab0370",
+  "kind": "response",
+  "query_id": "cb-16",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c70526e995acd47874b5bc9d636ed216c37dc6c58973916480d33431e03bd040",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The distance is computed by the unexported `ld(s, t string, ignoreCase bool) int` function in `cobra.go:187-222`. It optionally lowercases both strings, fills a dynamic-programming matrix with insertion/deletion/substitution costs, and returns the bottom-right value. Command suggestions invoke it as `ld(typedName, cmd.Name(), true)` in `command.go:836-838`.\n",
+  "sha256": "8b6c938eceb037d17a94912c08a569643eac2716298900f12766728fa3feff54"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 7,
+  "previous_sha256": "a302cb9b2fef73f8e2ef4ab4e41734e88870749f8831ccc75e6f103e27010aad",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "b87d3bcd6272d6718dc090c366602f246e66196f8705f7ee2ac9dd17810e7191",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).RegisterFlagCompletionFunc` registers a Go completion callback for a named flag. It returns an error if the flag does not exist or already has a callback, and protects the global flag-to-function map with `flagCompletionMutex` (`completions.go:35-36,132-148`).",
+  "sha256": "7d56f770f302b5707c73a2a70b35ac64e3d12c4aaee457de2e5805d9da43c432"
+}

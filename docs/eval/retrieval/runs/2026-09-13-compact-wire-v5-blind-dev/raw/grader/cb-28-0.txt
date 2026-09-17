@@ -1,0 +1,1 @@
+FAIL: The bundle shows group registration and special help/completion group setters but omits Command.GroupID and the fact that it groups a subcommand in its parent's help output. The response's central explanation is therefore not established by the exact prompt bytes.

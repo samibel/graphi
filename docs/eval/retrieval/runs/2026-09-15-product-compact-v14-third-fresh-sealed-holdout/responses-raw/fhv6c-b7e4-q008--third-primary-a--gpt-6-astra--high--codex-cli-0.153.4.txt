@@ -1,0 +1,5 @@
+`rangeArgsWithInvalidCount(err error, t *testing.T)` is a test helper in `args_test.go:99–108` that checks an argument-count error:
+
+- Fails with `t.Fatal("Expected an error")` if `err` is nil (lines 100–102).
+- Requires `err.Error()` to equal `"accepts between 2 and 4 arg(s), received 1"` (lines 103–104).
+- Fails with `t.Fatalf("Expected %q, got %q", expected, got)` if the message differs (lines 105–107).

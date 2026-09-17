@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q047",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "2aeb34120ac1c15311996e798bb8c904f6338d7f1657a88c5d71d6560600c21f",
+  "bundle_sha256": "43faec66082e8ebae92eb1f185308c98c538f48a99240a24d2eac9583f8c071b",
+  "prompt_sha256": "735b40b902396638999887e0d940c8866d4706110c66437526824e2be2a2673c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Setting `\u003cPROGRAM\u003e_ACTIVE_HELP=0` removes Active Help entries for that specific program: `GetActiveHelpConfig` reads the program-specific variable (`active_help.go:46-57`), and completion removes entries when its value is `\"0\"` (`completions.go:216-217`).\n\nSetting `COBRA_ACTIVE_HELP=0` globally forces `GetActiveHelpConfig` to return `\"0\"` regardless of the program-specific setting (`active_help.go:46-57`), thereby disabling Active Help across Cobra programs.",
+  "responded_at": "2026-09-13T12:36:58Z",
+  "sha256": "05bd2ccac51871440c0431fedd3740b0d41cb9e2d8c7ffaaea023089ad246f06"
+}

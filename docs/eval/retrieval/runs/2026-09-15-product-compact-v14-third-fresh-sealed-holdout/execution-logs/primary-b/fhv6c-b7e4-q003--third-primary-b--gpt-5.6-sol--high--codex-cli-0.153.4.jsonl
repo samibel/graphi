@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-732f-7e10-96fb-0ef740c68a25"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`nonCompletableFlag` determines whether a flag should be excluded from shell completion. It returns `true` when the flag is hidden or deprecated:\n\n```go\nreturn flag.Hidden || len(flag.Deprecated) > 0\n```\n\nEvidence: `bash_completions.go:699-701`. In `writeFlags`, both command and inherited flags are skipped when this function returns `true` (`bash_completions.go:567-592`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16641,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":95,"reasoning_output_tokens":0}}

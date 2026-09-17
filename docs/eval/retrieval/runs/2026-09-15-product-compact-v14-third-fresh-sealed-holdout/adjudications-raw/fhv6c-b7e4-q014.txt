@@ -1,0 +1,8 @@
+`bash_completionsV2_test.go` belongs to package `cobra` ([line 15]) and declares `TestBashCompletionV2WithActiveHelp` ([lines 23–33]).
+
+The test:
+
+- Creates a `Command` named `"c"` using `emptyRun`.
+- Generates Bash V2 completion with active help enabled via `c.GenBashCompletionV2(buf, true)`.
+- Computes the command’s active-help environment variable with `activeHelpEnvVar(c.Name())`.
+- Uses `checkOmit` to verify the generated output does not contain `<activeHelpVar>=0`, confirming active help was not disabled.

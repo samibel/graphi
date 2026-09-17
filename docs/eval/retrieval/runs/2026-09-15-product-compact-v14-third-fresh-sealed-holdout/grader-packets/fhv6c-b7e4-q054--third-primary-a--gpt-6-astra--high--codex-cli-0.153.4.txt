@@ -1,0 +1,87 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f6038913aa5dbf0756a890a5d674048c135dda3149b2711955212f4422ec0492
+FOLLOW-UP READ CONTENT ADDRESS: 6179dc5ef9b5e0a1469f321e0741acfb794d440968a1cafb60e83dc7481a8739
+QUERY ID: fhv6c-b7e4-q054
+
+QUESTION:
+Which custom YAML documentation entry points accept prepending and link-rewriting callbacks?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/docgen/yaml.md:69-83 anchor="func GenYamlTreeCustom" reason=The customization section shows the tree and single-command custom YAML signatures and their callback parameters.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query d9d8ffb674ad; read in order (318/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/docgen/yaml.md","start_line":58,"end_line":64,"text":"## Generate yaml docs for a single command\n\nYou may wish to have more control over the output, or only generate for a single command, instead of the entire command tree. If this is the case you may prefer to `GenYaml` instead of `GenYamlTree`\n\n```go\n\tout := new(bytes.Buffer)\n\tdoc.GenYaml(cmd, out)"},{"path":"doc/yaml_docs.go","start_line":59,"end_line":85,"text":"// GenYamlTreeCustom creates yaml structured ref files.\nfunc GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenYamlTreeCustom(c, dir, filePrepender, linkHandler); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", \"_\") + \".yaml\"\n\tfilename := filepath.Join(dir, basename)\n\tf, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer f.Close()\n\n\tif _, err := io.WriteString(f, filePrepender(filename)); err != nil {\n\t\treturn err\n\t}\n\tif err := GenYamlCustom(cmd, f, linkHandler); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}"},{"path":"site/content/docgen/yaml.md","start_line":71,"end_line":76,"text":"Both `GenYaml` and `GenYamlTree` have alternate versions with callbacks to get some control of the output:\n\n```go\nfunc GenYamlTreeCustom(cmd *Command, dir string, filePrepender, linkHandler func(string) string) error {\n\t//...\n}"},{"path":"site/content/docgen/_index.md","start_line":1,"end_line":17,"text":"# Documentation generation\n\n- [Man page docs](man.md)\n- [Markdown docs](md.md)\n- [Rest docs](rest.md)\n- [Yaml docs](yaml.md)\n\n## Options\n### `DisableAutoGenTag`\n\nYou may set `cmd.DisableAutoGenTag = true`\nto _entirely_ remove the auto generated string \"Auto generated by spf13/cobra...\"\nfrom any documentation source.\n\n### `InitDefaultCompletionCmd`\n\nYou may call `cmd.InitDefaultCompletionCmd()` to document the default autocompletion command."},{"path":"doc/yaml_docs.go","start_line":92,"end_line":97,"text":"// GenYamlCustom creates custom yaml output.\nfunc GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tyamlDoc := cmdDoc{}"},{"path":"doc/yaml_docs.go","start_line":87,"end_line":90,"text":"// GenYaml creates yaml output.\nfunc GenYaml(cmd *cobra.Command, w io.Writer) error {\n\treturn GenYamlCustom(cmd, w, func(s string) string { return s })\n}"},{"path":"doc/yaml_docs.go","start_line":54,"end_line":57,"text":"\tidentity := func(s string) string { return s }\n\temptyStr := func(s string) string { return \"\" }\n\treturn GenYamlTreeCustom(cmd, dir, emptyStr, identity)\n}"},{"path":"command.go","start_line":1292,"end_line":1293,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {"}],"provenance":{"input_sha256":"dce0a69c63338cdebe99047b2b03b857cfb3c8fe458f09521590b2479ddf30e7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/docgen/yaml.md:58-68"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/docgen/yaml.md","start_line":58,"end_line":68,"text":"## Generate yaml docs for a single command\n\nYou may wish to have more control over the output, or only generate for a single command, instead of the entire command tree. If this is the case you may prefer to `GenYaml` instead of `GenYamlTree`\n\n```go\n\tout := new(bytes.Buffer)\n\tdoc.GenYaml(cmd, out)\n```\n\nThis will write the yaml doc for ONLY \"cmd\" into the out, buffer.\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+- **`GenYamlTreeCustom`** accepts both `filePrepender` and `linkHandler`, each of type `func(string) string` (`doc/yaml_docs.go:59–60`). It writes `filePrepender(filename)` before generating the YAML and passes `linkHandler` to `GenYamlCustom` (`doc/yaml_docs.go:78–81`).
+- **`GenYamlCustom`** accepts only the link-rewriting callback, `linkHandler func(string) string`, alongside the command and output writer (`doc/yaml_docs.go:92–93`).
+----- END THE RATER'S RESPONSE -----

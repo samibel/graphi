@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 35,
+  "previous_sha256": "24ad4b6172c5e59662e0c08e44fcaae783b68f5ce9abe7f453a9fd6e1647aacb",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f992ed2fe738f09bd7a1fa8ecb589cfc1a678747e12314a311e4a479dff11b35",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No—not through the default help flag. `command.go:1195` registers `--help` and `-h` as the same boolean via `BoolP(\"help\", \"h\", ...)`, and `command.go:894-905` only reads the shared `\"help\"` value with `GetBool(\"help\")`. Thus the default handling cannot distinguish which spelling was used.",
+  "sha256": "bb1c043a7032316787d322815e558e75051653309115800c1b84a2dc9ca39427"
+}

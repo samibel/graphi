@@ -1,0 +1,11 @@
+`GenYamlCustom` builds a `cmdDoc` in this order:
+
+1. **Initialize and populate metadata.** It initializes the default help command and flag, sets `Name` to `cmd.CommandPath()`, and passes `cmd.Short` and `cmd.Long` through `forceMultiLine` for `Synopsis` and `Description`. It sets `Usage` only if the command is runnable, and `Example` only if nonempty. (`doc/yaml_docs.go:93–109`)
+
+2. **Populate options.** It passes nonempty `cmd.NonInheritedFlags()` to `genFlagResult` for `Options`, then does the same with `cmd.InheritedFlags()` for `InheritedOptions`. (`doc/yaml_docs.go:111–118`) The supplied `InheritedFlags` implementation collects parent persistent flags while excluding names already present locally or in the inherited set. (`command.go:1694–1718`)
+
+3. **Build SEE ALSO.** If `hasSeeAlso(cmd)` returns true, it adds the parent first, if present, formatted as `CommandPath() + " - " + Short`. It sorts children using `byName`, skips unavailable commands and additional help topics, and appends the remaining children in the same format. The resulting string slice becomes `yamlDoc.SeeAlso`. (`doc/yaml_docs.go:120–135`)
+
+4. **Serialize.** It calls `yaml.Marshal(&yamlDoc)` and writes the resulting bytes to `w`. The `linkHandler` parameter is never used in the shown function. (`doc/yaml_docs.go:93,137–147`)
+
+The response does not show the implementations of `forceMultiLine`, `genFlagResult`, or the body of `hasSeeAlso`, so their internal transformations and gating rules cannot be traced further.

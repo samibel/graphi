@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 58,
+  "previous_sha256": "ed1232617d731ceaca8f86ef0e8b2240e5be215cfbcc2c59be38f8a041b93f3b",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "31a046f3d10812938b4d588f70fa4999d6aa47c71d9b5f90cdfb8e3518eec363",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "During completion, `finalCmd.enforceFlagGroupsForCompletion()` is called before flag completions are generated (`completions.go:379-381`).\n\nThat method changes flag metadata so standard completion filtering enforces group rules (`flag_groups.go:220-228`):\n\n- If one flag in a group is present, the other flags are marked required.\n- If no flag in a one-required group is present, every flag in that group is marked required.\n- If a mutually exclusive flag is present, the group’s other flags are hidden so completion will not suggest them (`flag_groups.go:273-277`).\n- It performs no enforcement when `DisableFlagParsing` is true (`flag_groups.go:226-228`).",
+  "sha256": "eeef1f3be91f318a5f570e29cbbcf18599d04d8cf6e550656a3c466eba48c133"
+}

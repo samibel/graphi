@@ -1,0 +1,1 @@
+FAIL: The transcript shows `Flag` calling `Flags().Lookup(name)` and falling back to `persistentFlag(name)`, but omits `persistentFlag`’s implementation. The response therefore cannot establish the essential lookup order: the command’s own persistent flags, then the merged parents’ persistent flags.

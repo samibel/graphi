@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q054",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "d9d8ffb674ada0ddb7c8bddbd5e58e72c1f87da57ec3a67a3ddbc895f19d4bc7",
+  "bundle_sha256": "270fab08beab0f1aba11a0f637b6abb888308c5eaf366beb7c27c20b86a4889d",
+  "prompt_sha256": "2e47ffba0514e9d45dca92a52ee7dfe85a5e635d01ce116cc0bbd5506dafa175",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "- `GenYamlTreeCustom` accepts both `filePrepender` and `linkHandler` callbacks (`doc/yaml_docs.go:60`).\n- `GenYamlCustom` accepts only a `linkHandler` callback (`doc/yaml_docs.go:93`); prepending is handled by `GenYamlTreeCustom` before calling it (`doc/yaml_docs.go:78–82`).",
+  "responded_at": "2026-09-15T08:31:28Z",
+  "sha256": "8676e252be37bdc0843bdc8e0328dfa86bfbb53f242cbfc349bbd98cdb89bd76"
+}

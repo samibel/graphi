@@ -1,0 +1,1 @@
+FAIL: The response identifies the request constants but omits the defining ShellCompDirective type declaration, an essential part of the reviewed span. That declaration is absent from the preserved transcript; references to the type do not establish its definition.

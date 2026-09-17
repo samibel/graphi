@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-9c1b-7502-9bcd-7ae2a5a2444a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra directs developers to the **Shell Completions** documentation at `_index.md`, via `site/content/completions/fish.md` lines 1–4: “Please refer to [Shell Completions](_index.md) for details.”"}}
+{"type":"turn.completed","usage":{"input_tokens":16442,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

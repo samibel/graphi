@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q052",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "ac3e21f0b0cbe00ecdda6bc43c6ba330ca80bf7a14bc6a5ce028fb5d333c1fc4",
+  "bundle_sha256": "51747060b3aefec49394b83950f18a39092b7d6bc2f9a554225386cf79963930",
+  "prompt_sha256": "8215fd94b73463901b644ecf838196a000e334187d72dbc28600f876c7bb6f0c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `GenMarkdownTreeCustom` and provide a `filePrepender` callback. Its returned string is prepended to each generated Markdown file, so it can produce Hugo front matter based on the full output filepath (`site/content/docgen/md.md:72-105`):\n\n```go\nfilePrepender := func(filename string) string {\n\tnow := time.Now().Format(time.RFC3339)\n\tname := filepath.Base(filename)\n\tbase := strings.TrimSuffix(name, path.Ext(name))\n\turl := \"/commands/\" + strings.ToLower(base) + \"/\"\n\n\treturn fmt.Sprintf(`---\ndate: %s\ntitle: \"%s\"\nslug: %s\nurl: %s\n---\n`, now, strings.Replace(base, \"_\", \" \", -1), base, url)\n}\n\nerr := GenMarkdownTreeCustom(cmd, dir, filePrepender, linkHandler)\n```\n\n`linkHandler` can additionally map generated command links to Hugo URLs, such as `/commands/\u003clowercase-name\u003e/` (`site/content/docgen/md.md:107-115`).",
+  "responded_at": "2026-09-15T08:31:18Z",
+  "sha256": "4f12c1fbf6fe348b3728881724fef27be14610698f53ee57cb99fb419d6b8a38"
+}

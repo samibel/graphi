@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q051",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "83e8c26217ca1f0e348101ae6200457429a7f5d70c5abef88e6d06892ef24fce",
+  "bundle_sha256": "2e9bbec294dda9d3b14226f31a79126c0f14e406bfd2c4a54f36285c5a0f7ecc",
+  "prompt_sha256": "a3731d2230d9b4a1f867552d86954222a07f7b583cd0c8a5ea8f40df8fab3c94",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains `Command.ParseFlags` (`command.go:1817–1840`) but no `ValidArgsFunction` definition, contract, or call site showing whether flags are parsed beforehand.",
+  "responded_at": "2026-09-15T18:41:54Z",
+  "sha256": "cb8a03eedf82b4b2f251f1d1fb94e1c5294718a1bf39061b42ca26e0fafecffe"
+}

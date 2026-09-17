@@ -1,0 +1,1 @@
+PASS: It correctly gives Flags for the applicable set and the narrower LocalFlags and InheritedFlags alternatives.

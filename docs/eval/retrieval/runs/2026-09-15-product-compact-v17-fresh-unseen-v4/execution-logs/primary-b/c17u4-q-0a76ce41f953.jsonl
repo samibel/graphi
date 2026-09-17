@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-1f9c-75e2-84ef-5062b95ffc23"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `completions.go:161–191`, `ShellCompDirective.string`:\n\n- Renders combined recognized flags as their symbolic names in fixed order, separated by `\", \"`, e.g. `\"ShellCompDirectiveError, ShellCompDirectiveNoSpace\"`.\n- Renders zero/no recognized flags as `\"ShellCompDirectiveDefault\"` (`len(directives) == 0`).\n- For `d >= shellCompDirectiveMaxValue`, returns `\"ERROR: unexpected ShellCompDirective value: %d\"` with the numeric value substituted.\n\nThe flag order is Error, NoSpace, NoFileComp, FilterFileExt, FilterDirs, KeepOrder."}}
+{"type":"turn.completed","usage":{"input_tokens":16697,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":136,"reasoning_output_tokens":0}}

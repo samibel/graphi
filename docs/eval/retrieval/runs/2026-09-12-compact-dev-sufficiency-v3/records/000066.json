@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 66,
+  "previous_sha256": "e0e1e4b1dab10064c1c7d2dc136a1f5d8b7b29f6696bb3b0f7537094df551294",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "fa7c5fc9df8e551ecac148960187f2951196e8349841e1d24e1eb725f6056f1e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Completion support includes InitDefaultCompletionCmd, which adds a command for generating shell-completion scripts unless disabled, there are no subcommands, or a matching command or alias already exists (completions.go:683-709). Its Bash help gives the current-session command source \u003c(PROGRAM completion bash) and requires bash-completion (completions.go:714-726). GenBashCompletion writes the preamble, optional BashCompletionFunction, generated completion body, and postscript to a writer (bash_completions.go:686-697).\n",
+  "sha256": "4b275d41d823059caf8d99916e2a9b441c0537248dedde16ce04fdfb90e0a2e3"
+}

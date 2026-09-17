@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q038",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "aa5ac9c3b6b5acf3741c241d49d9194cd5c6c40ccede664e270e8e8fdf63d573",
+  "bundle_sha256": "c3233d185777405fb64a3daa63875b2859c8426a06462b879509f2fba4623094",
+  "prompt_sha256": "eed40d9f1ce4cabbcf1c1f2cd7bcdcc957b705f7c54b89c2024786a2362a226e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response lacks the completion code for resolving the target command, preparing flag parsing, and detecting file or directory annotations; it only shows flag lookup and callback registration/retrieval (`command.go:1794–1803`, `completions.go:131–160`) and the opening of `prepareCustomAnnotationsForFlags` (`bash_completions.go:536–537`).",
+  "responded_at": "2026-09-13T12:35:45Z",
+  "sha256": "313a36055c46b35a7604f79e1f9cc03fb7e1be9f7f107e90faa07d7021fdaae2"
+}

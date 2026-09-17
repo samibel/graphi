@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How are one-required flags gathered for completion even when flag parsing is disabled?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s); query 87cc8adb2332; read in order (241/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":566,"end_line":590,"text":"\nfunc completeRequireFlags(finalCmd *Command, toComplete string) []string {\n\tvar completions []string\n\n\tdoCompleteRequiredFlags := func(flag *pflag.Flag) {\n\t\tif _, present := flag.Annotations[BashCompOneRequiredFlag]; present {\n\t\t\tif !flag.Changed {\n\t\t\t\t// If the flag is not already present, we suggest it as a completion\n\t\t\t\tcompletions = append(completions, getFlagNameCompletions(flag, toComplete)...)\n\t\t\t}\n\t\t}\n\t}\n\n\t// We cannot use finalCmd.Flags() because we may not have called ParsedFlags() for commands\n\t// that have set DisableFlagParsing; it is ParseFlags() that merges the inherited and\n\t// non-inherited flags.\n\tfinalCmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {\n\t\tdoCompleteRequiredFlags(flag)\n\t})\n\tfinalCmd.NonInheritedFlags().VisitAll(func(flag *pflag.Flag) {\n\t\tdoCompleteRequiredFlags(flag)\n\t})\n\n\treturn completions\n}"},{"path":"command.go","start_line":1694,"end_line":1723,"text":"\n// InheritedFlags returns all flags which were inherited from parent commands.\nfunc (c *Command) InheritedFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n\n\tif c.iflags == nil {\n\t\tc.iflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.iflags.SetOutput(c.flagErrorBuf)\n\t}\n\n\tlocal := c.LocalFlags()\n\tif c.globNormFunc != nil {\n\t\tc.iflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\tc.parentsPflags.VisitAll(func(f *flag.Flag) {\n\t\tif c.iflags.Lookup(f.Name) == nil && local.Lookup(f.Name) == nil {\n\t\t\tc.iflags.AddFlag(f)\n\t\t}\n\t})\n\treturn c.iflags\n}\n\n// NonInheritedFlags returns all flags which were not inherited from parent commands.\nfunc (c *Command) NonInheritedFlags() *flag.FlagSet {\n\treturn c.LocalFlags()\n}"},{"path":"completions.go","start_line":533,"end_line":540,"text":"\nfunc getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string {\n\tif nonCompletableFlag(flag) {\n\t\treturn []string{}\n\t}\n\n\tvar completions []string\n\tflagName := \"--\" + flag.Name"},{"path":"shell_completions.go","start_line":34,"end_line":40,"text":"\n// MarkFlagRequired instructs the various shell completion implementations to\n// prioritize the named flag when performing completion,\n// and causes your command to report an error if invoked without the flag.\nfunc MarkFlagRequired(flags *pflag.FlagSet, name string) error {\n\treturn flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{\"true\"})\n}"}],"provenance":{"input_sha256":"49b592993fcf337e0abcde36bb0f7405add5af9a841ba4af8da8dab32222867e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

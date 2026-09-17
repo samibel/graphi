@@ -1,0 +1,1 @@
+On the currently executing command object, use `cmd.Flag("flag-name")` to get the flag. The shown `(*Command).Flag(name string) *flag.Flag` begins by calling `c.Flags().Lookup(name)` (`command.go:1795–1798`); equivalently, that lookup accesses the command's flag set directly. The excerpt does not show the rest of `Flag`'s fallback logic.

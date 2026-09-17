@@ -1,0 +1,1 @@
+FAIL: The response does not answer how getCompletions selects the completion function. The preserved transcript contains only its signature and opening comment at completions.go:266–267, omitting the required selection logic.

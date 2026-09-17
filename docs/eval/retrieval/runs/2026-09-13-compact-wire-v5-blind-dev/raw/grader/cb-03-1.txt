@@ -1,0 +1,1 @@
+PASS: The answer is a correct, concrete account of GenMarkdownTree and GenMarkdownTreeCustom using only the supplied doc/md_docs.go spans.

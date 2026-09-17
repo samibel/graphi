@@ -1,0 +1,1 @@
+`ExactArgs(n)` accepts an argument list only when `len(args) == n`, returning `nil`. Otherwise, it returns an error formatted as `"accepts %d arg(s), received %d"` with the expected and actual counts. It checks only the count, not argument values (`args.go`, lines 93–100, `ExactArgs`).

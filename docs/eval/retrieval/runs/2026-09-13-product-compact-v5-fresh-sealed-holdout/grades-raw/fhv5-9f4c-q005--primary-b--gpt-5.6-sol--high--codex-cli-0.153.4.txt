@@ -1,0 +1,1 @@
+PASS: The bundle supports both errors—missing flag and duplicate registration—and confirms that registration stores the callback while holding flagCompletionMutex, with deferred unlocking. The cited ranges exist and also support GetFlagCompletionFunc’s RLock/RUnlock synchronization.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 136,
+  "previous_sha256": "469740bdea876de93ff91e63c8f6d22c9f7fc5ef610c8a10d2fa5eeb47c88926",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "4a7350993b2fb464898755d334702d78a3e5ce015efcbd54563a5dcad3739d67",
+  "outcome": "fail",
+  "rationale": "FAIL: The bundle shows Flag lookup fragments but never shows that a run hook receives cmd *Command. That unsupported premise is essential to the proposed procedure, so the answer fails the byte-support requirement.\n",
+  "sha256": "faf3261b91ba9e6946e17197be016336de3fade37ea80cd6d1ed24368521e9dd"
+}

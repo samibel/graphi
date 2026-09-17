@@ -1,0 +1,1 @@
+PASS: The response accurately explains that command-path spaces become underscores, `.md` is appended, and the basename is joined to the target directory. These claims and cited locations are supported by doc/md_docs.go:143–145 and :30 in the preserved bundle.

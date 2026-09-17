@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-6b22-71b3-bdac-33f140ea357c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"- Use **cobra-cli** when you want generated application scaffolding and command files. The guide calls it “the easiest way to incorporate Cobra into your application” and says it creates your application and adds commands (`site/content/user_guide.md`, lines 30–35; `README.md`, lines 96–97).\n- Use **the Cobra library manually** when you want to write that setup yourself: create a bare `main.go` and a `rootCmd` file, then optionally add commands (`site/content/user_guide.md`, lines 37–40)."}}
+{"type":"turn.completed","usage":{"input_tokens":17337,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":119,"reasoning_output_tokens":0}}

@@ -1,0 +1,657 @@
+{
+  "schema_version": 1,
+  "id": "cobra-compact17-fresh-unseen-v2",
+  "repo": "cobra",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "language": "en",
+  "evidence_class": "independent-curator-annotated-and-reviewed",
+  "relevant_min_grade": 3,
+  "notes": "Fresh sealed holdout curated independently for candidate 26a36f0958cb16d925c4dd871cda76d0e117b15a. No prior or development holdout content was consulted.",
+  "queries": [
+    {
+      "id": "c17u2-q-8322f0068a4a",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What exact value does AppendActiveHelp append, and how does that value distinguish active-help text from ordinary completion candidates?",
+      "family_id": "c17u2-fam-8322f0068a4a",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"active_help.go","start_line":35,"end_line":44,"anchor":"func AppendActiveHelp(compArray []string, activeHelpStr string) []string","grade":3,"reason":"The complete function and its contract show the marker-prefixed value appended to the completion array.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-a1a02e751964",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does OnlyValidArgs handle descriptions embedded in ValidArgs, and what error path does it use for an invalid positional argument?",
+      "family_id": "c17u2-fam-a1a02e751964",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"args.go","start_line":49,"end_line":66,"anchor":"func OnlyValidArgs(cmd *Command, args []string) error","grade":3,"reason":"The span strips tab-separated descriptions, checks every argument, and constructs the invalid-argument error.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-fc018ea4f74c",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What is MatchAll's validation order and what happens after the first constituent PositionalArgs validator returns an error?",
+      "family_id": "c17u2-fam-fc018ea4f74c",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"args.go","start_line":113,"end_line":123,"anchor":"func MatchAll(pargs ...PositionalArgs) PositionalArgs","grade":3,"reason":"The returned closure shows ordered iteration, immediate error return, and success only after every validator passes.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-400797a4d76c",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which operand kinds does Eq compare, and which kinds cause Eq to panic?",
+      "family_id": "c17u2-fam-400797a4d76c",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"cobra.go","start_line":141,"end_line":157,"anchor":"func Eq(a interface{}, b interface{}) bool","grade":3,"reason":"The switch explicitly identifies supported comparisons, panic cases, and the default result.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-8b0141b4ccdf",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What failures can RegisterFlagCompletionFunc return, and how is successful registration synchronized?",
+      "family_id": "c17u2-fam-8b0141b4ccdf",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":132,"end_line":146,"anchor":"func (c *Command) RegisterFlagCompletionFunc(flagName string","grade":3,"reason":"The method covers missing flags, duplicate registration, mutex protection, and map insertion.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-305364929918",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does ShellCompDirective.string render combined directive bits, the default value, and an out-of-range directive?",
+      "family_id": "c17u2-fam-305364929918",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":162,"end_line":191,"anchor":"func (d ShellCompDirective) string() string","grade":3,"reason":"The span maps every set bit, supplies the default label, checks the maximum, and joins the labels.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-153042f822aa",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does MarkFlagsRequiredTogether encode one required-together group, including its behavior for missing flags and repeated group membership?",
+      "family_id": "c17u2-fam-153042f822aa",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"flag_groups.go","start_line":31,"end_line":45,"anchor":"func (c *Command) MarkFlagsRequiredTogether(flagNames ...string)","grade":3,"reason":"The complete implementation merges flags, verifies each name, and appends the group annotation.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-8293b5d0b579",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which internal Zsh completion path does GenZshCompletionNoDesc call, and which description setting does it pass?",
+      "family_id": "c17u2-fam-8293b5d0b579",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"zsh_completions.go","start_line":40,"end_line":44,"anchor":"func (c *Command) GenZshCompletionNoDesc(w io.Writer) error","grade":3,"reason":"The wrapper call directly identifies the internal path and false include-description argument.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-61b717a052c8",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does GenFishCompletionFile create and close its output and delegate generation, including the description option?",
+      "family_id": "c17u2-fam-61b717a052c8",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"fish_completions.go","start_line":283,"end_line":292,"anchor":"func (c *Command) GenFishCompletionFile(filename string, includeDesc bool) error","grade":3,"reason":"The method shows file creation, error propagation, deferred close, and delegated generation.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-cce020dc1619",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What does GenPowerShellCompletionFileWithDesc pass to the shared PowerShell file generator?",
+      "family_id": "c17u2-fam-cce020dc1619",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"powershell_completions.go","start_line":316,"end_line":319,"anchor":"func (c *Command) GenPowerShellCompletionFileWithDesc(filename string) error","grade":3,"reason":"The wrapper call directly shows the filename and enabled-description argument.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-10e08569cfa5",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does GenMarkdownTreeCustom traverse commands and construct, preface, and populate each Markdown file?",
+      "family_id": "c17u2-fam-10e08569cfa5",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/md_docs.go","start_line":131,"end_line":158,"anchor":"func GenMarkdownTreeCustom(cmd *cobra.Command, dir string","grade":3,"reason":"The span contains child filtering and recursion, filename construction, file creation, prepending, and page generation.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+
+    {
+      "id": "c17u2-q-6695356fa423",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In active_help.go, which environment variable takes precedence when active help is globally disabled, and when is the program-specific value read?",
+      "family_id": "c17u2-fam-6695356fa423",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"active_help.go","start_line":46,"end_line":57,"anchor":"activeHelpCfg := os.Getenv(activeHelpGlobalEnvVar)","grade":3,"reason":"The function fully specifies global-disable precedence and the conditional program-specific lookup.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-767a7a5d7de6",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In args.go, when does legacy positional validation accept arguments, and when does a root command report an unknown subcommand?",
+      "family_id": "c17u2-fam-767a7a5d7de6",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"args.go","start_line":24,"end_line":39,"anchor":"func legacyArgs(cmd *Command, args []string) error","grade":3,"reason":"The documented branches distinguish leaf commands, roots with subcommands, and subcommands.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-794d86dd300c",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In command.go, how is an output writer resolved when the current command has no writer of its own?",
+      "family_id": "c17u2-fam-794d86dd300c",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":394,"end_line":402,"anchor":"func (c *Command) getOut(def io.Writer) io.Writer","grade":3,"reason":"The helper shows local writer priority, recursive parent inheritance, and final fallback.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-ab7f95c8a4ca",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In completions.go, what exact conditions make helpOrVersionFlagPresent suppress further completion?",
+      "family_id": "c17u2-fam-ab7f95c8a4ca",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":522,"end_line":532,"anchor":"func helpOrVersionFlagPresent(cmd *Command) bool","grade":3,"reason":"The helper requires the Cobra annotation and a changed help or version flag.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-7fccd18bfe39",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In shell_completions.go, how is a Bash-only custom completion function attached to a named local flag, and what cross-shell alternative is recommended?",
+      "family_id": "c17u2-fam-7fccd18bfe39",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"shell_completions.go","start_line":48,"end_line":56,"anchor":"func (c *Command) MarkFlagCustom(name string, f string) error","grade":3,"reason":"The documentation states the Bash-only constraint and recommendation, while the method shows delegation to the local flag set.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-0e5e0dcc2815",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In flag_groups.go, how does one-required group validation decide whether to fail, and what stable error form does it return?",
+      "family_id": "c17u2-fam-0e5e0dcc2815",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"flag_groups.go","start_line":167,"end_line":185,"anchor":"func validateOneRequiredFlagGroups(data map[string]map[string]bool) error","grade":3,"reason":"The validator counts changed flags per sorted group and returns the exact error only when none are set.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-4bd03bf7cf5f",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In bash_completions.go, which two flag states make a flag ineligible for completion?",
+      "family_id": "c17u2-fam-4bd03bf7cf5f",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"bash_completions.go","start_line":699,"end_line":701,"anchor":"return flag.Hidden || len(flag.Deprecated) > 0","grade":3,"reason":"The predicate directly defines both exclusion states.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-c1d214f3ffbc",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In fish_completions.go, how is the command name transformed for Fish variable names, and how is active help disabled in the generated request?",
+      "family_id": "c17u2-fam-c1d214f3ffbc",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"fish_completions.go","start_line":25,"end_line":56,"anchor":"nameForVar = strings.ReplaceAll(nameForVar, \"-\", \"_\")","grade":3,"reason":"The generator replaces both disallowed characters and emits the program-specific active-help environment assignment of zero.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-589c664c1081",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In doc/rest_docs.go, when does indentString insert the prefix while walking a string byte by byte?",
+      "family_id": "c17u2-fam-589c664c1081",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/rest_docs.go","start_line":172,"end_line":185,"anchor":"func indentString(s, p string) string","grade":3,"reason":"The complete loop shows prefix insertion only at the beginning of a nonempty line and how line starts are tracked.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-a417531c3bd2",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In doc/yaml_docs.go, when is a flag shorthand omitted from generated YAML options, and which fields are retained in that case?",
+      "family_id": "c17u2-fam-a417531c3bd2",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/yaml_docs.go","start_line":149,"end_line":175,"anchor":"func genFlagResult(flags *pflag.FlagSet) []cmdOption","grade":3,"reason":"The VisitAll branch distinguishes usable from deprecated or absent shorthand and constructs both option shapes.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-cb20b295668e",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In doc/man_docs.go, how are default man-page title, section, date, and source derived, including SOURCE_DATE_EPOCH handling?",
+      "family_id": "c17u2-fam-cb20b295668e",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/man_docs.go","start_line":118,"end_line":141,"anchor":"if epoch := os.Getenv(\"SOURCE_DATE_EPOCH\"); epoch != \"\"","grade":3,"reason":"The header filler fully specifies every default and the reproducible timestamp override and parse error.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+
+    {
+      "id": "c17u2-q-9177f6b762fd",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How can a command require at least a caller-specified number of positional arguments, and what information is included when too few are supplied?",
+      "family_id": "c17u2-fam-9177f6b762fd",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"args.go","start_line":73,"end_line":81,"anchor":"func MinimumNArgs(n int) PositionalArgs","grade":3,"reason":"The returned validator compares the count and reports both the required and received totals.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-cbfb9c19319f",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is an exact positional-argument count enforced, and what does the validation error report?",
+      "family_id": "c17u2-fam-cbfb9c19319f",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"args.go","start_line":93,"end_line":101,"anchor":"func ExactArgs(n int) PositionalArgs","grade":3,"reason":"The closure compares len(args) with n and reports expected and received counts.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-07e631f63731",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How are several custom template functions made available to Cobra's usage and help template generation?",
+      "family_id": "c17u2-fam-07e631f63731",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"cobra.go","start_line":89,"end_line":95,"anchor":"func AddTemplateFuncs(tmplFuncs template.FuncMap)","grade":3,"reason":"The API contract and loop show each supplied function being installed in the shared template map.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-9422e5870744",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "Where does a command obtain its error writer if it has not configured one locally?",
+      "family_id": "c17u2-fam-9422e5870744",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":404,"end_line":412,"anchor":"func (c *Command) getErr(def io.Writer) io.Writer","grade":3,"reason":"The helper shows local selection, recursive parent lookup, and the supplied default.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-fc00e52bf692",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does Cobra choose a usage function when a command has no local override, and what does the built-in fallback do?",
+      "family_id": "c17u2-fam-fc00e52bf692",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":424,"end_line":441,"anchor":"func (c *Command) UsageFunc() (f func(*Command) error)","grade":3,"reason":"The method covers local and parent inheritance plus persistent-flag merging, template output, and error reporting in the fallback.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-14da9bb30076",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "When are child commands sorted before being returned, and how does Cobra avoid sorting them repeatedly?",
+      "family_id": "c17u2-fam-14da9bb30076",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1292,"end_line":1300,"anchor":"if EnableCommandSorting && !c.commandsAreSorted","grade":3,"reason":"The method shows the global gate, cached sorted-state guard, sort operation, and returned slice.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-00f9e12f963a",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What internal state is repaired after removing child commands, beyond simply deleting them from the slice?",
+      "family_id": "c17u2-fam-00f9e12f963a",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1361,"end_line":1393,"anchor":"func (c *Command) RemoveCommand(cmds ...*Command)","grade":3,"reason":"The full method clears removed parents and recomputes all cached maximum lengths from survivors.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-01d84678bf6d",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How are missing required flags discovered and reported, and what special mode bypasses that check?",
+      "family_id": "c17u2-fam-01d84678bf6d",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1146,"end_line":1168,"anchor":"func (c *Command) ValidateRequiredFlags() error","grade":3,"reason":"The method shows the parsing-disabled bypass, annotation scan, changed-state check, and combined error.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-45b9b685c403",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does shell completion collect required flags without depending on ParseFlags having merged the flag sets?",
+      "family_id": "c17u2-fam-45b9b685c403",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":567,"end_line":590,"anchor":"func completeRequireFlags(finalCmd *Command, toComplete string) []string","grade":3,"reason":"The helper scans inherited and non-inherited sets separately and suggests annotated, unchanged flags.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-6c100ba6b413",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How can a flag be configured so shell completion offers directory names rather than ordinary values?",
+      "family_id": "c17u2-fam-6c100ba6b413",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"shell_completions.go","start_line":81,"end_line":98,"anchor":"func MarkFlagDirname(flags *pflag.FlagSet, name string) error","grade":3,"reason":"The public wrappers and shared function show the directory annotation applied to local or persistent flags.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-21b7f9ec7d15",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "Why does YAML documentation generation add a newline to some long strings, and which strings are changed?",
+      "family_id": "c17u2-fam-21b7f9ec7d15",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/util.go","start_line":39,"end_line":46,"anchor":"if len(s) > 60 && !strings.Contains(s, \"\\n\")","grade":3,"reason":"The workaround comment and condition identify both the reason and the exact strings receiving a newline.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+
+    {
+      "id": "c17u2-q-35dc676228ef",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "Trace ExecuteC from a possibly non-root receiver through command discovery to execution and error/help reporting. How are root dispatch, context propagation, traversal choice, and silence settings connected?",
+      "family_id": "c17u2-fam-35dc676228ef",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1051,"end_line":1137,"anchor":"func (c *Command) ExecuteC() (cmd *Command, err error)","grade":3,"reason":"The complete orchestration span covers root redirection, initialization, discovery, context propagation, execution, and error/help/usage handling.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-02363dbee034",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "Trace the lifecycle-hook flow around a runnable command: how are persistent pre-hooks ordered, where do validation and Run occur, and in what direction are persistent post-hooks evaluated?",
+      "family_id": "c17u2-fam-02363dbee034",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":927,"end_line":1013,"anchor":"if EnableTraverseRunHooks","grade":3,"reason":"The span shows initializer deferral context, parent ordering, pre-hooks, validations, Run, post-hooks, and traversal-mode breaks.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-10f0b943115a",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does the hidden completion command transform a completion request into stdout records and a final directive, and why is the command removed on ordinary invocations?",
+      "family_id": "c17u2-fam-10f0b943115a",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":194,"end_line":263,"anchor":"func (c *Command) initCompleteCmd(args []string)","grade":3,"reason":"The span contains command construction, completion lookup, filtering and serialization, directive output, diagnostics, and conditional removal.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-a63375c2addf",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "In the first half of completion resolution, how are the target command, unfinished token, default flags, and preliminary flag-value state derived and parsed before candidates are generated?",
+      "family_id": "c17u2-fam-a63375c2addf",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":266,"end_line":325,"anchor":"func (c *Command) getCompletions(args []string)","grade":3,"reason":"The span traces token separation, Traverse/Find resolution, flag initialization, flag-completion detection, and the preliminary parse operations.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-f7338491d2ae",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "Once completion identifies a flag value, how do filename-extension and subdirectory annotations determine returned candidates and shell directives?",
+      "family_id": "c17u2-fam-f7338491d2ae",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":352,"end_line":374,"anchor":"if validExts, present := flag.Annotations[BashCompFilenameExt]","grade":3,"reason":"The contiguous branches map both annotation forms to their candidate arrays and exact directives.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-ac3535e9177f",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does command invocation validation build flag-group state and sequence the three group-rule validators?",
+      "family_id": "c17u2-fam-ac3535e9177f",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"flag_groups.go","start_line":79,"end_line":109,"anchor":"func (c *Command) ValidateFlagGroups() error","grade":3,"reason":"The method creates per-rule state maps, populates them from annotations, and invokes required-together, one-required, and exclusive checks in order.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-7f4839f4d429",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How are required-together, one-required, and mutually-exclusive flag groups projected into completion visibility and priority?",
+      "family_id": "c17u2-fam-7f4839f4d429",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"flag_groups.go","start_line":220,"end_line":290,"anchor":"func (c *Command) enforceFlagGroupsForCompletion()","grade":3,"reason":"The complete function maps group state to required annotations or hidden flags for each group rule.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-8cd4ceaa7f7b",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "Trace how one Markdown command page is assembled from command metadata, flags, related commands, link rewriting, and the auto-generation tag.",
+      "family_id": "c17u2-fam-8cd4ceaa7f7b",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/md_docs.go","start_line":56,"end_line":117,"anchor":"func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error","grade":3,"reason":"The function provides the complete page construction and output flow.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-e6b59626f87f",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does recursive reStructuredText tree generation filter descendants, derive filenames, prepend custom content, and generate each page?",
+      "family_id": "c17u2-fam-e6b59626f87f",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/rest_docs.go","start_line":143,"end_line":170,"anchor":"func GenReSTTreeCustom(cmd *cobra.Command, dir string","grade":3,"reason":"The tree generator contains the full recursive filtering, file naming and writing pipeline.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-d6db0375241f",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does recursive YAML reference generation move from eligible child commands to a path, prepended bytes, and serialized command document?",
+      "family_id": "c17u2-fam-d6db0375241f",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/yaml_docs.go","start_line":59,"end_line":85,"anchor":"func GenYamlTreeCustom(cmd *cobra.Command, dir string","grade":3,"reason":"The span shows recursive child selection and the complete per-command file output sequence.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-50515f0fb700",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does man-page tree generation apply defaults and custom options while recursing and naming each output file?",
+      "family_id": "c17u2-fam-50515f0fb700",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"doc/man_docs.go","start_line":46,"end_line":80,"anchor":"func GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error","grade":3,"reason":"The function covers default header and section, child filtering, separator selection, filename creation, header copying, and generation.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+
+    {
+      "id": "c17u2-q-59fa2b3a02ff",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which global setting enables automatic command-prefix matching, what is its default, and what warning accompanies enabling it?",
+      "family_id": "c17u2-fam-59fa2b3a02ff",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"cobra.go","start_line":45,"end_line":55,"anchor":"var EnablePrefixMatching = defaultPrefixMatching","grade":3,"reason":"The default constant and public variable documentation fully answer configuration, default, and warning.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-10981019d1ec",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is child-command sorting configured globally, and is sorting enabled or disabled by default?",
+      "family_id": "c17u2-fam-10981019d1ec",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"cobra.go","start_line":45,"end_line":59,"anchor":"var EnableCommandSorting = defaultCommandSorting","grade":3,"reason":"The default constant and configuration variable state the behavior and how to disable it.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-1d82705a1f21",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which package-level option controls case-insensitive command names, and what matching mode is the default?",
+      "family_id": "c17u2-fam-1d82705a1f21",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"cobra.go","start_line":45,"end_line":62,"anchor":"var EnableCaseInsensitive = defaultCaseInsensitive","grade":3,"reason":"The constant and documented public option specify both control and default mode.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-f78c76aabd9b",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which global option makes persistent run hooks traverse all parents, and what hook behavior applies by default?",
+      "family_id": "c17u2-fam-f78c76aabd9b",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"cobra.go","start_line":45,"end_line":66,"anchor":"var EnableTraverseRunHooks = defaultTraverseRunHooks","grade":3,"reason":"The documented variable states the all-parent behavior and the default first-found-hook behavior.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-7906d10593cd",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "What four independent behaviors can CompletionOptions disable or hide for Cobra's default shell-completion command?",
+      "family_id": "c17u2-fam-7906d10593cd",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":104,"end_line":116,"anchor":"type CompletionOptions struct","grade":3,"reason":"The struct documentation enumerates all four completion-command controls.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-3cad2c7070a0",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which shell completion directives request file-extension filtering versus directory-only filtering, and what inputs accompany each?",
+      "family_id": "c17u2-fam-3cad2c7070a0",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"completions.go","start_line":62,"end_line":78,"anchor":"ShellCompDirectiveFilterFileExt","grade":3,"reason":"The two directive comments define the filtering modes and the interpretation of returned completions.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-a0efcc20dac4",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How do ValidArgs and ValidArgsFunction differ for shell completion, and may a command configure both?",
+      "family_id": "c17u2-fam-a0efcc20dac4",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":82,"end_line":87,"anchor":"ValidArgsFunction func(cmd *Command","grade":3,"reason":"The adjacent field documentation distinguishes static and dynamic completion arguments and states their exclusivity.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-508fd43a3e87",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "What changes when DisableFlagParsing is enabled on a command?",
+      "family_id": "c17u2-fam-508fd43a3e87",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":224,"end_line":238,"anchor":"DisableFlagParsing bool","grade":3,"reason":"The field documentation states that flag parsing is disabled and all flags are passed through as arguments.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-2cb19ed609ce",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How are the Windows mousetrap help screen, its duration, indefinite wait mode, and complete disablement configured?",
+      "family_id": "c17u2-fam-2cb19ed609ce",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"cobra.go","start_line":68,"end_line":81,"anchor":"var MousetrapDisplayDuration = 5 * time.Second","grade":3,"reason":"The public configuration comments and defaults explain message suppression, normal duration, and zero-duration waiting.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-f5780a05c609",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "What is FParseErrWhitelist intended to configure, and which pflag type supplies its representation?",
+      "family_id": "c17u2-fam-f5780a05c609",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":38,"end_line":40,"anchor":"type FParseErrWhitelist flag.ParseErrorsWhitelist","grade":3,"reason":"The declaration and comment identify both purpose and underlying pflag type.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+
+    {
+      "id": "c17u2-q-abeb8aa52bb2",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "The command walker is confusing an option's value with a subcommand. How are flags, their separate values, positional tokens, and the double-dash terminator supposed to be separated?",
+      "family_id": "c17u2-fam-abeb8aa52bb2",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":643,"end_line":679,"anchor":"func stripFlags(args []string, c *Command) []string","grade":3,"reason":"The scan fully specifies terminator handling, value-consuming long and short flags, and retained positional command tokens.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-8bbabb81c8cc",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "A repeated word vanished from the wrong place while descending the command tree. How does Cobra remove just the intended command token without deleting an equal-looking flag value?",
+      "family_id": "c17u2-fam-8bbabb81c8cc",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":681,"end_line":717,"anchor":"func (c *Command) argsMinusFirstX(args []string, x string) []string","grade":3,"reason":"The position-aware scan skips flag values and removes only the first matching non-flag token.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-58bfc7085fc7",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "Why does an abbreviated subcommand sometimes resolve and sometimes stay unresolved even though prefix matching is enabled?",
+      "family_id": "c17u2-fam-58bfc7085fc7",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":767,"end_line":786,"anchor":"if len(matches) == 1","grade":3,"reason":"The lookup prefers exact name or alias and accepts a prefix only when it produces exactly one match.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-10717c9d2492",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "What makes one command appear in the 'Did you mean' list while another equally nearby-looking command is excluded?",
+      "family_id": "c17u2-fam-10717c9d2492",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":831,"end_line":850,"anchor":"func (c *Command) SuggestionsFor(typedName string) []string","grade":3,"reason":"The method filters for available commands and applies distance, prefix, and explicit SuggestFor rules.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-dd78b691af05",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "Help from a child command is using behavior configured higher in the tree. How is the help callback selected, and where does built-in help write?",
+      "family_id": "c17u2-fam-dd78b691af05",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":450,"end_line":468,"anchor":"func (c *Command) HelpFunc() func(*Command, []string)","grade":3,"reason":"The method shows local and parent callback inheritance and the stdout-based default template behavior.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-92a73a547c08",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "A flag parse failure reaches a handler that was not set on the failing subcommand. Where can that handler come from, and what happens if none is configured?",
+      "family_id": "c17u2-fam-92a73a547c08",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":497,"end_line":511,"anchor":"func (c *Command) FlagErrorFunc() (f func(*Command, error) error)","grade":3,"reason":"The resolution order covers local, recursive parent, and identity fallback handlers.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-2072dc1a9bde",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "Adding a child changed several cached values, and adding one particular child panicked. What bookkeeping does child insertion perform and which relationship is forbidden?",
+      "family_id": "c17u2-fam-2072dc1a9bde",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1302,"end_line":1329,"anchor":"func (c *Command) AddCommand(cmds ...*Command)","grade":3,"reason":"The method forbids self-parenting, sets parents, updates width caches, propagates normalization, appends, and invalidates sorting.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-1c0e1e8d5f26",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "Why did '[flags]' appear at the end of a usage line, and under what conditions will Cobra leave it off?",
+      "family_id": "c17u2-fam-1c0e1e8d5f26",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1436,"end_line":1451,"anchor":"func (c *Command) UseLine() string","grade":3,"reason":"The method builds parent-aware usage text and shows the disable flag, available-flag, and already-present checks.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-480fcd587398",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "A command exists in the tree but is missing from the ordinary available-command list. Which properties can make it unavailable?",
+      "family_id": "c17u2-fam-480fcd587398",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1560,"end_line":1576,"anchor":"func (c *Command) IsAvailableCommand() bool","grade":3,"reason":"The predicate excludes deprecated, hidden, generated help, and non-runnable leaf commands while accepting runnable commands or those with available descendants.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    },
+    {
+      "id": "c17u2-q-1a831f229cfa",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "Why is a non-runnable node being treated as an extra help topic rather than a normal command?",
+      "family_id": "c17u2-fam-1a831f229cfa",
+      "provenance": "Independent curator-authored question from pinned Cobra source; no prior evaluation dataset consulted.",
+      "judgements": [{"path":"command.go","start_line":1578,"end_line":1598,"anchor":"func (c *Command) IsAdditionalHelpTopicCommand() bool","grade":3,"reason":"The recursive predicate specifies the runnable, hidden, deprecated, and descendant conditions for additional help topics.","annotator":"codex-independent-curator","reviewer":"codex-independent-curator-review"}]
+    }
+  ]
+}

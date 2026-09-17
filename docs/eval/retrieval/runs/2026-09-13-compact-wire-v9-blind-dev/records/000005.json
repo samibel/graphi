@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 5,
+  "previous_sha256": "8747d7d3a146fb94f20020672e83668ce301467cbaf16f8f7344bcdf6071c51e",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "510387ce977382fcb2e16c8be4f17662a971341835a8f2dc071d81ca9993069c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` is in package `cobra` (`flag_groups.go:15`) and defines flag-group annotations and validation/completion behavior.\n\nDeclarations shown:\n\n- Constants (`flag_groups.go:25-29`):\n  - `requiredAsGroup`\n  - `oneRequired`\n  - `mutuallyExclusive`\n- `(*Command).MarkFlagsRequiredTogether(flagNames ...string)` marks grouped flags so partial usage errors (`flag_groups.go:31-34`).\n- `hasAllFlags(fs *flag.FlagSet, flagnames ...string) bool` checks flag presence (`flag_groups.go:111-112`).\n- `processFlagForGroupAnnotation(...)` reads a flag’s group annotation into group-status data (`flag_groups.go:121-123`).\n- Validation helpers:\n  - `validateRequiredFlagGroups` (`flag_groups.go:144-145`)\n  - `validateOneRequiredFlagGroups` (`flag_groups.go:167-168`)\n  - `validateExclusiveFlagGroups` (`flag_groups.go:188-189`)\n- `(*Command).ValidateFlagGroups() error` validates required-together, one-required, and mutually-exclusive rules, returning the first error; it skips validation when `DisableFlagParsing` is set (`flag_groups.go:79-89`).\n- `(*Command).enforceFlagGroupsForCompletion()` adjusts completion metadata: related flags become required, one-required groups become required when none are set, and mutually exclusive alternatives become hidden (`flag_groups.go:220-227`).",
+  "sha256": "c7084c001558dc116df06e397fda4cbcf87b82107b8206b108367ce1eb47e737"
+}

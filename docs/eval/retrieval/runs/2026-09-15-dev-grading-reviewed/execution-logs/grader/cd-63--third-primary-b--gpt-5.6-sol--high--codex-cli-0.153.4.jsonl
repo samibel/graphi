@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-387c-77b1-8639-17ecfd4fe34a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response states the canonical contract that Command.Aliases contains alternatives to the first word in Use, supported by command.go:63-66. Its additional descriptions of HasAlias, ArgAliases, and Bash alias completion are supported by the preserved spans and follow-up read, with valid citations."}}
+{"type":"turn.completed","usage":{"input_tokens":18193,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":64,"reasoning_output_tokens":0}}

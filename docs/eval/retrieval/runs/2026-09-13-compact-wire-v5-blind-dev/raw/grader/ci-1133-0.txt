@@ -1,0 +1,1 @@
+FAIL: The response's primary instruction assumes a Run hook receives the executing *Command, but the bundle contains no Run/RunE signature or invocation showing that fact. The development key requires that missing connection, so external knowledge cannot make this answer supported.

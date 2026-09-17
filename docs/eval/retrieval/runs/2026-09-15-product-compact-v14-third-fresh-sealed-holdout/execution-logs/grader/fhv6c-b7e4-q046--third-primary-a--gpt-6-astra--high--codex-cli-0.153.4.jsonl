@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-3ef8-7c92-9b8b-859b7e167956"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the Shell Completions guide at `site/content/completions/_index.md`, supported by the explicit relative link in `site/content/completions/fish.md` lines 1–4."}}
+{"type":"turn.completed","usage":{"input_tokens":17917,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

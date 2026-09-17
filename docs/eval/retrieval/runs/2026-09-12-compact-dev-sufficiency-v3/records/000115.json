@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 115,
+  "previous_sha256": "9f0602124f88100eaa1b7778574bab902b0abd8ee9ffdef87dd62495cc87c611",
+  "kind": "grade",
+  "query_id": "cb-30",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "be93b048a75443eb6b4c202fce8503f5879062b58718c1a57917698bce3dedfa",
+  "outcome": "pass",
+  "rationale": "GenManTree's preserved signature, documentation and wrapper body support the concrete invocation, nil header, output directory, options and filename-collision caveat.\n",
+  "sha256": "ef94495ade8db7cc7ae92d87f78743b8e7bea66f4d32cc1a39c2b650ab83e355"
+}

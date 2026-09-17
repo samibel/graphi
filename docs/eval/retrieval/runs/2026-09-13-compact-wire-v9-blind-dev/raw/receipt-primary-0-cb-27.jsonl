@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-3857-79b2-9a1b-c8758144fda5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Set the package-level variable before executing commands:\n\n```go\ncobra.EnablePrefixMatching = true\n```\n\nEvidence: `cobra.go:55` defines `EnablePrefixMatching`. In `command.go:767-786`, `findNext` uses prefix matching only when that variable is true, and accepts a prefix only when exactly one command matches. `command.go:1524-1538` confirms prefixes are checked against both command names and aliases."}}
+{"type":"turn.completed","usage":{"input_tokens":16393,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":94,"reasoning_output_tokens":0}}

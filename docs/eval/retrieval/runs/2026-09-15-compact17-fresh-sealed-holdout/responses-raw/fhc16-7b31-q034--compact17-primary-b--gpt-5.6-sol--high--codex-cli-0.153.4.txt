@@ -1,0 +1,10 @@
+`LocalFlags` builds the command-local view as follows:
+
+1. It calls `c.mergePersistentFlags()` first, ensuring inherited persistent flags are incorporated before filtering (`command.go:1669`).
+2. It lazily creates `c.lflags`, configures its error output, copies `SortFlags` from `c.Flags()`, and applies the global normalization function when present (`command.go:1671–1682`).
+3. Its `addToLocal` closure adds a flag only when:
+   - it is not already in `c.lflags`, and
+   - it is not the same flag object returned by `c.parentsPflags.Lookup(f.Name)` (`command.go:1684–1689`).
+
+   Thus an inherited parent persistent flag is excluded, while a current-command flag with the same name but a different flag object is included as a shadowing local flag, matching the comment: “Add the flag if it is not a parent PFlag, or it shadows a parent PFlag.”
+4. It applies that filter to both `c.Flags()` and the command’s own `c.PersistentFlags()`, then returns the cached local set (`command.go:1691–1693`).

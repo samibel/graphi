@@ -1,0 +1,1 @@
+FAIL: The response does not trace flag classification, accumulation, child-token detection, or recursion into the child. The bundle supplies ParseFlags and its call at command.go:823–825 but omits the traversal body needed to verify those essential behaviors.

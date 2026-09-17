@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 125,
+  "previous_sha256": "3f147aa3c6898f90d2caa2970bae6ec7dc72a2f78703293159397642b60bfb22",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "ff2952db907f9f0663a804c164f895917fb18985f8f00dde5d77a9f8a23603d7",
+  "outcome": "pass",
+  "rationale": "The complete RegisterFlagCompletionFunc implementation supports the concrete Go callback signature, registration procedure and unknown/duplicate-flag errors.\n",
+  "sha256": "b56a6eb10a2ef9b9189d21ce2fa67add71104aa55a92ff51cbe5a96ae4ef1906"
+}

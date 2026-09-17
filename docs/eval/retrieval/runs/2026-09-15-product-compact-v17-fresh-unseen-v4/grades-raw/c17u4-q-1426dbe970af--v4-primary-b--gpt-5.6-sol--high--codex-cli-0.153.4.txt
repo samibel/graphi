@@ -1,0 +1,1 @@
+PASS: The response correctly describes clearing removed children’s parents, rebuilding `c.commands`, and resetting and recomputing all three cached maximum lengths from remaining children. Its citation resolves within the preserved `command.go:1360–1393` span.

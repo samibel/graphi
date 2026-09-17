@@ -1,0 +1,1 @@
+PASS: The response accurately lists all four CompletionOptions boolean fields and their effects from completions.go:104–116, and correctly identifies configuration on the root command from site/content/completions/_index.md:94–95. All claims and citations are supported by the preserved transcript.

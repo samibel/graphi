@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 85,
+  "previous_sha256": "afa738c459399a6ff153ed497baa66b2b3bccb4d8bd61113d4c16b5b77fbaf0a",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ffa757a6d67a7159e4b4476ad08cad5ab6b1e89fb359cb482ff331bbf2af44a6",
+  "outcome": "pass",
+  "rationale": "The candidate concretely and correctly describes the implementation using preserved evidence: doc/md_docs.go:119-129 shows GenMarkdownTree defining emptyStr and identity and delegating to GenMarkdownTreeCustom; lines 131-158 show recursive traversal, filtering with IsAvailableCommand/IsAdditionalHelpTopicCommand, filename construction, file creation, prepender writing, and GenMarkdownCustom invocation; line 30 defines the .md extension. The warning about hyphenated command names and undefined filename collisions is also supported by lines 121-125.\n",
+  "sha256": "bce85f41f01346a27b42edab99cb59f0ec97b6f933c37757af9ec7366f552117"
+}

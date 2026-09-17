@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 65,
+  "previous_sha256": "31338a3e951a904d617602cc5be0e9d1cf91fef3330ae6149de79275a341181a",
+  "kind": "response",
+  "query_id": "cb-33",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "abdf562cb1be9f8f415409e21832db4ecacd971b5f6a183f0a4eabdc8a3cb076",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Flags modify command behavior. Cobra supports POSIX-compliant flags and Go’s `flag` package (`README.md:68-72`).\n\nA command supports:\n\n- `Flags()`: the complete applicable `FlagSet`, including local and persistent flags declared by the command and its parents (`command.go:1641-1653`).\n- `LocalFlags()`: flags set on the current command, including persistent flags while excluding unshadowed parent persistent flags (`command.go:1668-1693`).\n- `LocalNonPersistentFlags()`: current-command flags that do not propagate to subcommands (`command.go:1655-1666`).\n\nThe response also shows that persistent flags are merged through `mergePersistentFlags()` (`command.go:1849`), but its implementation is not included.",
+  "sha256": "5bdda8aa856e842fea7f757748cd7a3d5ec80e47359f30452017caff12406060"
+}

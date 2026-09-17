@@ -2,13 +2,81 @@ package retrieval
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/taskctx"
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
+	"github.com/samibel/graphi/engine/embed"
+	"github.com/samibel/graphi/engine/query"
+	engineretrieval "github.com/samibel/graphi/engine/retrieval"
 )
+
+func TestCandidateCaptureIndexUsesInjectedEmbedderAndExpectedFingerprint(t *testing.T) {
+	emb := &countingEmbedder{id: "qualification-injected", dim: 3}
+	o := CandidateCaptureOptions{Embedder: emb}
+	idx, err := buildCandidateCaptureIndex(context.Background(), o, fixtureRoot(t), t.TempDir(), io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer idx.store.Close()
+	if emb.calls == 0 || idx.embedderID != emb.ID() {
+		t.Fatalf("injected embedder calls=%d id=%q", emb.calls, idx.embedderID)
+	}
+	want := idx.fingerprint
+	o.ExpectedFingerprint = &want
+	if err := validateCandidateCaptureFingerprint(o, idx); err != nil {
+		t.Fatalf("expected fingerprint rejected: %v", err)
+	}
+	wrong := want
+	wrong.ModelID = "wrong"
+	o.ExpectedFingerprint = &wrong
+	if err := validateCandidateCaptureFingerprint(o, idx); err == nil {
+		t.Fatal("capture accepted loaded generation outside expected fingerprint")
+	}
+}
+
+var _ embed.Embedder = (*countingEmbedder)(nil)
+
+func TestQualificationLexicalControlUsesRealCaptureWithoutSemanticGeneration(t *testing.T) {
+	root := fixtureRoot(t)
+	idx, err := buildTaskContextLexicalIndex(t.Context(), root, t.TempDir(), io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer idx.store.Close()
+	queryService := query.New(idx.store)
+	engine := engineretrieval.New(resolve.Deps{Query: queryService, Search: idx.search}, idx.search, idx.store)
+	pre := QualificationPreregistration{}
+	counter := loadHermeticRealPayloadCounterForTest(t)
+	q := Query{ID: "lexical-control", Text: "Answer", Stratum: StratumExactIdentifier, Split: SplitDev,
+		Judgements: []Judgement{{Path: "answer.go", StartLine: 3, EndLine: 3, Grade: GradeMax}}}
+	got, err := captureOneCandidateBundle(t.Context(), CandidateCaptureOptions{
+		RepoRoot: root, RealCounter: counter, QualificationArm: ArmLexical, QualificationPreregistration: &pre,
+	}, q, queryService, idx, engine)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Qualification == nil || got.Qualification.Degraded || got.Qualification.RetrievalState != string(engineretrieval.StateLexicalOnly) {
+		t.Fatalf("lexical qualification = %+v", got.Qualification)
+	}
+	if !got.Qualification.CompleteGrade3Span {
+		t.Fatalf("lexical control lost the complete serialized grade-3 source span: %s", got.BundleSummary)
+	}
+	if got.OracleControls == nil {
+		t.Fatal("one-shot qualification capture did not retain oracle controls from the frozen normal contract.Result")
+	}
+	for _, control := range oracleControlBundles(*got.OracleControls) {
+		if control.QueryID != q.ID || control.CandidateSHA256 == "" || control.Payload.SHA256 == "" || control.TokenCount <= 0 {
+			t.Fatalf("captured oracle control lacks frozen provenance: %+v", control)
+		}
+	}
+}
 
 // encodeLikeTheStdioTransport reproduces exactly how surfaces/mcp writes a
 // response: json.Encoder with HTML escaping off, one object per line, struct
@@ -54,6 +122,62 @@ func encodeLikeTheStdioTransport(t *testing.T, summary string, isError bool, wit
 
 func readyV2Summary() string {
 	return taskctx.MethodVersionV2 + ": 4 seeds; degradation: ready; weights h0"
+}
+
+func encodeCompactLikeTheStdioTransport(t *testing.T, fallback, model string) []byte {
+	t.Helper()
+	type result struct {
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+		StructuredContent taskcompact.Structured `json:"structuredContent"`
+		IsError           bool                   `json:"isError"`
+	}
+	type response struct {
+		JSONRPC string `json:"jsonrpc"`
+		ID      int    `json:"id"`
+		Result  result `json:"result"`
+	}
+	r := response{JSONRPC: "2.0", ID: 1}
+	r.Result.Content = append(r.Result.Content, struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}{Type: "text", Text: fallback})
+	r.Result.StructuredContent = taskcompact.Structured{
+		Version: taskcompact.Version,
+		Sources: []taskcompact.Source{},
+		Provenance: taskcompact.Provenance{
+			InputSHA256: strings.Repeat("a", 64), Method: taskctx.MethodVersionV2,
+			Retrieval: "retrieval/3", RetrievalState: "ready", Weights: "abcdef12", Model: model,
+			SourceSelection: "context-definitions/3", SourceOrder: "ranked_coherent_regions",
+			SourceBudget: taskcompact.DefaultSourceBudget, BudgetUnit: TokenizerID,
+		},
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(r); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestCompactCandidateCaptureFailsClosedOnIdentityAndExactWireBudget(t *testing.T) {
+	good := encodeCompactLikeTheStdioTransport(t, "compact answer sources", "sha256:"+strings.Repeat("b", 16))
+	if _, err := ValidateCompactCandidateBundleBytes("dev-1", good); err != nil {
+		t.Fatalf("valid compact response rejected: %v", err)
+	}
+
+	badModel := encodeCompactLikeTheStdioTransport(t, "compact answer sources", "sha256:not-hex")
+	if _, err := ValidateCompactCandidateBundleBytes("dev-1", badModel); err == nil || !strings.Contains(err.Error(), "provenance") {
+		t.Fatalf("malformed model identity was not rejected: %v", err)
+	}
+
+	overBudget := encodeCompactLikeTheStdioTransport(t, strings.Repeat("abcdefghijklmno", 4000), "sha256:"+strings.Repeat("b", 16))
+	if _, err := ValidateCompactCandidateBundleBytes("dev-1", overBudget); err == nil || !strings.Contains(err.Error(), "frozen budget") {
+		t.Fatalf("over-budget exact MCP response was not rejected: %v", err)
+	}
 }
 
 // AC-2: every substitute for the transport bytes is refused, and each row below

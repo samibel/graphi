@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 89,
+  "previous_sha256": "525adfd15ecd133798896940abf44adb8d7d9bc38f7f7456a011177a4bd6ca35",
+  "kind": "grade",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "c7084c001558dc116df06e397fda4cbcf87b82107b8206b108367ce1eb47e737",
+  "outcome": "pass",
+  "rationale": "The candidate directly describes the queried file and confines itself to declarations evidenced by the preserved bundle: package `cobra` at line 15; the three constants at lines 25–29; `MarkFlagsRequiredTogether` at lines 31–34; `ValidateFlagGroups` and its `DisableFlagParsing` guard at lines 79–89; helper signatures at lines 111–123 and 144–189; and completion behavior documented at lines 220–227. It appropriately says “Declarations shown,” avoiding an unsupported claim that the truncated response contains the complete file.\n",
+  "sha256": "d4ccdcf121101b0a7fbd2e9d1f3e3f45d9b3355645b4da9c5d0d04ab4d96d728"
+}

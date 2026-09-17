@@ -1,0 +1,7 @@
+Related state is updated too. In `command.go:1361-1393`, `RemoveCommand`:
+
+- removes matching entries from `c.commands`,
+- sets each removed command’s `command.parent = nil`,
+- resets and recomputes the parent’s layout-length caches: `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen`.
+
+So removal is not limited to deleting the slice entry.

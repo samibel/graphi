@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows the import `github.com/spf13/cobra` (`README.md:92`) and mentions `go get` (`README.md:82-85`), but omits the actual installation and add-command command lines.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-3fc4-74d1-9827-b5394302a890"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`hasSeeAlso(cmd *cobra.Command) bool` determines whether documentation should print “See Also” information (`doc/util.go:23–26`).\n\nIt returns `true` if:\n\n- The command has a parent (`doc/util.go:27–28`); `HasParent()` checks `c.parent != nil` (`command.go:1631–1634`).\n- Any subcommand satisfies `IsAvailableCommand()` and is not an `IsAdditionalHelpTopicCommand()` (`doc/util.go:30–34`).\n\nOtherwise, it returns `false` (`doc/util.go:36`).\n\n`IsAvailableCommand()` excludes deprecated, hidden, and designated help commands, and requires the command to be runnable or have available subcommands (`command.go:1560–1576`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17278,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":163,"reasoning_output_tokens":0}}

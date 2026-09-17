@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-38db105ec742",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "7f4ba8547e8b248601e6cc04690945bb0599173096d7667462fa1badb9136440",
+  "bundle_sha256": "3b4d99b4c4b0d709f30aa195cf25598b0481bfb121faed8e57b1374adac9adda",
+  "prompt_sha256": "08145dbf3d4ff22c780c531edfd35ec8b2916db593e0f75087446ac555a02ad8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`TestEnablePrefixMatching` in `command_test.go` (lines 305–332) proves it:\n\n- Sets `EnablePrefixMatching = true`.\n- Defines command `aCmd` with `ExactArgs(2)`.\n- Executes the abbreviated name with arguments: `executeCommand(rootCmd, \"a\", \"one\", \"two\")`.\n- Verifies execution succeeds and `aCmd` receives both arguments by checking `strings.Join(aCmdArgs, \" \") == onetwo`.",
+  "responded_at": "2026-09-15T20:29:17Z",
+  "sha256": "2beabf964717a93d545abe90ef709c8a81146cc35e2e71e9f7fa96206fa2fd0b"
+}

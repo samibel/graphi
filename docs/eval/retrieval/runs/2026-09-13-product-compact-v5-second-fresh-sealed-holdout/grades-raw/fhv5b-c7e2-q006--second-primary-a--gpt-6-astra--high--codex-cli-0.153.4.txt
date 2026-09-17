@@ -1,0 +1,1 @@
+PASS: The response accurately describes ExactArgs accepting only len(args) == n, returning nil on success and an error containing expected and actual counts otherwise. The cited args.go lines 93–100 support these claims and the count-only check.

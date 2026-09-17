@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c8-9b21-76f3-9a46-e17caed4eaf0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that OnlyValidArgs strips tab-separated descriptions, builds a separate slice without changing cmd.ValidArgs, and validates positional arguments using exact equality. All claims and citations are supported by the preserved args.go and cobra.go spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17752,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

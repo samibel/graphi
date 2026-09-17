@@ -1,0 +1,1 @@
+In `command.go:788-829`, `Traverse` only calls `c.ParseFlags(flags)` after finding another child, immediately before recursing into it. A flag after the final child is appended to `flags` and skipped with `continue` (`command.go:797-817`); when the loop ends, the function simply returns `c, args, nil` (`command.go:828`) without parsing that accumulated flag.

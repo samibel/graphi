@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 34,
+  "previous_sha256": "97973d530cce2b235b0c29646c4f58d240225f736840581f410590ce2467d961",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "3693c11deab4ab437fffc3df2421d2a98cf4d3002683eeba2ed4aecbe9484af4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Create a parent command with persistent flags and a child command, then assert on the child:\n\n- `child.InheritedFlags().Lookup(name)` finds the parent flag.\n- `child.HasInheritedFlags()` is `true`.\n- A child-local flag with the same name is excluded from inherited flags.\n\nThis follows from `command.go:1695-1718`: `InheritedFlags()` merges parent persistent flags, adding each only when neither the inherited nor local set already contains that name. `command.go:1766-1769` defines `HasInheritedFlags()` as `c.InheritedFlags().HasFlags()`. For hidden/deprecated filtering, test `HasAvailableInheritedFlags()`, which delegates to `InheritedFlags().HasAvailableFlags()` (`command.go:1788-1792`).",
+  "sha256": "24ad4b6172c5e59662e0c08e44fcaae783b68f5ce9abe7f453a9fd6e1647aacb"
+}

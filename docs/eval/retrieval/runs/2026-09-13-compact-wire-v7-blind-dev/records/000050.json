@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 50,
+  "previous_sha256": "b53db0d88591ae51e6a60304266c0545d5d1c671a411f26704f0e336eb632a77",
+  "kind": "response",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "a88d8383ac2d66bd2de51a65eb623eeb4bcaac9006e2ac60f2797e13854c3c70",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Unknown-command suggestions are computed by `(*Command).SuggestionsFor` in `command.go:831-850`:\n\n- It considers only subcommands where `cmd.IsAvailableCommand()` is true.\n- It suggests a command when either:\n  - `ld(typedName, cmd.Name(), true)`—case-insensitive Levenshtein distance—is at most `SuggestionsMinimumDistance`, or\n  - the lowercased command name starts with the lowercased input.\n- It also suggests commands whose `SuggestFor` entry equals the input case-insensitively via `strings.EqualFold`.\n- Suggested values are `cmd.Name()`, derived from the first word of `cmd.Use` (`command.go:1495-1503`).\n\nBefore computing, `findSuggestions` returns nothing if `DisableSuggestions` is set and defaults a nonpositive `SuggestionsMinimumDistance` to `2` (`command.go:750-765`). Results are emitted in traversal order beneath `Did you mean this?`; the shown code performs no sorting or deduplication.",
+  "sha256": "cc8342e57a51ceaab02db6956389aa62dccb8db27a868b5d1fe82ac36c42b11c"
+}

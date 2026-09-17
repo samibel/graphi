@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q016",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "c87489a8e2727881e2aa074ca731dc2b52debafde95fe05eeb84622370311d97",
+  "bundle_sha256": "5230a32ba9b8f605df1ff19aec8641b3fa3d8de0ccdaece6acf6515bf050bcdd",
+  "prompt_sha256": "003e4a4179949da362efb07cb66c640f90e9c37b2e90c9db04e9c906f781c759",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Hyphens (`-`) and colons (`:`). In `powershell_completions.go`, `genPowerShellComp` lines 28–30 state: `// Variables should not contain a '-' or ':' character`, followed by `nameForVar := name`.",
+  "responded_at": "2026-09-15T18:37:18Z",
+  "sha256": "e8122d5e7eeedbed7383432cfafcdd1621a9fd47aa643c0f015fd83e9f16f482"
+}

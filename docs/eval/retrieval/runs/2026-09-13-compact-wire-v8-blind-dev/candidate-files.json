@@ -1,0 +1,18 @@
+[
+  {
+    "path": "cmd/compact-sufficiency-dev/main.go",
+    "sha256": "4b2aeaf13363f8ca21e9ec231ae6cbaff70cb031ba7fae45aee721261b1a515e"
+  },
+  {
+    "path": "internal/eval/retrieval/compact_sufficiency_dev.go",
+    "sha256": "f77d84bb601ed6348001a9f17ed11adbe2cffd45c6aad734ed65a9de7edcdc97"
+  },
+  {
+    "path": "internal/eval/retrieval/compact_wire_dev.go",
+    "sha256": "7eeaa0d114ca30f796f187e0651da26afa7355177ef6d334dfde6c27ac6aa56a"
+  },
+  {
+    "path": "internal/eval/retrieval/compact_wire_dev_test.go",
+    "sha256": "6c168f0973a64dba21208d92f23d7d721f5efcd2f5a244d13b0eb363156f0604"
+  }
+]

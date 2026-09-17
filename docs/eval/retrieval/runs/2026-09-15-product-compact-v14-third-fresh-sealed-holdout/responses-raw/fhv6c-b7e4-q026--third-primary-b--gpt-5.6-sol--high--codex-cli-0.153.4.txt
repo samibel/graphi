@@ -1,0 +1,3 @@
+`SetErr(nil)` makes `ErrOrStderr()` return the nearest parent command’s non-nil `errWriter`, if one exists; otherwise it returns `os.Stderr`.
+
+Evidence: `SetErr` assigns `nil` to `c.errWriter` (`command.go:294–298`), `ErrOrStderr` calls `c.getErr(os.Stderr)` (`command.go:384–387`), and `getErr` searches parents before returning its default (`command.go:404–412`).

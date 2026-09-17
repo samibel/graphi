@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q020",
+  "response_sha256": "ae5903689d764ba62c06a7ec9aaedd737160338f14ef869841ee9825627102b1",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response accurately identifies the deprecated method as a no-op returning nil and names ValidArgs for the first argument and ValidArgsFunction for any argument as the documented alternatives. All cited locations exist in the supplied bundle and support the attached claims.",
+  "graded_at": "2026-09-13T15:36:02Z",
+  "sha256": "4d4c82e08c127ddc1ab93fa2c21d23d1eb524ed9860e33e3ce30d78efd097ab3"
+}

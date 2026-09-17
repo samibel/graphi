@@ -1,0 +1,12 @@
+`GenYamlTreeCustom` recursively generates one YAML reference file per available Cobra command.
+
+From `doc/yaml_docs.go:58-85`:
+
+- It traverses `cmd.Commands()` recursively.
+- It skips unavailable commands and additional help topics using `IsAvailableCommand()` and `IsAdditionalHelpTopicCommand()`.
+- Each filename is the command path with spaces replaced by underscores, plus `.yaml`; e.g. `app sub` becomes `app_sub.yaml`.
+- It creates each file under `dir`.
+- It writes `filePrepender(filename)` first, then calls `GenYamlCustom(cmd, f, linkHandler)` to generate the command’s YAML.
+- It returns immediately on traversal, file-creation, write, or generation errors.
+
+`command.go:1560-1576` shows that `IsAvailableCommand()` excludes deprecated, hidden, and generated help commands, and includes runnable commands or commands with available subcommands.

@@ -1,0 +1,1 @@
+A child command recursively inherits its parent’s input reader. In `command.go:413-422`, `getIn` returns `c.inReader` if set; otherwise, when `c.HasParent()` is true, it calls `c.parent.getIn(def)`. If no ancestor has a reader, it returns the default—`os.Stdin` when invoked through `InOrStdin` (`command.go:388-392`).

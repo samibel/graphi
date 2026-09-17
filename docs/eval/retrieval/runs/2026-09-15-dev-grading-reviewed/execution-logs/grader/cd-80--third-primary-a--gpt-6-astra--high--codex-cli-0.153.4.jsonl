@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-db58-73f1-a258-65e6ac28af6d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately states all three append conditions and the parent-prefixed use-line construction, directly supported by the preserved command.go:1436–1451 transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":18005,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":38,"reasoning_output_tokens":0}}

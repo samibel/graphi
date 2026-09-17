@@ -1,0 +1,6 @@
+The shown portion of `powershell_completions_test.go` contains:
+
+- **Package:** `cobra` (line 15).
+- **Test:** `TestPwshCompletionNoActiveHelp(t *testing.T)` (lines 23–33). It creates a command named `c`, generates PowerShell completion into a buffer, checks generation succeeds, and verifies the output contains `${env:<active-help-variable>}=0`, disabling active help.
+
+The response is truncated, so it does not establish the file’s complete structure or declaration list.

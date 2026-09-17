@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac5-3294-7b02-bd62-17ff57ef240d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response documents `<PROGRAM>_ACTIVE_HELP` naming (`site/content/active_help.md:143`) but contains no application completion code showing how it calls `GetActiveHelpConfig` or uses the returned value."}}
+{"type":"turn.completed","usage":{"input_tokens":17163,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":81,"reasoning_output_tokens":28}}

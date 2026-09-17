@@ -1,0 +1,1 @@
+FAIL: The response describes the visible flag setup and declarations, but omits the command-tree construction essential to the reviewed initialization behavior. The preserved transcript ends `init()` at line 40 and does not establish that construction; acknowledging truncation does not resolve this gap.

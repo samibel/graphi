@@ -1,0 +1,1 @@
+INSUFFICIENT The response supplies related test names but no complete setup, execution, or assertions for testing inherited flags, and only shows the presence check `HasInheritedFlags()` delegating to `InheritedFlags().HasFlags()` (`command.go:1767–1768`).

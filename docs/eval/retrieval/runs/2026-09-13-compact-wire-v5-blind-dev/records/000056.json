@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 56,
+  "previous_sha256": "9772c19cb332950ed60f2a3f115403b309adf9134254e230cb5cecb0b68901b9",
+  "kind": "response",
+  "query_id": "cb-21",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "8af20f702551ff75578f3fd161e91a22f47cafeda299cbce68da5135820afe8c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`parent.AddCommand(children...)` rejects making a command its own child, assigns each child's `parent` field to the receiver, updates cached maximum use/path/name widths, propagates a global normalization function when configured, appends the child to `c.commands`, and marks the collection unsorted (`command.go:1302-1330`). `Parent` simply returns that pointer (`command.go:1842-1845`).\n",
+  "sha256": "0a38cc90d171d3252863990c6db3c10e98d0ae16e422d9c997311d8758c44bfe"
+}

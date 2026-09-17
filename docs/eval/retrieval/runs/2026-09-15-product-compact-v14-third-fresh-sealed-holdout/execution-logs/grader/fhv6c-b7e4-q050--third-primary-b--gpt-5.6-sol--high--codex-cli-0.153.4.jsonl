@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-64bf-74d1-a056-4530d188e402"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The follow-up transcript at site/content/completions/zsh.md:34-39 supports all six behaviors described: default file completion, ignored empty filename annotations, cross-shell extension syntax, directory completion across shells, and retention in Zsh plus extension to Fish of repeated-flag suppression and omission of equals-form suggestions."}}
+{"type":"turn.completed","usage":{"input_tokens":19270,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":34}}

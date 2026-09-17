@@ -1,0 +1,3 @@
+Use `doc.GenManTree` with the root command and an output directory; it generates a man page for that command and every descendant. The header may be `nil` (`doc/man_docs.go:33-34`).
+
+Alternatively, use `doc.GenManTreeFromOpts`; it also processes the command and all descendants and writes the pages to `opts.Path` (`doc/man_docs.go:46-47`).

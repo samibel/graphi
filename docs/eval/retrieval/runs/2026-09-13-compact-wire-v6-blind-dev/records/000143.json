@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 143,
+  "previous_sha256": "34b29f2a8434872508ea6d1d939805e966c4bae7c415d927d0523c43671766ea",
+  "kind": "grade",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "dc8f789a918e8dbafee60f97f6535dec7681067e791f171b20565fe16b6f1fc5",
+  "outcome": "pass",
+  "rationale": "PASS: It accurately explains InheritedFlags' contents and the two relevant boolean assertions.",
+  "sha256": "5f8efd005fb64ce0acdc8e7c0420017489d15c479a3759d9b8485eb2a2b9003f"
+}

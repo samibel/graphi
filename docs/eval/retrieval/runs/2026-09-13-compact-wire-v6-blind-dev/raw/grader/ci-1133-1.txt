@@ -1,0 +1,1 @@
+PASS: It directly answers how to retrieve a named flag from the executing command and correctly notes the nil result when absent.

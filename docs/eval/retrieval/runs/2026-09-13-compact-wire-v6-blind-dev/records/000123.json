@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 123,
+  "previous_sha256": "a52fd826cea902cee5e7921800f4f72734191ac7fb82373f8fb8c8e51e266e71",
+  "kind": "grade",
+  "query_id": "cb-30",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "33dc661cc2a508eaa2499ee7a89778be3782f31e10d98b223a1aa37282d41ae7",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly identifies the tree-generation entry point and the available customization options.",
+  "sha256": "8552529e33b79e90c101ae38d17af457f49a43f4b3134952f34d09d54bd43346"
+}

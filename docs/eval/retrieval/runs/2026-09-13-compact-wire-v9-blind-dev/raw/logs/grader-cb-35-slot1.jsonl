@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098e1-8c56-7293-aca2-0d8c49f63493"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"outcome\":\"pass\",\"rationale\":\"The answer is concrete and each substantive claim is supported by the preserved bundle: `completions.go:678–685` documents all three conditions under which `InitDefaultCompletionCmd` does nothing; `completions.go:95–102` gives the command name, `no-descriptions` flag name, and `false` default; and `site/content/completions/_index.md:112–127` states that generated scripts complete commands and flags, shows `DisableDescriptions = true`, and identifies `ValidArgs` for static noun completion.\"}"}}
+{"type":"turn.completed","usage":{"input_tokens":16913,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":314,"reasoning_output_tokens":181}}

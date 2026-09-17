@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q049",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "8bcce992d013dfe2f4dce96599d9383bba0cc69d0e75c8d566e8eace40188c4e",
+  "bundle_sha256": "8242cb56e8e529040918e5474113b4e18444b523556e94090223eeac5ef4ea97",
+  "prompt_sha256": "76f297fbe13aa8d2bcc86487405294e3b43175998bb102b62bf00b08cc347fa0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `cobra-cli` when you want the easiest, fastest setup: it scaffolds a Cobra application and generates command files (`site/content/user_guide.md:29-33`; `README.md:96-97`).\n\nUse the Cobra library manually when you want to build and organize the CLI yourself. You must create a bare `main.go`, a root command file, and any optional additional commands (`site/content/user_guide.md:36-39`).",
+  "responded_at": "2026-09-13T15:26:58Z",
+  "sha256": "fe52d453e9a615dc88664bf1da8275e55c6b00f9a6e59462a29358edac0b0ce1"
+}

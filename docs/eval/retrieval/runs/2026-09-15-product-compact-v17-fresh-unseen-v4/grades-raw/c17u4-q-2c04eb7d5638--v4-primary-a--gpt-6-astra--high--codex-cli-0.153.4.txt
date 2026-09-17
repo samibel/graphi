@@ -1,0 +1,1 @@
+FAIL: The response does not answer how command functions are named or populated. The bundle shows `GenBashCompletion` calling `gen(buf, c)` but omits the recursive implementation needed to support the essential behavior.

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+plugin display name
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 0467fcd5df36; read in order (175/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":".github/workflows/test.yml","start_line":1,"end_line":7,"text":"name: Test\n\non:\n  push:\n  pull_request:\n  workflow_dispatch:\n"},{"path":"command.go","start_line":32,"end_line":36,"text":"\nconst (\n\tFlagSetByCobraAnnotation     = \"cobra_annotation_flag_set_by_cobra\"\n\tCommandDisplayNameAnnotation = \"cobra_annotation_command_display_name\"\n)"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":531,"end_line":537,"text":"}\n\nvar minNamePadding = 11\n\n// NamePadding returns padding for the name.\nfunc (c *Command) NamePadding() int {\n\tif c.parent == nil || minNamePadding > c.parent.commandsMaxNameLen {"},{"path":"command.go","start_line":1317,"end_line":1322,"text":"\t\t}\n\t\tnameLen := len(x.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t\t// If global normalization function exists, update all children"},{"path":".github/workflows/labeler.yml","start_line":1,"end_line":7,"text":"name: \"Pull Request Labeler\"\non:\n- pull_request_target\n\npermissions:\n  contents: read\n"},{"path":"command.go","start_line":1425,"end_line":1434,"text":"// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":66,"end_line":67,"text":"\t// SuggestFor is an array of command names for which this command will be suggested -\n\t// similar to aliases but only suggests."}],"provenance":{"input_sha256":"6882f1b743c0a23ec7930b99eb42eb0c70c5feb9726f2db3047778ae92564e63","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

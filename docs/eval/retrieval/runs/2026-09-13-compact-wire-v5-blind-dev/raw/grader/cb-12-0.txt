@@ -1,0 +1,1 @@
+PASS: The recursive Find algorithm, use of stripFlags/findNext, remaining arguments, and legacyArgs condition are all correctly described from command.go:724-748.

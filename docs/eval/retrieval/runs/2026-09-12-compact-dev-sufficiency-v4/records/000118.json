@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 118,
+  "previous_sha256": "aee616eee82f72ef37d11deaeea993af043b029cc72cc7800dee0a0650a6d834",
+  "kind": "grade",
+  "query_id": "cb-32",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "7fadfb139625f3ae5f548e67903603215eff34ab990b3eb748ed738ac48000a0",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-32:primary-b\nOutcome: pass\nRationale: Correctly identifies Execute, its documented argument/command behavior, its ExecuteC wrapper implementation, and shown context variant.\n",
+  "sha256": "d1fbe7c34c3909e88ef6a96bfc4f8050763f3067f35de1b9752d83054cde57c6"
+}

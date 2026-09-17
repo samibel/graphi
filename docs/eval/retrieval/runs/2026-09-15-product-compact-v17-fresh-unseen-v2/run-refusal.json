@@ -1,0 +1,50 @@
+{
+  "schema": "graphi-fresh-holdout-run-refusal/1",
+  "recorded_at_utc": "2026-09-15T19:30:41Z",
+  "status": "REFUSED_INVALID_RUN",
+  "phase": "primary actor launch",
+  "reason": "The primary orchestration wrapper exited before any actor result because it assigned to the reserved zsh parameter status after dispatching two background role functions. The two role functions had already reserved their first write-once JSONL and stderr paths. Although no thread event, agent message, stderr byte or raw response was produced, repeating either slot cannot be proven not to be an actor retry and is therefore refused.",
+  "orchestration_script_sha256": "0e9cda55750a3c3203d3ac2370c55aa3d929a9aa1539e52b7fc16d28a8548d7e",
+  "orchestration_exit_code": 1,
+  "artifacts_before_refusal": {
+    "captured_bundles": 64,
+    "generated_prompts": 64,
+    "raw_primary_responses": 0,
+    "reserved_primary_jsonl_logs": 2,
+    "nonempty_primary_jsonl_logs": 0,
+    "jsonl_events": 0,
+    "agent_message_events": 0,
+    "reserved_primary_stderr_logs": 2,
+    "nonempty_primary_stderr_logs": 0,
+    "sealed_responses": 0,
+    "grader_packets": 0,
+    "raw_grades": 0,
+    "adjudications": 0,
+    "outcome_written": false
+  },
+  "completed_gates": {
+    "candidate_and_curator_bindings": "PASS",
+    "cgo_free_tests": "PASS",
+    "freeze": "PASS",
+    "official_capture": "PASS 64/64",
+    "independent_capture_reproducibility": "PASS 64/64 bytes, digests, token counts and prompts",
+    "actor_visible_version": "PASS 64/64 task_context/2-compact/17",
+    "candidate_token_ceiling": "PASS maximum 1191 of 1200"
+  },
+  "downstream_execution": {
+    "completed_primary_responses": 0,
+    "grader_processes": 0,
+    "adjudicator_processes": 0,
+    "seal_invocations": 0,
+    "decide_invocations": 0
+  },
+  "policy": {
+    "retry_performed": false,
+    "overwrite_performed": false,
+    "waiver_applied": false,
+    "threshold_or_rubric_changed": false,
+    "seal_without_checkout_performed": false
+  },
+  "release_verdict": null,
+  "validity": "INVALID: no RELEASE YES/NO or pass count may be inferred from this run"
+}

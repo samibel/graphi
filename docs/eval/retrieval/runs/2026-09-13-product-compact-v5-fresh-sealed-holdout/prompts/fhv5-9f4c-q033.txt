@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+When parsing emits a warning such as a deprecated-flag message, when is that warning printed?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 0863431988d2; read in order (244/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"doc/man_docs.go","start_line":159,"end_line":185,"text":"func manPrintFlags(buf io.StringWriter, flags *pflag.FlagSet) {\n\tflags.VisitAll(func(flag *pflag.Flag) {\n\t\tif len(flag.Deprecated) > 0 || flag.Hidden {\n\t\t\treturn\n\t\t}\n\t\tformat := \"\"\n\t\tif len(flag.Shorthand) > 0 && len(flag.ShorthandDeprecated) == 0 {\n\t\t\tformat = fmt.Sprintf(\"**-%s**, **--%s**\", flag.Shorthand, flag.Name)\n\t\t} else {\n\t\t\tformat = fmt.Sprintf(\"**--%s**\", flag.Name)\n\t\t}\n\t\tif len(flag.NoOptDefVal) > 0 {\n\t\t\tformat += \"[\"\n\t\t}\n\t\tif flag.Value.Type() == \"string\" {\n\t\t\t// put quotes on the value\n\t\t\tformat += \"=%q\"\n\t\t} else {\n\t\t\tformat += \"=%s\"\n\t\t}\n\t\tif len(flag.NoOptDefVal) > 0 {\n\t\t\tformat += \"]\"\n\t\t}\n\t\tformat += \"\\n\\t%s\\n\\n\"\n\t\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(format, flag.DefValue, flag.Usage))\n\t})\n}"},{"path":"command.go","start_line":1834,"end_line":1835,"text":"\t// Print warnings if they occurred (e.g. deprecated flag messages).\n\tif c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {"},{"path":"command.go","start_line":1818,"end_line":1818,"text":"// ParseFlags parses persistent flag tree and local flags."},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"doc/yaml_docs.go","start_line":153,"end_line":153,"text":"\t\t// Todo, when we mark a shorthand is deprecated, but specify an empty message."},{"path":"command.go","start_line":39,"end_line":39,"text":"type FParseErrWhitelist flag.ParseErrorsWhitelist"},{"path":"flag_groups.go","start_line":31,"end_line":31,"text":"// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors"},{"path":"flag_groups.go","start_line":47,"end_line":47,"text":"// MarkFlagsOneRequired marks the given flags with annotations so that Cobra errors"}],"provenance":{"input_sha256":"af117df4ccb6cb096a4e14acea8c0b4afbdbc5ec751756411ad2d6951faf56ef","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

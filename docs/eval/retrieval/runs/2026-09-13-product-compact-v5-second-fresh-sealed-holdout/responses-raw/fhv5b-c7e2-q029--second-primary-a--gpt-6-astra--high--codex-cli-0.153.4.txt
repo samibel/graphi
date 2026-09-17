@@ -1,0 +1,1 @@
+No. In `command.go:1183–1198`, `InitDefaultHelpFlag` calls `c.mergePersistentFlags()` and only creates the default flag if `c.Flags().Lookup("help") == nil`. An existing application-defined `help` flag therefore skips creation. The comment explicitly confirms: “If c already has help flag, it will do nothing.”

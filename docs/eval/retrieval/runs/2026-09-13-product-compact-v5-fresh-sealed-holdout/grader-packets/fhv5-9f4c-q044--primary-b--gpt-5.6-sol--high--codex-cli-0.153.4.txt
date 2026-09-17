@@ -1,0 +1,100 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7b7004ed95c2bd57b6a2b2d77ef1d35a12f6abb10d0995f9fa9296c98e114ba5
+QUERY ID: fhv5-9f4c-q044
+
+QUESTION:
+How does YAML documentation generation assemble command metadata, flags, and see-also entries before serialization?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/yaml_docs.go:92-147 anchor="final, err := yaml.Marshal(&yamlDoc)" reason=It initializes defaults, fills identity and text, conditionally adds usage/example/local and inherited options, builds sorted eligible relations, marshals YAML, and writes it.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query b39f17a943b0; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/docgen/_index.md","start_line":1,"end_line":2,"text":"# Documentation generation\n"},{"path":"command.go","start_line":109,"end_line":109,"text":"\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,"},{"path":"command.go","start_line":162,"end_line":162,"text":"\t// globNormFunc is the global normalization function"},{"path":"doc/yaml_docs.go","start_line":92,"end_line":147,"text":"// GenYamlCustom creates custom yaml output.\nfunc GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tyamlDoc := cmdDoc{}\n\tyamlDoc.Name = cmd.CommandPath()\n\n\tyamlDoc.Synopsis = forceMultiLine(cmd.Short)\n\tyamlDoc.Description = forceMultiLine(cmd.Long)\n\n\tif cmd.Runnable() {\n\t\tyamlDoc.Usage = cmd.UseLine()\n\t}\n\n\tif len(cmd.Example) > 0 {\n\t\tyamlDoc.Example = cmd.Example\n\t}\n\n\tflags := cmd.NonInheritedFlags()\n\tif flags.HasFlags() {\n\t\tyamlDoc.Options = genFlagResult(flags)\n\t}\n\tflags = cmd.InheritedFlags()\n\tif flags.HasFlags() {\n\t\tyamlDoc.InheritedOptions = genFlagResult(flags)\n\t}\n\n\tif hasSeeAlso(cmd) {\n\t\tresult := []string{}\n\t\tif cmd.HasParent() {\n\t\t\tparent := cmd.Parent()\n\t\t\tresult = append(result, parent.CommandPath()+\" - \"+parent.Short)\n\t\t}\n\t\tchildren := cmd.Commands()\n\t\tsort.Sort(byName(children))\n\t\tfor _, child := range children {\n\t\t\tif !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tresult = append(result, child.CommandPath()+\" - \"+child.Short)\n\t\t}\n\t\tyamlDoc.SeeAlso = result\n\t}\n\n\tfinal, err := yaml.Marshal(&yamlDoc)\n\tif err != nil {\n\t\tfmt.Println(err)\n\t\tos.Exit(1)\n\t}\n\n\tif _, err := w.Write(final); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}"},{"path":"command.go","start_line":1751,"end_line":1754,"text":"// HasFlags checks if the command contains any flags (local plus persistent from the entire structure).\nfunc (c *Command) HasFlags() bool {\n\treturn c.Flags().HasFlags()\n}"},{"path":"command.go","start_line":1696,"end_line":1698,"text":"func (c *Command) InheritedFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n"},{"path":"doc/util.go","start_line":26,"end_line":27,"text":"func hasSeeAlso(cmd *cobra.Command) bool {\n\tif cmd.HasParent() {"},{"path":"command.go","start_line":1456,"end_line":1457,"text":"func (c *Command) DebugFlags() {\n\tc.Println(\"DebugFlags called on\", c.Name())"},{"path":"command.go","start_line":1463,"end_line":1463,"text":"\t\t}"},{"path":"doc/yaml_docs.go","start_line":87,"end_line":90,"text":"// GenYaml creates yaml output.\nfunc GenYaml(cmd *cobra.Command, w io.Writer) error {\n\treturn GenYamlCustom(cmd, w, func(s string) string { return s })\n}"},{"path":"command.go","start_line":1795,"end_line":1795,"text":"func (c *Command) Flag(name string) (flag *flag.Flag) {"}],"provenance":{"input_sha256":"c123cbbdd408d372d18c9c60602110141757e00a2abfeb38c3b6306e46cebeb6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `doc/yaml_docs.go:92-147`, `GenYamlCustom` builds a `cmdDoc` as follows:
+
+- Initializes Cobra’s default help command and flag with `InitDefaultHelpCmd()` and `InitDefaultHelpFlag()`.
+- Sets metadata:
+  - `Name` from `cmd.CommandPath()`
+  - `Synopsis` and `Description` from `cmd.Short` and `cmd.Long`, passed through `forceMultiLine`
+  - `Usage` from `cmd.UseLine()` only when `cmd.Runnable()`
+  - `Example` only when `cmd.Example` is non-empty
+- Collects flags into separate sections:
+  - `cmd.NonInheritedFlags()` → `Options`
+  - `cmd.InheritedFlags()` → `InheritedOptions`
+  - Each is included only if `HasFlags()` and converted with `genFlagResult`.
+- Builds `SeeAlso` only when `hasSeeAlso(cmd)` is true:
+  - Adds the parent first as `"command path - short description"`, if present.
+  - Sorts `cmd.Commands()` using `sort.Sort(byName(children))`.
+  - Adds available children in the same format, excluding unavailable commands and additional help topics.
+- Finally serializes `yamlDoc` using `yaml.Marshal(&yamlDoc)` and writes the bytes to `w`.
+
+`GenYaml` is only a wrapper calling `GenYamlCustom` with an identity link handler (`doc/yaml_docs.go:87-90`); the shown implementation does not otherwise use `linkHandler`.
+----- END THE RATER'S RESPONSE -----

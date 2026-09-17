@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-7f3b-7341-8227-6b5e740508e5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No pre-execution hook is installed. `command_notwin.go:20` declares `var preExecHookFn func(*Command)` without an initializer, leaving it `nil`. In `command.go:1062–1065`, the hook is called only if `preExecHookFn != nil`."}}
+{"type":"turn.completed","usage":{"input_tokens":17043,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":65,"reasoning_output_tokens":0}}

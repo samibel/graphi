@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-d067-7743-9b7c-0528aa1258cb"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the preserved declarations and essential TestNoArgs behavior at lines 112–116: creating a command with NoArgs, executing without arguments, and expecting success. Its helper and combined-validator descriptions are supported by the cited spans, and it correctly acknowledges the truncated bundle’s limits."}}
+{"type":"turn.completed","usage":{"input_tokens":18325,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":92,"reasoning_output_tokens":26}}

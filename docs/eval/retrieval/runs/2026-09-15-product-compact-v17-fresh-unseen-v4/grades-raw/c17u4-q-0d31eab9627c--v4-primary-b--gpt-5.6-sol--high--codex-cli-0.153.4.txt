@@ -1,0 +1,1 @@
+PASS: The response correctly states that OnInitialize appends all supplied functions to the package-level initializers []func() slice. Both the declaration and append operation are preserved in the bundle, and the citations resolve to the supporting lines.

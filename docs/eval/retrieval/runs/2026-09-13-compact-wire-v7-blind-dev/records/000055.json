@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 55,
+  "previous_sha256": "08d0112c007eabbd2eea61f3cc5b89234ca5a79197dcacc218dcd245d6ef0950",
+  "kind": "response",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e5f33b6ec0f9924d5225c2f5d2694ed27b57520c33eb545be73b4014b7775bc8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Persistent flags propagate when a child’s complete flag set is assembled:\n\n- `Command.mergePersistentFlags()` calls `updateParentsPflags()`, adds the command’s own `PersistentFlags()`, then adds the collected `parentsPflags` to `Flags()` (`command.go:1847–1853`). Its comment specifies that only missing persistent flags from all parents are added.\n- Name lookup similarly checks the current command’s persistent flags first, then refreshes and searches `parentsPflags` (`Command.persistentFlag`, `command.go:1805–1816`).\n- Unlike persistent flags, `LocalNonPersistentFlags()` explicitly excludes flags from propagation to subcommands (`command.go:1654–1666`).\n- If `TraverseChildren` is enabled, flags on all parents are parsed before the child executes (`command.go:224–225`).",
+  "sha256": "6181f8fe1be61674bc7de4e81ded72cd9dabe24e8146f5f50f91afdc7e4b0772"
+}

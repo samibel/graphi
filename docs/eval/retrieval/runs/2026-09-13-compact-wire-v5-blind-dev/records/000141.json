@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 141,
+  "previous_sha256": "5061fc452c5b80f718b7aa991bbae3e3d77138e5eec4418958a79c2e87dea5e4",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "8919832b7110ba48f41f751b709929f4bf5f11866172c4672c9db0522a8ff0bf",
+  "outcome": "pass",
+  "rationale": "PASS: The response gives the exact caller action and correctly explains predefinition, annotation, panic, and multiple-group behavior from flag_groups.go:62-78.\n",
+  "sha256": "b8aa61f08e36588ef7bc5a50a857845a5b5df9a47cd4d37f26c2e6f4d7feaf2c"
+}

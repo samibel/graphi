@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 70,
+  "previous_sha256": "0920ff4541b29c806f0263b44e6057848303e422bd875e0c2f86ad0a642eb906",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "bd791639ae7a37d887a40d244a6f20fd95ed73c6a7d3dc9ca87974596f276ada",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "After defining the flags, call cmd.MarkFlagsMutuallyExclusive(\"first\", \"second\"). The method merges persistent flags, verifies that every named flag exists, and appends a mutuallyExclusive group annotation to each; unknown names panic (flag_groups.go:65-77). ValidateFlagGroups is documented as validating these groups (lines 79-86). During completion, selecting one member hides the others (lines 223-224).\n",
+  "sha256": "85c29eb8d845784c1e7120ccc1a5cc92630263c8764c309a937b272a469427d9"
+}

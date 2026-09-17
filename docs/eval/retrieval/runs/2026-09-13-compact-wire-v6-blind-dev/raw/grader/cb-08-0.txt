@@ -1,0 +1,1 @@
+PASS: It accurately summarizes GenMan, fillHeader defaults, SOURCE_DATE_EPOCH handling, and the tree options shown in the bundle.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098dd-4281-72f3-a08e-508d939e5d94"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"outcome\":\"pass\",\"rationale\":\"The answer is concrete, correct, and fully supported by the preserved bundle. `cobra.go:55` shows the package-level `EnablePrefixMatching` variable; `command.go:767-786` gates prefix lookup on that variable and returns a match only when exactly one command matches; and `command.go:1524-1538` shows matching against both command names and aliases. Setting `cobra.EnablePrefixMatching = true` directly answers how to enable the behavior.\"}"}}
+{"type":"turn.completed","usage":{"input_tokens":16925,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":114,"reasoning_output_tokens":0}}

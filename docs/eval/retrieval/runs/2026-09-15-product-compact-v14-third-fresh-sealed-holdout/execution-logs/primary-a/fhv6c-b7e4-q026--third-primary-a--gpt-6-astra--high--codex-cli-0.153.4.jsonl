@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-ae6a-70b2-92ae-0506ed02f234"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetErr(nil)` makes `ErrOrStderr()` return the nearest ancestor’s non-nil error writer, or `os.Stderr` if none exists.\n\nEvidence: `SetErr` clears `c.errWriter` (`command.go:294–298`); `ErrOrStderr` calls `c.getErr(os.Stderr)` (`384–387`); `getErr` checks the current writer, recursively checks parents, then returns the default (`404–412`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17123,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":101,"reasoning_output_tokens":0}}

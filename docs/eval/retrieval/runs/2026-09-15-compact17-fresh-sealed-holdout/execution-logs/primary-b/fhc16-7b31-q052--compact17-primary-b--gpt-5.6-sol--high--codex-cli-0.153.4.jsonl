@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a660-2a3d-73d3-b3fd-18e2760cdc38"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response does not document Zsh noun file completion defaults or the per-argument mechanism for disabling them."}}
+{"type":"turn.completed","usage":{"input_tokens":16475,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":79,"reasoning_output_tokens":48}}

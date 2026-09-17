@@ -1,0 +1,1 @@
+INSUFFICIENT The response names `BashCompSubdirsInDir`, `ValidArgsFunction`, `ShellCompDirectiveFilterFileExt`, and `ShellCompDirectiveFilterDirs`, but contains no lines identifying which annotations, helpers, or directives Fish completion does not support.

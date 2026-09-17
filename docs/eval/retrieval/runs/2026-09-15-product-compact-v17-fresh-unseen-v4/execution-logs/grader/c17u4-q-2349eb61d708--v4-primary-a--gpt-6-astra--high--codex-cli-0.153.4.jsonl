@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d0-4bed-7cc2-adf9-c17f3d7d44c4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains local-first, recursive parent inheritance and the default fallback. It includes merging persistent flags, rendering the help template through OutOrStdout(), and reporting rendering errors via PrintErrln. All claims and citations are supported by the preserved command.go span."}}
+{"type":"turn.completed","usage":{"input_tokens":17726,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

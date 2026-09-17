@@ -1,0 +1,1 @@
+PASS: It correctly explains how to define the group, its runtime meaning, panic condition, and repeated-call membership behavior.

@@ -1,0 +1,21 @@
+`CompErrorln(msg string)` prints a completion error with a trailing newline:
+
+```go
+func CompErrorln(msg string) {
+    CompError(fmt.Sprintf("%s\n", msg))
+}
+```
+
+Evidence:
+
+- `completions.go:898–901`: appends `\n` and delegates to `CompError`.
+- `completions.go:892–896`: `CompError` prefixes the message with `[Error] ` and calls `CompDebug(msg, true)`.
+- `completions.go:860–882`: `CompDebug` adds `[Debug] `, optionally writes to `BASH_COMP_DEBUG_FILE`, and—because `true` was passed—prints to `os.Stderr`.
+
+Thus the stderr output is effectively:
+
+```text
+[Debug] [Error] <msg>
+```
+
+with a newline. It may also be appended to the configured debug file.

@@ -1,0 +1,79 @@
+{
+  "status": "development_diagnostic_not_release",
+  "candidate_sha": "1430daf27e795c8c3a7dcc230d858935044bc33f",
+  "dataset_sha256": "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c",
+  "split": "dev_only",
+  "answerable_queries": 40,
+  "serialized_budget_cl100k_tokens": 1200,
+  "flow_max_sources": 4,
+  "flow_semantic_sources": 3,
+  "flow_fallback_sources": 1,
+  "selected_source_budget_whitespace_fields": 325,
+  "points": [
+    {
+      "source_budget_whitespace_fields": 250,
+      "required_overlap_queries": 40,
+      "all_grade3_spans_overlapped_queries": 29,
+      "any_complete_grade3_span_queries": 27,
+      "all_grade3_spans_complete_queries": 15,
+      "within_1200_queries": 40,
+      "median_cl100k_tokens": 871.0,
+      "max_cl100k_tokens": 1024,
+      "cheaper_than_grepread_v2_queries": 31,
+      "paired_median_saving_tokens": 222.5,
+      "paired_median_saving_percent": 20.5141
+    },
+    {
+      "source_budget_whitespace_fields": 275,
+      "required_overlap_queries": 40,
+      "all_grade3_spans_overlapped_queries": 29,
+      "any_complete_grade3_span_queries": 27,
+      "all_grade3_spans_complete_queries": 15,
+      "within_1200_queries": 40,
+      "median_cl100k_tokens": 935.0,
+      "max_cl100k_tokens": 1142,
+      "cheaper_than_grepread_v2_queries": 29,
+      "paired_median_saving_tokens": 151.5,
+      "paired_median_saving_percent": 14.0134
+    },
+    {
+      "source_budget_whitespace_fields": 300,
+      "required_overlap_queries": 40,
+      "all_grade3_spans_overlapped_queries": 29,
+      "any_complete_grade3_span_queries": 27,
+      "all_grade3_spans_complete_queries": 15,
+      "within_1200_queries": 40,
+      "median_cl100k_tokens": 984.0,
+      "max_cl100k_tokens": 1194,
+      "cheaper_than_grepread_v2_queries": 26,
+      "paired_median_saving_tokens": 95.5,
+      "paired_median_saving_percent": 8.6760
+    },
+    {
+      "source_budget_whitespace_fields": 325,
+      "required_overlap_queries": 40,
+      "all_grade3_spans_overlapped_queries": 29,
+      "any_complete_grade3_span_queries": 30,
+      "all_grade3_spans_complete_queries": 16,
+      "within_1200_queries": 40,
+      "median_cl100k_tokens": 1027.5,
+      "max_cl100k_tokens": 1186,
+      "cheaper_than_grepread_v2_queries": 24,
+      "paired_median_saving_tokens": 46.0,
+      "paired_median_saving_percent": 4.0760
+    },
+    {
+      "source_budget_whitespace_fields": 350,
+      "required_overlap_queries": 40,
+      "all_grade3_spans_overlapped_queries": 29,
+      "any_complete_grade3_span_queries": 31,
+      "all_grade3_spans_complete_queries": 17,
+      "within_1200_queries": 40,
+      "median_cl100k_tokens": 1066.5,
+      "max_cl100k_tokens": 1196,
+      "cheaper_than_grepread_v2_queries": 21,
+      "paired_median_saving_tokens": 18.5,
+      "paired_median_saving_percent": 1.6076
+    }
+  ]
+}

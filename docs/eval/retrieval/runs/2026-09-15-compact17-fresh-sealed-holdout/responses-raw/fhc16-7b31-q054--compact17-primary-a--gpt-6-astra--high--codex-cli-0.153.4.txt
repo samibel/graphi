@@ -1,0 +1,3 @@
+`linkHandler` receives a **filename string** for a command’s internal documentation link and returns a **string used as the link target**. That target can be a URL path such as `/commands/<lowercased-name>/`, rather than a Markdown filename.
+
+Evidence: `site/content/docgen/md.md:107–114` says “given a filename” and shows `linkHandler` stripping the extension and returning `"/commands/" + strings.ToLower(base) + "/"`. Its `func(string) string` signature appears in `doc/md_docs.go:57`.

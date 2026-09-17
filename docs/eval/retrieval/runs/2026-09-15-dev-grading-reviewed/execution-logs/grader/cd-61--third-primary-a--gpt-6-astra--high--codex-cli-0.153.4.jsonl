@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-21b5-7c51-bb9b-dd1869ac43a6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies ShellCompDirective as an int bitmap controlling shell behavior after completion, supported by completions.go:41–43. Its flag descriptions and string() behavior are supported by the cited transcript spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17986,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

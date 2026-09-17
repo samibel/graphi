@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q051",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "c84eb40980fdd812d96a42c7c59f10390f8338e63f5b7870a570c8d86bdfc542",
+  "bundle_sha256": "04030c26cdd3a06566c01a855543c53e655eeb60b969af394ae195665b8b1e70",
+  "prompt_sha256": "6d56d84676cb36561e3447a307d68e7252b2cd666af57d93e0a366c4df517b68",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains only the user-guide title and unrelated command/help snippets, not guidance on wiring commands from nested Go packages or avoiding import cycles.",
+  "responded_at": "2026-09-13T15:27:08Z",
+  "sha256": "a237697fa0366a517ee131d1ecb4c0a70cf0af8de0f4e56939615b6981890b48"
+}

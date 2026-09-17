@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 78f269f75a0adc82521ecd380dbbc69192fe0b8a4fe51cc22c91567ca43dc188
+QUERY ID: fhv6c-b7e4-q033
+
+QUESTION:
+What happens when ExactArgs(2) receives three positional values?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args_test.go:308-312 anchor="exactArgsWithInvalidCount(err, t)" reason=The focused test supplies three values and requires the shared exact-count assertion.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 2c53b1ea5dba; read in order (317/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"args.go","start_line":93,"end_line":101,"text":"// ExactArgs returns an error if there are not exactly n args.\nfunc ExactArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) != n {\n\t\t\treturn fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":125,"end_line":131,"text":"// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead\nfunc ExactValidArgs(n int) PositionalArgs {\n\treturn MatchAll(ExactArgs(n), OnlyValidArgs)\n}"},{"path":"args.go","start_line":113,"end_line":123,"text":"// MatchAll allows combining several PositionalArgs to work in concert.\nfunc MatchAll(pargs ...PositionalArgs) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tfor _, parg := range pargs {\n\t\t\tif err := parg(cmd, args); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":22,"end_line":22,"text":"type PositionalArgs func(cmd *Command, args []string) error"},{"path":"site/content/user_guide.md","start_line":376,"end_line":377,"text":"  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args."},{"path":"zsh_completions.go","start_line":60,"end_line":68,"text":"// been disabled.\n// To achieve the same behavior across all shells, one can use\n// ValidArgs (for the first argument only) or ValidArgsFunction for\n// any argument (can include the first one also).\n//\n// Deprecated\nfunc (c *Command) MarkZshCompPositionalArgumentWords(argPosition int, words ...string) error {\n\treturn nil\n}"},{"path":"args.go","start_line":103,"end_line":111,"text":"// RangeArgs returns an error if the number of args is not within the expected range.\nfunc RangeArgs(min int, max int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) < min || len(args) > max {\n\t\t\treturn fmt.Errorf(\"accepts between %d and %d arg(s), received %d\", min, max, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":83,"end_line":91,"text":"// MaximumNArgs returns an error if there are more than N args.\nfunc MaximumNArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) > n {\n\t\t\treturn fmt.Errorf(\"accepts at most %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"}],"provenance":{"input_sha256":"176a32011d44942407c62e0fc10d3e093bad6c21c19baef27654937c880db695","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The validator returned by `ExactArgs(2)` returns the error `accepts 2 arg(s), received 3`. In `args.go`, `ExactArgs` checks `len(args) != n` (line 96) and formats that error with `n` and `len(args)` (line 97).
+----- END THE RATER'S RESPONSE -----

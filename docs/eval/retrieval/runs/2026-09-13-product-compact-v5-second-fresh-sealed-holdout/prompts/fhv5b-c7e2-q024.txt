@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+If application code sets a command context and later calls a context-taking execution method, which context wins?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"6 ranked source span(s); query 52f7a7aeec47; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":47,"end_line":56,"text":"// Command is just that, a command for your application.\n// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:\n\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"command.go","start_line":131,"end_line":132,"text":"\tPreRunE func(cmd *Command, args []string) error\n\t// Run: Typically the actual work function. Most commands will only implement this."},{"path":"command.go","start_line":258,"end_line":266,"text":"// with ExecuteContext or the context was set with SetContext, the\n// previously set context will be returned. Otherwise, nil is returned.\n//\n// Notice that a call to Execute and ExecuteC will replace a nil context of\n// a command with a context.Background, so a background context will be\n// returned by Context after one of these functions has been called.\nfunc (c *Command) Context() context.Context {\n\treturn c.ctx\n}"},{"path":"command.go","start_line":1027,"end_line":1033,"text":"// ExecuteContext is the same as Execute(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx\n\treturn c.Execute()\n}"},{"path":"command.go","start_line":1042,"end_line":1053,"text":"\n// ExecuteContextC is the same as ExecuteC(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx\n\treturn c.ExecuteC()\n}\n\n// ExecuteC executes the command.\nfunc (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {"},{"path":"cobra.go","start_line":97,"end_line":102,"text":"// OnInitialize sets the passed functions to be run when each command's\n// Execute method is called.\nfunc OnInitialize(y ...func()) {\n\tinitializers = append(initializers, y...)\n}\n"}],"provenance":{"input_sha256":"663405ac4100a0048077b87e9dbbc34a70cd6beb54a97676b33744605bc5936c","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

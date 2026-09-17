@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 73,
+  "previous_sha256": "31e089a403dd7fae675041c1d40561c8aa27e9cf07a836dcb4ed98ff7b040a0d",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "b24e81af5c0ae1098582f87f8dd3a28c6f351dcb1b6912757b7c6192b02fd0dd",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "From the child command, call `cmd.Flag(\"name\")`. It checks the child's applicable flag set, then `persistentFlag` checks local persistent flags and refreshes/searches the accumulated parent persistent flags (`command.go:1794-1816`). `updateParentsPflags` builds that set by visiting every parent and adding each parent's `PersistentFlags()` (`command.go:1855-1874`). The returned `*pflag.Flag` contains the flag's current value.\n",
+  "sha256": "aac994383ba796cda0b444a891226aa0713cf3eb13c9ab9327f6acf84ce8c041"
+}

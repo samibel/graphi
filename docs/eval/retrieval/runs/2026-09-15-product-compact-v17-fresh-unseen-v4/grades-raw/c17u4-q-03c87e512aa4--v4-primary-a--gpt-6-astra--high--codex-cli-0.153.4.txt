@@ -1,0 +1,1 @@
+PASS: The response correctly states that any command with a parent qualifies; otherwise, an available child that is not an additional help topic is required. Its availability details, parent check, and Markdown heading behavior are supported by the bundle, and all citations resolve within preserved spans.

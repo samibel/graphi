@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 23,
+  "previous_sha256": "b49f3698fd23a8ea113731b6d046f5b986337c8a8a6276ab9eb5cb5cd3480d92",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "06b20133f2545a76c452e6c735a172c200e054d3414833cea0add71c7b937715",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `doc.GenManTree(rootCmd, nil, outputDir)` and handle the returned error. It generates a man page for the command and its descendants in the supplied directory, and the header may be nil (`doc/man_docs.go:33–44`). To customize options, use `GenManTreeFromOpts` with `GenManTreeOptions`; the wrapper passes `Header`, `Path`, and a `\"-\"` command separator (`38–47`). The comment warns that hyphenated command names can produce filename collisions, such as `cmd-sub-third.1` (`35–37`).\n",
+  "sha256": "be93b048a75443eb6b4c202fce8503f5879062b58718c1a57917698bce3dedfa"
+}

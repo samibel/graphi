@@ -1,0 +1,1 @@
+PASS: The response correctly states that ExactArgs(2) with three positional values returns `accepts 2 arg(s), received 3`, directly supported by the count check and error formatting in the preserved `args.go:93-101` span.

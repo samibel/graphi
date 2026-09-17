@@ -1,0 +1,1 @@
+INSUFFICIENT The response documents user overrides of help initialization and `HelpFunc` (`command.go:883–884,472–474`), but does not show how `-h` and `--help` are defined or whether their handling can be distinguished.

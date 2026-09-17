@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 57,
+  "previous_sha256": "0a38cc90d171d3252863990c6db3c10e98d0ae16e422d9c997311d8758c44bfe",
+  "kind": "response",
+  "query_id": "cb-22",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f148a2c6a85965dbf52caafceddde389ee2acb1591c36b39a35efb5cd83a6ef3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The man-page tree generator performs a depth-first, children-first walk over `cmd.Commands()`. It skips unavailable commands and additional help-topic commands, recursively generates each eligible child, and then writes the current command's page (`doc/man_docs.go:46-80`). The filename is derived from `CommandPath`, using the configured separator (default `_`) and section (default `1`), under the configured output path (`doc/man_docs.go:61-80`).\n",
+  "sha256": "4b4036f32b71e14ce1a2ec3ce801692e43c0b8ac01a951fa845638a60548c28a"
+}

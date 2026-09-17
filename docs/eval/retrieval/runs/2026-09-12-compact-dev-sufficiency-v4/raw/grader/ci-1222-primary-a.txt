@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-1222:primary-a
+Outcome: fail
+Rationale: Supplies only the flag callback signature and registration step; it explicitly lacks positional-argument registration and directive meanings, leaving the development key's Go completion mechanism incomplete.

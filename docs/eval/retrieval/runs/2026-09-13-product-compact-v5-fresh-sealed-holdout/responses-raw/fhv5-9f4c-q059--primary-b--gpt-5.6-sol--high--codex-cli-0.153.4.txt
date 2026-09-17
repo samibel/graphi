@@ -1,0 +1,5 @@
+Related state is updated too. In `command.go:1363-1392`, `RemoveCommand`:
+
+- Sets each removed child’s `command.parent = nil` (`command.go:1369`).
+- Replaces the parent’s `c.commands` slice with the retained children (`command.go:1375`).
+- Resets and recomputes the parent’s layout-length caches: `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen` (`command.go:1377-1392`).

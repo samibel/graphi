@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 22,
+  "previous_sha256": "22f11969369d5671ebc48788bcfaffb7488ce2ed8f815f691455fd3495faaf1a",
+  "kind": "response",
+  "query_id": "cb-28",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "d3d4efdaea5db1057e7e5438b3101cb6b20d995fea8385b200b654e9524b859c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows group registration and group-ID setters, but omits the `GroupID` field's behavioral contract and the code that uses it to affect command behavior or output.\n",
+  "sha256": "99628844d9a86468977b30440d4583e59e472446f59b0f1c31649158785f774d"
+}

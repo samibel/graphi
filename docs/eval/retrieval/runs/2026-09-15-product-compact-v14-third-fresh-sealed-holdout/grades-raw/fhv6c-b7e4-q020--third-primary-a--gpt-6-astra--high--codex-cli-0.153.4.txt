@@ -1,0 +1,1 @@
+FAIL: The response describes the visible declarations but does not identify which hidden completion command the no-description Fish script calls, the essential reviewed behavior. The preserved transcript ends that test at line 38, before its assertion, so this required fact cannot be verified.

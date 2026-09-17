@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q034",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "fc8e3c80544a61784f1425455d64ab021818929ddbc5b75f3a9229cb3363842a",
+  "bundle_sha256": "2aac6603d688069e8ac6603dc3c08e698da921adce44ef3e555856c57c36490b",
+  "prompt_sha256": "c44d4a90096d781689baa0d7365ab394351d706f413af10aca7c06d35ff8a31d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows root delegation (`command.go:1059`) and context setup (`ExecuteContextC`, lines 1043–1049), but omits the ExecuteC logic for command selection, context propagation to the selected command, execution, and error/help handling.",
+  "responded_at": "2026-09-13T12:35:10Z",
+  "sha256": "b06dc41d4d8941795bf6e692473e2fd33319ff07f0e7d454f2635e294fd677ea"
+}

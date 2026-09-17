@@ -1,0 +1,1 @@
+PASS: The bundle confirms commandNameMatches uses strings.EqualFold when EnableCaseInsensitive is enabled and exact equality otherwise. It also confirms HasAlias calls commandNameMatches, supporting the alias claim. Both cited line ranges exist and support the response.

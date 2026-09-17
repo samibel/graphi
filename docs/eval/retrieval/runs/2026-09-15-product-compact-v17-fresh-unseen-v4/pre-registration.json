@@ -1,0 +1,1505 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "precondition_record_sha256": "be52e33151cde1b7431a932a0650fe868e83e9267fae91cec738f8ae2eeaf7dc",
+  "precondition_record_commit": "3899309e75b40f62cf81cfd7552238c3cb33b570",
+  "recorded_at": "2026-09-15T20:20:20Z",
+  "derivation": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "evaluation": "qrel-blind smoke evaluation",
+    "n_source": "count of answerable holdout queries in the sealed dataset: split=holdout, stratum!=no_hit, at least one grade-3 span",
+    "dataset_sha256": "c4115b6331e46f1a8c0b0daad020e86e4826a51de8e06a68e3211dea0770a3a6",
+    "n": 64,
+    "k": 56,
+    "floor": "3/4",
+    "level_basis_points": 9500,
+    "method": "two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64",
+    "k_interval": {
+      "successes": 56,
+      "trials": 64,
+      "level_basis_points": 9500,
+      "method": "two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64",
+      "lower_bound": "0.768473694033",
+      "upper_bound": "0.944457208820",
+      "lower_bound_bracket_low": "0.768473694033",
+      "lower_bound_bracket_high": "0.768473694033",
+      "upper_bound_bracket_low": "0.944457208820",
+      "upper_bound_bracket_high": "0.944457208820",
+      "meets_floor": true,
+      "floor": "3/4"
+    },
+    "k_minus_one_interval": {
+      "successes": 55,
+      "trials": 64,
+      "level_basis_points": 9500,
+      "method": "two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64",
+      "lower_bound": "0.749763164375",
+      "upper_bound": "0.933625928331",
+      "lower_bound_bracket_low": "0.749763164375",
+      "lower_bound_bracket_high": "0.749763164375",
+      "upper_bound_bracket_low": "0.933625928331",
+      "upper_bound_bracket_high": "0.933625928331",
+      "meets_floor": false,
+      "floor": "3/4"
+    }
+  },
+  "primary_raters": [
+    {
+      "id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-6-astra",
+      "independence_basis": "Independent logical primary-A configuration; one fresh ephemeral read-only process per item in an empty Git repository with the exact frozen prompt only; no candidate implementation or dataset curation participation. Provider exposes no immutable backend snapshot.",
+      "participated_in_track": false
+    },
+    {
+      "id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-5.6-sol",
+      "independence_basis": "Independent logical primary-B configuration; one fresh ephemeral read-only process per item in an empty Git repository with the exact frozen prompt only; no candidate implementation or dataset curation participation. Provider exposes no immutable backend snapshot.",
+      "participated_in_track": false
+    }
+  ],
+  "grader": {
+    "id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+    "role": "grader",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-6-astra",
+    "independence_basis": "Independent logical grader; one fresh ephemeral read-only process per frozen packet in an empty Git repository; no primary, implementation or curation role. Provider exposes no immutable backend snapshot.",
+    "participated_in_track": false
+  },
+  "adjudicator": {
+    "id": "v4-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "role": "adjudicator",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "independence_basis": "Independent logical adjudicator; one fresh ephemeral read-only process per necessary disagreement receives only the original frozen prompt before its answer is sealed; no primary, implementation or curation role. Provider exposes no immutable backend snapshot.",
+    "participated_in_track": false
+  },
+  "queries": [
+    {
+      "query_id": "c17u4-q-01a41c9e72d0",
+      "family_id": "c17u4-fam-01a41c9e72d0",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "6638aa528fda5b7318489ef9d15630e60d422fa1aec409b4df72db37929ab24b",
+      "prompt_sha256": "b468b714300891b508619eeea36a3ea908e89ab3367afc2ec4b412936ad5f23b",
+      "bundle_sha256": "b19dd1386f362fba231c18c455e64ddc36dcb15cbbec2edab94ce1380e058e47",
+      "bundle_byte_count": 3621,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 275
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1014
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-0275d3a9b18f",
+      "family_id": "c17u4-fam-0275d3a9b18f",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "ba87b1405b12ceeb0cb17bc2dc1b598d1bbfb7dd4eacac2daa7882570df85daa",
+      "prompt_sha256": "c3e55f81986711f0985b06e34ca9eea60354d95726d57ef7368f933e0bd74dbe",
+      "bundle_sha256": "ba342fefde4ef0f0da6c8013f4af3fc20c37a6a074fb45560a62d4c64761213a",
+      "bundle_byte_count": 3672,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 270
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1060
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-03c87e512aa4",
+      "family_id": "c17u4-fam-03c87e512aa4",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "ca6aa86e915b55e3aff5fb40ef48abe647b1d7f5b41a686704ddf1f430cd7b66",
+      "prompt_sha256": "08d2702e8fee7030afa9f8fe882a91f66f230b226c8801c2010f61f5789f1527",
+      "bundle_sha256": "53d3bf7825c983cb2b8009e31e9fd6289120cf7246a1c244cad311efef493ba0",
+      "bundle_byte_count": 3607,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 266
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1018
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-045ef20bc931",
+      "family_id": "c17u4-fam-045ef20bc931",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "74dc21b2234e6d128dfb619d623736cccdf3430b9dcd9a7343927b97f9c09b3d",
+      "prompt_sha256": "1aade5ce34ea6210bbbb0b20c1bdbe8c256fc57e1c4ceddfd00bd5429d8736ff",
+      "bundle_sha256": "21ec9fb39bc07add3e8313f9538f26e98e745329d945de6b9127d93b1e5a147d",
+      "bundle_byte_count": 3828,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 241
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1150
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-05b91a64d7e2",
+      "family_id": "c17u4-fam-05b91a64d7e2",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "1ce678547c6f9807f885ef569d773a0ed030428953bc01930482cd4ed71872e1",
+      "prompt_sha256": "d922bbaa79d82c1b7204f2f88d90a85d6945d84209b60a870335b7cbcb167e47",
+      "bundle_sha256": "a61bd7239fc60f0a5d9d374c46852c82419ce5182c8a48659e6167ef0589465d",
+      "bundle_byte_count": 3421,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 192
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1044
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-061de8f34ab7",
+      "family_id": "c17u4-fam-061de8f34ab7",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "90f0330a916cf3bd523526e3e3a53c0ab79c3b35dd133e145b7a193551dcef2d",
+      "prompt_sha256": "f26d844699728cc1f481732853b098144b1d0aef2015a10d7e69a7e842a688c8",
+      "bundle_sha256": "85fac1bfc970711c5a61570e1c02d372276ea0aa2b759bb368f6700b82ee6721",
+      "bundle_byte_count": 3119,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 282
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 901
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-07643fb908ce",
+      "family_id": "c17u4-fam-07643fb908ce",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "9a4a01b31420b62954cc796a9bc3dda65a550f6501aa4243a1139d3a23a08e06",
+      "prompt_sha256": "2c83ec16c1a829c16c5527e7122dd234c45e9309d4488006a094451bf36deae6",
+      "bundle_sha256": "da4c78b2422ab89b00cf58e6f97c893fe6baf8d24f49737a9c38f9fefb89728f",
+      "bundle_byte_count": 3439,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 295
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 961
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-08f2ad751c63",
+      "family_id": "c17u4-fam-08f2ad751c63",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "af0354672647d40a5b7cb2d25ca34f51ab5a57b7d399c78fd75f4b26cbce1749",
+      "prompt_sha256": "7c24acc5297a32f0cba2ea98b20ed5aa235ddfc2bdd732e15abbc1839b9d0830",
+      "bundle_sha256": "dfd97a97fdacbe395c52ed03593dbd5584ae29a21932a41700404e09fbba1107",
+      "bundle_byte_count": 3448,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 281
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1037
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-09d5802be146",
+      "family_id": "c17u4-fam-09d5802be146",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "0dc68a492d368ae9fcb609b1d02a97b6208d1bff87fe519f6ccf28954c133005",
+      "prompt_sha256": "28230a4d68d88a0c4e5bfee0cc2efe42080331f5fde8e024f159fc5e2e8c18ef",
+      "bundle_sha256": "522abbbfafe4095dfc51c41706ee7f3a4cc4e9b913dca4699c0e88ba86d557b6",
+      "bundle_byte_count": 3697,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 264
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 939
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-0a76ce41f953",
+      "family_id": "c17u4-fam-0a76ce41f953",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "3cb3bc41fa67614e5b2fa1f3ceed9bc1c7a02efbb6f7d43a512bd49784cf7fc9",
+      "prompt_sha256": "328c58c935206cff5d8cb100bd8c1cbe642d771d065ebfb6e425fddecf870ebf",
+      "bundle_sha256": "838a3212d6b559d7820e04f34e6c57d06c7fb2e1c7015779253e306f3eeb02ff",
+      "bundle_byte_count": 4052,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 248
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1166
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-0bb13d8a6f20",
+      "family_id": "c17u4-fam-0bb13d8a6f20",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "9a928c2ebe17f78382f882b534c209bcd3844684cbb2e5a716f462005c050193",
+      "prompt_sha256": "990b95784acc670311a2428c497d9d48e6fef26dc210bf963b17f3d88962cdd4",
+      "bundle_sha256": "e89584e3fe25e8d90c0d411ebf9f837a1b8f1b4ee0cafcf4a293a5993cd08dd2",
+      "bundle_byte_count": 3660,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 281
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1012
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-0c94af37e815",
+      "family_id": "c17u4-fam-0c94af37e815",
+      "stratum": "exact_path",
+      "query_text_sha256": "a8e323a15597bdf8ce645f2e8771453576b0c80e1b76c49d1e7295a35f875c1e",
+      "prompt_sha256": "856fc1319994ae20d8d5b5ac9322de898627c69668ddbbd7073bfc075e5ec9f8",
+      "bundle_sha256": "0d6f15d24d39928e69ddf8ffd03eaebeb62f708776de41d73178379d917d5af9",
+      "bundle_byte_count": 3496,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 247
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 977
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-0d31eab9627c",
+      "family_id": "c17u4-fam-0d31eab9627c",
+      "stratum": "exact_path",
+      "query_text_sha256": "398938e3c72b84a7770fbd2c69909e5ac8458cd0450940c5a0735588c52bd783",
+      "prompt_sha256": "891b4f96f7ac5891b5ff62379db4a05acc641394c3a401287270096417dfea9b",
+      "bundle_sha256": "ea0e5141d5cd076a2130e2622c249ea6cfebd68de9048cdd98ad65c81e528e5c",
+      "bundle_byte_count": 2922,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 207
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 821
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-0e8f147ac350",
+      "family_id": "c17u4-fam-0e8f147ac350",
+      "stratum": "exact_path",
+      "query_text_sha256": "e270c2e2282dd57d5e39d3a447d19ef18d0c5db0ae3f12631400676792ab24df",
+      "prompt_sha256": "0c0534ad6a48694244b0cff117b200c88b877f99971071835b8347aa62b6ecd2",
+      "bundle_sha256": "fc006f4131435738fc36563552a064e8692af50c0cba7cbf9c498118077ec9f9",
+      "bundle_byte_count": 3335,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 180
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 985
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-0f5ca7904bd1",
+      "family_id": "c17u4-fam-0f5ca7904bd1",
+      "stratum": "exact_path",
+      "query_text_sha256": "db6bea58096f39f93e72752a9e84ad5c203910f947ceceb71c5de17200b966b6",
+      "prompt_sha256": "869f4fba4231a46ea3c270e63807435cc06f833c74b1d281f62f3b5232bc5e5d",
+      "bundle_sha256": "8b4d273690a8572c0cd42eb39ab74ef34925d0fd0992afbd35b361507537be13",
+      "bundle_byte_count": 3830,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 263
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1118
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-10e29b461f8a",
+      "family_id": "c17u4-fam-10e29b461f8a",
+      "stratum": "exact_path",
+      "query_text_sha256": "8721fc8c2ef661d54f3d55b50efa8073006b6a00f40b7041ff4a5fea4cfe8d4c",
+      "prompt_sha256": "c9b5c821488d3247c49a1e70f1d86ac3e0ba68841b687262443cc614295f3c91",
+      "bundle_sha256": "45d989c2930162b590ca57f06b959500ca1b033a402e35aa954f1618a115ddeb",
+      "bundle_byte_count": 2665,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 193
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 749
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-117acd53e609",
+      "family_id": "c17u4-fam-117acd53e609",
+      "stratum": "exact_path",
+      "query_text_sha256": "277a6f71fa1110478babf36029c1a20bba80674b0518faeeee36252f1e9e0fba",
+      "prompt_sha256": "1018e81c72ecb2824e57da0e85b37cd08889e5ad5cf21a61049567d60e40f606",
+      "bundle_sha256": "c7d606865bfc1fec320e674dc3a57d18cb1dcdad2c45d9d269c707126f4323a9",
+      "bundle_byte_count": 3479,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 252
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1028
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-12b084f26cd7",
+      "family_id": "c17u4-fam-12b084f26cd7",
+      "stratum": "exact_path",
+      "query_text_sha256": "249b96a55a2c8e4a1affa2b8d2a28fb3755636fab3272d974e8d3d047fe01c06",
+      "prompt_sha256": "d6ca59dc1ea8b1220067831a84d0f523e147b1ed29f4e9100e47dad52e135f83",
+      "bundle_sha256": "a18eb25c10edc4c7b362a241adca08c8614177c9d89891c911f5f522648fe598",
+      "bundle_byte_count": 2780,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 181
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 854
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-13cf691a85e2",
+      "family_id": "c17u4-fam-13cf691a85e2",
+      "stratum": "exact_path",
+      "query_text_sha256": "f80c8907079e1b783b5ac768fdd321a99de67070737a2a02bdfcc294bea0b15e",
+      "prompt_sha256": "a964cfa54a9b32a1c8127c1c16107c5803eb9c5f3df1354faf188c87f7e2bc8d",
+      "bundle_sha256": "0d631c888cc7f68d384d9f5c609e83a8ea7283504f59ad63638501abdfc9753a",
+      "bundle_byte_count": 2727,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 187
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 820
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1426dbe970af",
+      "family_id": "c17u4-fam-1426dbe970af",
+      "stratum": "exact_path",
+      "query_text_sha256": "deab4a4cd01353181b382f61d9a66cdb48eb4947d3544ddc77b2ee17375d97dd",
+      "prompt_sha256": "5b6aeb0274f50c7d47639ea75d2af235c0f3a8ef83e161ebcec799a9c5528d9b",
+      "bundle_sha256": "2101d22b06095131038ba60b0286d631ce81fb781ba29e34e2d69ac27ebd1adc",
+      "bundle_byte_count": 3591,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 248
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1066
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-159d30a24c61",
+      "family_id": "c17u4-fam-159d30a24c61",
+      "stratum": "exact_path",
+      "query_text_sha256": "47f1e6b02e89d58a205dadb3e30d20647ba8a0190effa15ab40ee661cbe75937",
+      "prompt_sha256": "860cb231eac54b876f4047d786a9ef263ce2d000d31a118d00edead674152a12",
+      "bundle_sha256": "ddef82661a77f1884b5b455c38b67bec768ad087495f8ad89fb15f8876ed05b6",
+      "bundle_byte_count": 3491,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 267
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1041
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-16f047bc385d",
+      "family_id": "c17u4-fam-16f047bc385d",
+      "stratum": "exact_path",
+      "query_text_sha256": "4c3b14e11e2d8ef7d6bffda9c7e544f27424740ef1234073454d199096e13046",
+      "prompt_sha256": "89c9bd3095ac3199c893202f42ff628940ff0b492be2394b2e5ad5925c5604e9",
+      "bundle_sha256": "bfa4ee228897a7e1536dd9671b2aaed7c4a06cc3a562b99856468a0d618d86a7",
+      "bundle_byte_count": 3595,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 265
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1065
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-178ab4315fe0",
+      "family_id": "c17u4-fam-178ab4315fe0",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "c3b0bf93c9ddeb8c0588932003c244f2db861b0dbf28c28b103dd1c05b6f5492",
+      "prompt_sha256": "2c00f870c5ee40c55f65c55ba4b4788031b570acf5c7c33b6dcc7a900bee955f",
+      "bundle_sha256": "6f4b2313983f4e47e0b8fc928f6adfb79cdd457778cd64c9421b739342cbec93",
+      "bundle_byte_count": 3232,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 286
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 898
+        }
+      ],
+      "followup_sha256": "50bf6f386507d278a4eb2f3d74c2fc470501edeefab6539c230ebff85470e6da",
+      "followup_byte_count": 2310,
+      "followup_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 297
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 626
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1851ce7a02d4",
+      "family_id": "c17u4-fam-1851ce7a02d4",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "f70d382634a5cb282b474eee18082b141c7c502b54d329e2a68afdbd8975c5e4",
+      "prompt_sha256": "16b2aeceef7bebb531d6a176b7d4bae9a909a242dd029642d02d28ca7d93206b",
+      "bundle_sha256": "e2b995ae0152d756c937198b55e6db0340b80f50e8b7eecb6b7e77fbaa069bb3",
+      "bundle_byte_count": 2714,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 204
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 787
+        }
+      ],
+      "followup_sha256": "50bf6f386507d278a4eb2f3d74c2fc470501edeefab6539c230ebff85470e6da",
+      "followup_byte_count": 2310,
+      "followup_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 297
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 626
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-19d60a8f3b27",
+      "family_id": "c17u4-fam-19d60a8f3b27",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "2d4b75dd74b092d268997c6b4afb40a029517788aa2483a644a99cf1291f4961",
+      "prompt_sha256": "0500086b9ff29436f9335dc598edfde9efa6c97dbeeddebaefeacb9f0f791141",
+      "bundle_sha256": "ebe509541d9a758b293ba3f16a60d0fbf5163f0863cd971afa0d0d6d4dec2c02",
+      "bundle_byte_count": 3418,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 268
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 918
+        }
+      ],
+      "followup_sha256": "1e5c3a6b9eadc6472e6062f3ee73513c55cdc4c3689f470000eb6fcf5591a40e",
+      "followup_byte_count": 3314,
+      "followup_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 390
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 887
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1ac4936e71f8",
+      "family_id": "c17u4-fam-1ac4936e71f8",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "a2bc4ac9e655d54e7c672c0764de176f6a602f2df53898f5dd452023dbc73d1c",
+      "prompt_sha256": "945f87663e142b0132e730b649a91c657afad2b66418e51b0e81f66c9f609293",
+      "bundle_sha256": "23259c5cbb69edbdda383fb552aacd5301e40b2a5d7c9e1577fff696941981e2",
+      "bundle_byte_count": 3344,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 281
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 896
+        }
+      ],
+      "followup_sha256": "681442c6462e71d5671482f4dc1bd9868144798301856a65460e4ca0c49fae10",
+      "followup_byte_count": 3189,
+      "followup_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 397
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 791
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1b2fe805ac64",
+      "family_id": "c17u4-fam-1b2fe805ac64",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "2ff7e9da8ba8d275d6c56ec3fcfff8e1368a71c3883ed7edcda977012e729fab",
+      "prompt_sha256": "3f249f17a853beb5b9bbbcb5380d49194f592fac737d0183abc31ef687e3187e",
+      "bundle_sha256": "49b57ace95bda488ccc3d0e7d1e02d4a766a57010627906872a05da46864c392",
+      "bundle_byte_count": 2631,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 181
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 740
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1ce7419b50d3",
+      "family_id": "c17u4-fam-1ce7419b50d3",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "0a6dda45b96ef019ffe8079ace01f23a8e96f684d9d69c13a1ccd5e0f0a10154",
+      "prompt_sha256": "0d2b8d1c9290396aa6656c2645a2b6e0877935e177e86919f03cf48efa3da3ba",
+      "bundle_sha256": "bb75d347ff317f342aec14bba34ce32fcbb109529a46a87a8834dedee3802bd3",
+      "bundle_byte_count": 4065,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 252
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1169
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1d09bc627e45",
+      "family_id": "c17u4-fam-1d09bc627e45",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "588404cff9587811175c724fa5b6066ba757fe4742d74bfdb984585d6e53219d",
+      "prompt_sha256": "9e3697306d99988f54f55a313a71e70766f195363391319d593d9781c4f0fab9",
+      "bundle_sha256": "08ccfaa8b1bdbae12efc391ff4c661b52296e895a7ef65e11579be353eb54345",
+      "bundle_byte_count": 3201,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 205
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 897
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1e6a50f918cb",
+      "family_id": "c17u4-fam-1e6a50f918cb",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "5793bb9b780abf445dc3b5a83c9d18f7a4c2e1c0dc746eccf80fe8117ff026bf",
+      "prompt_sha256": "4255e5e11ee9bec8266e38dd2cda1482891b9033cf1ab0150af527a332e7c6fa",
+      "bundle_sha256": "08e9b6fd2724a04c03b1f9f06ef8dde6a803da7c2685295dadcfc218f5fb2398",
+      "bundle_byte_count": 3222,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 204
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 907
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-1f83d2ae0469",
+      "family_id": "c17u4-fam-1f83d2ae0469",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "4cdeaf9f1cc763aafac84e31e7b24c3f08fb3389eb6cbd9fc84ca71217b0eacf",
+      "prompt_sha256": "3188bce9f8bfb30206001faea027b9fb48fc7a5761e839643ab58da7fe786c51",
+      "bundle_sha256": "b0aa46ceb5c320c759ee8f9b8aa5e5dd31d1bb364646bfa3dcce7c5d9ecea2b8",
+      "bundle_byte_count": 3402,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 300
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 878
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-20b5794c31ea",
+      "family_id": "c17u4-fam-20b5794c31ea",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "ccff80ea177a4a19e17884c6afb8df7e8aa60aa041fc2e67497338247a058b48",
+      "prompt_sha256": "48fb46e841189866a571937132dc0f80105bc82926e4ce78ad04800bd13cd54b",
+      "bundle_sha256": "0f0286d8663c2001d3cd517d19ab5e6c2614a054b0d3ad3e2261055744329a5d",
+      "bundle_byte_count": 3309,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 219
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 942
+        }
+      ],
+      "followup_sha256": "7b8288abdd8f0c2e06861fcee2eaa3707e7fd9aa92626455f9049dd0e207bf80",
+      "followup_byte_count": 2864,
+      "followup_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 220
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 823
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-21ed0468a792",
+      "family_id": "c17u4-fam-21ed0468a792",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "bf58c2e5c11612eba5ca9599b1d6fdcaa4dc90974c3a6599a65cc151080c0f70",
+      "prompt_sha256": "2504759b430cd1d352da0b119de52220a6a8d616543255de41bd64c0140db719",
+      "bundle_sha256": "5fc88e381c256fde85f290628e118320d34de69c7ec89d077bf46e193859e839",
+      "bundle_byte_count": 2836,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 227
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 835
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-22a73c5f90bd",
+      "family_id": "c17u4-fam-22a73c5f90bd",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "2ce9320e1c325a203c257f495f3a6c934f62466ea5b229b0699a6dc7f31ad8cb",
+      "prompt_sha256": "e314e4ea2d4eb1e07ad38723a00b769cf17527a357bb980885f6902523977558",
+      "bundle_sha256": "78e8bcedf4c482e5d6ccce964faff9a08e7b4fa0d202a9481d92e7db24ead00a",
+      "bundle_byte_count": 3495,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 300
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 927
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2349eb61d708",
+      "family_id": "c17u4-fam-2349eb61d708",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "f7a7cf27da643a1589f739e7459b17f052e3e57040a5d5031aff4eb6cad49b02",
+      "prompt_sha256": "00be8f7106305d2736d345cfddcd9aaa03966c34be0eb19ac51bba6264049de4",
+      "bundle_sha256": "1b3335ed5db4afe7e1dcb0c626b00712cd27ac01405cf9433f8a55557e7ab4c2",
+      "bundle_byte_count": 3534,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 284
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 998
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-24d0257ac4f1",
+      "family_id": "c17u4-fam-24d0257ac4f1",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "eb643e83266fe0609380eceabc9aa8dac712858122097bbc5ddf00046ca5e5a2",
+      "prompt_sha256": "2febe325cb6bd4a5de0033ce663445c99117c1a1b0783173762e7343d5c879c9",
+      "bundle_sha256": "2429fa62b8ed8f475626a258199e574cef06e370502d80c473b3a6079400030f",
+      "bundle_byte_count": 3500,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 265
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 961
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-25f37b91486c",
+      "family_id": "c17u4-fam-25f37b91486c",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "a9743869ee5381fb4ea2de5c66606ece79ab1f93dc47f9bee691ab8aad99e86f",
+      "prompt_sha256": "7f05e19985e4c6ef14ba2999f85e8cd934fcc1c54da404a760c1a8000aae3b01",
+      "bundle_sha256": "16317ef5f6f127ba0a9a836f814617cd24eda6595977235ba461d51162c60911",
+      "bundle_byte_count": 3329,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 238
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 947
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-268c51e30ab9",
+      "family_id": "c17u4-fam-268c51e30ab9",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "5dffb91de2a5071d9664e88fc39ed7dd6a6c11565a0ed9111ab4f56df3425ee6",
+      "prompt_sha256": "25c84d39669e1a63f6014c45f496e0e0479b866c462299540affbf360e756b2e",
+      "bundle_sha256": "f67c6b939bdf43bc7517bb038fd878dd52dee58d448a5bb2cd239080c41e0022",
+      "bundle_byte_count": 2817,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 250
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 776
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-27b9146fd352",
+      "family_id": "c17u4-fam-27b9146fd352",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "46f4b38e05b68bcd2f9ef3bbbb9c0b14f2d6672c5b35d7253217c54d68f3022e",
+      "prompt_sha256": "e1d618ce922888915c738b0455211ea74df438ac2181ddb909b23fa1f0818ff5",
+      "bundle_sha256": "5d1b777b636d5602aae102e6ec5c478741777ba9d9b1153a15ea6e9e6292fe68",
+      "bundle_byte_count": 3576,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 279
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 991
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-281fc0a67e94",
+      "family_id": "c17u4-fam-281fc0a67e94",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "af35c91a1d237b3590cf2b6b5784e8c1cd598ddd02eaf89f09d5556e03133857",
+      "prompt_sha256": "3a9390451f61ef36dc49509e19bdbd5bb06b1109089f7511cdb78fe16e6c433f",
+      "bundle_sha256": "0fdb3a0f64cf3e4c13cb3f72560cdd1012962856fbe325c613828e61413a4581",
+      "bundle_byte_count": 3881,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 221
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1182
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2968ad35f1c0",
+      "family_id": "c17u4-fam-2968ad35f1c0",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "87cc8adb23325d7d6552093aae63411169251893f22c8b07149aa930670425e5",
+      "prompt_sha256": "535af8bcf2f28d2c774a11d43bc9c9ec83fedaa1227d98c4569e788b4c20feb3",
+      "bundle_sha256": "2dbf5836bc45885b14348f2fe3274d1df754425ea4ecbf40eec4b52b918147bc",
+      "bundle_byte_count": 3222,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 195
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 929
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2af503c8726e",
+      "family_id": "c17u4-fam-2af503c8726e",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "b325e717b6a6f1c9c73dcb1f9148e2e1bed9a3d364f83def056915e6ac4d132d",
+      "prompt_sha256": "e6a5e679fd3e6c30f0c1220e263df9dadf83e9a85f4c7ead227cbd930db0d5d0",
+      "bundle_sha256": "e60028baf3f8a32bc5e273a6a2443f7f32008de8cddcf4a13607e99622f4f76c",
+      "bundle_byte_count": 3769,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 283
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1001
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2b7ce1490ad3",
+      "family_id": "c17u4-fam-2b7ce1490ad3",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "2478043459193f0c3876f894c0151a33d2884301e43426c01a16a811400cd898",
+      "prompt_sha256": "443947240a23a6b13eb5d89b2d3e078fe76e9417a36d149bf610c434d6f09501",
+      "bundle_sha256": "2ef8089d55106d6331ba698636347dbc9fa583963a27534903c9ed08f8ad5bac",
+      "bundle_byte_count": 3703,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 310
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 901
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2c04eb7d5638",
+      "family_id": "c17u4-fam-2c04eb7d5638",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "7ece0ec992440d93b5b6752da29b003d77d1164d11db8bd8ea9d09a440f141e0",
+      "prompt_sha256": "dff246fe492d330ba3c237150e5b607461925c9fb59fb9527103982c047b9049",
+      "bundle_sha256": "ddbe1b2f3f10ca08f43cc17c3dc56cc136ed5e96a3a4fe7d4ba2b6ace65d719b",
+      "bundle_byte_count": 3788,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 295
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1009
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2d913fa42bc0",
+      "family_id": "c17u4-fam-2d913fa42bc0",
+      "stratum": "config_docs",
+      "query_text_sha256": "ca691b9bcc26bbbedacbd7cdae466b15774ecb95bd31465b8ec46e9b2fe89098",
+      "prompt_sha256": "eab59b2b7c98588f4d7475e682f8bb0412ae20b5f54b140490a6187d97595201",
+      "bundle_sha256": "30ba6a47ecadf11ecf3f905de70f113bf566bb8b2df0f02d75cf7694aa130380",
+      "bundle_byte_count": 3799,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 233
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1104
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2e6ac50719f4",
+      "family_id": "c17u4-fam-2e6ac50719f4",
+      "stratum": "config_docs",
+      "query_text_sha256": "5090141de0bd676dcc0fa1f5c237d4ae7dfe76b80f8de543e13ba76a0374d402",
+      "prompt_sha256": "264293eeadc10c151fd6918dcf6d9a5a478fe46be90b7ed0e8ac639821854d93",
+      "bundle_sha256": "196d06c48132c5cfd2f58aece8b3477c1961374179c4f257bb020016ed9cdbb0",
+      "bundle_byte_count": 3746,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 290
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 935
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-2f108dcb753a",
+      "family_id": "c17u4-fam-2f108dcb753a",
+      "stratum": "config_docs",
+      "query_text_sha256": "6cc74fefb38393cc8d92daa6e3c6fdac0b320577fdb935812c14e2d5ff2f9a0d",
+      "prompt_sha256": "c78f5da8ff1e3ade472f248b6f8eee6df509fd92bca08df6cc6a97d033352b53",
+      "bundle_sha256": "8ac2bb8c03b850226f8842d8da0a4587f61f689b3703537c5c4a89f7812f8bbf",
+      "bundle_byte_count": 3442,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 259
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1016
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-302bc1e8496d",
+      "family_id": "c17u4-fam-302bc1e8496d",
+      "stratum": "config_docs",
+      "query_text_sha256": "b31970f8b9b55cfe0621ee283bf92130ba86cc3e896396d7176a62ba1811167c",
+      "prompt_sha256": "8a0f7ee74a2de71e1ba1864bb36af10d4c374c80e97a04a5c2789e76422ffd48",
+      "bundle_sha256": "d58b41ee5a71b9e511f6280990b7973680e29725914f4b2b98bcd6d3e821b41e",
+      "bundle_byte_count": 2844,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 212
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 823
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-31e74a50d2b8",
+      "family_id": "c17u4-fam-31e74a50d2b8",
+      "stratum": "config_docs",
+      "query_text_sha256": "8c812f619276719656915de47fb382b9d0481f69a8f7b3ff17e00825b70511ef",
+      "prompt_sha256": "85b73610d24762c96d4ecb1129b2917d8ec88add239cd8db7efc3ac64bd18f16",
+      "bundle_sha256": "7aae8603377f7bac105ef44f5d599324a1013d68510dabe81403cd96b218f192",
+      "bundle_byte_count": 3614,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 299
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 936
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-32a59f06ce43",
+      "family_id": "c17u4-fam-32a59f06ce43",
+      "stratum": "config_docs",
+      "query_text_sha256": "46dd4050265d3cd996004218fc13f5b91c25df38ce98ddc6e43203f4729ef097",
+      "prompt_sha256": "86b444fceb9a7b0d27c925f8be7c9e4ce48466b69ca8c070fa9d73550528f9e9",
+      "bundle_sha256": "c7fba31de89747f460d152f9992c3473d25dc9250fcb64de5a13d44a55e11c16",
+      "bundle_byte_count": 3833,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 271
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1094
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-33d14872b50f",
+      "family_id": "c17u4-fam-33d14872b50f",
+      "stratum": "config_docs",
+      "query_text_sha256": "2a323ee464552ff1a0cb4ec49f901c63eceb08d09eedf1a3a6bc070125ff9118",
+      "prompt_sha256": "ea08e7cd411b66f4c1c4e1089135d1d1f35f4c5368aae5587ce38e84bec76273",
+      "bundle_sha256": "94e2bf5a981ec46b922f2921c5ef6c9b98faaba715adecd05b750cca0a1eb620",
+      "bundle_byte_count": 3517,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 287
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 957
+        }
+      ],
+      "followup_sha256": "e7ac1baeff394d5e5a173218152962edee11200e385784a64db9c52b2c41f137",
+      "followup_byte_count": 2650,
+      "followup_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 333
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 606
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-34f80c3a927e",
+      "family_id": "c17u4-fam-34f80c3a927e",
+      "stratum": "config_docs",
+      "query_text_sha256": "ad0f2e405806b4cd7fdbac6d2f07bdad8c8309b79802477b72fb499ede197806",
+      "prompt_sha256": "70170ba0785bcef97f288927051ebb4ba8484286b26b74ae1961db652ee8e09d",
+      "bundle_sha256": "18ecbf2f16a08a2e43e9932100249a901a84d5edc4faf2864eb081e01655d506",
+      "bundle_byte_count": 3622,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 279
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1009
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-359bd6140aec",
+      "family_id": "c17u4-fam-359bd6140aec",
+      "stratum": "config_docs",
+      "query_text_sha256": "c0ad80b4b168d1c2d31e21329fc7b6c01582f1c6472a44e5bc346453d98fc8e0",
+      "prompt_sha256": "d64fedf56b872ed05dce87027e9e1bbb9aaa330eeacea6d0f86276362f64fd07",
+      "bundle_sha256": "c2d9cd3722eae24cb72ba35a028733d0e740412e51ce3205eff1fc1d84d0effc",
+      "bundle_byte_count": 3986,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 254
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1184
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-36c025e93f71",
+      "family_id": "c17u4-fam-36c025e93f71",
+      "stratum": "config_docs",
+      "query_text_sha256": "5166acafb97394c8f28d5ecdcf80d5cebe7741cfa86727fc780eef3de1e958b8",
+      "prompt_sha256": "1110090d9d719f2dcd8f5d35572809c51243d5e10367098386cf67c4d5f10ae2",
+      "bundle_sha256": "c83a99ecd429e4ae5c0fed101635e2d1d9e85848984f2a73ded8e75d7e986053",
+      "bundle_byte_count": 3667,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 280
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1000
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-37a64f28de05",
+      "family_id": "c17u4-fam-37a64f28de05",
+      "stratum": "ambiguous",
+      "query_text_sha256": "51b9bbb0f98213d474d81827249e7fd55a2ce4df7e2894a3237884cb0c82a33c",
+      "prompt_sha256": "d8ece2083e5d82d3652113336dd0a0628a65befc314c3dc5d050f3da81a91e07",
+      "bundle_sha256": "00dfec8d9bfac685cfe992c08850454080f61ebfc81844feceb6af2ce17c38da",
+      "bundle_byte_count": 3711,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 275
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1027
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-38db105ec742",
+      "family_id": "c17u4-fam-38db105ec742",
+      "stratum": "ambiguous",
+      "query_text_sha256": "7f4ba8547e8b248601e6cc04690945bb0599173096d7667462fa1badb9136440",
+      "prompt_sha256": "08145dbf3d4ff22c780c531edfd35ec8b2916db593e0f75087446ac555a02ad8",
+      "bundle_sha256": "3b4d99b4c4b0d709f30aa195cf25598b0481bfb121faed8e57b1374adac9adda",
+      "bundle_byte_count": 3724,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 252
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1160
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-39e7a03d68b1",
+      "family_id": "c17u4-fam-39e7a03d68b1",
+      "stratum": "ambiguous",
+      "query_text_sha256": "8a04d0ad1bade4a7fac3c1404e5491cfcd1fa5521fa1019bbc21cd2b8e7ef1ad",
+      "prompt_sha256": "49e589f9dae2478efe085d9fa994c49662d1b3d0874271ec9c641ad2e9c5d1f9",
+      "bundle_sha256": "c7223687f3bda9c8f312a9e2968ea6500d03043b44f479753893f075291a133f",
+      "bundle_byte_count": 2853,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 210
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 824
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-3a519cf2740e",
+      "family_id": "c17u4-fam-3a519cf2740e",
+      "stratum": "ambiguous",
+      "query_text_sha256": "9f1063f500a3443e3699499ca41c06d056c0488af614aea176066697eeaf5d76",
+      "prompt_sha256": "318d8fdafd2d1624af9101ff0e997d86a20e7a436ef825b7c72ca00215e34d76",
+      "bundle_sha256": "90e8cceadbd8542162bf9fba9a35d960dfeb37425d8b36754fc983bf87a2f0f0",
+      "bundle_byte_count": 3824,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 266
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1164
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-3b06ed8a951c",
+      "family_id": "c17u4-fam-3b06ed8a951c",
+      "stratum": "ambiguous",
+      "query_text_sha256": "448a3720bb6545c4bafca2f5b590f88ce6f341e45a60e59e5978225120da5b92",
+      "prompt_sha256": "8c61cf2d716601e269e7236d2f63f38c93092f3d356e5452a909d0d6bd600c15",
+      "bundle_sha256": "59e8843aed540fd730681f3dfdd72a4a6a2d887de1c44d7159ae11a47a2ff123",
+      "bundle_byte_count": 3259,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 179
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 983
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-3cd92471a6f0",
+      "family_id": "c17u4-fam-3cd92471a6f0",
+      "stratum": "ambiguous",
+      "query_text_sha256": "3bc1026bed65d74470a4d22f994d43951a84d083a83c82a29b14f8f09b00bccb",
+      "prompt_sha256": "5b88eba8b5fe3c96aef5d4f99ed4666e82228c86b962050e7b439f9cf4d59479",
+      "bundle_sha256": "51bed3f7aeea2f45dc11c043612b397a13a390291197dbbbcf03fa336fee9297",
+      "bundle_byte_count": 3029,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 195
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 914
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-3d78a2b50ce4",
+      "family_id": "c17u4-fam-3d78a2b50ce4",
+      "stratum": "ambiguous",
+      "query_text_sha256": "39236b836727ad3578c3fbc30b07bd03b51dbcf9ddd6055bcd0eadac0e683fa9",
+      "prompt_sha256": "0762847cd95fe0e7b965343b34f5d44ac5abca9e3dc5eb45fa62ce6ed98bcf82",
+      "bundle_sha256": "7df123ba385b09bc48debf3e6c252af3c3aec7bdb1764e5a204f99f0f957ce7d",
+      "bundle_byte_count": 3249,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 233
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 986
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-3e14fc6972ab",
+      "family_id": "c17u4-fam-3e14fc6972ab",
+      "stratum": "ambiguous",
+      "query_text_sha256": "386115952a5d2b93eb8eb4710e29e364229017335fbf70c5e74c5eee2a408144",
+      "prompt_sha256": "e11fe2d9ddb88c5ac0a252a69a3623b22ae8f11ae03a124a900b5f7ce4ffc184",
+      "bundle_sha256": "a3770b31d58b2dda68fcb43e2ab08795c70b790088014b336a23b20feeb42783",
+      "bundle_byte_count": 3267,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 248
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 946
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-3f8b052cd169",
+      "family_id": "c17u4-fam-3f8b052cd169",
+      "stratum": "ambiguous",
+      "query_text_sha256": "b6b36680170efcf2d1ddc6df14058f277ce7838d1566d93eb434fadb9fb391b9",
+      "prompt_sha256": "ea43695fcf9913cb619432946e791f80b53e3a8f7ab152aa837cc62a595237b1",
+      "bundle_sha256": "33281d546a8abc8bca05a33d853a31bf904d5445ec425092c4645dda29d19785",
+      "bundle_byte_count": 3926,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 265
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1167
+        }
+      ]
+    },
+    {
+      "query_id": "c17u4-q-40c63ea817f5",
+      "family_id": "c17u4-fam-40c63ea817f5",
+      "stratum": "ambiguous",
+      "query_text_sha256": "daacd3e9bfd77017b96cbb7651e628c0acccbf5c7a5f0f05eb8eddb44215b3d4",
+      "prompt_sha256": "b358592ccbee1d8f55d3483b284180c71a7dc27ae210564a4bbadcdbb3034030",
+      "bundle_sha256": "280a586ffac3257c5e96f573f35d509451bd76e6f34ac2da64ea8b4925bad289",
+      "bundle_byte_count": 3769,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 292
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 1041
+        }
+      ]
+    }
+  ],
+  "sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf"
+}

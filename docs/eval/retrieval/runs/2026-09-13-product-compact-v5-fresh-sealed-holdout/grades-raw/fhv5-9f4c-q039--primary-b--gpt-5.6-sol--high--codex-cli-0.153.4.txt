@@ -1,0 +1,1 @@
+FAIL: The response identifies missing evidence but does not answer how the effective flag set is assembled. The bundle omits the parent-cache initialization, normalization, root command-line import, ancestor traversal, and merge into Flags required to establish that behavior.

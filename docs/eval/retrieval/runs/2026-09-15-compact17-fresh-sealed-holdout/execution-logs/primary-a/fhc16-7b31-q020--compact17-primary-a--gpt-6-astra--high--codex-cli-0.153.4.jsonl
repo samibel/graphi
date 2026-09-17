@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-61d6-79c3-88f1-3a613fa2b93b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The explicit snake_case YAML names in `doc/yaml_docs.go` are:\n\n- `cmdDoc.InheritedOptions` → `inherited_options` (line 43).\n- `cmdDoc.SeeAlso` → `see_also` (line 45).\n- `cmdOption.DefaultValue` → `default_value` (line 33).\n\nEach field’s explicit `yaml` tag also includes `omitempty`, as shown in the supplied lines 29–46."}}
+{"type":"turn.completed","usage":{"input_tokens":18295,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":0}}

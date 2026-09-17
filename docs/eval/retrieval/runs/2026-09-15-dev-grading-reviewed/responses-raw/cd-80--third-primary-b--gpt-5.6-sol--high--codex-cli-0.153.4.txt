@@ -1,0 +1,18 @@
+Cobra appends ` [flags]` in `(*Command).UseLine()` when:
+
+- `DisableFlagsInUseLine` is `false`;
+- `HasAvailableFlags()` returns `true`; and
+- the constructed use line does not already contain `"[flags]"`.
+
+Evidence: `command.go:1436–1451`, especially:
+
+```go
+if c.DisableFlagsInUseLine {
+    return useline
+}
+if c.HasAvailableFlags() && !strings.Contains(useline, "[flags]") {
+    useline += " [flags]"
+}
+```
+
+`command.go:244–245` confirms that `DisableFlagsInUseLine` disables this addition when printing help or generating docs.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 34,
+  "previous_sha256": "7a875638de7260df8b121dc0d13001ef1f10b3674054a707fc6060b560c630c6",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "da0c3c37421e268082204d21b3497b4f020a762c402d732642e8156b071ff7d4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To test whether a command has inherited flags, call `cmd.HasInheritedFlags()`; it returns `c.InheritedFlags().HasFlags()` (`command.go:1767–1769`). For a specific flag, check `cmd.InheritedFlags().Lookup(\"flag-name\") != nil`: the inherited set is populated from parent flags only when the name is absent from both that set and local flags (`command.go:1696–1714`). Use `HasAvailableInheritedFlags()` when you want to exclude hidden or deprecated flags (`1788–1792`).\n",
+  "sha256": "d6b7083e7581ec4b9bcdffca6ee263d43caeb2b3a6cd45c71f181a3ef7de4822"
+}

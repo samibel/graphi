@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: aba9c59e8224455d2aaec3fa5d15bda5c9d1cb06dcd7d95169310477f6a59136
+QUERY ID: fhv6c-b7e4-q036
+
+QUESTION:
+How is inherited-flag normalization checked for children added before and after a parent's persistent flag?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:1687-1713 anchor="command added before flag" reason=The test covers both child-order cases and requires normalized lookup to return the same inherited flag.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query bc94f4ae7860; read in order (315/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":1725,"end_line":1735,"text":"// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.pflags.SetOutput(c.flagErrorBuf)\n\t}\n\treturn c.pflags\n}"},{"path":"command.go","start_line":1302,"end_line":1329,"text":"// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {\n\t\tif cmds[i] == c {\n\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}\n\t\tcmds[i].parent = c\n\t\t// update max lengths\n\t\tusageLen := len(x.Use)\n\t\tif usageLen > c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(x.CommandPath())\n\t\tif commandPathLen > c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(x.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t\t// If global normalization function exists, update all children\n\t\tif c.globNormFunc != nil {\n\t\t\tx.SetGlobalNormalizationFunc(c.globNormFunc)\n\t\t}\n\t\tc.commands = append(c.commands, x)\n\t\tc.commandsAreSorted = false\n\t}\n}"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":1805,"end_line":1816,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}\n\n\tif flag == nil {\n\t\tc.updateParentsPflags()\n\t\tflag = c.parentsPflags.Lookup(name)\n\t}\n\treturn\n}"},{"path":"command.go","start_line":1756,"end_line":1759,"text":"// HasPersistentFlags checks if the command contains persistent flags.\nfunc (c *Command) HasPersistentFlags() bool {\n\treturn c.PersistentFlags().HasFlags()\n}"},{"path":"command.go","start_line":1855,"end_line":1874,"text":"// updateParentsPflags updates c.parentsPflags by adding\n// new persistent flags of all parents.\n// If c.parentsPflags == nil, it makes new.\nfunc (c *Command) updateParentsPflags() {\n\tif c.parentsPflags == nil {\n\t\tc.parentsPflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tc.parentsPflags.SetOutput(c.flagErrorBuf)\n\t\tc.parentsPflags.SortFlags = false\n\t}\n\n\tif c.globNormFunc != nil {\n\t\tc.parentsPflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\tc.Root().PersistentFlags().AddFlagSet(flag.CommandLine)\n\n\tc.VisitParents(func(parent *Command) {\n\t\tc.parentsPflags.AddFlagSet(parent.PersistentFlags())\n\t})\n}"},{"path":"completions.go","start_line":276,"end_line":277,"text":"\t// check if we need to traverse here to parse local flags on parent commands\n\tif c.Root().TraverseChildren {"},{"path":"command.go","start_line":140,"end_line":140,"text":"\t// PersistentPostRun: children of this command will inherit and execute after PostRun."},{"path":"completions.go","start_line":58,"end_line":58,"text":"\t// ShellCompDirectiveNoSpace indicates that the shell should not add a space"}],"provenance":{"input_sha256":"3c815c70559b0b83413bc5312b4543d7565a3154235f48f345b345148161b0e6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response lacks the test or `SetGlobalNormalizationFunc` implementation showing how normalization is checked for children added both before and after the parent’s persistent flag.
+----- END THE RATER'S RESPONSE -----

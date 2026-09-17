@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how to generate man pages for a command tree
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"how to generate man pages for a command tree\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"doc/man_docs.go","start_line":33,"end_line":46,"text":"// GenManTree will generate a man page for this command and all descendants\n// in the directory given. The header may be nil. This function may not work\n// correctly if your command names have `-` in them. If you have `cmd` with two\n// subcmds, `sub` and `sub-third`, and `sub` has a subcommand called `third`\n// it is undefined which help output will be in the file `cmd-sub-third.1`.\nfunc GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {\n\treturn GenManTreeFromOpts(cmd, GenManTreeOptions{\n\t\tHeader:           header,\n\t\tPath:             dir,\n\t\tCommandSeparator: \"-\",\n\t})\n}\n\n// GenManTreeFromOpts generates a man page for the command and all descendants."},{"path":"doc/man_docs.go","start_line":46,"end_line":47,"text":"// GenManTreeFromOpts generates a man page for the command and all descendants.\n// The pages are written to the opts.Path directory."},{"path":"doc/md_docs.go","start_line":119,"end_line":120,"text":"// GenMarkdownTree will generate a markdown page for this command and all\n// descendants in the directory given. The header may be nil."},{"path":"doc/rest_docs.go","start_line":132,"end_line":133,"text":"// GenReSTTree will generate a ReST page for this command and all\n// descendants in the directory given."},{"path":"doc/man_docs.go","start_line":103,"end_line":104,"text":"// GenMan will generate a man page for the given command and write it to\n// w. The header argument may be nil, however obviously w may not."},{"path":"doc/md_docs.go","start_line":133,"end_line":134,"text":"func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {\n\tfor _, c := range cmd.Commands() {"},{"path":"doc/man_docs.go","start_line":38,"end_line":38,"text":"func GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {"},{"path":"doc/man_docs.go","start_line":82,"end_line":83,"text":"// GenManTreeOptions is the options for generating the man pages.\n// Used only in GenManTreeFromOpts."},{"path":"doc/man_docs.go","start_line":202,"end_line":203,"text":"func genMan(cmd *cobra.Command, header *GenManHeader) []byte {\n\tcmd.InitDefaultHelpCmd()"},{"path":"command.go","start_line":1426,"end_line":1427,"text":"func (c *Command) CommandPath() string {\n\tif c.HasParent() {"}],"provenance":{"input_sha256":"73d6d264389d31563df7a000a5b5498d47452bbd31f32cc263f5e5994bb6eb64","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

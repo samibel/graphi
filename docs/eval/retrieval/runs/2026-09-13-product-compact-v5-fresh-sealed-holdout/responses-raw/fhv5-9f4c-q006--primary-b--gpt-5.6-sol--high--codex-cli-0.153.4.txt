@@ -1,0 +1,7 @@
+In `completions.go:162-191`, `ShellCompDirective.string`:
+
+- Combined values render as the enabled symbolic names joined with `", "`, in this fixed order: `Error`, `NoSpace`, `NoFileComp`, `FilterFileExt`, `FilterDirs`, `KeepOrder`.
+- A value with no recognized flags renders `"ShellCompDirectiveDefault"`.
+- Any value `>= shellCompDirectiveMaxValue` renders `ERROR: unexpected ShellCompDirective value: <decimal value>` via `fmt.Sprintf`.
+
+The range check occurs after collecting/defaulting names, but its error string overrides that result.

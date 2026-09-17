@@ -1,0 +1,7 @@
+`validArgsFunc2` is defined in `completions_test.go:40–52`. It returns shell-completion candidates:
+
+- If `args` is nonempty, it returns `nil, ShellCompDirectiveNoFileComp` (lines 41–43).
+- Otherwise, it filters `"three\tThe third"` and `"four\tThe fourth"` using `strings.HasPrefix(comp, toComplete)` (lines 46–49).
+- It returns the matching strings with `ShellCompDirectiveDefault` (line 51).
+
+The `cmd` parameter is unused.

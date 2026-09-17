@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q062",
+  "response_sha256": "40b056e0025f84ba21713137d8ef45b457f123ff729da6e5fd225a8d253bdefa",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly states that either non-nil Run or non-nil RunE is sufficient, supported by the exact OR condition in command.go:1550-1553. Its field-comment citation also exists and supports the description of RunE.",
+  "graded_at": "2026-09-13T15:47:17Z",
+  "sha256": "8411e6c498aecc3eca3a32e28fb28f342eeffe0109223b5b547ec8b34d6f258d"
+}

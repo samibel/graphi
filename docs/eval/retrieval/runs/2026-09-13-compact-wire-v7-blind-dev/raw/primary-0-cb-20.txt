@@ -1,0 +1,7 @@
+Persistent flags propagate by being merged into each child command’s complete flag set. In `command.go:1847-1853`, `mergePersistentFlags()`:
+
+1. Calls `updateParentsPflags()` to collect missing persistent flags from all parents.
+2. Adds the child’s own `PersistentFlags()` to `c.Flags()`.
+3. Adds `c.parentsPflags` to `c.Flags()`.
+
+Individual lookup follows the same hierarchy: `persistentFlag()` first checks the current command’s persistent flags, then updates and searches `parentsPflags` (`command.go:1805-1816`). Non-persistent local flags explicitly do not propagate (`command.go:1654-1666`).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-8b7c-7742-85c9-cb48c4a37c6a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Inside the executing command’s `Run`, `RunE`, or pre-run hook, use the provided `cmd` and call:\n\n```go\nf := cmd.Flag(\"flag-name\")\nif f != nil {\n    // use f.Value, f.Changed, etc.\n}\n```\n\n`Command.Flag(name)` first checks the command’s local flags with `c.Flags().Lookup(name)`, then searches inherited persistent flags via `c.persistentFlag(name)` ([command.go, lines 1794–1803]). The currently executing command is passed as `cmd *Command` to hooks such as `Run`, `RunE`, `PreRun`, and `PreRunE` ([command.go, lines 124–134])."}}
+{"type":"turn.completed","usage":{"input_tokens":16470,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":150,"reasoning_output_tokens":0}}

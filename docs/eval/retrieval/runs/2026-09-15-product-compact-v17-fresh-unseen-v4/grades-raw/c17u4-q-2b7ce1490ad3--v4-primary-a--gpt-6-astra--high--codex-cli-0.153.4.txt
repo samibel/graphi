@@ -1,0 +1,1 @@
+FAIL: The response does not answer how metadata is assembled. The bundle lacks `writeFlags` and the required annotation preparation, parse-state emission, distinct flag-set visits, hidden/deprecated filtering, and traversal-dependent tracking of local nonpersistent flags.

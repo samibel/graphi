@@ -1,0 +1,1 @@
+command.go:108-112 and 1202-1209 preserve all stated version-flag conditions and support setting the command's Version field to enable the automatic flag.

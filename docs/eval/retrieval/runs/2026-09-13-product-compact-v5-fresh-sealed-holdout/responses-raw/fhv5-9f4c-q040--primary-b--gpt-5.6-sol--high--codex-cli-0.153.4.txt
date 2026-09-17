@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only the `AddCommand` declaration at `command.go:1302-1303`, not its implementation showing parent linkage, layout metadata, normalization, or sorting-state changes.

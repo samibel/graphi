@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 42ba32c152bdbe7f68691b5b03c68ceb74781355c8f9b13af214b2cec49098f6
+QUERY ID: fhv5b-c7e2-q047
+
+QUESTION:
+What flag scopes and underlying flag library are described in the project README?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- README.md:68-79 anchor="flags that persist through to children commands" reason=Commands may define persistent descendant-visible or command-local flags, implemented through the POSIX-compatible pflag fork while retaining the Go flag interface.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 55fcb8988421; read in order (319/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"README.md","start_line":67,"end_line":74,"text":"\n## Flags\n\nA flag is a way to modify the behavior of a command. Cobra supports\nfully POSIX-compliant flags as well as the Go [flag package](https://golang.org/pkg/flag/).\nA Cobra command can define flags that persist through to children commands\nand flags that are only available to that command.\n"},{"path":"command.go","start_line":1805,"end_line":1816,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}\n\n\tif flag == nil {\n\t\tc.updateParentsPflags()\n\t\tflag = c.parentsPflags.Lookup(name)\n\t}\n\treturn\n}"},{"path":"completions.go","start_line":534,"end_line":542,"text":"func getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string {\n\tif nonCompletableFlag(flag) {\n\t\treturn []string{}\n\t}\n\n\tvar completions []string\n\tflagName := \"--\" + flag.Name\n\tif strings.HasPrefix(flagName, toComplete) {\n\t\t// Flag without the ="},{"path":"flag_groups.go","start_line":49,"end_line":55,"text":"func (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a one-required flag group\", v))\n\t\t}"},{"path":"flag_groups.go","start_line":64,"end_line":64,"text":"// if the command is invoked with more than one flag from the given set of flags."},{"path":"bash_completions.go","start_line":699,"end_line":701,"text":"func nonCompletableFlag(flag *pflag.Flag) bool {\n\treturn flag.Hidden || len(flag.Deprecated) > 0\n}"},{"path":"doc/yaml_docs.go","start_line":149,"end_line":153,"text":"func genFlagResult(flags *pflag.FlagSet) []cmdOption {\n\tvar result []cmdOption\n\n\tflags.VisitAll(func(flag *pflag.Flag) {\n\t\t// Todo, when we mark a shorthand is deprecated, but specify an empty message."},{"path":"command.go","start_line":257,"end_line":260,"text":"// Context returns underlying command context. If command was executed\n// with ExecuteContext or the context was set with SetContext, the\n// previously set context will be returned. Otherwise, nil is returned.\n//"}],"provenance":{"input_sha256":"4372218815c1f596357059e0390ef8ee9983683723b39e9bf0a5efffae7f40aa","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The README.md excerpt (lines 67–74) describes flags inherited by child commands and command-local flags, but does not identify the underlying flag library.
+----- END THE RATER'S RESPONSE -----

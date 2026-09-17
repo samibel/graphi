@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 47,
+  "previous_sha256": "2a61898eb0dbf08fd237eadd26ac94c455f13a65d4c9c0f822c1c94408f7ba35",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "cf6bfe6da6fc4ae0135bdbecd36ea7528d4c5003c8cd72f46ba6992e42635f6a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shell_completions.go` provides flag annotations used by shell completion. `MarkFlagRequired` marks a flag with `BashCompOneRequiredFlag=true`, causing completion to prioritize it and command execution to require it (`shell_completions.go:21-23`, `shell_completions.go:35-40`). `MarkFlagFilename` and `MarkPersistentFlagFilename` restrict completion to specified file extensions for local and persistent flags respectively (`shell_completions.go:42-46`, `shell_completions.go:58-63`).\n",
+  "sha256": "1549ab77bf2cf847cd4219be410e194d53da028c4cfe164d7d219e7c549d5391"
+}

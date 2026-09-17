@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 95,
+  "previous_sha256": "a26ad22846f2881f6e5ee74e808ea20ad6b6b69d8081121c831320abf3a134a3",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "839c16885aa646c799e2522267fc53c91e9365870d9118bf59b2c50c986ecc68",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `command.go:724–748` shows `Find` calling `stripFlags`, taking the first remaining argument, calling `findNext`, removing the matched argument with `argsMinusFirstX`, recursively descending, and stopping at the current command when no child matches. `command.go:767–786` shows exact name and alias matching, optional prefix collection when `EnablePrefixMatching` is enabled, returning only a unique prefix match, and otherwise returning `nil`.\n",
+  "sha256": "77d72c0e5d5fdbd3d9384aa9db40e2ba863b80996ac20adb7489f6bedf279362"
+}

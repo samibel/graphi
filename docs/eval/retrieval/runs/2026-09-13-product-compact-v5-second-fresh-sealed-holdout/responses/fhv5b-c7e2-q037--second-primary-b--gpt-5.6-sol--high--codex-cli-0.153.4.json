@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q037",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "bf6297d09a504acb874a905f175afe0f46aa59b0738260d158d4678380ca542a",
+  "bundle_sha256": "1b3f39136bb9196e4a13c57be3fbc132bc53dafe9d1ac1b10f8a08c4168cf0bc",
+  "prompt_sha256": "722c1767186f9649d7bb4f983e22eaaa6afe834cd4c64a4e4926d447cd248215",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response defines local nonpersistent flags and their shorthand entries, but omits the code classifying persistent, inherited, hidden, and traversal-sensitive flags into the legacy Bash arrays.",
+  "responded_at": "2026-09-13T15:25:07Z",
+  "sha256": "7d62c0f591fe53a4c4990cc3ea1e5436c836e31159f13d39330ee6bb79c62a90"
+}

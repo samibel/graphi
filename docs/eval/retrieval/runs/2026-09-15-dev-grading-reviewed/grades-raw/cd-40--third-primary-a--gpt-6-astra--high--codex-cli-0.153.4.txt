@@ -1,0 +1,1 @@
+FAIL: The response establishes that ArgAliases appears only when subcommands and ValidArgs yield no completions, but explicitly leaves the subcommand-to-ValidArgs flow unresolved. The preserved transcript lacks the getCompletions control flow needed to verify that essential part of the answer.

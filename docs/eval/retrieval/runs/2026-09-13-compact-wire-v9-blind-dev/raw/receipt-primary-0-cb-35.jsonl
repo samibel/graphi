@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-6fd9-7fd1-a883-8571ee186dd2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra automatically completes commands and flags, while noun and flag-value completions can be customized; static noun choices use `ValidArgs` (`site/content/completions/_index.md:115-127`).\n\n`(*Command).InitDefaultCompletionCmd` adds the default `completion` command unless it is disabled, the command has no subcommands, or a program-provided completion command already exists (`completions.go:678-685`). Descriptions can be disabled with `rootCmd.CompletionOptions.DisableDescriptions = true` (`site/content/completions/_index.md:112-120`) or the `no-descriptions` flag (`completions.go:95-102`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16254,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":196,"reasoning_output_tokens":52}}

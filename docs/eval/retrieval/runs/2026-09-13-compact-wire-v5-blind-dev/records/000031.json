@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 31,
+  "previous_sha256": "8919832b7110ba48f41f751b709929f4bf5f11866172c4672c9db0522a8ff0bf",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "76b9f41f2a8144d84d5ec66c425ecfea27fe957472bf6167b179de5c6aa2ce91",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define a global flag as a persistent flag on the root/parent, then access it from the subcommand with `cmd.Flag(\"name\")`. `Flag` first checks the subcommand's effective flags and, if absent, recursively searches persistent flags up the command tree (`command.go:1794-1803`, `command.go:1806-1807`). For one-character shorthand input, the completion helper resolves the shorthand in both effective and inherited flag sets before calling `cmd.Flag` (`completions.go:841-858`).\n",
+  "sha256": "e348d1c7bf3c860f05b89deb5b726b61a95439616e0a7427d22fbd5acc99933b"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-9045-7c31-b310-a48f089d2a36"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Both streams: it resets both the command’s output and error destinations. In `command.go:283-286`, `SetOutput` assigns `output` to both `c.outWriter` and `c.errWriter`; when nil, they fall back to their defaults (stdout for output, stderr for errors)."}}
+{"type":"turn.completed","usage":{"input_tokens":16382,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":239,"reasoning_output_tokens":171}}

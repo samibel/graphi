@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d4-7e00-79f3-a066-58f5be64b91c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response states that parsing is disabled and all flags reach the command as arguments, supported by command.go:236-237. Its completion claim is supported by completions.go:301-305, and both citations resolve inside the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17859,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":75,"reasoning_output_tokens":20}}

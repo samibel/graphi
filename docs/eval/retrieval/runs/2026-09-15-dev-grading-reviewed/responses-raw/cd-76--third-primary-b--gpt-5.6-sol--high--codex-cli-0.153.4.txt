@@ -1,0 +1,1 @@
+`LICENSE.txt` contains the **Apache License, Version 2.0** (`LICENSE.txt:1–5`). The README confirms: “Cobra is released under the Apache 2.0 license” (`README.md:110–112`).

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q045",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "88e096afe86eebda80c0969800eb8e6ac19751d8c59edad71675cdb3060b0c01",
+  "bundle_sha256": "0fe5e0242f642e836d432b566d348549d28bc0bb873f9ed612559288d03588a8",
+  "prompt_sha256": "b6a0979971cf3105b1f0f694c54496eab421eca08428431849810d26dc1ebd94",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response specifies adequate tests and `go test ./...` or `make test` (`CONTRIBUTING.md:33–34`), but cuts off the formatting requirement at line 35, leaving the full pre-submission checks unavailable.",
+  "responded_at": "2026-09-15T08:30:51Z",
+  "sha256": "872dd949c4822b7c2c39b052381e0dba67de58992a8702e61015a27c9bb0f150"
+}

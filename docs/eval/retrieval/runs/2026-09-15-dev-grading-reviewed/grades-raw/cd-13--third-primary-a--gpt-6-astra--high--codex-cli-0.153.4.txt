@@ -1,0 +1,1 @@
+PASS: The response accurately identifies the defining constants, regexp, and all three helper functions, including global disable precedence and environment-variable normalization. Its cited line ranges and material claims are supported by the preserved transcript, and it appropriately acknowledges the bundle’s truncation.

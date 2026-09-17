@@ -1,0 +1,1 @@
+PASS: The response accurately identifies creation of the command-named ContinueOnError flag set, conditional creation of the error buffer, and assignment of that buffer as the flag set’s output, all supported by command.go:1641–1653 in the preserved bundle.

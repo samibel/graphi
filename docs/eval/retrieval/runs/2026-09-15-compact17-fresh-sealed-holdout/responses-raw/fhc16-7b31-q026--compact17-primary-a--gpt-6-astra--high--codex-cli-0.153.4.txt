@@ -1,0 +1,1 @@
+It panics with the message `"Command can't be a child of itself"`, as shown by `panic("Command can't be a child of itself")` in `command.go:1306` in the first response.

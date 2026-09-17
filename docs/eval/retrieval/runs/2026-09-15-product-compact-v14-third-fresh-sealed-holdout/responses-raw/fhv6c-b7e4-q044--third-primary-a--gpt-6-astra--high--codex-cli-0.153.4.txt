@@ -1,0 +1,19 @@
+Call `SetContext` on the child command from the parent’s `PersistentPreRun`, then read `cmd.Context()` in the child’s `Run`:
+
+```go
+rootCmd.PersistentPreRun = func(_ *cobra.Command, _ []string) {
+    subCmd.SetContext(replacementCtx)
+}
+subCmd.Run = func(cmd *cobra.Command, args []string) {
+    ctx := cmd.Context()
+    // Use ctx.
+}
+```
+
+Evidence:
+
+- `site/content/user_guide.md:605-613` says children inherit persistent hooks unless they declare their own, and `PersistentPreRun` executes before `Run`.
+- `command.go:268-272`: `SetContext(ctx)` assigns `c.ctx = ctx`.
+- `command.go:258-266`: `Context()` returns `c.ctx`.
+
+This uses an explicit child reference because the supplied snippets do not establish which command is passed to the inherited hook.

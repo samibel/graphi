@@ -1,0 +1,10 @@
+`hasSeeAlso(cmd *cobra.Command) bool` determines whether documentation should include a “See Also” section (`doc/util.go:23-37`).
+
+It returns `true` when:
+
+- `cmd.HasParent()` is true—meaning `cmd.parent != nil` (`command.go:1631-1634`); or
+- At least one child from `cmd.Commands()` is both:
+  - an available command (`IsAvailableCommand()` excludes deprecated, hidden, and generated help commands; `command.go:1560-1576`), and
+  - not an additional help-topic command (`doc/util.go:29-34`).
+
+Otherwise, it returns `false` (`doc/util.go:36`).

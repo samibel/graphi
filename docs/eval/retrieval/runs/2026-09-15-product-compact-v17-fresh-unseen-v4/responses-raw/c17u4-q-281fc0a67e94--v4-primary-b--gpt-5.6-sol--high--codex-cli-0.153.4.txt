@@ -1,0 +1,13 @@
+`ResetFlags` rebuilds:
+
+- `c.flagErrorBuf` as a new `bytes.Buffer`, then resets it.
+- `c.flags` as a new `flag.FlagSet` named with `c.Name()`, using `flag.ContinueOnError`, with output directed to `c.flagErrorBuf`.
+- `c.pflags` identically as a new persistent `flag.FlagSet`, sharing that error buffer.
+
+It invalidates the cached flag sets by setting these to `nil`:
+
+- `c.lflags` — local flags
+- `c.iflags` — inherited flags
+- `c.parentsPflags` — parent persistent flags
+
+Evidence: `command.go:1736–1749`, specifically the assignments in `(*Command).ResetFlags`. The snippets at `command.go:1667–1718` show that `LocalFlags` and `InheritedFlags` lazily rebuild `lflags` and `iflags`; `command.go:1846–1853` shows `parentsPflags` is refreshed during persistent-flag merging.

@@ -1,0 +1,1 @@
+The central meaning of GroupID is directly stated in the preserved comment at command.go:73 and demonstrated by the literal assignment at command_test.go:1866. command.go:1332-1333 and 1357-1358 directly support stored-group access and registration through Groups and AddGroup.

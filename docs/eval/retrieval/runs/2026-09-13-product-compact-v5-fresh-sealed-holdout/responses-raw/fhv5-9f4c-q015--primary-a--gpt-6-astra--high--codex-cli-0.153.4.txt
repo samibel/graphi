@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the candidate-emission logic in `completions.go:getFlagNameCompletions` and the reason for excluding the equals form; line 542 only says “Flag without the =”.

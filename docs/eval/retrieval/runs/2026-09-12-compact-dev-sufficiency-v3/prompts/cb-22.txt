@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does the documentation generator walk the command tree
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"how does the documentation generator walk the command tree\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"doc/man_docs.go","start_line":38,"end_line":69,"text":"func GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {\n\treturn GenManTreeFromOpts(cmd, GenManTreeOptions{\n\t\tHeader:           header,\n\t\tPath:             dir,\n\t\tCommandSeparator: \"-\",\n\t})\n}\n\n// GenManTreeFromOpts generates a man page for the command and all descendants.\n// The pages are written to the opts.Path directory.\nfunc GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {\n\theader := opts.Header\n\tif header == nil {\n\t\theader = \u0026GenManHeader{}\n\t}\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenManTreeFromOpts(c, opts); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tsection := \"1\"\n\tif header.Section != \"\" {\n\t\tsection = header.Section\n\t}\n\n\tseparator := \"_\"\n\tif opts.CommandSeparator != \"\" {\n\t\tseparator = opts.CommandSeparator\n\t}"},{"path":"doc/man_docs.go","start_line":48,"end_line":53,"text":"func GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {\n\theader := opts.Header\n\tif header == nil {\n\t\theader = \u0026GenManHeader{}\n\t}\n\tfor _, c := range cmd.Commands() {"},{"path":"doc/md_docs.go","start_line":125,"end_line":126,"text":"func GenMarkdownTree(cmd *cobra.Command, dir string) error {\n\tidentity := func(s string) string { return s }"},{"path":"doc/md_docs.go","start_line":133,"end_line":134,"text":"func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {\n\tfor _, c := range cmd.Commands() {"},{"path":"doc/yaml_docs.go","start_line":53,"end_line":54,"text":"func GenYamlTree(cmd *cobra.Command, dir string) error {\n\tidentity := func(s string) string { return s }"},{"path":"doc/yaml_docs.go","start_line":60,"end_line":61,"text":"func GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {\n\tfor _, c := range cmd.Commands() {"},{"path":"doc/rest_docs.go","start_line":138,"end_line":139,"text":"func GenReSTTree(cmd *cobra.Command, dir string) error {\n\temptyStr := func(s string) string { return \"\" }"},{"path":"doc/rest_docs.go","start_line":145,"end_line":145,"text":"func GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error {"},{"path":"doc/man_docs.go","start_line":84,"end_line":85,"text":"type GenManTreeOptions struct {\n\tHeader           *GenManHeader"},{"path":"command.go","start_line":1426,"end_line":1427,"text":"func (c *Command) CommandPath() string {\n\tif c.HasParent() {"}],"provenance":{"input_sha256":"0d4ca3a2800a6a57d11bac2140da485ef773777f6b17640e4cc0e94514d2f945","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

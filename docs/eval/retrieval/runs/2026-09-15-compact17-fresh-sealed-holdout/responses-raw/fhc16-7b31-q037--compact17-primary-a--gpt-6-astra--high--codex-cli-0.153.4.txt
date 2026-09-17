@@ -1,0 +1,13 @@
+`DebugFlags` performs a depth-first traversal starting at its receiver (`command.go:1456–1493`):
+
+1. Prints `"DebugFlags called on"` with `c.Name()`, then calls the recursive closure `debugflags(c)`.
+2. For each command `x`, prints its name if `x.HasFlags() || x.HasPersistentFlags()`.
+3. Visits `x.flags` with `VisitAll` and labels each flag:
+   - **`[LP]`** when `x.HasPersistentFlags() && x.persistentFlag(f.Name) != nil`.
+   - **`[L]`** otherwise.
+4. Visits `x.pflags` and prints **`[P]`** only when there is no matching name in `x.flags`, or when `x.HasFlags()` is false. This avoids printing a persistent flag twice.
+5. Prints `x.flagErrorBuf`, then recursively visits each child in `x.commands` when `x.HasSubCommands()` is true.
+
+Each flag entry includes its shorthand, long name, default value, current value, and label. All output uses the original receiver’s `c.Println`, including output for descendants.
+
+**Ownership caveat:** these labels reflect the checks above, not necessarily where a flag was originally declared. The `Flags()` comment explicitly includes flags declared by parents (`command.go:1641–1642`). The response does not show `persistentFlag`’s implementation, so its precise ancestor-lookup behavior cannot be established.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q064",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "09df8b1064329e42614e577f2895624af2145ee215466fc1cc7e4221163021e5",
+  "bundle_sha256": "310313e29730055a03077d374cb799384b0db2f778526150aca4d02f816476ed",
+  "prompt_sha256": "d0a16fb0b001a92e9ca1b7e0145f98fde7bd857ae22345129b2580beb0a7ac7d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the inherited-only view’s name-collision handling; `command.go:1700–1701` only shows initialization of `c.iflags`.",
+  "responded_at": "2026-09-13T12:39:29Z",
+  "sha256": "fcbc04e6212f8b7203f48228f6ff2cd536051f9c3968b491bc65c6f08d6986e2"
+}

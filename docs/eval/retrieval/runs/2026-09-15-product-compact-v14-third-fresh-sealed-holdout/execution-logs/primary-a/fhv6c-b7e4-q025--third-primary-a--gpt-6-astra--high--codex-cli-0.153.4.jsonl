@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-a995-7b42-a5f3-eae47f81a739"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetOut(nil)` clears the command’s `outWriter` (`command.go:290–291`). `OutOrStdout()` then returns the nearest ancestor’s non-nil output writer, or `os.Stdout` if none exists: it calls `getOut(os.Stdout)` (`command.go:374–377`), which checks the current writer, recurses through parents, and finally returns the default (`command.go:394–402`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17004,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":95,"reasoning_output_tokens":0}}

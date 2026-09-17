@@ -1,0 +1,1 @@
+command.go:1030-1041 preserves Execute's exact implementation and documentation plus ExecuteContext's context assignment and delegation.

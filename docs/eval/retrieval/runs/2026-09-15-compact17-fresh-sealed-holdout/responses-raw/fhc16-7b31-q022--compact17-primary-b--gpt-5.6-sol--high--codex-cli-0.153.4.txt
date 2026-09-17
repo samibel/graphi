@@ -1,0 +1,6 @@
+`nonCompletableFlag` suppresses flags that are either:
+
+- Hidden (`flag.Hidden`)
+- Deprecated (`len(flag.Deprecated) > 0`)
+
+Evidence: `bash_completions.go:698–701`, where it returns `flag.Hidden || len(flag.Deprecated) > 0`.

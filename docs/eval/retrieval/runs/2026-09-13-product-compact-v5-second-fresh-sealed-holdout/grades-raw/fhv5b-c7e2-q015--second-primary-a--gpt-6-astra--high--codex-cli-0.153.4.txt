@@ -1,0 +1,1 @@
+PASS: The response correctly identifies both usage and error destinations, supported by command.go lines 283–285 assigning the supplied writer to c.outWriter and c.errWriter and the comment on line 280.

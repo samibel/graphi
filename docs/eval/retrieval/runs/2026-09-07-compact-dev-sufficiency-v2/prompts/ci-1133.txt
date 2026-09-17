@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How do I get the flag of the currently executing command?
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"How do I get the flag of the currently executing command?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":1035,"end_line":1041,"text":"// Execute uses the args (os.Args[1:] by default)\n// and run through the command tree finding appropriate matches\n// for commands and then corresponding flags.\nfunc (c *Command) Execute() error {\n\t_, err := c.ExecuteC()\n\treturn err\n}"},{"path":"command.go","start_line":1052,"end_line":1058,"text":"func (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {\n\t\tc.ctx = context.Background()\n\t}\n\n\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {"},{"path":"command.go","start_line":874,"end_line":877,"text":"func (c *Command) execute(a []string) (err error) {\n\tif c == nil {\n\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")\n\t}"},{"path":"command.go","start_line":1795,"end_line":1798,"text":"func (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {"},{"path":"command.go","start_line":1643,"end_line":1644,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {"},{"path":"command.go","start_line":1806,"end_line":1806,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {"},{"path":"command.go","start_line":1767,"end_line":1767,"text":"func (c *Command) HasInheritedFlags() bool {"},{"path":"command.go","start_line":1696,"end_line":1696,"text":"func (c *Command) InheritedFlags() *flag.FlagSet {"}],"provenance":{"input_sha256":"033943e1419629c3c15f8d62cfbcf356bc4c50ccce868a912f608e1cb79602d9","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

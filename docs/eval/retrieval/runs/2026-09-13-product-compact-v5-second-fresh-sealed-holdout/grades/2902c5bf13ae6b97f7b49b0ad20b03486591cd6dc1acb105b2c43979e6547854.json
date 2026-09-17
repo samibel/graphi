@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q041",
+  "response_sha256": "2902c5bf13ae6b97f7b49b0ad20b03486591cd6dc1acb105b2c43979e6547854",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly traces the true/false description choice from all four public APIs through the file and writer helpers into genZshComp. Every cited location exists in the bundle and supports the unchanged propagation of includeDesc.",
+  "graded_at": "2026-09-13T15:41:51Z",
+  "sha256": "92dba1f43617e73a10aca496394d1da9af1d36227bc3b5fc38de347519d1084f"
+}

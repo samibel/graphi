@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q048",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "0897a767079d61f80d52bee221d846cb5698431819cd5dd194240844ec52ef83",
+  "bundle_sha256": "e02f1794be3245d9213a0cc20ea8968c246f538b1422aed8717afb4285cbf9e6",
+  "prompt_sha256": "b5902ce518d7996868d1b5565bb7ad67455e3654fbfe31d365da1273f279d562",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `go get` in `README.md:82–83` and `import \"github.com/spf13/cobra\"` in `README.md:92`, but omits the complete installation commands.",
+  "responded_at": "2026-09-13T15:27:27Z",
+  "sha256": "f425c7dfdcf5f21ae324e6293cab79d5a43abcd35a08aeef00d719b21483141a"
+}

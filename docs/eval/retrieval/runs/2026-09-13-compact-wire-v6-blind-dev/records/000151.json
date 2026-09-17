@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 151,
+  "previous_sha256": "be375041aef8a46519c2035966ab4ecbf89c16c39d92b342f8e4173680e84bfa",
+  "kind": "grade",
+  "query_id": "ci-771",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a7a450a15c5d3e14bcca62666914981b63d198d4969e224e0fec798e4b2a7549",
+  "outcome": "fail",
+  "rationale": "FAIL: It discusses portable Go callbacks but does not explain how to implement another shell's integration using __complete, the line protocol, and completion directives.",
+  "sha256": "d3754d76a7bbe0ffdfad8e06a9dee70ec1ae3f8c0581bb75d93fa7f8c491064d"
+}

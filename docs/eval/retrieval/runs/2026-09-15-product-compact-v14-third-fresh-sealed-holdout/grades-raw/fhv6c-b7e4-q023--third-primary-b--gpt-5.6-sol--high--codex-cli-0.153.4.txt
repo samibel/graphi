@@ -1,0 +1,1 @@
+PASS: The transcript shows SetOutput assigning both outWriter and errWriter at command.go:283-286. OutOrStdout/getOut support the stdout fallback for output, and SetOutput’s comment documents stderr for nil.

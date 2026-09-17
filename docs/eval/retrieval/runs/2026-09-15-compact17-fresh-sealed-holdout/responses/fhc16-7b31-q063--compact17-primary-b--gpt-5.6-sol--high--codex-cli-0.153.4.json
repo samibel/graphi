@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q063",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "93cd74150354a36937dd5b2659e8b7c8b8fa49745a33f932cd6cf0e396a2e0e5",
+  "bundle_sha256": "029d33ed0f9163b89f56d3af5d911471c34c10990583f4e76dc5be8f70c1ddc6",
+  "prompt_sha256": "858b9fea8799b0fd6016193bf29c60c6227190a3d1526c692964d1c67f94ffd7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It compares against group IDs. In `command.go:1347-1352`, `ContainsGroup(groupID string)` checks `if x.ID == groupID`; the `Group` struct separately defines `ID` and `Title` (`command.go:42-44`).",
+  "responded_at": "2026-09-15T18:43:11Z",
+  "sha256": "5b1efbfc8a911dc4e7d172fb456f158a0eb3e3047aa394d089e20f1ecf6b77ae"
+}

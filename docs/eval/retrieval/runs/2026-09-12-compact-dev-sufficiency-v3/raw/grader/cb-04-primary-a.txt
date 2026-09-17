@@ -1,0 +1,1 @@
+completions.go:132-160 shows the callback signature, missing/duplicate errors, locked registration and read-locked retrieval; the cross-shell comment is preserved.

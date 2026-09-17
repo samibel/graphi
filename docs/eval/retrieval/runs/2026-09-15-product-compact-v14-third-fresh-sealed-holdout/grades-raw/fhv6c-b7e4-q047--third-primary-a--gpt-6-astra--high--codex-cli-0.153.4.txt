@@ -1,0 +1,1 @@
+PASS: The response identifies the hidden `__complete` command for inspecting output and correctly explains program-defined enabling values, `<PROGRAM>_ACTIVE_HELP=0` suppression, and the `COBRA_ACTIVE_HELP=0` override. These behaviors and the cited locations are supported by the preserved transcript.

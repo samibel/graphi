@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65d-7713-76a2-89a3-1090dd562560"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`VisitParents` invokes the callback from the nearest ancestor upward: **parent → grandparent → … → root**, excluding the starting command.\n\nIn `command.go:853–857`, it calls `fn(c.Parent())` before recursively calling `c.Parent().VisitParents(fn)`. Recursion stops when `HasParent()` is false, meaning `c.parent == nil` (`command.go:1632–1634`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17039,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":0}}

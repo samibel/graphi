@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-8f00-7791-baac-f679824cd742"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript supports immediate return of an invalid-argument error for the first value outside nonempty ValidArgs, including the value, command path, and possible suggestions. The cited spans also support exact matching after description stripping, suggestions based on args[0], and nil when ValidArgs is empty."}}
+{"type":"turn.completed","usage":{"input_tokens":17947,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":132,"reasoning_output_tokens":66}}

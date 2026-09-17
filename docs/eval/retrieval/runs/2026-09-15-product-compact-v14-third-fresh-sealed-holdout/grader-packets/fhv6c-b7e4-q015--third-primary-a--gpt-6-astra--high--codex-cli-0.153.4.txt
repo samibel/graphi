@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: a1ec85228e5613d22890af4973ff403321598f50ad915ad9244e0037a06cfe76
+QUERY ID: fhv6c-b7e4-q015
+
+QUESTION:
+bash_completions_test.go
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- bash_completions_test.go:56-80 anchor="func runShellCheck(" reason=A defining test helper runs generated Bash through shellcheck and returns its result.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 3152f251ff3a; read in order (183/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"bash_completions_test.go","start_line":15,"end_line":15,"text":"package cobra"},{"path":"bash_completions_test.go","start_line":83,"end_line":93,"text":"func TestBashCompletions(t *testing.T) {\n\trootCmd := &Command{\n\t\tUse:                    \"root\",\n\t\tArgAliases:             []string{\"pods\", \"nodes\", \"services\", \"replicationcontrollers\", \"po\", \"no\", \"svc\", \"rc\"},\n\t\tValidArgs:              []string{\"pod\", \"node\", \"service\", \"replicationcontroller\"},\n\t\tBashCompletionFunction: bashCompletionFunc,\n\t\tRun:                    emptyRun,\n\t}\n\trootCmd.Flags().IntP(\"introot\", \"i\", -1, \"help message for flag introot\")\n\tassertNoErr(t, rootCmd.MarkFlagRequired(\"introot\"))\n"},{"path":"bash_completions_test.go","start_line":245,"end_line":253,"text":"func TestBashCompletionDeprecatedFlag(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\n\tconst flagName = \"deprecated-flag\"\n\tc.Flags().Bool(flagName, false, \"\")\n\tassertNoErr(t, c.Flags().MarkDeprecated(flagName, \"use --not-deprecated instead\"))\n\n\tbuf := new(bytes.Buffer)\n\tassertNoErr(t, c.GenBashCompletion(buf))"},{"path":"bash_completions_test.go","start_line":77,"end_line":80,"text":"// World worst custom function, just keep telling you to enter hello!\nconst bashCompletionFunc = `__root_custom_func() {\n\tCOMPREPLY=( \"hello\" )\n}"},{"path":"bash_completions_test.go","start_line":229,"end_line":235,"text":"func TestBashCompletionHiddenFlag(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\n\tconst flagName = \"hiddenFlag\"\n\tc.Flags().Bool(flagName, false, \"\")\n\tassertNoErr(t, c.Flags().MarkHidden(flagName))\n"},{"path":"bash_completions_test.go","start_line":261,"end_line":266,"text":"func TestBashCompletionTraverseChildren(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun, TraverseChildren: true}\n\n\tc.Flags().StringP(\"string-flag\", \"s\", \"\", \"string flag\")\n\tc.Flags().BoolP(\"bool-flag\", \"b\", false, \"bool flag\")\n"},{"path":"bash_completions_test.go","start_line":279,"end_line":281,"text":"func TestBashCompletionNoActiveHelp(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n"},{"path":"bash_completions_test.go","start_line":33,"end_line":36,"text":"func check(t *testing.T, found, expected string) {\n\tif !strings.Contains(found, expected) {\n\t\tt.Errorf(\"Expecting to contain: \\n %q\\nGot:\\n %q\\n\", expected, found)\n\t}"},{"path":"bash_completions_test.go","start_line":27,"end_line":28,"text":"func checkOmit(t *testing.T, found, unexpected string) {\n\tif strings.Contains(found, unexpected) {"},{"path":"bash_completions_test.go","start_line":39,"end_line":40,"text":"func checkNumOccurrences(t *testing.T, found, expected string, expectedOccurrences int) {\n\tnumOccurrences := strings.Count(found, expected)"}],"provenance":{"input_sha256":"7945615a6f509bd57502977b707167890f4500ba7e59b2358c58c9f3531683d5","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`bash_completions_test.go` belongs to package `cobra` (line 15). The provided snippets show:
+
+- **Helpers:** `checkOmit` checks for an unexpected substring (27–28); `check` reports an error when an expected substring is absent (33–36); `checkNumOccurrences` counts substring occurrences (39–40).
+- **Custom completion constant:** `bashCompletionFunc` defines `__root_custom_func`, which sets `COMPREPLY` to `"hello"` (77–80).
+- **Main test:** `TestBashCompletions` creates a root command with argument aliases, valid arguments, the custom completion function, and a required `introot` flag (83–93).
+- **Additional tests:** `TestBashCompletionHiddenFlag` (229–235), `TestBashCompletionDeprecatedFlag` (245–253), `TestBashCompletionTraverseChildren` (261–266), and `TestBashCompletionNoActiveHelp` (279–281).
+
+The response is truncated, so these declarations are not necessarily the file’s complete contents.
+----- END THE RATER'S RESPONSE -----

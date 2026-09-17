@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-117acd53e609",
+  "response_sha256": "627558980f2d871e95c0eab26caec1d3e8a33a04cd7cea575929ecb1bf8b3bf7",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response accurately gives the local non-nil outWriter → recursive parent lookup → supplied default order. Both citations resolve within the preserved bundle and support the claims.",
+  "graded_at": "2026-09-15T20:40:02Z",
+  "sha256": "4be2997c66b5724b673b0f0188f4d2ac7e2515be53861b6e4e3dff55a565ddf3"
+}

@@ -1,0 +1,1 @@
+PASS: The response directly explains how to supply a usage template with `cmd.SetUsageTemplate(string)`. The cited transcript spans support the method, storage in `c.usageTemplate`, and rendering through the default usage function with the command as template data.

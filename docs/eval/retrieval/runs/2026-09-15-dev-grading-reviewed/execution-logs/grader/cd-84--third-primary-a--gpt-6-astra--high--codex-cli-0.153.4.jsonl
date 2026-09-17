@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a484-06fb-7642-acaf-93755a2530a8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The follow-up transcript supports splitting at the first `=`, extracting the long name or final shorthand, preserving the remaining value, setting `flagWithEqual`, and returning the resolved flag with unchanged arguments. The cited locations support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":19358,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":163,"reasoning_output_tokens":108}}

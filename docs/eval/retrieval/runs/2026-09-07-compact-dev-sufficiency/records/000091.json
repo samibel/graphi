@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 91,
+  "previous_sha256": "0c22a6cad36c3ea60f852eb59fc4da466d7b46c098dfbf16a27c486277a91dd9",
+  "kind": "grade",
+  "query_id": "cb-08",
+  "slot": 0,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "31efd4263e0dd162e4c0c05bd15500519a9fc2fc783e95aad67805b9593e0d25",
+  "outcome": "pass",
+  "rationale": "The named file's preserved GenMan comment and body prefix at doc/man_docs.go:103-108 directly support generation to a writer and nil-header handling, including the writer requirement. fillHeader at 118-124 supports the title transformation and section default; 82-86 supports the options fields and consumer.\n",
+  "sha256": "99d13b16cbb1c228cb9147311d92fa1238b1d0887191b3e833c96891c8814c3a"
+}

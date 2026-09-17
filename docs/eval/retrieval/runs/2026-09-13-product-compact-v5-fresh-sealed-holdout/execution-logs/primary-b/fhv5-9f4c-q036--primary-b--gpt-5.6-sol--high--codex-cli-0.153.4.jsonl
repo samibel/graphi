@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-bfce-7ac2-990f-916ad6103855"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Help()` calls `c.HelpFunc()` with the command and an empty argument slice, then always returns `nil` (`command.go:470-476`).\n\n`HelpFunc()` resolves behavior in this order (`command.go:450-468`):\n\n1. Use `c.helpFunc` if set.\n2. Otherwise recursively inherit `c.Parent().HelpFunc()` when there is a parent.\n3. Otherwise use the default function, which:\n   - calls `c.mergePersistentFlags()`,\n   - renders `c.HelpTemplate()` to `c.OutOrStdout()`,\n   - and, if `tmpl(...)` fails, reports the error with `c.PrintErrln(err)`.\n\nThus template errors are printed, not propagated by `Help()`, which still returns `nil`."}}
+{"type":"turn.completed","usage":{"input_tokens":16510,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":256,"reasoning_output_tokens":91}}

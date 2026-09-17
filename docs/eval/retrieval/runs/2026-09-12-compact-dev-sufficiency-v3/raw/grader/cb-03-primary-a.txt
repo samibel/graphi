@@ -1,0 +1,1 @@
+doc/md_docs.go:125-158 directly shows delegation, identity/empty handlers, recursive child filtering, filename construction and error returns.

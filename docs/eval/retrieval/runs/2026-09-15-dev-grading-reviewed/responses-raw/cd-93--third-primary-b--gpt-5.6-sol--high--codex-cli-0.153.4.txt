@@ -1,0 +1,3 @@
+`PostRun` is a command hook executed after `Run` and before `PersistentPostRun`. It runs only when the current command declares `Run` (`site/content/user_guide.md:605-616`; `command.go:136-138`).
+
+For a subcommand, its own `PostRun` executes after its `Run`. By default, only the first persistent post-run hook found in the command chain executes; set `EnableTraverseRunHooks = true` to execute all parents’ persistent hooks (`site/content/user_guide.md:684-693`; `cobra.go:64-65`).

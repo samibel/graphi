@@ -1,0 +1,1 @@
+No. In `command.go:1550–1553`, `(*Command).Runnable()` returns `c.Run != nil || c.RunE != nil`. Either `Run` or `RunE` being non-nil is sufficient; both are not required.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q020",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "f4f566cf0bf53368c030b72c57f45c7e6eb755930863ae20c30061738701cd75",
+  "bundle_sha256": "19c60bf2066e800f3ae2fb5a44b4160bbb7c159828a9d8541ecca2348cf71c5c",
+  "prompt_sha256": "6834412b84dd5f1cbecc110088d1e9af7e7865d5848898f7deddec36350f64b6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/rest_docs.go`, `indentString` leaves blank lines unprefixed. Lines 178–181 add the prefix only when at the beginning of a line and the current byte is not `'\\n'`:\n\n```go\nif bol \u0026\u0026 c != '\\n' {\n    res = append(res, prefix...)\n}\n```\n\nIt still appends the newline and resets `bol` via `bol = c == '\\n'` (lines 182–183), so the prefix is added only when the next line contains a non-newline character.",
+  "responded_at": "2026-09-13T12:32:54Z",
+  "sha256": "04200bb841736ac0c0b0ecf4ec77594b7ab160e39fd81d56e6a8418184a13228"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q004",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "4d3d12fd67629979116fd14de0f7c3a4082db42efc40562f2ca1a32c41304bbe",
+  "bundle_sha256": "8775388eee59d3035bcbf9f90796a17e4b2015524a49d5d934543bdb700c7f4c",
+  "prompt_sha256": "a2c032aa9047fe345d47985e5669972bb4d8395ab69a293ada5a9bce2347d8db",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`validOnlyWithInvalidArgs(err error, t *testing.T)` is a test helper in `args_test.go:44–53` that checks for the exact error `invalid argument \"a\" for \"c\"`.\n\n- If `err` is nil, it calls `t.Fatal(\"Expected an error\")` (lines 45–47).\n- Otherwise, it compares `err.Error()` with the expected string and calls `t.Errorf(\"Expected: %q, got: %q\", expected, got)` if they differ (lines 48–52).",
+  "responded_at": "2026-09-15T08:28:37Z",
+  "sha256": "1c4bdde4862771df5f120a0f0568429f80ffb1e22a0b3e0662f88b1135839c4e"
+}

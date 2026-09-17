@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 7,
+  "previous_sha256": "9b7d7d77492accad23a1064058142d010e2ae7c28ffb1eb729b94262fef70ac6",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "cf6bfe6da6fc4ae0135bdbecd36ea7528d4c5003c8cd72f46ba6992e42635f6a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shell_completions.go` provides flag annotations used by shell completion. `MarkFlagRequired` marks a flag with `BashCompOneRequiredFlag=true`, which both prioritizes it in completion and makes omission an invocation error (`shell_completions.go:21-23`, `shell_completions.go:35-40`). It also exposes methods that annotate local or persistent flags with permitted filename extensions (`shell_completions.go:42-46`, `shell_completions.go:58-63`).\n",
+  "sha256": "4b338d71aa5e2b52509bd163fc8c149acd89c54e35af77703a683a669d10a572"
+}

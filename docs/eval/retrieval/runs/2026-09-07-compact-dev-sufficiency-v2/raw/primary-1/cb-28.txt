@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows GroupID setters and child-group storage in `command.go`, but omits the code or documentation explaining the effect of a command's group ID on help output or validation.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 16,
+  "previous_sha256": "f6ed6d27949e7d0248079dc7799a77e9053c701e7db9889976a1efcb070f1769",
+  "kind": "response",
+  "query_id": "cb-21",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "6e104ea71ae13eb7119f2120638a48caaeaf35f4b9139d3962a29cc6f4cafa6f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows `command.go:1302-1304` starting `AddCommand`, but omits its body where children would be added and `x.parent` set.",
+  "sha256": "f34f987152ec6da51cb4da6bb5bb0d347aaae9f617339e9b8012ecbf89d5a9d4"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-21ed0468a792",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "bf58c2e5c11612eba5ca9599b1d6fdcaa4dc90974c3a6599a65cc151080c0f70",
+  "bundle_sha256": "5fc88e381c256fde85f290628e118320d34de69c7ec89d077bf46e193859e839",
+  "prompt_sha256": "2504759b430cd1d352da0b119de52220a6a8d616543255de41bd64c0140db719",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra’s `WriteStringAndCheck` calls `b.WriteString(s)` and passes the returned error to `CheckErr` (`cobra.go:241–243`). If non-nil, `CheckErr` prints `Error: \u003cerror\u003e` to stderr and exits with status 1; if nil, it does nothing (`cobra.go:233–237`).",
+  "responded_at": "2026-09-15T20:27:03Z",
+  "sha256": "b5e862065a7d3fae66d49a1ab3c8162294fc430e7a27f5af803c724dd6c7ae13"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-593e-76c3-b9ef-9948ca8ca6ac"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`TestEnablePrefixMatching` in `command_test.go` (lines 305–332) proves it:\n\n- Sets `EnablePrefixMatching = true`.\n- Defines command `aCmd` with `ExactArgs(2)`.\n- Executes the abbreviated name with arguments: `executeCommand(rootCmd, \"a\", \"one\", \"two\")`.\n- Verifies execution succeeds and `aCmd` receives both arguments by checking `strings.Join(aCmdArgs, \" \") == onetwo`."}}
+{"type":"turn.completed","usage":{"input_tokens":16679,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":103,"reasoning_output_tokens":0}}

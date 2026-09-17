@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a435-87fd-7f31-8d98-35eeaf83e39c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`validArgsFunc2` is a shell-completion callback defined in `completions_test.go:40–52`.\n\n- If `args` is non-empty, it returns `nil` with `ShellCompDirectiveNoFileComp`.\n- Otherwise, it filters `\"three\\tThe third\"` and `\"four\\tThe fourth\"` by `strings.HasPrefix(comp, toComplete)`.\n- It returns matching completions with `ShellCompDirectiveDefault`.\n\nIts signature matches `Command.ValidArgsFunction` in `command.go:84–87`:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":16444,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":137,"reasoning_output_tokens":0}}

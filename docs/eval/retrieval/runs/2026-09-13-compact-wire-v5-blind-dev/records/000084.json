@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 84,
+  "previous_sha256": "8d3835657821b9aff45f385b1a1baa2043067fefa73d4e0cde48d42b595bf04f",
+  "kind": "grade",
+  "query_id": "cb-02",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "49cd2f608206b3b61d1c28af0295bcb5c2c3279570876789ee18dfa183afa963",
+  "outcome": "pass",
+  "rationale": "PASS: The implementation summary is concrete and fully supported by the MarkFlagsMutuallyExclusive body and annotation constant in the bundle.\n",
+  "sha256": "86ed1d27f6d5fc2a0e481672515dd18d73ba8d8d3ceb4fae033947bc0a05d1b6"
+}

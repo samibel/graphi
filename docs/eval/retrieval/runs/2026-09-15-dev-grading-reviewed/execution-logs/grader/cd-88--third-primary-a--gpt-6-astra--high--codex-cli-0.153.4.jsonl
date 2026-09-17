@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a484-35ae-79c0-8062-e9ffda6ee0dd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the preserved writer: initializes the noun array, sorts ValidArgs, strips tab descriptions, emits noun entries, and marks a non-nil ValidArgsFunction without invoking it. Both cited line ranges support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":19336,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

@@ -1,0 +1,90 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 04200bb841736ac0c0b0ecf4ec77594b7ab160e39fd81d56e6a8418184a13228
+QUERY ID: fhv5-9f4c-q020
+
+QUESTION:
+In doc/rest_docs.go, how does indentString handle blank lines while adding a prefix?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/rest_docs.go:172-185 anchor="if bol && c != '\\n'" reason=It inserts the prefix only at the beginning of non-empty lines, tracks line starts after newlines, and leaves blank lines unprefixed.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query f4f566cf0bf5; read in order (241/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"doc/yaml_docs.go","start_line":100,"end_line":110,"text":"\tyamlDoc.Synopsis = forceMultiLine(cmd.Short)\n\tyamlDoc.Description = forceMultiLine(cmd.Long)\n\n\tif cmd.Runnable() {\n\t\tyamlDoc.Usage = cmd.UseLine()\n\t}\n\n\tif len(cmd.Example) > 0 {\n\t\tyamlDoc.Example = cmd.Example\n\t}\n"},{"path":"doc/yaml_docs.go","start_line":92,"end_line":99,"text":"// GenYamlCustom creates custom yaml output.\nfunc GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tyamlDoc := cmdDoc{}\n\tyamlDoc.Name = cmd.CommandPath()\n"},{"path":"doc/rest_docs.go","start_line":61,"end_line":65,"text":"// GenReSTCustom creates custom reStructured Text output.\nfunc GenReSTCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string, string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n"},{"path":"doc/rest_docs.go","start_line":84,"end_line":94,"text":"\tif cmd.Runnable() {\n\t\tbuf.WriteString(fmt.Sprintf(\"::\\n\\n  %s\\n\\n\", cmd.UseLine()))\n\t}\n\n\tif len(cmd.Example) > 0 {\n\t\tbuf.WriteString(\"Examples\\n\")\n\t\tbuf.WriteString(\"~~~~~~~~\\n\\n\")\n\t\tbuf.WriteString(fmt.Sprintf(\"::\\n\\n%s\\n\\n\", indentString(cmd.Example, \"  \")))\n\t}\n\n\tif err := printOptionsReST(buf, cmd, name); err != nil {"},{"path":"doc/rest_docs.go","start_line":172,"end_line":186,"text":"// indentString adapted from: https://github.com/kr/text/blob/main/indent.go\nfunc indentString(s, p string) string {\n\tvar res []byte\n\tb := []byte(s)\n\tprefix := []byte(p)\n\tbol := true\n\tfor _, c := range b {\n\t\tif bol && c != '\\n' {\n\t\t\tres = append(res, prefix...)\n\t\t}\n\t\tres = append(res, c)\n\t\tbol = c == '\\n'\n\t}\n\treturn string(res)\n}"},{"path":"doc/yaml_docs.go","start_line":155,"end_line":156,"text":"\t\t// Using len(flag.ShorthandDeprecated) > 0 can't handle this, others are ok.\n\t\tif !(len(flag.ShorthandDeprecated) > 0) && len(flag.Shorthand) > 0 {"},{"path":"doc/rest_docs.go","start_line":51,"end_line":54,"text":"// defaultLinkHandler for default ReST hyperlink markup\nfunc defaultLinkHandler(name, ref string) string {\n\treturn fmt.Sprintf(\"`%s <%s.rst>`_\", name, ref)\n}"},{"path":"doc/rest_docs.go","start_line":56,"end_line":59,"text":"// GenReST creates reStructured Text output.\nfunc GenReST(cmd *cobra.Command, w io.Writer) error {\n\treturn GenReSTCustom(cmd, w, defaultLinkHandler)\n}"},{"path":"doc/rest_docs.go","start_line":140,"end_line":141,"text":"\treturn GenReSTTreeCustom(cmd, dir, emptyStr, defaultLinkHandler)\n}"},{"path":"doc/md_docs.go","start_line":30,"end_line":31,"text":"const markdownExtension = \".md\"\n"},{"path":"site/content/docgen/rest.md","start_line":76,"end_line":78,"text":"```go\nfunc GenReSTTreeCustom(cmd *Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error {\n\t//..."},{"path":"site/content/docgen/rest.md","start_line":58,"end_line":59,"text":"## Generate ReST docs for a single command\n"}],"provenance":{"input_sha256":"7cd31c6592698e1487e353b10b64aafb80e7895d3bcf88675e4968f18605eb8c","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `doc/rest_docs.go`, `indentString` leaves blank lines unprefixed. Lines 178–181 add the prefix only when at the beginning of a line and the current byte is not `'\n'`:
+
+```go
+if bol && c != '\n' {
+    res = append(res, prefix...)
+}
+```
+
+It still appends the newline and resets `bol` via `bol = c == '\n'` (lines 182–183), so the prefix is added only when the next line contains a non-newline character.
+----- END THE RATER'S RESPONSE -----

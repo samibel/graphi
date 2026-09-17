@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 132,
+  "previous_sha256": "3627204accde233d1735b9fd091beb92caa1113ed814d8b19ab6ddccbc987f07",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "d88732bad89016e1b8bfebec69971743c24fa6ad6003ef7f1404d76b647fc827",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` and states that Cobra errors when more than one flag from the set is supplied. Lines 67-70 show each named flag is looked up and a missing flag causes a panic, supporting “define the flags first.” Lines 72-73 state that each call creates a new group entry and permits membership in multiple groups. The usage example accurately applies the documented variadic API.\n",
+  "sha256": "9c55938dd39796250d1e395b451528c8fd2db18cc0a843d8c151908c96b1c7a8"
+}

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+In fish_completions.go, how is a command name made safe for generated Fish variable names?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query ab86a68c5918; read in order (257/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/completions/fish.md","start_line":1,"end_line":4,"text":"## Generating Fish Completions For Your cobra.Command\n\nPlease refer to [Shell Completions](_index.md) for details.\n"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"fish_completions.go","start_line":274,"end_line":292,"text":"\n// GenFishCompletion generates fish completion file and writes to the passed writer.\nfunc (c *Command) GenFishCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)\n\tgenFishComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}\n\n// GenFishCompletionFile generates fish completion file.\nfunc (c *Command) GenFishCompletionFile(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer outFile.Close()\n\n\treturn c.GenFishCompletion(outFile, includeDesc)\n}"},{"path":"fish_completions.go","start_line":24,"end_line":27,"text":"\nfunc genFishComp(buf io.StringWriter, name string, includeDesc bool) {\n\t// Variables should not contain a '-' or ':' character\n\tnameForVar := name"},{"path":"site/content/completions/_index.md","start_line":1,"end_line":5,"text":"# Generating shell completions\n\nCobra can generate shell completions for multiple shells.\nThe currently supported shells are:\n- Bash"},{"path":"completions.go","start_line":787,"end_line":792,"text":"\tfish := &Command{\n\t\tUse:   \"fish\",\n\t\tShort: fmt.Sprintf(shortDesc, \"fish\"),\n\t\tLong: fmt.Sprintf(`Generate the autocompletion script for the fish shell.\n\nTo load completions in your current shell session:"},{"path":"command.go","start_line":1523,"end_line":1538,"text":"\n// hasNameOrAliasPrefix returns true if the Name or any of aliases start\n// with prefix\nfunc (c *Command) hasNameOrAliasPrefix(prefix string) bool {\n\tif strings.HasPrefix(c.Name(), prefix) {\n\t\tc.commandCalledAs.name = c.Name()\n\t\treturn true\n\t}\n\tfor _, alias := range c.Aliases {\n\t\tif strings.HasPrefix(alias, prefix) {\n\t\t\tc.commandCalledAs.name = alias\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"powershell_completions.go","start_line":305,"end_line":308,"text":"// GenPowerShellCompletionFile generates powershell completion file without descriptions.\nfunc (c *Command) GenPowerShellCompletionFile(filename string) error {\n\treturn c.genPowerShellCompletionFile(filename, false)\n}"}],"provenance":{"input_sha256":"bf53ecb6fcadf817736d1bd521b58d5db6461dd1a6a24ba2bc43f240676e96dc","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

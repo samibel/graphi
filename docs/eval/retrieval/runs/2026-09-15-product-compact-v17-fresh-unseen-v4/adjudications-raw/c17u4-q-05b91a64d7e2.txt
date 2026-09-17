@@ -1,0 +1,4 @@
+In `doc/yaml_docs.go:148-175`, `genFlagResult` includes the shorthand only when it is non-empty and not deprecated:
+
+- Usable shorthand: creates `cmdOption` positionally with `flag.Name`, `flag.Shorthand`, `flag.DefValue`, and the formatted usage (`lines 156-163`).
+- Absent or deprecated shorthand: creates `cmdOption` with named fields `Name`, `DefaultValue`, and `Usage`, leaving the shorthand unset (`lines 165-170`). This branch also applies `forceMultiLine` to the default value.

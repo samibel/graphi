@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 35,
+  "previous_sha256": "16cee8d83b13730bbce04f99ada5eac9a9b3ffab1f4bb8b6ce66c4e1f3f1f593",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "29a1fe74eb70dd5dc75de67da85ec5be22f629d4355f422ec6f308aa7538dc21",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No—not with the default help flag. `command.go:1183-1198` registers one boolean flag via `BoolP(\"help\", \"h\", ...)`, making `-h` the shorthand for `--help`. `command.go:894-905` then reads only `GetBool(\"help\")`, so both forms follow the same help path.",
+  "sha256": "e01af9888328b8a612fb9a72ddaa863db42f9073d5c5fa622535a40e67f634c1"
+}

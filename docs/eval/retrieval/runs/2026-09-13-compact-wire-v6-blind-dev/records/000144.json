@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 144,
+  "previous_sha256": "5f8efd005fb64ce0acdc8e7c0420017489d15c479a3759d9b8485eb2a2b9003f",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6f2d1cd301b7620355342631b4609cf836d18a22744c71214126c6c91e8a9f90",
+  "outcome": "fail",
+  "rationale": "FAIL: It incorrectly concludes that the response does not establish a supported mechanism; declaring a custom help flag prevents Cobra's combined default and permits a separate -h flag.",
+  "sha256": "10f47d91f1fcfc77b50d0ce6de02fc967293e9c67f5660a43963c91f9e0eddc5"
+}

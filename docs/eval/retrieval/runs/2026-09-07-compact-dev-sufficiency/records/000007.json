@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 7,
+  "previous_sha256": "31efd4263e0dd162e4c0c05bd15500519a9fc2fc783e95aad67805b9593e0d25",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "1bfdf68c105ef3fc616300b9da5a09d84cea24395245f6f5a97b96d09619ef0f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shell_completions.go` provides helpers for flag completion and required flags. `(*Command).MarkFlagFilename(name, extensions...)` restricts completions to the specified file extensions by delegating with `c.Flags()` (`shell_completions.go:42–46`). `MarkPersistentFlagFilename` does the same with `c.PersistentFlags()` (`shell_completions.go:58–63`). `MarkFlagRequired(flags *pflag.FlagSet, name string) error` prioritizes a flag during completion and causes an error when the command is invoked without it (`shell_completions.go:35–38`).\n",
+  "sha256": "9a2cab3235a00270a6bfd32630be8e856fa4e7264e5b6722b52233dcdc1ddd13"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 116,
+  "previous_sha256": "ef94495ade8db7cc7ae92d87f78743b8e7bea66f4d32cc1a39c2b650ab83e355",
+  "kind": "grade",
+  "query_id": "cb-30",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "f5e02a60a6f332b168d9d9d651832c3cdf53f946820d1573d355a0b1f744bf57",
+  "outcome": "pass",
+  "rationale": "doc/man_docs.go:33-47 explicitly supports the API, descendant coverage, nil header and options passed to GenManTreeFromOpts.\n",
+  "sha256": "d867a30932c5fe4f68c7467f2dc9e88c36965997d42f25037f52ea1124dfc16f"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-c129-7780-a668-63f0e23d2985"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Define the flags first, then pass their names to:\n\n```go\ncmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")\n```\n\n`flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` and states that the command errors if more than one flag in the set is used. Each name must already exist: `c.Flags().Lookup(v)` panics when a flag cannot be found (`flag_groups.go:67-71`). Calling the method multiple times creates separate groups, so a flag may belong to multiple groups (`flag_groups.go:72-75`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16430,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":131,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+PASS: The response accurately summarizes the completion command constants, directive-related declarations, synchronized flag-completion map, and completion helpers. All cited ranges exist and support the attached claims, including argument separation and the documented conditions for adding the default completion command.

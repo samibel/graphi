@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "determination": "ELIGIBLE_FOR_NEW_UNCHANGED_PRECAPTURE_PREREGISTRATION",
+  "determined_at_utc": "2026-09-15T18:20:07Z",
+  "source_seal": {
+    "curation_commit": "b54c06fdcf59521cff9fdc56e04387f70874a83f",
+    "dataset_sha256": "8b194e4bb2bec052458d77e0e49e86269d7b1a0d4357c1f68f26009c455d3562",
+    "preregistration_sha256": "d459d59c7e4c8569dfa52ca55f641e592b2b8eab9101fe7c1de08489dc100ff2",
+    "curator_attestation_sha256": "a5358fc0def920be68644aa11ef4474b2b39ab74974e5bf0de88f45992dbe22b",
+    "committed_artifact_count": 6,
+    "dataset_bytes_changed": false
+  },
+  "eligibility_checks": {
+    "source_curation_commit_unchanged": "PASS",
+    "source_run_contains_only_curation_and_preregistration_artifacts": "PASS",
+    "candidate_capture_absent": "PASS",
+    "prompt_disclosure_absent": "PASS",
+    "primary_response_absent": "PASS",
+    "rating_and_grading_absent": "PASS",
+    "adjudication_and_result_absent": "PASS",
+    "root_holdout_content_disclosure_absent": "PASS",
+    "new_run_path_distinct": "PASS",
+    "old_preregistration_unmodified": "PASS",
+    "new_candidate_binding_required": "PASS"
+  },
+  "protocol_basis": "Run immutability forbids amendment, substitution, or post-capture population changes within the source run. The public method contains no rule that consumes an undisclosed seal upon preregistration alone. Therefore identical sealed bytes may be referenced by a separate pre-capture run with a new candidate binding.",
+  "fail_closed_condition": "Any evidence of prior capture, prompt disclosure, response, grade, adjudication, result, dataset-byte drift, or holdout-content disclosure invalidates this determination before capture."
+}

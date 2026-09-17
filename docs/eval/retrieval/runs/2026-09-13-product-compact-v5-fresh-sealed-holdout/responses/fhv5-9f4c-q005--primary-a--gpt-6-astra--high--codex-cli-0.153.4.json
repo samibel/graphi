@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q005",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "f722f42ba292bb6d96b08a5682b93fa62a51c5263f421c0e15cc16ad612c8765",
+  "bundle_sha256": "f858d065422ba5fc1239af803103cbed91843336954b8ab2c5f97831b77c40fc",
+  "prompt_sha256": "419292edd4f7d665f0f0155b26e05caa0f6f444e2990e97f4251e74db5767a87",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`RegisterFlagCompletionFunc` can return two errors:\n\n- `\"RegisterFlagCompletionFunc: flag '%s' does not exist\"` if `c.Flag(flagName)` returns `nil` (`completions.go:134–136`).\n- `\"RegisterFlagCompletionFunc: flag '%s' already registered\"` if `flagCompletionFunctions[flag]` already exists (`completions.go:141–142`).\n\nRegistration acquires `flagCompletionMutex.Lock()` and defers `Unlock()`, protecting both the duplicate check and the assignment `flagCompletionFunctions[flag] = f`. Successful registration returns `nil`, with the deferred unlock releasing the mutex (`completions.go:138–145`).",
+  "responded_at": "2026-09-13T12:31:15Z",
+  "sha256": "69e4967e2451b7b8e7563a064473502ff1126143cc486cab20281c3156aa31e5"
+}

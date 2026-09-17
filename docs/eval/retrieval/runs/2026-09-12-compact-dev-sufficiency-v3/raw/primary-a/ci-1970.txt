@@ -1,0 +1,1 @@
+INSUFFICIENT The response exposes `Flags()` and lookup of a known flag name but omits the enumeration API needed to obtain a list of flags.

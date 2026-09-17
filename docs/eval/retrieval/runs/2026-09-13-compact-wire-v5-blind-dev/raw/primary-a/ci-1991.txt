@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows that `cmd.Flag(name)` finds a parent persistent flag (`command.go:1794-1816`), but it does not show the API for extracting that flag's parsed value.

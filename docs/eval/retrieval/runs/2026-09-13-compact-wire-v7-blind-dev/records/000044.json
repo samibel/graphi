@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 44,
+  "previous_sha256": "356ff5c05323c2de90a5a0321b85b4b73a3b94efdbafb3fd9ff3d0daf9f60db5",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "40646ee8863b2fea258bc102a340238b62c3bf8ba391fe23b3bbaf7bd61c8b5c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`RegisterFlagCompletionFunc` registers a shell-completion callback for a command flag:\n\n```go\nfunc (c *Command) RegisterFlagCompletionFunc(\n    flagName string,\n    f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective),\n) error\n```\n\nEvidence from `completions.go:132-146`:\n\n- It resolves the flag with `c.Flag(flagName)`.\n- It returns an error if the flag does not exist.\n- It locks `flagCompletionMutex` for thread-safe registration.\n- It rejects duplicate registration for the same flag.\n- It stores the callback in `flagCompletionFunctions[flag]` and returns `nil`.\n\nThe registry is a global `map[*pflag.Flag]func(...)` (`completions.go:35-36`), protected by a `sync.RWMutex` (`completions.go:38-39`). Registered callbacks can be retrieved through `GetFlagCompletionFunc` (`completions.go:148-160`).",
+  "sha256": "10cf9c41285ce4315dd0b8da0304c66d0673b414a25c3e4e174d15072e8b400b"
+}

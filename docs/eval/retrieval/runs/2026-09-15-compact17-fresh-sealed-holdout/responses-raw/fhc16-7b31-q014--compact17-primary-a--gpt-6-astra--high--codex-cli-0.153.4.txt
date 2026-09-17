@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `compCmd := ShellCompRequestCmd` in `bash_completionsV2.go:32`, but omits the conditional logic that chooses the request command when `includeDesc` is false.

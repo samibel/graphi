@@ -1,0 +1,1 @@
+PASS: CalledAs is a valid supplied mechanism for checking whether and under what name or alias a command was selected.

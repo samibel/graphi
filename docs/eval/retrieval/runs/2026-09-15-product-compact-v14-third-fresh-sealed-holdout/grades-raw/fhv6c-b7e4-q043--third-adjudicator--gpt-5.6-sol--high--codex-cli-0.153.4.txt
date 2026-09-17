@@ -1,0 +1,1 @@
+PASS: The preserved Traverse implementation supports flag collection, child lookup, parent flag parsing, and recursion with the remaining arguments. Repeating that recursion descends through the first child into the grandchild, substantively answering the question; the cited locations support the claims.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 116,
+  "previous_sha256": "8763a93331959e694d47408a3225a4393b46337b06a18a077cbb0f0f3896d0a4",
+  "kind": "grade",
+  "query_id": "cb-28",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "d121da1057fe2e17ba89c805c89d4323e28eb236b6271bb727bc9b7e688a849a",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly states the supported core behavior: `GroupID` groups a subcommand in its parent’s help output, exactly matching `command.go:73-75`. It also accurately cites the `Group` ID/title structure (`command.go:41-45`), parent registration through `AddGroup` (`command.go:1356-1359`), and the built-in help/completion setters (`command.go:332-345`). The bundle does not preserve the `checkCommandGroups` implementation or documentation needed to establish validation/panic behavior, so omitting that unsupported detail is appropriate.\n",
+  "sha256": "61f92cf5347e1537be497bb51cef9a8152bd93f195611e7108cf96b4c31a2b69"
+}

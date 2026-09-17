@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad6-0df4-7db2-8c42-6cf4b8aea919"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer the question. The preserved bundle names only TabCompleteNext and description-generation APIs; it lacks the other two mode names, the conditions for displaying descriptions, and the minimum PowerShell version."}}
+{"type":"turn.completed","usage":{"input_tokens":18009,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

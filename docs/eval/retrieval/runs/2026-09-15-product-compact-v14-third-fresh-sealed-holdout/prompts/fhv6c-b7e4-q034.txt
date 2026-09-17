@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How is a global normalization function verified to propagate from a root command to an existing child?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 7a3a420ff34e; read in order (229/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":1636,"end_line":1639,"text":"// GlobalNormalizationFunc returns the global normalization function or nil if it doesn't exist.\nfunc (c *Command) GlobalNormalizationFunc() func(f *flag.FlagSet, name string) flag.NormalizedName {\n\treturn c.globNormFunc\n}"},{"path":"command.go","start_line":362,"end_line":372,"text":"// SetGlobalNormalizationFunc sets a normalization function to all flag sets and also to child commands.\n// The user should not have a cyclic dependency on commands.\nfunc (c *Command) SetGlobalNormalizationFunc(n func(f *flag.FlagSet, name string) flag.NormalizedName) {\n\tc.Flags().SetNormalizeFunc(n)\n\tc.PersistentFlags().SetNormalizeFunc(n)\n\tc.globNormFunc = n\n\n\tfor _, command := range c.commands {\n\t\tcommand.SetGlobalNormalizationFunc(n)\n\t}\n}"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":1321,"end_line":1326,"text":"\t\t}\n\t\t// If global normalization function exists, update all children\n\t\tif c.globNormFunc != nil {\n\t\t\tx.SetGlobalNormalizationFunc(c.globNormFunc)\n\t\t}\n\t\tc.commands = append(c.commands, x)"},{"path":"command.go","start_line":860,"end_line":866,"text":"// Root finds root command.\nfunc (c *Command) Root() *Command {\n\tif c.HasParent() {\n\t\treturn c.Parent().Root()\n\t}\n\treturn c\n}"},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":162,"end_line":163,"text":"\t// globNormFunc is the global normalization function\n\t// that we can use on every pflag set and children commands"},{"path":"command.go","start_line":1109,"end_line":1110,"text":"\t// We have to pass global context to children command\n\t// if context is present on the parent command."}],"provenance":{"input_sha256":"eecdf8d790c63320475b33caa913fcd8c7e6ae5982b51f0d9aa40e03ed8dfa38","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

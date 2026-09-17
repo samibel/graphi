@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 112,
+  "previous_sha256": "350cfc655a99fd4d517d9f44f2c6f1eb50e91167b80bf9e23479258bffe7f8c6",
+  "kind": "grade",
+  "query_id": "cb-21",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "cf157585dd2b497dfbc3eae5c94574a4c362d872f4d2651b170c04a4140a7a47",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains the preserved `command.go:1302-1329` implementation: `(*Command).AddCommand` rejects self-parenting, assigns `cmds[i].parent = c`, updates the cached maximum lengths, propagates `globNormFunc`, appends each child to `c.commands`, and sets `commandsAreSorted = false`. It also correctly cites `command.go:1842-1845`, where `Parent()` returns `c.parent`. All claims are supported by the sealed bundle bytes, and the answer fully addresses how commands are added and how their parent pointer is set.\n",
+  "sha256": "4f56c289109a526b06b1a735bc54b306d4e8528821d8289f44c81207e3bb10dd"
+}

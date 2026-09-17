@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 5,
+  "previous_sha256": "7ca3153f27d88b0add7db2b6a41cc141191ab3e19eb049caa1c90f3d2af56840",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "68be826588bb1d0b2bf23070823caf5be8d54a1e6063d9ec78a31149c48773d2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` belongs to package `cobra` and implements grouped-flag handling.\n\n- Lines 25–29 define annotation keys for required-together, one-required, and mutually-exclusive flag groups.\n- Lines 32–40 begin `(*Command).MarkFlagsRequiredTogether`, which merges persistent flags, validates each named flag exists, panics if one is missing, and attaches the group annotation.\n- Lines 111–119 define `hasAllFlags`, checking that every named flag exists in a `pflag.FlagSet`.\n- Line 121 declares `processFlagForGroupAnnotation`.\n- Lines 144–145 begin `validateRequiredFlagGroups`, sorting the group-status keys before validation.\n\nThe response is truncated, so the remainder of these implementations is unavailable.",
+  "sha256": "b3ccbf7c45ccf13336f47d5ab06ccbf8e3ef4c42dda3bc5717c44d7227fbb843"
+}

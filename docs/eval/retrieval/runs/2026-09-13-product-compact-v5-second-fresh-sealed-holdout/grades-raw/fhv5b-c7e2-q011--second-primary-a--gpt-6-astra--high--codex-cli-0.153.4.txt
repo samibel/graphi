@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that OnFinalize appends callbacks to finalizers, retaining existing entries and preserving argument order, as supported by cobra.go lines 105–106.

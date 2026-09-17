@@ -1,0 +1,1 @@
+FAIL: The response cites command.go:1485 for printing x.flagErrorBuf, but the preserved transcript places that statement at line 1484; line 1485 checks x.HasSubCommands(). This violates the requirement that every cited location support its attached claim.

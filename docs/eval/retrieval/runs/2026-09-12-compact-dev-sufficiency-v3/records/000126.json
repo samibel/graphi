@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 126,
+  "previous_sha256": "b56a6eb10a2ef9b9189d21ce2fa67add71104aa55a92ff51cbe5a96ae4ef1906",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "4d6760271bdb652736a8c6e6c0ab6d201e3435754db3aac2fc32d14a40c74635",
+  "outcome": "pass",
+  "rationale": "completions.go:132-146 directly supplies the callback contract and registration mechanism that the development key accepts for flag completion.\n",
+  "sha256": "f96edc8ad92760e53d4daea86ded49b5a283868a41c369628f574bc5fa6a6de0"
+}

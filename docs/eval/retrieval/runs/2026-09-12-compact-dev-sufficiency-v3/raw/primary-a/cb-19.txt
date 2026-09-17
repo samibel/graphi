@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits most of `ExecuteC` and the hook-invocation sequence, so it does not establish the complete lifecycle from command resolution and flag parsing through validation and Run hooks.

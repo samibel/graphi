@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q031",
+  "response_sha256": "211f9b09b07d520107226fbd992ca5c6234b71b446e384f78d1cd1dbbf2b76cf",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The preserved args.go:73-81 shows that one argument fails the len(args) \u003c 2 check and returns `requires at least 2 arg(s), only received 1`. The response answers directly and accurately cites lines 76-77.",
+  "graded_at": "2026-09-15T08:34:11Z",
+  "sha256": "22a5a45c7bff2423806874a5c77db9f5d6f50d169219cffd9b14dc4ffc8dd5bf"
+}

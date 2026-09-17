@@ -1,0 +1,1 @@
+`NoFileCompletions` returns `nil` for completion candidates and `ShellCompDirectiveNoFileComp` to disable file completion (`completions.go`, lines 119–121).

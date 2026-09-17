@@ -1,0 +1,1 @@
+INSUFFICIENT The response lists tree-generation entry points and their promise to cover descendants, but omits the traversal bodies needed to explain recursion, visit order, or which commands are skipped.

@@ -1,0 +1,22 @@
+Use `GenMarkdownTreeCustom` and provide a `filePrepender` callback. Its returned string is prepended to each generated Markdown file, so it can produce Hugo front matter based on the full output filepath (`site/content/docgen/md.md:72-105`):
+
+```go
+filePrepender := func(filename string) string {
+	now := time.Now().Format(time.RFC3339)
+	name := filepath.Base(filename)
+	base := strings.TrimSuffix(name, path.Ext(name))
+	url := "/commands/" + strings.ToLower(base) + "/"
+
+	return fmt.Sprintf(`---
+date: %s
+title: "%s"
+slug: %s
+url: %s
+---
+`, now, strings.Replace(base, "_", " ", -1), base, url)
+}
+
+err := GenMarkdownTreeCustom(cmd, dir, filePrepender, linkHandler)
+```
+
+`linkHandler` can additionally map generated command links to Hugo URLs, such as `/commands/<lowercase-name>/` (`site/content/docgen/md.md:107-115`).

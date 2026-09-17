@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 69,
+  "previous_sha256": "2f39b8cdccd3d412c33250c0f721b289c8144e259f2d16e3565f1dc232ad4022",
+  "kind": "response",
+  "query_id": "ci-1236",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "c7d1957c552b4b66690c833e2b9136ce63428a72714548a458e93c1807955f0e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a command object you already have, inspect `cmd.CalledAs()`. The excerpt identifies this method and documents an empty string when the command has not been called; its implementation checks `c.commandCalledAs.called` (`command.go:1516–1518`). The response does not show an API returning the selected command object directly.\n",
+  "sha256": "445e798e6b5157f6a200c001cec8e526f87141b70867845b2317f71d75a90abe"
+}

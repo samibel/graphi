@@ -1,0 +1,3 @@
+`TestChildSameName` in `command_test.go:399–402` covers an application named `foo` with a subcommand also named `foo`, executed as `foo foo`.
+
+The child check in `command.go:1304–1308` rejects the command itself (`cmds[i] == c`), not a matching name. The test body and assertions are absent, so the expected execution result is not shown.

@@ -1,0 +1,1 @@
+Hyphens (`-`) and colons (`:`). In `powershell_completions.go`, `genPowerShellComp` lines 28–30 state: `// Variables should not contain a '-' or ':' character`, followed by `nameForVar := name`.

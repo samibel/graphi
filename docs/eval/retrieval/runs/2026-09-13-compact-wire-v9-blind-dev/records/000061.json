@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 61,
+  "previous_sha256": "41a96544c74dac650f8a7fb50dc023264c2757559b4e1461063402d0b8b67d4c",
+  "kind": "response",
+  "query_id": "cb-27",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "fa62913f610be8f3a45b7ce7dc23d6b777fdfe4b35c4b0f3ce94bbdd1d7ff75d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the package-level option before executing commands:\n\n```go\ncobra.EnablePrefixMatching = true\n```\n\nEvidence: `cobra.go:55` defines `EnablePrefixMatching`. In `command.go:767-786`, `findNext` accepts a prefix only when that flag is enabled and only when exactly one command matches. Prefixes apply to both command names and aliases through `hasNameOrAliasPrefix` (`command.go:1524-1538`).",
+  "sha256": "95667655d5ed6ebf5a80a298e112cd5a43da1b7aa1d913432d548b8c44d80703"
+}

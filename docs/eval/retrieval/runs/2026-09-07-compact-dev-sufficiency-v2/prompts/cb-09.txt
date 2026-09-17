@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+shell_completions.go
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"shell_completions.go\"; read in order (132/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"shell_completions.go","start_line":1,"end_line":7,"text":"// Copyright 2013-2023 The Cobra Authors\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0"},{"path":"shell_completions.go","start_line":58,"end_line":63,"text":"// MarkPersistentFlagFilename instructs the various shell completion\n// implementations to limit completions for the named persistent flag to the\n// specified file extensions.\nfunc (c *Command) MarkPersistentFlagFilename(name string, extensions ...string) error {\n\treturn MarkFlagFilename(c.PersistentFlags(), name, extensions...)\n}"},{"path":"shell_completions.go","start_line":42,"end_line":46,"text":"// MarkFlagFilename instructs the various shell completion implementations to\n// limit completions for the named flag to the specified file extensions.\nfunc (c *Command) MarkFlagFilename(name string, extensions ...string) error {\n\treturn MarkFlagFilename(c.Flags(), name, extensions...)\n}"},{"path":"shell_completions.go","start_line":35,"end_line":36,"text":"// MarkFlagRequired instructs the various shell completion implementations to\n// prioritize the named flag when performing completion,"}],"provenance":{"input_sha256":"cb267702aa0c1450895dbabb46cb213d3204942e29e4498d0afdd43de95c453c","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

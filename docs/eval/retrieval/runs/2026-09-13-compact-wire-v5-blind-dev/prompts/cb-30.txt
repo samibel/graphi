@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how to generate man pages for a command tree
+
+----- BEGIN task_context/compact-dev/5 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s) for \"how to generate man pages for a command tree\"; read in order (246/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/5","sources":[{"path":"doc/man_docs.go","start_line":46,"end_line":80,"text":"// GenManTreeFromOpts generates a man page for the command and all descendants.\n// The pages are written to the opts.Path directory.\nfunc GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {\n\theader := opts.Header\n\tif header == nil {\n\t\theader = \u0026GenManHeader{}\n\t}\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenManTreeFromOpts(c, opts); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tsection := \"1\"\n\tif header.Section != \"\" {\n\t\tsection = header.Section\n\t}\n\n\tseparator := \"_\"\n\tif opts.CommandSeparator != \"\" {\n\t\tseparator = opts.CommandSeparator\n\t}\n\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", separator)\n\tfilename := filepath.Join(opts.Path, basename+\".\"+section)\n\tf, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer f.Close()\n\n\theaderCopy := *header\n\treturn GenMan(cmd, \u0026headerCopy, f)\n}"},{"path":"doc/man_docs.go","start_line":33,"end_line":34,"text":"// GenManTree will generate a man page for this command and all descendants\n// in the directory given. The header may be nil. This function may not work"},{"path":"doc/md_docs.go","start_line":119,"end_line":119,"text":"// GenMarkdownTree will generate a markdown page for this command and all"},{"path":"doc/md_docs.go","start_line":124,"end_line":124,"text":"// help output will be in the file `cmd-sub-third.1`."},{"path":"doc/rest_docs.go","start_line":132,"end_line":132,"text":"// GenReSTTree will generate a ReST page for this command and all"},{"path":"doc/rest_docs.go","start_line":137,"end_line":137,"text":"// help output will be in the file `cmd-sub-third.1`."},{"path":"doc/man_docs.go","start_line":82,"end_line":82,"text":"// GenManTreeOptions is the options for generating the man pages."},{"path":"doc/man_docs.go","start_line":103,"end_line":103,"text":"// GenMan will generate a man page for the given command and write it to"},{"path":"doc/man_docs.go","start_line":108,"end_line":108,"text":"\t}"},{"path":"doc/md_docs.go","start_line":133,"end_line":133,"text":"func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {"},{"path":"doc/man_docs.go","start_line":202,"end_line":202,"text":"func genMan(cmd *cobra.Command, header *GenManHeader) []byte {"},{"path":"doc/man_docs.go","start_line":38,"end_line":38,"text":"func GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {"}],"provenance":{"input_sha256":"d877515a89d19251ea75799d9894f71fa06eeb17af64b335a8a3a2fd6bee27d2","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/5 RESPONSE BYTES -----

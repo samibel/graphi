@@ -1,0 +1,1 @@
+PASS: It gives the correct named-flag accessor and accurately explains its fallback through persistent flags.

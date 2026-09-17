@@ -1,0 +1,3 @@
+INSUFFICIENT
+
+The response omits `command.go` lines 893–966 and most of `ExecuteC`, so it cannot establish the lifecycle between `ParseFlags` (`command.go:889`) and `PreRunE`/`PreRun` (`command.go:967–973`), including persistent Run-hook behavior.

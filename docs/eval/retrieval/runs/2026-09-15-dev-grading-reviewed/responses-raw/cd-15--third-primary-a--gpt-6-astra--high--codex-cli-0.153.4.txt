@@ -1,0 +1,10 @@
+`completions.go` belongs to package `cobra` and contains shell-completion declarations and helpers (line 15):
+
+- **Request constants:** `ShellCompRequestCmd = "__complete"` and `ShellCompNoDescRequestCmd = "__completeNoDesc"` name hidden commands for requesting completions with or without descriptions (lines 26–33).
+- **Flag callbacks:** `flagCompletionFunctions` maps `*pflag.Flag` to completion functions. Its comment requires `flagCompletionMutex` for reads and writes (lines 35–36).
+- **Directive helpers:** `NoFileCompletions` returns `nil, ShellCompDirectiveNoFileComp` (lines 118–121). `ShellCompDirective.string()` builds a list of enabled directives, including the shown error directive (lines 162–167).
+- **Completion processing:** `(*Command).getCompletions` separates the final, partially typed argument from preceding arguments and declares command-resolution variables (lines 266–275).
+- **Flag helpers:** `getFlagNameCompletions` returns an empty slice for a noncompletable flag (lines 534–536); `checkIfFlagCompletion` begins by checking `DisableFlagParsing` (lines 592–593).
+- **Default command:** `(*Command).InitDefaultCompletionCmd` adds a `completion` command. Its comment says it does nothing when disabled, when there are no subcommands, or when a completion command already exists (lines 678–684).
+
+The response is marked `truncated: true`, so these snippets do not establish the file’s complete declaration list.

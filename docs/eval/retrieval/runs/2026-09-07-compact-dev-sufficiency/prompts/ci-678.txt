@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to set flags in test?
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"16 ranked source span(s) for \"How to set flags in test?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command.go","start_line":275,"end_line":277,"text":"// particularly useful when testing.\nfunc (c *Command) SetArgs(a []string) {\n\tc.args = a"},{"path":"command_test.go","start_line":2160,"end_line":2162,"text":"// Related to https://github.com/spf13/cobra/issues/443.\nfunc TestMergeCommandLineToFlags(t *testing.T) {\n\tpflag.Bool(\"boolflag\", false, \"\")"},{"path":"command_test.go","start_line":70,"end_line":71,"text":"func resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)"},{"path":"command_test.go","start_line":2134,"end_line":2136,"text":"// Related to https://github.com/spf13/cobra/issues/404.\nfunc TestSortedFlags(t *testing.T) {\n\tc := \u0026Command{}"},{"path":"command_test.go","start_line":818,"end_line":819,"text":"func TestRequiredFlags(t *testing.T) {\n\tc := \u0026Command{Use: \"c\", Run: emptyRun}"},{"path":"doc/man_docs_test.go","start_line":153,"end_line":154,"text":"func TestManPrintFlagsHidesShortDeprecated(t *testing.T) {\n\tc := \u0026cobra.Command{}"},{"path":"bash_completions_test.go","start_line":245,"end_line":246,"text":"func TestBashCompletionDeprecatedFlag(t *testing.T) {\n\tc := \u0026Command{Use: \"c\", Run: emptyRun}"},{"path":"bash_completions_test.go","start_line":229,"end_line":230,"text":"func TestBashCompletionHiddenFlag(t *testing.T) {\n\tc := \u0026Command{Use: \"c\", Run: emptyRun}"},{"path":"completions_test.go","start_line":2087,"end_line":2088,"text":"func TestFlagCompletionConcurrentRegistration(t *testing.T) {\n\trootCmd := \u0026Command{Use: \"root\", Run: emptyRun}"},{"path":"command_test.go","start_line":493,"end_line":494,"text":"func TestFlagShort(t *testing.T) {\n\tvar cArgs []string"},{"path":"command_test.go","start_line":836,"end_line":836,"text":"func TestPersistentRequiredFlags(t *testing.T) {"},{"path":"command_test.go","start_line":2175,"end_line":2175,"text":"func TestUseDeprecatedFlags(t *testing.T) {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1669,"end_line":1670,"text":"func (c *Command) LocalFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()"},{"path":"flag_groups_test.go","start_line":66,"end_line":66,"text":"\t\t\texpectErr:          \"if any flags in the group [a b c] are set they must all be set; missing [b c]\","},{"path":"command.go","start_line":1851,"end_line":1852,"text":"\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)"}],"provenance":{"input_sha256":"f55625b17a4592518f689ce86907fe1c8db88a8e70f3d4053bab59009c797d47","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

@@ -1,0 +1,20 @@
+Use `GenMarkdown` instead of `GenMarkdownTree`; the latter generates one file for every command in the tree (`site/content/docgen/md.md:29-57`).
+
+For customized single-command output, use:
+
+```go
+var out bytes.Buffer
+err := doc.GenMarkdownCustom(cmd, &out, linkHandler)
+```
+
+Its signature is shown at `site/content/docgen/md.md:72-87`:
+
+```go
+func GenMarkdownCustom(
+    cmd *Command,
+    out *bytes.Buffer,
+    linkHandler func(string) string,
+) error
+```
+
+The generated Markdown is written to `out`.

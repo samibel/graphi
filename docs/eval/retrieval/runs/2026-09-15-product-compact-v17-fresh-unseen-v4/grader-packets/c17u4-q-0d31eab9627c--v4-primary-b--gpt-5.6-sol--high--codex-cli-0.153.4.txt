@@ -1,0 +1,50 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: ee637e12854f028d5cbe1fa624dc962057c0929791fd2b940acb55d1aba806d1
+QUERY ID: c17u4-q-0d31eab9627c
+
+QUESTION:
+In cobra.go, how are functions registered by OnInitialize retained for later execution?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:97-101 anchor="func OnInitialize(y ...func())" reason=The implementation appends every supplied function to the package initializer slice.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 398938e3c72b; read in order (239/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":96,"end_line":107,"text":"\n// OnInitialize sets the passed functions to be run when each command's\n// Execute method is called.\nfunc OnInitialize(y ...func()) {\n\tinitializers = append(initializers, y...)\n}\n\n// OnFinalize sets the passed functions to be run when each command's\n// Execute method is terminated.\nfunc OnFinalize(y ...func()) {\n\tfinalizers = append(finalizers, y...)\n}"},{"path":"cobra.go","start_line":41,"end_line":43,"text":"\nvar initializers []func()\nvar finalizers []func()"},{"path":"command.go","start_line":32,"end_line":36,"text":"\nconst (\n\tFlagSetByCobraAnnotation     = \"cobra_annotation_flag_set_by_cobra\"\n\tCommandDisplayNameAnnotation = \"cobra_annotation_command_display_name\"\n)"},{"path":"command.go","start_line":1635,"end_line":1639,"text":"\n// GlobalNormalizationFunc returns the global normalization function or nil if it doesn't exist.\nfunc (c *Command) GlobalNormalizationFunc() func(f *flag.FlagSet, name string) flag.NormalizedName {\n\treturn c.globNormFunc\n}"},{"path":"command.go","start_line":48,"end_line":51,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {"},{"path":"command.go","start_line":1182,"end_line":1198,"text":"\n// InitDefaultHelpFlag adds default help flag to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help flag, it will do nothing.\nfunc (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}\n\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)\n\t\t_ = c.Flags().SetAnnotation(\"help\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}"},{"path":"shell_completions.go","start_line":52,"end_line":55,"text":"// It is recommended to instead use c.RegisterFlagCompletionFunc(...) which allows\n// to register a Go function which will work across all shells.\nfunc (c *Command) MarkFlagCustom(name string, f string) error {\n\treturn MarkFlagCustom(c.Flags(), name, f)"}],"provenance":{"input_sha256":"90a2b65ed833a39e74835bc0b9c9b4d99ef08c3c77595cf5bdbcce9d0d62ac25","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+They are retained in the package-level slice `initializers []func()` declared in `cobra.go:42`. `OnInitialize` appends all supplied functions to that slice:
+
+```go
+initializers = append(initializers, y...)
+```
+
+(`cobra.go:99–101`).
+----- END THE RATER'S RESPONSE -----

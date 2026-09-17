@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-897a-7c53-bf5f-4315873516d5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnInitialize` retains the supplied functions by appending them to the package-level `initializers` slice, declared as `var initializers []func()` (`cobra.go:42`). Its body uses `initializers = append(initializers, y...)` (`cobra.go:99–101`), preserving previously registered functions and adding the new ones for later execution."}}
+{"type":"turn.completed","usage":{"input_tokens":17109,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

@@ -1,0 +1,6 @@
+Call `c.SetHelpCommandGroupID(groupID)` (`command.go:332–339`).
+
+- **Before the help command exists:** it stores the value in `c.helpCommandGroupID`; the comment says this is used if no help command is defined by the user.
+- **After it exists:** the `if c.helpCommand != nil` branch immediately sets `c.helpCommand.GroupID = groupID`, and the method also updates the stored value.
+
+`GroupID` specifies the group under which a subcommand appears in its parent’s help output (`command.go:73–74`).

@@ -297,6 +297,10 @@ func TestQrelBlindSmoke_CommittedRunFrozenInputsStillHashTheSameAtRest(t *testin
 	if len(comparison.Comparisons) < len(preconditionInputRoles)+1 {
 		t.Fatalf("only %d frozen inputs were re-hashed", len(comparison.Comparisons))
 	}
+	readme, err := os.ReadFile(filepath.Join(root, "docs", "eval", "retrieval", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, c := range comparison.Comparisons {
 		if c.Matches {
 			continue
@@ -305,9 +309,51 @@ func TestQrelBlindSmoke_CommittedRunFrozenInputsStillHashTheSameAtRest(t *testin
 		if c.Error != "" {
 			observed = "UNREADABLE: " + c.Error
 		}
-		t.Errorf("frozen input %s (%s) now hashes to %s, but the committed run froze %s; either restore the file or the run's result no longer stands on the inputs it names",
-			c.Role, c.Path, observed, c.Frozen)
+		superseded, planned := supersededFrozenInputs[c.Role]
+		if !planned {
+			t.Errorf("frozen input %s (%s) now hashes to %s, but the committed run froze %s; either restore the file or the run's result no longer stands on the inputs it names",
+				c.Role, c.Path, observed, c.Frozen)
+			continue
+		}
+		// A SUPERSEDED input is one a later story deliberately rewrote. It is
+		// not exempt: it must hash to exactly the digest that story recorded,
+		// and the supersession must be written down in the harness README
+		// naming BOTH digests, so a reader of the sealed run can see why its
+		// precondition no longer matches without the sealed run being edited.
+		if observed != superseded.digest {
+			t.Errorf("frozen input %s (%s) hashes to %s; the committed run froze %s and %s recorded the superseding digest as %s. A third value is drift, not a supersession.",
+				c.Role, c.Path, observed, c.Frozen, superseded.story, superseded.digest)
+			continue
+		}
+		for _, needle := range []string{c.Frozen, superseded.digest, superseded.story} {
+			if !strings.Contains(string(readme), needle) {
+				t.Errorf("the supersession of frozen input %s by %s is not recorded in docs/eval/retrieval/README.md (missing %q). The sealed run is evidence and is never edited to hide the drift; the drift is written down instead.",
+					c.Role, superseded.story, needle)
+			}
+		}
+		t.Logf("frozen input %s superseded by %s: %s -> %s (the sealed run is unedited; its precondition digest is now historical)",
+			c.Role, superseded.story, c.Frozen, observed)
 	}
+}
+
+// supersededFrozenInputs names the frozen inputs a later story deliberately
+// rewrote, and the digest it rewrote them to.
+//
+// SW-282 recalibrated docs/eval/retrieval-targets.json — that was the whole
+// point of the story, and SW-280's precondition record froze the file's
+// PREVIOUS bytes. Editing the sealed run to make the digests agree would be
+// falsifying evidence; leaving the test red would train everyone to ignore it.
+// Recording the supersession here, and requiring it to be written down in the
+// README, is the third option.
+//
+// docs/eval/retrieval-budgets.json is deliberately NOT here: SW-282 split
+// retrieval.ImmutableUntil in two precisely so the budgets file is left
+// byte-identical, and if it ever moves this test must fail.
+var supersededFrozenInputs = map[string]struct{ digest, story string }{
+	"targets": {
+		digest: "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+		story:  "SW-282",
+	},
 }
 
 // The committed run must disclose, in its own outcome artifact, that one of the

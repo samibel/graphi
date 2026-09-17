@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 114,
+  "previous_sha256": "ef79435b107bf532761919e4ec59328ce3ff92eefc3cbbaadd3c0f89c64b89dd",
+  "kind": "grade",
+  "query_id": "cb-27",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a7343d6788407e35ef8461d4cb6b4dea23302005453465561627b97016ec040c",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly identifies the package-level switch as `cobra.EnablePrefixMatching = true`. This is supported by `cobra.go:55` (`var EnablePrefixMatching = defaultPrefixMatching`). Its behavioral explanation is also supported: `command.go:767-786` gates prefix lookup on `EnablePrefixMatching` and returns a match only when `len(matches) == 1`, while `command.go:1524-1538` uses `strings.HasPrefix` for command names and aliases.\n",
+  "sha256": "2abff2b8a3f34334948bcd155ff9289dc33421fb70b9f88db970ada1929803b2"
+}

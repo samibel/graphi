@@ -1,0 +1,1 @@
+The registration purpose, receiver, callback parameters, return types and initial flag lookup are all present at completions.go:132-134. Cross-shell applicability is expressly stated in shell_completions.go:51-53; completions.go:148-150 supports the accessor and availability result.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 51,
+  "previous_sha256": "4ef178da4bc987db1c48e9ffa13ba52f5523d28433c853086e950ef5ebb6e822",
+  "kind": "response",
+  "query_id": "cb-14",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "c0d5b5cfea7da7719f270ac56ee0235762fefc5e4217bb4cace3d4cfe07ea6cb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response describes a hidden `ShellCompRequestCmd` used by completion scripts (`completions.go:27–28`) but does not show its registration, execution handler, or dispatch into completion logic.\n",
+  "sha256": "89451fcd51e6a913c33071d86d9c0480ff7d0b07c650f0aed1f752734c9188bd"
+}

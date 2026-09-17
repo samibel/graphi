@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-6d48-74a2-aaf7-9b05e4b189d6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the preserved helper: it checks version then help, requiring an existing flag, a nonempty FlagSetByCobraAnnotation, and Changed=true. Both cited ranges support the claims, and this directly answers how Cobra detects the flags."}}
+{"type":"turn.completed","usage":{"input_tokens":18198,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":31}}

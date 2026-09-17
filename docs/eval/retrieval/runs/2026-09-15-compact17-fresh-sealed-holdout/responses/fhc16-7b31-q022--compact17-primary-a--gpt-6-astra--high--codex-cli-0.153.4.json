@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q022",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "ae510abf1fd6b37a6c3aa9dc8aaad64991e638eb0a75a9606adb2b4fd69d34f7",
+  "bundle_sha256": "4f490e3b7d4271d6ca0ad1fce3fd8f3f673d888f8574faa1eab415eca98f54f9",
+  "prompt_sha256": "edd2a89adee224db6ff64a0f4433be39be6523b0abea385eea712d7954ada5ce",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`nonCompletableFlag` suppresses **hidden flags** and **deprecated flags**. In `bash_completions.go`, lines 699–701, it returns `flag.Hidden || len(flag.Deprecated) \u003e 0`.",
+  "responded_at": "2026-09-15T18:38:10Z",
+  "sha256": "03d96f428f2225782f645a4b7857d8f577caae5ddcb60ca8090f3cf65599aa2b"
+}

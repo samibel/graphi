@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 101,
+  "previous_sha256": "7cd9a3e1a0a9fab2d79b1c866ca675b366c6b6630cdbd65d146045cf429698df",
+  "kind": "grade",
+  "query_id": "cb-14",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "4788b167424e5dbe6d588faa85c08c9aedd1a34fd41ba2c7f5ff1b17e9f160ed",
+  "outcome": "pass",
+  "rationale": "PASS: It directly explains the hidden request commands and the Run callback's dispatch to getCompletions, including supported error behavior.",
+  "sha256": "af4dfd16c976f2f1530c481c99e23c15232df6d68b216e93c27c07bd0b407102"
+}

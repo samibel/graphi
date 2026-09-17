@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 151,
+  "previous_sha256": "5a897ea42e4cfd6c7146e7a54614cceca970af7a89231187f748028c605d3ed8",
+  "kind": "response",
+  "query_id": "cb-22",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v7-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "73257d9488f0a923de3bac79dac7508e850efc5f2724a76666364d85959c8613",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The man-page generator performs a depth-first, post-order traversal. In `doc/man_docs.go:46-80`, `GenManTreeFromOpts`:\n\n- Iterates over direct children using `cmd.Commands()`.\n- Skips children where `!c.IsAvailableCommand()` or `c.IsAdditionalHelpTopicCommand()`.\n- Recursively calls `GenManTreeFromOpts(c, opts)` before processing the current command.\n- Stops and returns immediately if a recursive call fails.\n- After all eligible descendants, generates the current command’s page with `GenMan(cmd, \u0026headerCopy, f)`.\n\nThus, eligible descendants are documented before their parent. The response only names the Markdown-tree functions (`doc/md_docs.go:125,133`) and does not include their traversal implementation.",
+  "sha256": "8e49894f60a3847e528b7b3e0812695e9f5cb557a2d43f0c94e92b3de205be88"
+}

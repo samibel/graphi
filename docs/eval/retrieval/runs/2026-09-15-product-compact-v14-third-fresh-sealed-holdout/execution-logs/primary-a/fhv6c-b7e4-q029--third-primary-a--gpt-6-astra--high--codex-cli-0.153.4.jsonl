@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-d38f-7261-a9df-4063ca604c13"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. In `args.go:41–43`, `NoArgs` is documented to “return an error if any args are included” and checks `if len(args) > 0`. A single positional value meets that condition regardless of `ValidArgs`. The `ValidArgs` check belongs to `OnlyValidArgs` (`args.go:49–66`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17307,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

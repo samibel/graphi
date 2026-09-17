@@ -1,0 +1,1 @@
+PASS: It accurately describes defining and accessing a parent persistent flag from a child command.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 9,
+  "previous_sha256": "5ac941f3a96ccfc821f03b8321fedfeaf537a200b137d8910a227477674ac071",
+  "kind": "response",
+  "query_id": "cb-12",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "0b357c3f5ce18d93b3787434e7533b213cf0b2d6b1800eba0c9edf531dd71fdc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra finds the subcommand recursively from the current (normally root) command:\n\n1. `Command.Find` removes flags from the remaining arguments with `stripFlags(innerArgs, c)`.\n2. It treats the first non-flag argument as the candidate subcommand name (`nextSubCmd := argsWOflags[0]`).\n3. `findNext` searches `c.commands` for an exact command-name match or alias via `commandNameMatches(cmd.Name(), next)` or `cmd.HasAlias(next)`.\n4. If prefix matching is enabled, it collects name/alias prefix matches and accepts one only when exactly one command matches.\n5. When found, `Find` removes that argument with `argsMinusFirstX` and repeats against the matched command’s children. If no match exists—or no non-flag arguments remain—it returns the current command and remaining arguments.\n\nEvidence: `command.go:724-748` (`Find`, `innerfind`) and `command.go:767-786` (`findNext`).",
+  "sha256": "65656204adc614dae19e8a0ac71507408683b85eef424185e24cd8bce1dad1e3"
+}

@@ -1,0 +1,1 @@
+No—not through the default help flag. `command.go:1195` registers `--help` and `-h` as the same boolean via `BoolP("help", "h", ...)`, and `command.go:894-905` only reads the shared `"help"` value with `GetBool("help")`. Thus the default handling cannot distinguish which spelling was used.

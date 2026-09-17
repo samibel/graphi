@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d5-845a-7732-b04e-a7008f75fe49"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response identifies the display-name annotation but does not explain verification in both root and child help usage. The preserved bundle omits the help execution and assertions needed to support that essential behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":17822,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

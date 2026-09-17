@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d1-827c-7641-9f8e-b268875a3ace"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the rebuilt error buffer, flags and persistent flags, and the invalidated local, inherited, and parent persistent flag sets. All cited spans resolve within the bundle and support the described behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":18009,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":69,"reasoning_output_tokens":20}}

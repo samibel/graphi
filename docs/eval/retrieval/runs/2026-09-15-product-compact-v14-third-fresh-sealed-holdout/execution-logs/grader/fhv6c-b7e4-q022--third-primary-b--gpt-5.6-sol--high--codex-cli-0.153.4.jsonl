@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-3661-75d1-be93-6d548f48b980"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies package cobra and TestZshCompletionWithActiveHelp. Its description is supported by lines 23–33, including the essential check that generated Zsh completion omits the Active Help environment-variable assignment to zero, leaving Active Help enabled."}}
+{"type":"turn.completed","usage":{"input_tokens":17430,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}

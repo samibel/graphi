@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 77,
+  "previous_sha256": "7d28240d5751fc0b58320fe24856976d991f57249ad34c80cbc0565bc97c9eb0",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "eb53e615bc397f1ea56dd9dd4e1b703beb0fc27117fefc5065807b728b844bc5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `cmd.HasInheritedFlags()` to assert whether inherited flags exist, and inspect `cmd.InheritedFlags()` to test individual entries or enumerate them (`command.go:1695-1719,1766-1770`). To assert only usable inherited flags, use `cmd.HasAvailableInheritedFlags()`, which excludes hidden or deprecated flags (`command.go:1788-1792`).",
+  "sha256": "84ddee7272cd6ee6ce94575a0328c13b8915040d3d198e4ee17f53f9b2c63743"
+}

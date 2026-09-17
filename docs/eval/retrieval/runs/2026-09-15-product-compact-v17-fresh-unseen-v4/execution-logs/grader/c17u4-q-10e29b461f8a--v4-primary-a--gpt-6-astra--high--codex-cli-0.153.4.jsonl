@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cc-0663-79d2-8ca6-2ffa4c999bea"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes template creation, shared function registration, parsing, and execution with the supplied writer and data. Error behavior and function-extension claims are supported by the bundle, and both citations resolve within preserved spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17473,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":83,"reasoning_output_tokens":33}}

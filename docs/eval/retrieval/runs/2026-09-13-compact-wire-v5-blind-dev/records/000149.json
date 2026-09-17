@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 149,
+  "previous_sha256": "7af99c10d52d2227a715ab06c66c1e56b550118417992ba9d93b8081d1786aec",
+  "kind": "grade",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "20f97d46fbe9bce457c36425a2301539831109070afa1c9bb96cf37b687bcac9",
+  "outcome": "pass",
+  "rationale": "PASS: The proposed assertions and inspection route are concrete and supported by command.go:1695-1719, 1766-1770, and 1788-1792.\n",
+  "sha256": "f771d878b84db652f6b0aca648629dcce9637ea8a23cd90493784cc876eefef8"
+}

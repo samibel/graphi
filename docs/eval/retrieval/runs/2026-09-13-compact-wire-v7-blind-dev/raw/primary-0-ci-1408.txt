@@ -1,0 +1,1 @@
+Call `subCommand.Flag("flagName")`. It returns `*flag.Flag` and searches the command’s flags, then recursively searches persistent flags inherited from its parents (`command.go:1794-1816`). Parent flags must be persistent; local non-persistent flags do not propagate to subcommands (`command.go:1655-1666`).

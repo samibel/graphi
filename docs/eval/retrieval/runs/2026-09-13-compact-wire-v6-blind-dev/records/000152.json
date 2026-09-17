@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 152,
+  "previous_sha256": "d3754d76a7bbe0ffdfad8e06a9dee70ec1ae3f8c0581bb75d93fa7f8c491064d",
+  "kind": "grade",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6cf829554f4a0978e6e7a76daf8e7bec138eacba4c00a4ef3fe8d67a748aae0e",
+  "outcome": "fail",
+  "rationale": "FAIL: Mentioning the hidden commands is insufficient; it omits the required stdout wire format, final :\u003cdirective\u003e line, stderr handling, and directive semantics.",
+  "sha256": "c21f9f7208d7e6210a8a2b11f9ea6475cbb41f7d3dd0677d165b135c79cdf1cb"
+}

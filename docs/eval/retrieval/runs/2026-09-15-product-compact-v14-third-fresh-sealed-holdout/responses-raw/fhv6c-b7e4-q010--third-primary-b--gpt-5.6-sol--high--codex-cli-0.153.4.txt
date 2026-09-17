@@ -1,0 +1,9 @@
+`resetCommandLineFlagSet` is a test helper that replaces the global `pflag.CommandLine` with a fresh flag set named after `os.Args[0]`, configured with `pflag.ExitOnError`:
+
+```go
+func resetCommandLineFlagSet() {
+	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
+}
+```
+
+Evidence: `command_test.go`, lines 70–72.

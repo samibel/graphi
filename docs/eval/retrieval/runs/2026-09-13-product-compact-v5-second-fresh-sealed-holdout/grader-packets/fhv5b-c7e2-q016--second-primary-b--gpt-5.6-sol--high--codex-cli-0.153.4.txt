@@ -1,0 +1,90 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 69b79e3fb492c097453179289b920526ca2f9f5a9fac9e4cd072a7c63653b23d
+QUERY ID: fhv5b-c7e2-q016
+
+QUESTION:
+In command.go, how does UsageString capture usage text without permanently changing configured writers?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:478-495 anchor="c.outWriter = tmpOutput" reason=It saves both writers, points them at a buffer, renders usage, restores the originals, and returns the buffer text.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query b3cba9253060; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":443,"end_line":448,"text":"// Usage puts out the usage for the command.\n// Used when a user provides invalid input.\n// Can be defined by user by overriding UsageFunc.\nfunc (c *Command) Usage() error {\n\treturn c.UsageFunc()(c)\n}"},{"path":"command.go","start_line":167,"end_line":177,"text":"\tusageFunc func(*Command) error\n\t// usageTemplate is usage template defined by user.\n\tusageTemplate string\n\t// flagErrorFunc is func defined by user and it's called when the parsing of\n\t// flags returns an error.\n\tflagErrorFunc func(*Command, error) error\n\t// helpTemplate is help template defined by user.\n\thelpTemplate string\n\t// helpFunc is help func defined by user.\n\thelpFunc func(*Command, []string)\n\t// helpCommand is command with usage 'help'. If it's not defined by user,"},{"path":"command.go","start_line":49,"end_line":54,"text":"// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:\n\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required."},{"path":"command.go","start_line":166,"end_line":166,"text":"\t// usageFunc is usage func defined by user."},{"path":"site/content/user_guide.md","start_line":548,"end_line":551,"text":"cmd.SetHelpFunc(f func(*Command, []string))\ncmd.SetHelpTemplate(s string)\n```\n"},{"path":"command.go","start_line":424,"end_line":441,"text":"// UsageFunc returns either the function set by SetUsageFunc for this command\n// or a parent, or it returns a default usage function.\nfunc (c *Command) UsageFunc() (f func(*Command) error) {\n\tif c.usageFunc != nil {\n\t\treturn c.usageFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().UsageFunc()\n\t}\n\treturn func(c *Command) error {\n\t\tc.mergePersistentFlags()\n\t\terr := tmpl(c.OutOrStderr(), c.UsageTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t\treturn err\n\t}\n}"},{"path":"command.go","start_line":477,"end_line":495,"text":"\n// UsageString returns usage string.\nfunc (c *Command) UsageString() string {\n\t// Storing normal writers\n\ttmpOutput := c.outWriter\n\ttmpErr := c.errWriter\n\n\tbb := new(bytes.Buffer)\n\tc.outWriter = bb\n\tc.errWriter = bb\n\n\tCheckErr(c.Usage())\n\n\t// Setting things back to normal\n\tc.outWriter = tmpOutput\n\tc.errWriter = tmpErr\n\n\treturn bb.String()\n}"},{"path":"command.go","start_line":515,"end_line":515,"text":"// UsagePadding return padding for the usage."},{"path":"command.go","start_line":544,"end_line":548,"text":"func (c *Command) UsageTemplate() string {\n\tif c.usageTemplate != \"\" {\n\t\treturn c.usageTemplate\n\t}\n"},{"path":"command.go","start_line":574,"end_line":574,"text":"Global Flags:"},{"path":"command.go","start_line":306,"end_line":307,"text":"// SetUsageFunc sets usage function. Usage can be defined by application.\nfunc (c *Command) SetUsageFunc(f func(*Command) error) {"}],"provenance":{"input_sha256":"91756cff73a01b14235b660d408131620d8eb9d137f8d53547e804f86696a2d8","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `command.go:477–495`, `UsageString`:
+
+1. Saves `c.outWriter` and `c.errWriter` into `tmpOutput` and `tmpErr`.
+2. Temporarily points both writers to a new `bytes.Buffer`.
+3. Calls `CheckErr(c.Usage())`, so usage output is captured in that buffer. `Usage()` delegates to `c.UsageFunc()(c)` (`command.go:443–448`).
+4. Restores the original writers.
+5. Returns `bb.String()`.
+
+Thus, it captures usage by temporarily swapping both configured writers to a buffer, then restoring their saved values.
+----- END THE RATER'S RESPONSE -----

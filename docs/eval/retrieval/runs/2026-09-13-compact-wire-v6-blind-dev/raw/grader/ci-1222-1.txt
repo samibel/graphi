@@ -1,0 +1,1 @@
+FAIL: It cites site/content/completions/_index.md, which is absent from this primary's exact bundle, and its ValidArgsFunction and cross-shell claims therefore lack supplied support.

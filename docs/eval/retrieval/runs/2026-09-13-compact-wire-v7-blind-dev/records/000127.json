@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 127,
+  "previous_sha256": "60d567a687a3f1393344eb682a11bad46036170d2a78eaeec8e9c30dfa3b8adb",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "b9b6f2e8fd3744641ab9a4aaa2576763b99f047d53061fa701e6abbaa6a6ec2b",
+  "outcome": "fail",
+  "rationale": "The candidate gives a supported and accurate recipe for flag-value completion using `Command.RegisterFlagCompletionFunc` and `FixedCompletions` (`completions.go:124-146`), including the callback signature and registration errors. However, the question asks generally how to write a shell completion function, and the development key requires the positional-argument mechanism `Command.ValidArgsFunction` from `command.go:84-87` as the other essential half. Those bytes are absent from the preserved bundle, as are the `ShellCompDirective` definitions from `completions.go:54-93`. Therefore the bundle is insufficient for a complete general answer, and the candidate should have returned `INSUFFICIENT` rather than presenting flag completion as the whole answer; its example also leaves `directive` undefined.\n",
+  "sha256": "45fdb29a6e1ee8ea18fae92cf0c4c0e95b7375cb3ce1e4ce55d62f9710afad6a"
+}

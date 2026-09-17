@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-ca89-74a3-a166-0a5302a8a241"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MarkFlagDirname` sets the named flag’s `BashCompSubdirsInDir` annotation to an empty string slice (`[]string{}`). See `shell_completions.go:94–98`, specifically:\n\n```go\nflags.SetAnnotation(name, BashCompSubdirsInDir, []string{})\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":16542,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":68,"reasoning_output_tokens":0}}

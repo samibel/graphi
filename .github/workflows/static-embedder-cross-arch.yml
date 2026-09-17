@@ -157,4 +157,5 @@ jobs:
       - name: execute the model-backed Labs hero gate
         env:
           GRAPHI_STATIC_MODEL_DIR: ${{ runner.temp }}/static-model
+          GRAPHI_EVAL_TOKENIZER_DIR: ${{ github.workspace }}/core/tokenizer/testdata/artifact
         run: go test -tags labs_hero ./cmd/eval -run '^TestLabsHeroSuite_' -count=1 -v

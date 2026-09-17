@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-68cc-78a2-b252-33be0cb297a9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `SetErrPrefix` on your command:\n\n```go\ncmd.SetErrPrefix(\"Oops:\")\n```\n\nThe guide documents this customization (`site/content/user_guide.md:599–604`), and `SetErrPrefix` stores the supplied string (`command.go:357–360`). Printed command errors use `c.ErrPrefix()` (`command.go:1098`).\n\nCommands inherit their parent’s prefix unless they set their own nonempty value; otherwise the default is `\"Error:\"`. Setting `\"\"` therefore does not remove the prefix (`command.go:611–621`).\n\nThis does **not** affect `cobra.CheckErr`, which hardcodes `\"Error:\"` (`cobra.go:232–238`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17080,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":147,"reasoning_output_tokens":0}}

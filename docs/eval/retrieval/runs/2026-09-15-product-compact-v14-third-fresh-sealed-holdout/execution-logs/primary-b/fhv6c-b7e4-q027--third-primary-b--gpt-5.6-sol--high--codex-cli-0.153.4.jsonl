@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-bd6a-7800-8a47-d17d4f575d3c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetIn(nil)` makes `InOrStdin()` return the parent command’s input if one exists; otherwise it returns `os.Stdin`.\n\nEvidence: `SetIn` assigns `nil` to `c.inReader` (`command.go:300–304`), `InOrStdin` calls `c.getIn(os.Stdin)` (`command.go:389–392`), and `getIn` falls back through the parent before returning its default (`command.go:414–422`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16298,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":152,"reasoning_output_tokens":45}}

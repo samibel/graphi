@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q042",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "50598c60e9a8352bb8edac564377a561f88b11d6b7e7b742caaf5c22ced5829d",
+  "bundle_sha256": "056f1e05df61d8edd64912e0733d6ef116bcba613f7e3d3fccaa2f1f1e77f5a0",
+  "prompt_sha256": "5444398fc8f7a77078700c03bc928c04a3eea0481cf0fa6b886c1712c3e890c7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).GenFishCompletion`:\n\n1. Creates a `bytes.Buffer`.\n2. Calls `genFishComp(buf, c.Name(), includeDesc)` to render the command’s Fish completion text into it.\n3. Copies the buffered bytes to the supplied `io.Writer` with `buf.WriteTo(w)`, returning that error.\n\nEvidence: `fish_completions.go:275–281`; generation writes formatted strings via `WriteStringAndCheck` at `fish_completions.go:35–41`.\n\n`(*Command).GenFishCompletionFile` creates the destination using `os.Create(filename)`, defers `outFile.Close()`, then delegates to `c.GenFishCompletion(outFile, includeDesc)`.\n\nEvidence: `fish_completions.go:283–292`.",
+  "responded_at": "2026-09-13T15:25:53Z",
+  "sha256": "b11b721f20cb10ffb3df961e925761209dae2c1394d024b2243ea82344bebf68"
+}

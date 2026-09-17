@@ -1,0 +1,1 @@
+PASS: The response is concrete and supported by the bundled GenMan, fillHeader, and options definitions in doc/man_docs.go.

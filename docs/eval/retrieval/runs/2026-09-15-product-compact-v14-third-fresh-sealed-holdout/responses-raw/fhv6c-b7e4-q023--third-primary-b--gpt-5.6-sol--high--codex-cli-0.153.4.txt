@@ -1,0 +1,1 @@
+Both streams: it resets both the command’s output and error destinations. In `command.go:283-286`, `SetOutput` assigns `output` to both `c.outWriter` and `c.errWriter`; when nil, they fall back to their defaults (stdout for output, stderr for errors).

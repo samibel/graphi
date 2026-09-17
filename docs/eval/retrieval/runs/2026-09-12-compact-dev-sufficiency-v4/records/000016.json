@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 16,
+  "previous_sha256": "728bfce5b2bf08ec3fe1169a9ab09afa2beb7b09945a1eadb6dee669146216c6",
+  "kind": "response",
+  "query_id": "cb-21",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "3f7d838fcc3f43c1b97da29e848c597d970f02d0e036eee7750627e609746f41",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `parent.AddCommand(child1, child2)`; `(*Command).AddCommand(cmds ...*Command)` is the method documented to add one or more children (`command.go:1302–1304`). It iterates over the supplied commands, panics with `Command can't be a child of itself` if a child is the parent itself, and assigns `cmds[i].parent = c` (`command.go:1304–1308`). It then begins updating usage and command-path length metadata (`command.go:1309–1314`). `Parent()` returns that stored pointer, and `HasParent()` tests it for nil (`command.go:1842–1845`, `1632–1633`).\n",
+  "sha256": "34f10430f7c9660e94fc44afa8e33cead498c7f20607c0bffc96b1e11a0b6825"
+}

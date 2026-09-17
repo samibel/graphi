@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-baff-7bf0-88ad-6e7e4c4cd8b2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Install and import Cobra:\n\n```bash\ngo get -u github.com/spf13/cobra@latest\n```\n\n```go\nimport \"github.com/spf13/cobra\"\n```\n\nEvidence: `README.md:81-94`.\n\nFor command usage output, `(*Command).Usage()` calls the resolved `UsageFunc` (`command.go:443-448`). `UsageFunc` uses a command-specific function, inherits its parent’s function, or renders `UsageTemplate()` to stderr by default (`command.go:424-441`). `UsageString()` captures that output as a string (`command.go:478-495`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16479,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":215,"reasoning_output_tokens":82}}

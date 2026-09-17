@@ -1,0 +1,1 @@
+It establishes that a child inherits the parent’s persistent `help` flag and does not create a duplicate default flag. `InitDefaultHelpFlag` first calls `mergePersistentFlags()` and only adds `help` when `c.Flags().Lookup("help") == nil` ([command.go:1185–1197]); `mergePersistentFlags` adds all parents’ persistent flags through `parentsPflags` ([command.go:1846–1874]).

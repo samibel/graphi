@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the immediate nil-receiver error at command.go:874–877 and that execution stops before flag parsing or run hooks. It also accurately limits conclusions about public Execute(), since the transcript shows its delegation but omits ExecuteC()’s body.

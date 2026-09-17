@@ -1,0 +1,1 @@
+INSUFFICIENT The response exposes flag-set accessors such as `Flags`, `InheritedFlags`, `LocalFlags`, and `PersistentFlags` (`command.go:1643,1696,1669,1726`), but contains no enumeration API or example for producing a list of flags.

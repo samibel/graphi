@@ -1,0 +1,1 @@
+PASS: It correctly describes Flags' complete scope, lazy creation, error output, and the supplied nonpersistent subset accessor.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q026",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "578a3ff26a571aa1ac9df68a69e342ead3d22afec5ce016d1fc1deae7ec46b18",
+  "bundle_sha256": "9861bdb8f2a31517dd8604f743933f571f73d54919133b4ab1894df859bdf199",
+  "prompt_sha256": "144524afc9c641b1edab786ed75ffb6e560de3d62b73341af161f1f03512e0cd",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetErr(nil)` makes `ErrOrStderr()` return the nearest parent command’s non-nil `errWriter`, if one exists; otherwise it returns `os.Stderr`.\n\nEvidence: `SetErr` assigns `nil` to `c.errWriter` (`command.go:294–298`), `ErrOrStderr` calls `c.getErr(os.Stderr)` (`command.go:384–387`), and `getErr` searches parents before returning its default (`command.go:404–412`).",
+  "responded_at": "2026-09-15T08:29:52Z",
+  "sha256": "50ac86509baab28523b82c0dd0ff6c459d11c05b31541e1b3f06a479e2f6d02c"
+}

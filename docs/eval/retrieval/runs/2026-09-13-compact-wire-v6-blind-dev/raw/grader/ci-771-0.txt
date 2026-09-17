@@ -1,0 +1,1 @@
+FAIL: It discusses portable Go callbacks but does not explain how to implement another shell's integration using __complete, the line protocol, and completion directives.

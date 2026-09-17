@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q016",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "4c08781a1c6c69898cdd3a21c0c759d846fc32148e6b5aaf70ad2db146e9f145",
+  "bundle_sha256": "64999bfcad4b3121c29f481effc1a7c3834ec1b0e08196898a9f3e4c5019984b",
+  "prompt_sha256": "c9e4b6b49ea460a4a45ea907deb4e1b9079e65dd34081b053f186ae219190713",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`command_test.go` belongs to package `cobra` (line 15). The supplied excerpts show:\n\n- **Execution helpers:** `executeCommand` delegates to `executeCommandC` (lines 32–35). `executeCommandWithContext` and `executeCommandC` configure an output buffer, error output, and arguments before calling `ExecuteContext` or `ExecuteC` (lines 37–55). `executeCommandWithContextC` is also declared (lines 59–62).\n- **Flag reset helper:** `resetCommandLineFlagSet` replaces `pflag.CommandLine` with a new flag set using `os.Args[0]` and `pflag.ExitOnError` (lines 70–72).\n- **Tests:** `TestSingleCommand` configures exactly two arguments (lines 88–92); `TestChildCommand` builds root and child commands (lines 113–117); `TestCommandAlias` defines `echo` aliases `say` and `tell`, plus a `times` subcommand (lines 274–289).\n- **Flag shadowing test:** `TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag` creates parent persistent flags and child local flags, with the child’s `foo` shadowing the parent’s (lines 931–940).\n\nThe response is truncated, so this is a partial inventory of the file’s declarations.",
+  "responded_at": "2026-09-15T08:29:22Z",
+  "sha256": "27a140bb60b421db1597220727b2a76db4bc7fe82dfaa91e1ece405c2e70024a"
+}

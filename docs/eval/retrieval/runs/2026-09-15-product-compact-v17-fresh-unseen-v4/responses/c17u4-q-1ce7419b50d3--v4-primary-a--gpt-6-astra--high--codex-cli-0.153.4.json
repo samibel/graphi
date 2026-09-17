@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1ce7419b50d3",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "0a6dda45b96ef019ffe8079ace01f23a8e96f684d9d69c13a1ccd5e0f0a10154",
+  "bundle_sha256": "bb75d347ff317f342aec14bba34ce32fcbb109529a46a87a8834dedee3802bd3",
+  "prompt_sha256": "0d2b8d1c9290396aa6656c2645a2b6e0877935e177e86919f03cf48efa3da3ba",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The template helper `\"eq\"` maps to `Eq` (`cobra.go:39`). It supports signed integer kinds—`Int`, `Int8`, `Int16`, `Int32`, `Int64`—and `String`, comparing via `av.Int() == bv.Int()` or `av.String() == bv.String()` (`cobra.go:151–154`).\n\nFor `Array`, `Chan`, `Map`, or `Slice`, it panics with `\"Eq called on unsupported type\"` (`cobra.go:149–150`). The switch checks the first operand’s kind; other unhandled kinds return `false` (`cobra.go:148–156`).",
+  "responded_at": "2026-09-15T20:26:22Z",
+  "sha256": "16eb528dd2385e2b4491a25a5af2144be01ee9a33e27e5dd85ad5f3594041dbc"
+}

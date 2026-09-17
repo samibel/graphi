@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q032",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "fbec8a98dacc8db5f83ebf75f2c902a55ac6ecc3afe726752d2983d955fd6e36",
+  "bundle_sha256": "260f80c3b1ca4cf3212fc2b35654c267dc2f9b19a91e26f9177238aecb3d5992",
+  "prompt_sha256": "1b53fba4cbb53b264e02340fce5c2ccda4f05e8b8edca30b6925da257d5e8b5c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "All direct child commands in `c.commands` that are either:\n\n- available according to `sub.IsAvailableCommand()`, or\n- exactly `c.helpCommand`\n\nmust have a non-empty `GroupID`.\n\nEvidence: `command.go:1336–1343` checks `(sub.IsAvailableCommand() || sub == c.helpCommand) \u0026\u0026 sub.GroupID == \"\"` and returns `false`. `command.go:1559–1576` defines an available command as non-deprecated, non-hidden, not the parent’s help command, and either runnable or having available subcommands.",
+  "responded_at": "2026-09-15T18:38:44Z",
+  "sha256": "f56cc662eb32f39cdb6eed47473b031dbb6a11860bdb22b6c8975c9fe87fe425"
+}

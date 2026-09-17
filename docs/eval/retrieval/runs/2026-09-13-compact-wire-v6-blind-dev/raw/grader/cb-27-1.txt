@@ -1,0 +1,1 @@
+PASS: It directly answers how to enable prefix matching and ties the setting to the lookup predicate.

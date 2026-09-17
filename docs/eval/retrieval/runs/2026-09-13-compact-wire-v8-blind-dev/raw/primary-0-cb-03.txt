@@ -1,0 +1,10 @@
+`GenMarkdownTree(cmd *cobra.Command, dir string) error` generates Markdown pages for a command and all available descendants in `dir` (`doc/md_docs.go:119-129`).
+
+It delegates to `GenMarkdownTreeCustom` with:
+
+- An empty file prepender.
+- An identity link handler (`doc/md_docs.go:126-129`).
+
+The custom implementation recursively skips unavailable/help-topic commands, names files from `cmd.CommandPath()` with spaces replaced by underscores and a `.md` extension, creates each file, then writes output through `GenMarkdownCustom` (`doc/md_docs.go:134-157`; extension at `doc/md_docs.go:30`).
+
+Caveat: command names containing `-` can cause filename collisions or undefined output, such as `cmd sub-third` versus `cmd sub third` (`doc/md_docs.go:121-125`).

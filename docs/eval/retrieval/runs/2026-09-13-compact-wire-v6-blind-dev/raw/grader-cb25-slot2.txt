@@ -1,0 +1,1 @@
+PASS: Correctly names `CompletionOptions.DisableDefaultCmd`, sets it to `true`, and specifies that it must be set on the root command.

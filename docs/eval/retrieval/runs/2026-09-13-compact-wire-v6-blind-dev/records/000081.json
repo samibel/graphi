@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 81,
+  "previous_sha256": "5c0106621f6fd25866a3169b01521bd374bf15c357a3d94dbcdab1f66e042563",
+  "kind": "grade",
+  "query_id": "cb-01",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3c34ee8b16e4294691bcc287ebf18679f5c7f903211b349d4e3df3a07f694214",
+  "outcome": "fail",
+  "rationale": "FAIL: It summarizes only the visible initialization portion and omits the core Find/Traverse, execution, and error-handling behavior of ExecuteC; calling the returned command “selected” is also unsupported by the truncated bundle.",
+  "sha256": "211672dd800c3a8106900d86794b4a4cc97fe53ec535dcaeb3292d33473d10cf"
+}

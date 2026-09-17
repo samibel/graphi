@@ -1,9 +1,14 @@
 package opcatalog
 
 import (
+	"bytes"
+	"compress/gzip"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sync"
 )
 
@@ -26,8 +31,18 @@ import (
 // the LIVE builders on every run, so any later drift in either direction breaks
 // the build.
 //
-//go:embed shadow.json
-var shadowJSON []byte
+// The checked-in shadow.json remains the review surface. The production binary
+// embeds its deterministic gzip representation so the catalog does not spend
+// tens of kilobytes on JSON indentation and repeated schema keys.
+//
+//go:embed shadow.json.gz
+var compressedShadowJSON []byte
+
+const (
+	shadowJSONSHA256   = "b8b07c393721597f896456e8f9a9d945db9c7a51ab330cbb520ed876afe6ff77"
+	shadowGzipSHA256   = "6455dcb5b5f7eb6eb7b45bcded21e2a5daea2b039f57a10059a707edef5e8cdc"
+	maxShadowJSONBytes = 1 << 20
+)
 
 // shadowDocument is the on-disk shape of shadow.json.
 type shadowDocument struct {
@@ -53,8 +68,12 @@ var shadow = sync.OnceValues(loadShadow)
 func Shadow() (*Catalog, error) { return shadow() }
 
 func loadShadow() (*Catalog, error) {
+	raw, err := decompressShadowJSON()
+	if err != nil {
+		return nil, err
+	}
 	var doc shadowDocument
-	if err := json.Unmarshal(shadowJSON, &doc); err != nil {
+	if err := json.Unmarshal(raw, &doc); err != nil {
 		return nil, fmt.Errorf("opcatalog: decode shadow.json: %w", err)
 	}
 	if doc.SchemaVersion != ShadowSchemaVersion {
@@ -71,4 +90,31 @@ func loadShadow() (*Catalog, error) {
 		}
 	}
 	return catalog.Build()
+}
+
+func decompressShadowJSON() ([]byte, error) {
+	compressedDigest := sha256.Sum256(compressedShadowJSON)
+	if got := hex.EncodeToString(compressedDigest[:]); got != shadowGzipSHA256 {
+		return nil, fmt.Errorf("opcatalog: compressed shadow.json SHA-256 mismatch: got %s, want %s", got, shadowGzipSHA256)
+	}
+	reader, err := gzip.NewReader(bytes.NewReader(compressedShadowJSON))
+	if err != nil {
+		return nil, fmt.Errorf("opcatalog: open compressed shadow.json: %w", err)
+	}
+	raw, readErr := io.ReadAll(io.LimitReader(reader, maxShadowJSONBytes+1))
+	closeErr := reader.Close()
+	if readErr != nil {
+		return nil, fmt.Errorf("opcatalog: decompress shadow.json: %w", readErr)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("opcatalog: close compressed shadow.json: %w", closeErr)
+	}
+	if len(raw) > maxShadowJSONBytes {
+		return nil, fmt.Errorf("opcatalog: shadow.json exceeds %d bytes", maxShadowJSONBytes)
+	}
+	rawDigest := sha256.Sum256(raw)
+	if got := hex.EncodeToString(rawDigest[:]); got != shadowJSONSHA256 {
+		return nil, fmt.Errorf("opcatalog: shadow.json SHA-256 mismatch: got %s, want %s", got, shadowJSONSHA256)
+	}
+	return raw, nil
 }

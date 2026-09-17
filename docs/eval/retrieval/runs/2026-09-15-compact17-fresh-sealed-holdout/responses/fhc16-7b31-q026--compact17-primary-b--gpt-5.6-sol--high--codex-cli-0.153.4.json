@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q026",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "adf4d53f14ef020290eb42820623085b96dc4f75e1b17e720b45cf866cd2fd87",
+  "bundle_sha256": "99f053dfe31433260839bf661da6c1871730b6ce3f8abcc657eedc5da6eda5cc",
+  "prompt_sha256": "3301d7f03fadd57c8bb05ab0bd1b6d9174e57362b59d9573f4966e2bec7b4b65",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It panics with `Command can't be a child of itself` (`command.go:1306`).",
+  "responded_at": "2026-09-15T18:37:58Z",
+  "sha256": "a127357456e03c8912db2251d5e9e988c706c78230b7ec72c67ff90d073bdec9"
+}

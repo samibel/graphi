@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 101,
+  "previous_sha256": "55105d3d2c397b59e97f69c80ec2e14e004fc838b4a134567b3363419880c516",
+  "kind": "grade",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "fdfbb4332f94c3b3df1dac3484e2fed183a8f4f9edc6539a56848fc85a8d523f",
+  "outcome": "fail",
+  "rationale": "FAIL: The response explains creation of the default version flag but omits the essential execution behavior from the development key: reading the parsed version flag, rendering VersionTemplate, and returning before Run. Those facts are absent from the bundle, so the answer is not sufficient for how the flag is handled.\n",
+  "sha256": "faedd50075033e67a58b3c917e8521962eb21ce2007be17b85c5b413ca0236c1"
+}

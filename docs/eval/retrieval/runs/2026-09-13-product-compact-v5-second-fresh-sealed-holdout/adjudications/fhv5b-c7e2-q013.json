@@ -1,0 +1,37 @@
+{
+  "query_id": "fhv5b-c7e2-q013",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv5b-c7e2-q013",
+    "rater_id": "second-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+    "query_text_sha256": "b7d863bf73924a308cf65ceab7bbee9abd0022a03ad7cbbc9fa6110706e366a8",
+    "bundle_sha256": "4f565f5ced132387887bb7996ea1115b670612e3c0d928fea8b6e3fb56be91cf",
+    "prompt_sha256": "750fe93a472faee189a42c6e4ddff6252f5e96a5e2420fedfe3dfd42c5c43d61",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "In `cobra.go`, `Eq` compares:\n\n- Signed integers: `reflect.Int`, `Int8`, `Int16`, `Int32`, and `Int64` using `av.Int() == bv.Int()`.\n- Strings: `reflect.String` using `av.String() == bv.String()`.\n\nIt panics with `\"Eq called on unsupported type\"` for these collection/channel kinds: `reflect.Array`, `reflect.Chan`, `reflect.Map`, and `reflect.Slice`.\n\nEvidence: `cobra.go`, lines 143–157, function `Eq`.",
+    "responded_at": "2026-09-13T15:49:06Z",
+    "sha256": "0688553d71563b706fab2d3d34a9d816d5afdd99ccde9657356af934dee614a5"
+  },
+  "disclosure": {
+    "query_id": "fhv5b-c7e2-q013",
+    "adjudicator_response_sha256": "0688553d71563b706fab2d3d34a9d816d5afdd99ccde9657356af934dee614a5",
+    "disclosed_artifact_sha256": [
+      "0533cdc27e39f6f0222f30096bdaebc7ffc1c6f7b4db98e9fe27eb905bbd8260",
+      "296cfa30d280f3b19bba0fc0c9c96baa387caa4f590478b134c203fb8ba0e39a",
+      "2b94607f23fb949811ba728f0b764a05d24e32010b2f13f9efa313eacf43016c",
+      "a29e8e967703b29dc3474ea057f4c176c55748418a6491031b47b63f612aad47"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

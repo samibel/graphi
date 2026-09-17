@@ -1,0 +1,94 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: d52ccef32b601a2b79345cfb62f962f49dbbab1f809b17f014a662abdfa2fc5d
+FOLLOW-UP READ CONTENT ADDRESS: 681442c6462e71d5671482f4dc1bd9868144798301856a65460e4ca0c49fae10
+QUERY ID: fhv6c-b7e4-q047
+
+QUESTION:
+How can I inspect completion output with Active Help enabled or disabled?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/active_help.md:139-156 anchor="HELM_ACTIVE_HELP=0" reason=The debugging section uses the hidden __complete command with the program Active Help variable set to contrasting values.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query a9a85f83a052; read in order (269/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/active_help.md","start_line":127,"end_line":128,"text":"**Note 1**: If the `<PROGRAM>_ACTIVE_HELP` environment variable is set to the string \"0\", Cobra will automatically disable all Active Help output (even if some output was specified by the program using the `cobra.AppendActiveHelp(...)` function).  Using \"0\" can simplify your code in situations where you want to blindly disable Active Help without having to call `cobra.GetActiveHelpConfig(cmd)` explicitly.\n"},{"path":"site/content/active_help.md","start_line":141,"end_line":142,"text":"Debugging your Active Help code is done in the same way as debugging your dynamic completion code, which is with Cobra's hidden `__complete` command.  Please refer to [debugging shell completion](shell_completions.md#debugging) for details.\n"},{"path":"site/content/user_guide.md","start_line":746,"end_line":750,"text":"## Providing Active Help\n\nCobra makes use of the shell-completion system to define a framework allowing you to provide Active Help to your users.\nActive Help are messages (hints, warnings, etc) printed as the program is being used.\nRead more about it in [Active Help](active_help.md)."},{"path":"site/content/active_help.md","start_line":26,"end_line":26,"text":"As Active Help uses the shell completion system, the implementation of Active Help messages is done by enhancing custom dynamic completions.  If you are not familiar with dynamic completions, please refer to [Shell Completions](shell_completions.md)."},{"path":"active_help.go","start_line":59,"end_line":67,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the\n// root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`.\nfunc activeHelpEnvVar(name string) string {\n\t// This format should not be changed: users will be using it explicitly.\n\tactiveHelpEnvVar := strings.ToUpper(fmt.Sprintf(\"%s%s\", name, activeHelpEnvVarSuffix))\n\tactiveHelpEnvVar = activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")\n\treturn activeHelpEnvVar\n}"},{"path":"command.go","start_line":69,"end_line":72,"text":"\n\t// Short is the short description shown in the 'help' output.\n\tShort string\n"},{"path":"zsh_completions_test.go","start_line":23,"end_line":28,"text":"func TestZshCompletionWithActiveHelp(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\n\tbuf := new(bytes.Buffer)\n\tassertNoErr(t, c.GenZshCompletion(buf))\n\toutput := buf.String()"},{"path":"active_help_test.go","start_line":319,"end_line":319,"text":"func TestDisableActiveHelp(t *testing.T) {"}],"provenance":{"input_sha256":"fbe6eff60c4ae0399a98af8cd6bcd347a6411c28857f38c0688d49f1f4a3fe54","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/active_help.md:88-131"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/active_help.md","start_line":88,"end_line":131,"text":"## User control of Active Help\n\nYou may want to allow your users to disable Active Help or choose between different levels of Active Help.  It is entirely up to the program to define the type of configurability of Active Help that it wants to offer, if any.\nAllowing to configure Active Help is entirely optional; you can use Active Help in your program without doing anything about Active Help configuration.\n\nThe way to configure Active Help is to use the program's Active Help environment\nvariable.  That variable is named `\u003cPROGRAM\u003e_ACTIVE_HELP` where `\u003cPROGRAM\u003e` is the name of your \nprogram in uppercase with any non-ASCII-alphanumeric characters replaced by an `_`.  The variable should be set by the user to whatever\nActive Help configuration values are supported by the program.\n\nFor example, say `helm` has chosen to support three levels for Active Help: `on`, `off`, `local`.  Then a user\nwould set the desired behavior to `local` by doing `export HELM_ACTIVE_HELP=local` in their shell.\n\nFor simplicity, when in `cmd.ValidArgsFunction(...)` or a flag's completion function, the program should read the\nActive Help configuration using the `cobra.GetActiveHelpConfig(cmd)` function and select what Active Help messages\nshould or should not be added (instead of reading the environment variable directly).\n\nFor example:\n```go\nValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\tactiveHelpLevel := cobra.GetActiveHelpConfig(cmd)\n\n\tvar comps []string\n\tif len(args) == 0 {\n\t\tif activeHelpLevel != \"off\"  {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must choose a name for the repo you are adding\")\n\t\t}\n\t} else if len(args) == 1 {\n\t\tif activeHelpLevel != \"off\" {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must specify the URL for the repo you are adding\")\n\t\t}\n\t} else {\n\t\tif activeHelpLevel == \"local\" {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"This command does not take any more arguments\")\n\t\t}\n\t}\n\treturn comps, cobra.ShellCompDirectiveNoFileComp\n},\n```\n**Note 1**: If the `\u003cPROGRAM\u003e_ACTIVE_HELP` environment variable is set to the string \"0\", Cobra will automatically disable all Active Help output (even if some output was specified by the program using the `cobra.AppendActiveHelp(...)` function).  Using \"0\" can simplify your code in situations where you want to blindly disable Active Help without having to call `cobra.GetActiveHelpConfig(cmd)` explicitly.\n\n**Note 2**: If a user wants to disable Active Help for every single program based on Cobra, she can set the environment variable `COBRA_ACTIVE_HELP` to \"0\".  In this case `cobra.GetActiveHelpConfig(cmd)` will return \"0\" no matter what the variable `\u003cPROGRAM\u003e_ACTIVE_HELP` is set to.\n\n**Note 3**: If the user does not set `\u003cPROGRAM\u003e_ACTIVE_HELP` or `COBRA_ACTIVE_HELP` (which will be a common case), the default value for the Active Help configuration returned by `cobra.GetActiveHelpConfig(cmd)` will be the empty string. "}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Use your program’s hidden `__complete` command to inspect completion output; Active Help uses the same debugging mechanism (`site/content/active_help.md:141–142`).
+
+Control Active Help through environment variables:
+
+- **Enabled:** Set `<PROGRAM>_ACTIVE_HELP` to an enabling value supported by your program. There is no universal enabling value: `on`, `off`, and `local` are example program-defined settings (`site/content/active_help.md:88–102`). Ensure `COBRA_ACTIVE_HELP` is not `"0"`.
+- **Disabled for this program:** Set `<PROGRAM>_ACTIVE_HELP=0`. Cobra suppresses all Active Help output, including messages added with `cobra.AppendActiveHelp(...)` (`site/content/active_help.md:127`).
+- **Disabled for all Cobra programs:** Set `COBRA_ACTIVE_HELP=0`; this overrides the program-specific setting (`site/content/active_help.md:129`).
+
+Replace `<PROGRAM>` with the root command’s name uppercased, with non-ASCII-alphanumeric characters replaced by `_` (`active_help.go:59–67`).
+----- END THE RATER'S RESPONSE -----

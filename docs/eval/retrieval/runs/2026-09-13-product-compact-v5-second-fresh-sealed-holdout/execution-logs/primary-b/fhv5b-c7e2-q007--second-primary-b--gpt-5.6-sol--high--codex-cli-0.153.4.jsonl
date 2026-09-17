@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-6a07-75a1-a551-f10f022b0f93"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Yes. `RangeArgs` accepts both endpoints inclusively: it rejects only when `len(args) < min` or `len(args) > max` ([args.go:103–111]). Rejection is caused solely by the argument count falling outside that range, producing: `accepts between %d and %d arg(s), received %d`."}}
+{"type":"turn.completed","usage":{"input_tokens":16474,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":114,"reasoning_output_tokens":37}}

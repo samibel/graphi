@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 129,
+  "previous_sha256": "d5a232f1378ce276d5338add29a99d2301fc759f3ac05d2bfa9b84027013131a",
+  "kind": "grade",
+  "query_id": "ci-678",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "d87988e6866fd3046423e646787c54825c186a1a87777c66cc93bc2112744d33",
+  "outcome": "pass",
+  "rationale": "PASS: SetArgs is the concrete test-facing mechanism requested, and the bundled comment explicitly says it overrides os.Args[1:] and is particularly useful when testing.\n",
+  "sha256": "c92a92734358eea7a0015b72b54b1fbb6635174208cb56099d7699eaa4a10f85"
+}

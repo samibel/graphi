@@ -1,0 +1,7 @@
+Call `cmd.Flags()` to get the `*flag.FlagSet` associated with the command:
+
+```go
+flags := cmd.Flags()
+```
+
+`command.go:1641-1653` states that `Command.Flags()` returns the complete flag set, including local and persistent flags declared by the command and its parents. For only inherited flags, use `cmd.InheritedFlags()` (`command.go:1695-1698`).

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q063",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "3b0f44d61dc2a8c74265b905df2853d9e29040190791072b3efffb194e9c3293",
+  "bundle_sha256": "6b87972a294be1572cb37dced22c09195578879d87dbcea2e6e753d5a19bf775",
+  "prompt_sha256": "b5baf0a68deb858089a9ae2ce16e1d1fc9fb4528489e73fcbbe028a253fb13b3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes only a comment at `completions.go:667` about a presumed two-word flag being boolean, but omits the code checking the no-option default and determining whether the following token is its value.",
+  "responded_at": "2026-09-13T12:39:09Z",
+  "sha256": "d767ac8f06ca04defd2de7b5232fdab9b009683ed7511cd0cf938413527a6e92"
+}

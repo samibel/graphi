@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-15:primary-b
+Outcome: pass
+Rationale: Explains conditional default flag creation, nonempty Version gating, boolean validation, and version-template output, all directly supported by command.go:1200-1210 and 906-917.

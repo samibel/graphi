@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `inFlag = !hasNoOptDefVal(arg[2:], c.Flags())` for long flags without `=` in `command.go:796–799`, but omits the value-skipping logic and the handling of a standalone `--` while locating a subcommand.

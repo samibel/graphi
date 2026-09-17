@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q033",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "0863431988d2bdf4e625c65f351a6f99bd0a4a328f011fbdde74f98dfbb0b120",
+  "bundle_sha256": "c07c43ecc2bfeb409e10a90b4762499d43199df35a01c387910d8b6a1e2587bd",
+  "prompt_sha256": "dfeec9b027ba5f0fa6bcc414ec72e79d01247e72babc03bfe5cae458c1139843",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The warning is printed after flag parsing only if the warning buffer gained content and parsing succeeded (`err == nil`). Evidence: `command.go:1834–1835`, comment “Print warnings if they occurred” and condition `c.flagErrorBuf.Len()-beforeErrorBufLen \u003e 0 \u0026\u0026 err == nil`.",
+  "responded_at": "2026-09-13T12:35:02Z",
+  "sha256": "bd1746abf44b17126e49226c3c40b4bc7ef8eb28111e9ea518a83dc548369ba7"
+}

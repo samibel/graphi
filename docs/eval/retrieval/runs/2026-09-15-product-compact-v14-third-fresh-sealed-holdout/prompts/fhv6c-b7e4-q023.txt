@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What streams does the deprecated SetOutput method affect when it is reset to nil?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 5a9dfbbec93e; read in order (210/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":280,"end_line":286,"text":"// SetOutput sets the destination for usage and error messages.\n// If output is nil, os.Stderr is used.\n// Deprecated: Use SetOut and/or SetErr instead\nfunc (c *Command) SetOutput(output io.Writer) {\n\tc.outWriter = output\n\tc.errWriter = output\n}"},{"path":"command.go","start_line":374,"end_line":377,"text":"// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"command.go","start_line":288,"end_line":292,"text":"// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"},{"path":"command.go","start_line":394,"end_line":402,"text":"func (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":1321,"end_line":1326,"text":"\t\t}\n\t\t// If global normalization function exists, update all children\n\t\tif c.globNormFunc != nil {\n\t\t\tx.SetGlobalNormalizationFunc(c.globNormFunc)\n\t\t}\n\t\tc.commands = append(c.commands, x)"},{"path":"command.go","start_line":389,"end_line":392,"text":"// InOrStdin returns input to stdin\nfunc (c *Command) InOrStdin() io.Reader {\n\treturn c.getIn(os.Stdin)\n}"},{"path":"command.go","start_line":874,"end_line":876,"text":"func (c *Command) execute(a []string) (err error) {\n\tif c == nil {\n\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")"},{"path":"command.go","start_line":99,"end_line":103,"text":"\tBashCompletionFunction string\n\n\t// Deprecated defines, if this command is deprecated and should print this string when used.\n\tDeprecated string\n"},{"path":"command.go","start_line":1737,"end_line":1747,"text":"// ResetFlags deletes all flags from command.\nfunc (c *Command) ResetFlags() {\n\tc.flagErrorBuf = new(bytes.Buffer)\n\tc.flagErrorBuf.Reset()\n\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.flags.SetOutput(c.flagErrorBuf)\n\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.pflags.SetOutput(c.flagErrorBuf)\n\n\tc.lflags = nil\n\tc.iflags = nil"}],"provenance":{"input_sha256":"1b203858bbd7f1e5b65ac5112984899d7968850d04f8d5c4aab688adea3f4d53","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

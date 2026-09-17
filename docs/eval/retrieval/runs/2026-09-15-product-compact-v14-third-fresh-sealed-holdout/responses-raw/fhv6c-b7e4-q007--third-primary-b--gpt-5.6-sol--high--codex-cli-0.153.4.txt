@@ -1,0 +1,5 @@
+`exactArgsWithInvalidCount` is a test helper in `args_test.go:88–97`. It asserts that:
+
+- `err` is non-nil, otherwise it calls `t.Fatal("Expected an error")`.
+- `err.Error()` equals exactly `"accepts 2 arg(s), received 3"`.
+- On mismatch, it calls `t.Fatalf("Expected %q, got %q", expected, got)`.

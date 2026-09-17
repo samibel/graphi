@@ -1,0 +1,7 @@
+For a child command with parent persistent flags configured, test the returned `FlagSet` directly:
+
+- Call `child.InheritedFlags()` and assert the parent flag is present with `Lookup(name)`.
+- Assert a same-named local flag is excluded: `InheritedFlags()` adds a parent flag only when both `c.iflags.Lookup(f.Name)` and `local.Lookup(f.Name)` are nil ([command.go:1695–1718]).
+- Assert `child.HasInheritedFlags()` is true when that set contains flags ([command.go:1766–1769]).
+- For hidden/deprecated flags, use `child.HasAvailableInheritedFlags()`, which delegates to `InheritedFlags().HasAvailableFlags()` ([command.go:1788–1792]).
+- Optionally capture rendered defaults by setting the inherited set’s output to a buffer and calling `PrintDefaults()`, as demonstrated in [doc/rest_docs.go:39–46].

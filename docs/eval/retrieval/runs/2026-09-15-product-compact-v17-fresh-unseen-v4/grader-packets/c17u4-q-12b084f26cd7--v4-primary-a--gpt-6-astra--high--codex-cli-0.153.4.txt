@@ -1,0 +1,50 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: ae94897804bdf0b748f42acdeb6247030778f56abffcac7e704772f180e6f4c2
+QUERY ID: c17u4-q-12b084f26cd7
+
+QUESTION:
+In command.go, how does getErr inherit or default the error writer?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:404-412 anchor="func (c *Command) getErr(def io.Writer) io.Writer" reason=The method checks the command's writer, delegates to its parent, then returns the default.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 249b96a55a2c; read in order (229/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":393,"end_line":412,"text":"\nfunc (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}\n\nfunc (c *Command) getErr(def io.Writer) io.Writer {\n\tif c.errWriter != nil {\n\t\treturn c.errWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getErr(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":378,"end_line":387,"text":"\n// OutOrStderr returns output to stderr\nfunc (c *Command) OutOrStderr() io.Writer {\n\treturn c.getOut(os.Stderr)\n}\n\n// ErrOrStderr returns output to stderr\nfunc (c *Command) ErrOrStderr() io.Writer {\n\treturn c.getErr(os.Stderr)\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":293,"end_line":298,"text":"\n// SetErr sets the destination for error messages.\n// If newErr is nil, os.Stderr is used.\nfunc (c *Command) SetErr(newErr io.Writer) {\n\tc.errWriter = newErr\n}"},{"path":"command.go","start_line":1050,"end_line":1053,"text":"\n// ExecuteC executes the command.\nfunc (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {"},{"path":"command.go","start_line":423,"end_line":441,"text":"\n// UsageFunc returns either the function set by SetUsageFunc for this command\n// or a parent, or it returns a default usage function.\nfunc (c *Command) UsageFunc() (f func(*Command) error) {\n\tif c.usageFunc != nil {\n\t\treturn c.usageFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().UsageFunc()\n\t}\n\treturn func(c *Command) error {\n\t\tc.mergePersistentFlags()\n\t\terr := tmpl(c.OutOrStderr(), c.UsageTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t\treturn err\n\t}\n}"},{"path":"doc/rest_docs.go","start_line":56,"end_line":59,"text":"// GenReST creates reStructured Text output.\nfunc GenReST(cmd *cobra.Command, w io.Writer) error {\n\treturn GenReSTCustom(cmd, w, defaultLinkHandler)\n}"}],"provenance":{"input_sha256":"a26b2619339fe6b4d6ba163f5735f7377cdbb17f38cca45b904c4990993e5def","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `command.go`, `getErr(def io.Writer)` returns:
+
+1. Its own `c.errWriter` if non-nil (lines 405–406).
+2. Otherwise, `c.parent.getErr(def)` if it has a parent, recursively inheriting the nearest ancestor’s non-nil error writer (lines 408–409).
+3. Otherwise, the supplied `def` writer (line 411).
+
+`ErrOrStderr()` supplies `os.Stderr` as that default (lines 384–387).
+----- END THE RATER'S RESPONSE -----

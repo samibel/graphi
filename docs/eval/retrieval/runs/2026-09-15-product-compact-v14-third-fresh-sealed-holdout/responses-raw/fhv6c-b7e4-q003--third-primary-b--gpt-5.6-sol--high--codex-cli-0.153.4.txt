@@ -1,0 +1,7 @@
+`nonCompletableFlag` determines whether a flag should be excluded from shell completion. It returns `true` when the flag is hidden or deprecated:
+
+```go
+return flag.Hidden || len(flag.Deprecated) > 0
+```
+
+Evidence: `bash_completions.go:699-701`. In `writeFlags`, both command and inherited flags are skipped when this function returns `true` (`bash_completions.go:567-592`).

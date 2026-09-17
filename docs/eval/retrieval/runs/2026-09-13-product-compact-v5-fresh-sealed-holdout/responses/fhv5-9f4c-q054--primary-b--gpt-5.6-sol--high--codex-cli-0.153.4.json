@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q054",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "f54d65c6a3a6ae2dc9bc4a6821d39a505ac8ff0c8d7e8420ced0e540cb56c9f4",
+  "bundle_sha256": "19f948d8a8d73ca9c3905bb98b5de690595f7243f3b0aeec86885f4421884c5a",
+  "prompt_sha256": "fee8cd6afd2d98628405fb6c710a1860a67e433715c6f32699c1fbf7165546a9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains no Unix CI configuration showing its operating-system/Go-version matrix or test command.",
+  "responded_at": "2026-09-13T12:37:50Z",
+  "sha256": "35aebd0662d4eae9dc401dcf3c0106052da6010151c5d511af2fae918eafcf98"
+}

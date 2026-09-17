@@ -1,0 +1,1 @@
+PASS: The response accurately describes the package and error helper, and identifies the principal test’s individual and collective template-function registration, usage-template rendering, and expected "Hello, world." result. All cited lines support the claims, and the response appropriately acknowledges the transcript’s truncation.

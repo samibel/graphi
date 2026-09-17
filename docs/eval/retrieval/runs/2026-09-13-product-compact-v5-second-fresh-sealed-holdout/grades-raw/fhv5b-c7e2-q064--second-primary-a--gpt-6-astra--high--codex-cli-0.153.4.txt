@@ -1,0 +1,1 @@
+PASS: The response accurately describes the initialization shown in command.go:1643–1652: a command-named ContinueOnError FlagSet, an error buffer if absent, and that buffer installed as the flag set’s output.

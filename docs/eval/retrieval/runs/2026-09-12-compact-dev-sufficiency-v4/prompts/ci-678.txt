@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to set flags in test?
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s) for \"How to set flags in test?\"; read in order (219/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"completions_test.go","start_line":2081,"end_line":2088,"text":"// https://github.com/spf13/cobra/issues/1320\n//\n// NOTE: this test can sometimes pass even if the code were to not handle\n// concurrency properly. This is not great but the important part is that\n// it should never fail.  Therefore, if the tests fails sometimes, we will\n// still be able to know there is a problem.\nfunc TestFlagCompletionConcurrentRegistration(t *testing.T) {\n\trootCmd := \u0026Command{Use: \"root\", Run: emptyRun}"},{"path":"completions_test.go","start_line":2078,"end_line":2080,"text":"// This test tries to register flag completion concurrently to make sure the\n// code handles concurrency properly.\n// This was reported as a problem when tests are run concurrently:"},{"path":"command_test.go","start_line":493,"end_line":494,"text":"func TestFlagShort(t *testing.T) {\n\tvar cArgs []string"},{"path":"flag_groups_test.go","start_line":65,"end_line":66,"text":"\t\t\targs:               []string{\"--a=foo\"},\n\t\t\texpectErr:          \"if any flags in the group [a b c] are set they must all be set; missing [b c]\","},{"path":"command.go","start_line":274,"end_line":278,"text":"// SetArgs sets arguments for the command. It is set to os.Args[1:] by default, if desired, can be overridden\n// particularly useful when testing.\nfunc (c *Command) SetArgs(a []string) {\n\tc.args = a\n}"},{"path":"command_test.go","start_line":70,"end_line":71,"text":"func resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)"},{"path":"bash_completions_test.go","start_line":245,"end_line":247,"text":"func TestBashCompletionDeprecatedFlag(t *testing.T) {\n\tc := \u0026Command{Use: \"c\", Run: emptyRun}\n"},{"path":"bash_completions_test.go","start_line":229,"end_line":231,"text":"func TestBashCompletionHiddenFlag(t *testing.T) {\n\tc := \u0026Command{Use: \"c\", Run: emptyRun}\n"},{"path":"command.go","start_line":1643,"end_line":1644,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {"},{"path":"flag_groups.go","start_line":111,"end_line":112,"text":"func hasAllFlags(fs *flag.FlagSet, flagnames ...string) bool {\n\tfor _, fname := range flagnames {"},{"path":"flag_groups.go","start_line":121,"end_line":121,"text":"func processFlagForGroupAnnotation(flags *flag.FlagSet, pflag *flag.Flag, annotation string, groupStatus map[string]map[string]bool) {"}],"provenance":{"input_sha256":"0ff6eb5d68e45171b2eb64ab0c625b96a2d82c8067d101d587b5f191cc18070d","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

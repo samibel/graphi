@@ -1,0 +1,1 @@
+FAIL: The response does not answer which operating systems, Go minor versions, or test command the Unix CI matrix uses. The preserved bundle contains no CI configuration supporting those required facts.

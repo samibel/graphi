@@ -1,0 +1,92 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f081ac57bc72f7167fdd2ef801643a42720195383f90019a319154947a36b03a
+QUERY ID: fhv6c-b7e4-q009
+
+QUESTION:
+executeCommandWithContext
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:37-46 anchor="func executeCommandWithContext(" reason=The helper declaration captures both streams, sets arguments, executes with a context, and returns captured output and error.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 2a648cab5c71; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command_test.go","start_line":37,"end_line":46,"text":"func executeCommandWithContext(ctx context.Context, root *Command, args ...string) (output string, err error) {\n\tbuf := new(bytes.Buffer)\n\troot.SetOut(buf)\n\troot.SetErr(buf)\n\troot.SetArgs(args)\n\n\terr = root.ExecuteContext(ctx)\n\n\treturn buf.String(), err\n}"},{"path":"command.go","start_line":1027,"end_line":1033,"text":"// ExecuteContext is the same as Execute(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx\n\treturn c.Execute()\n}"},{"path":"command.go","start_line":1043,"end_line":1049,"text":"// ExecuteContextC is the same as ExecuteC(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx\n\treturn c.ExecuteC()\n}"},{"path":"command.go","start_line":1051,"end_line":1097,"text":"// ExecuteC executes the command.\nfunc (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {\n\t\tc.ctx = context.Background()\n\t}\n\n\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {\n\t\treturn c.Root().ExecuteC()\n\t}\n\n\t// windows hook\n\tif preExecHookFn != nil {\n\t\tpreExecHookFn(c)\n\t}\n\n\t// initialize help at the last point to allow for user overriding\n\tc.InitDefaultHelpCmd()\n\t// initialize completion at the last point to allow for user overriding\n\tc.InitDefaultCompletionCmd()\n\n\t// Now that all commands have been created, let's make sure all groups\n\t// are properly created also\n\tc.checkCommandGroups()\n\n\targs := c.args\n\n\t// Workaround FAIL with \"go test -v\" or \"cobra.test -test.v\", see #155\n\tif c.args == nil && filepath.Base(os.Args[0]) != \"cobra.test\" {\n\t\targs = os.Args[1:]\n\t}\n\n\t// initialize the hidden command to be used for shell completion\n\tc.initCompleteCmd(args)\n\n\tvar flags []string\n\tif c.TraverseChildren {\n\t\tcmd, flags, err = c.Traverse(args)\n\t} else {\n\t\tcmd, flags, err = c.Find(args)\n\t}\n\tif err != nil {\n\t\t// If found parse to a subcommand and then failed, talk about the subcommand\n\t\tif cmd != nil {\n\t\t\tc = cmd\n\t\t}\n\t\tif !c.SilenceErrors {"},{"path":"command_test.go","start_line":59,"end_line":68,"text":"func executeCommandWithContextC(ctx context.Context, root *Command, args ...string) (c *Command, output string, err error) {\n\tbuf := new(bytes.Buffer)\n\troot.SetOut(buf)\n\troot.SetErr(buf)\n\troot.SetArgs(args)\n\n\tc, err = root.ExecuteContextC(ctx)\n\n\treturn c, buf.String(), err\n}"}],"provenance":{"input_sha256":"ead61dfa38855133606f83cc67803e97a55c4f15785fe613c68c19bd1eda7e9b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`executeCommandWithContext` is a test helper that executes a `*Command` with a supplied context and arguments, capturing both standard and error output in one buffer.
+
+Evidence from `command_test.go:37-46`:
+
+- Creates `bytes.Buffer`
+- Redirects `root.SetOut` and `root.SetErr` to it
+- Sets arguments with `root.SetArgs(args)`
+- Calls `root.ExecuteContext(ctx)`
+- Returns `buf.String()` and the execution error
+
+`ExecuteContext` stores the context on the command and delegates to `Execute()` (`command.go:1027-1033`).
+----- END THE RATER'S RESPONSE -----

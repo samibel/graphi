@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac2-548b-7ff3-a0e5-ce6daa9d26e0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows parent-child linkage in `command.go:1302-1329`, but contains no normal-output destination inheritance logic or final fallback."}}
+{"type":"turn.completed","usage":{"input_tokens":16449,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":37,"reasoning_output_tokens":0}}

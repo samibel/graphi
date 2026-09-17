@@ -1,0 +1,1 @@
+FAIL: The response does not answer how normalization is checked in both child-order cases. The preserved transcript lacks the test showing that normalized lookup must return the same inherited flag, so the essential behavior cannot be verified.

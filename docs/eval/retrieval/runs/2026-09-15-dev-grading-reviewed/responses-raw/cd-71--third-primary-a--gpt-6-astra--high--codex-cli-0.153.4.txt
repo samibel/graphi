@@ -1,0 +1,9 @@
+`SetIn` sets a command’s input source:
+
+```go
+func (c *Command) SetIn(newIn io.Reader) {
+    c.inReader = newIn
+}
+```
+
+It stores the supplied `io.Reader` in `c.inReader` (`command.go:302–304`). Its documentation says that if `newIn` is `nil`, `os.Stdin` is used (`command.go:300–301`); the fallback implementation is not shown.

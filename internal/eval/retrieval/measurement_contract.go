@@ -11,11 +11,16 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 )
 
 const (
 	// MeasurementContractVersion identifies the frozen SW-266 savings method.
 	MeasurementContractVersion = "sw266-measurement-contract/1"
+	// MeasurementContractVersion2 identifies the alternative second-response
+	// transcript method. Version 1 remains the frozen default.
+	MeasurementContractVersion2 = "sw266-measurement-contract/2"
 
 	// The candidate is one complete task_context/2 response at the already
 	// frozen product budget. The comparator's implementation version remains a
@@ -56,6 +61,8 @@ type MeasurementContract struct {
 	MissRule                  string         `json:"miss_rule"`
 	PayloadRule               string         `json:"payload_rule"`
 	EqualRecallRule           string         `json:"equal_recall_rule"`
+	FollowupMaxLines          int            `json:"followup_max_lines,omitempty"`
+	FollowupOperation         string         `json:"followup_operation,omitempty"`
 	Confidence                ConfidenceSpec `json:"confidence"`
 	DisplayDecimalPlaces      int            `json:"display_decimal_places"`
 }
@@ -106,13 +113,38 @@ func FrozenMeasurementContract() MeasurementContract {
 	}
 }
 
-// ValidateMeasurementContract refuses drift hidden behind the frozen version.
-func ValidateMeasurementContract(got MeasurementContract) error {
-	want := FrozenMeasurementContract()
-	if !reflect.DeepEqual(got, want) {
-		return fmt.Errorf("retrieval measurement contract: method identity differs from %s", MeasurementContractVersion)
+// SecondResponseMeasurementContract returns the alternative transcript method
+// identity. Callers must name it explicitly; FrozenMeasurementContract remains
+// the default and stays byte-identical under JSON because the added fields are
+// omitted at their zero values.
+func SecondResponseMeasurementContract() MeasurementContract {
+	return MeasurementContract{
+		Version:                   MeasurementContractVersion2,
+		CandidateMethod:           SavingsCandidateMethod,
+		CandidateTokenBudget:      SavingsCandidateBudget,
+		ComparatorMethod:          SavingsComparatorMethod,
+		ComparatorReadWindowLines: GrepReadWindowLines,
+		RelevantGrade:             SavingsGrade,
+		MissRule: "a miss is a right-censored observation at the complete preserved transcript token count; " +
+			"tokens-to-target and paired percent saving are undefined, the miss count is reported, and any magnitude aggregate fails validation",
+		PayloadRule:          "count only complete response byte slices captured below final serialization; the candidate transcript is one complete task_context/2 response plus at most one designated follow-up read, preserved as one newline-terminated JSON source line under operation task_context/2-followup-read/1; preserve each slice and sha256, and recompute every byte and token count from those bytes",
+		EqualRecallRule:      "compare the earliest indivisible response prefix reaching the same predeclared rational grade-3 span-recall target; charge slice 1 alone when it reaches, otherwise charge slices 1 and 2 together; censor a miss at both slices, or at slice 1 when no follow-up is designated; whole spans only, ties contribute zero",
+		FollowupMaxLines:     compactv9.FollowupMaxLines,
+		FollowupOperation:    PayloadOperationFollowupRead,
+		Confidence:           FrozenConfidenceSpec(),
+		DisplayDecimalPlaces: SavingsDisplayDecimalPlaces,
 	}
-	return nil
+}
+
+// ValidateMeasurementContract accepts exactly one of the two versioned method
+// identities and refuses drift hidden behind either version.
+func ValidateMeasurementContract(got MeasurementContract) error {
+	for _, want := range []MeasurementContract{FrozenMeasurementContract(), SecondResponseMeasurementContract()} {
+		if reflect.DeepEqual(got, want) {
+			return nil
+		}
+	}
+	return fmt.Errorf("retrieval measurement contract: method identity differs from version %q (accepted versions are %s and %s)", got.Version, MeasurementContractVersion, MeasurementContractVersion2)
 }
 
 // ValidateConfidenceSpec rejects an arbitrary confidence label or a partially
@@ -363,8 +395,39 @@ func validateSavingsArm(queryID, armName string, arm SavingsArmOutcome, boundary
 		return false, fmt.Errorf("retrieval measurement contract: query %s %s preserves no payload byte slices; reconstructed or estimated counts are forbidden", queryID, armName)
 	}
 	if boundary == PayloadBoundaryCandidate {
-		if len(arm.Payloads) != 1 || arm.Payloads[0].Operation != PayloadOperationTaskContext || arm.StopReason != SavingsStopOneCallComplete {
-			return false, fmt.Errorf("retrieval measurement contract: query %s candidate must preserve exactly one complete task_context/2 response with stop_reason=%s", queryID, SavingsStopOneCallComplete)
+		switch in.Contract.Version {
+		case MeasurementContractVersion:
+			if len(arm.Payloads) != 1 || arm.Payloads[0].Operation != PayloadOperationTaskContext || arm.StopReason != SavingsStopOneCallComplete {
+				return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s must preserve exactly one complete task_context/2 response with stop_reason=%s", queryID, MeasurementContractVersion, SavingsStopOneCallComplete)
+			}
+		case MeasurementContractVersion2:
+			if arm.Payloads[0].Operation != PayloadOperationTaskContext {
+				return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s payload 1 operation is %q, want %q", queryID, MeasurementContractVersion2, arm.Payloads[0].Operation, PayloadOperationTaskContext)
+			}
+			switch len(arm.Payloads) {
+			case 1:
+				if arm.StopReason != SavingsStopOneCallComplete {
+					return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s has one payload, so stop_reason must be %s", queryID, MeasurementContractVersion2, SavingsStopOneCallComplete)
+				}
+			case 2:
+				if arm.Payloads[1].Operation != PayloadOperationFollowupRead {
+					return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s payload 2 operation is %q, want %q", queryID, MeasurementContractVersion2, arm.Payloads[1].Operation, PayloadOperationFollowupRead)
+				}
+				switch arm.StopReason {
+				case SavingsStopOneCallComplete:
+					if arm.Status != SavingsOutcomeReached || arm.ConsumedPayloadSlices != 1 {
+						return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s may use stop_reason=%s with two payloads only for a target reached at the first slice with consumed_payload_slices=1", queryID, MeasurementContractVersion2, SavingsStopOneCallComplete)
+					}
+				case SavingsStopFollowupReadComplete:
+					if arm.ConsumedPayloadSlices != 2 {
+						return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s stop_reason=%s requires consumed_payload_slices=2", queryID, MeasurementContractVersion2, SavingsStopFollowupReadComplete)
+					}
+				default:
+					return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s has two payloads with stop_reason=%q, want %s or earliest-prefix %s", queryID, MeasurementContractVersion2, arm.StopReason, SavingsStopFollowupReadComplete, SavingsStopOneCallComplete)
+				}
+			default:
+				return false, fmt.Errorf("retrieval measurement contract: query %s candidate under %s preserves %d payloads, want one task_context/2 response plus at most one designated follow-up read", queryID, MeasurementContractVersion2, len(arm.Payloads))
+			}
 		}
 	} else {
 		if arm.Payloads[0].Operation != PayloadOperationGrep || (arm.StopReason != SavingsStopExhausted && arm.StopReason != SavingsStopMaxReads) {

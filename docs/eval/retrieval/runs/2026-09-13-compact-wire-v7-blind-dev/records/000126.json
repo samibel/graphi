@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 126,
+  "previous_sha256": "901898c3ab8b6a83bbabb2736fed76c49c865a085ca1dfdab3d31d749636994d",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "fb7d64c814549b927a97576800fd2560f6c6c56746413c2f865b183ca95002eb",
+  "outcome": "fail",
+  "rationale": "The bundle supports `Command.Flag(name)` and its local-then-persistent lookup behavior at `command.go:1794–1803`. However, the candidate’s necessary claim that the currently executing `*Command` is passed to the handler as `cmd` is not supported anywhere in the preserved response; the `Run`/`RunE` handler signatures (`command.go:132–135` in the development key) are absent. External knowledge cannot fill that evidentiary gap.\n",
+  "sha256": "60d567a687a3f1393344eb682a11bad46036170d2a78eaeec8e9c30dfa3b8adb"
+}

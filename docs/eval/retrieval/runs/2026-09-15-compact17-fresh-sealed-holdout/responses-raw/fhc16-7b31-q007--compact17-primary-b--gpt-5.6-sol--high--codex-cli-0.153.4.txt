@@ -1,0 +1,7 @@
+`CompDebugln` appends `"\n"` to `msg` with `fmt.Sprintf("%s\n", msg)`, then delegates to `CompDebug` with the original `printToStdErr` value:
+
+```go
+CompDebug(fmt.Sprintf("%s\n", msg), printToStdErr)
+```
+
+This preserves `CompDebug`’s behavior—including its `[Debug] ` prefix and output routing—while adding only line termination (`completions.go:859-867`, `completions.go:883-890`).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-9249-72f1-980c-78919d1a65cc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The child returns the root’s help template. In `command.go:584–596`, `HelpTemplate()` returns its own `c.helpTemplate` when set; otherwise, if it has a parent, it recursively calls `c.parent.HelpTemplate()`. The root’s template is set by `SetHelpTemplate` in `command.go:347–350`."}}
+{"type":"turn.completed","usage":{"input_tokens":16544,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":0}}

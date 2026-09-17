@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 22,
+  "previous_sha256": "085d8bd8fa3f2a3d4fa16bf6830e9a9be380795fa6ee684368b1b9e993625d6f",
+  "kind": "response",
+  "query_id": "cb-28",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "5a4b6f9c0bf2b6a87049f78140d8e00f01ffc9afb818bdf609b0b5118b7aeeaf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A command’s `GroupID` groups that subcommand under the matching command group in its parent’s help output (`command.go:73-75`). Groups have an `ID` and display `Title` (`command.go:41-45`) and are registered on the parent with `AddGroup` (`command.go:1356-1359`).\n\nThe built-in help and completion commands can be assigned similarly via `SetHelpCommandGroupID` and `SetCompletionCommandGroupID` (`command.go:332-345`).",
+  "sha256": "fd6887da69016f8b84c99e1fa6514e4e1441f8cfd5d28f976f517621a1dca0f1"
+}

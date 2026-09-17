@@ -1,0 +1,1 @@
+INSUFFICIENT The response mentions parent-argument parsing in `Traverse`, but omits the traversal-selection setting and argument-handling logic needed to determine which positional arguments and flags may appear before a subcommand.

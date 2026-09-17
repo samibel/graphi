@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acb-d5e3-7413-8f89-cd16de36c6dc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that MatchAll stops at the first failing validator, returns its error unchanged, and skips later validators. The cited args.go:116–119 exists in the bundle and directly supports this behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":17971,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

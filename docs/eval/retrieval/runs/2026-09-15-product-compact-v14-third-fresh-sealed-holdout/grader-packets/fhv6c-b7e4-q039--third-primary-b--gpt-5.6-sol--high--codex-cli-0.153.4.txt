@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 3335f965961a6b73c832bc4d23e21c31e91cf12c9d0f10785eb94c8da550f8cf
+FOLLOW-UP READ CONTENT ADDRESS: 6970f864a32bfe7397154818a6d6b642f0a0cb90fa46a5f90edd6ec6a658cca4
+QUERY ID: fhv6c-b7e4-q039
+
+QUESTION:
+How does Traverse handle root flags that occur before a child command name?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:2187-2207 anchor="rootCmd.Traverse([]string{\"-b\", \"--str\", \"ok\", \"child\", \"--int\"})" reason=The test builds root and child flag sets, traverses mixed arguments, and verifies the child selection and remaining child argument.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query acdc86bbedfc; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/user_guide.md","start_line":282,"end_line":292,"text":"A flag can also be assigned locally, which will only apply to that specific command.\n\n```go\nlocalCmd.Flags().StringVarP(&Source, \"source\", \"s\", \"\", \"Source directory to read from\")\n```\n\n### Local Flag on Parent Commands\n\nBy default, Cobra only parses local flags on the target command, and any local flags on\nparent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will\nparse local flags on each command before executing the target command."},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":860,"end_line":866,"text":"// Root finds root command.\nfunc (c *Command) Root() *Command {\n\tif c.HasParent() {\n\t\treturn c.Parent().Root()\n\t}\n\treturn c\n}"},{"path":"command.go","start_line":1183,"end_line":1198,"text":"// InitDefaultHelpFlag adds default help flag to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help flag, it will do nothing.\nfunc (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}\n\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)\n\t\t_ = c.Flags().SetAnnotation(\"help\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}"},{"path":"command.go","start_line":1725,"end_line":1735,"text":"// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.pflags.SetOutput(c.flagErrorBuf)\n\t}\n\treturn c.pflags\n}"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"bash_completions.go","start_line":576,"end_line":576,"text":"\t\tif localNonPersistentFlags.Lookup(flag.Name) != nil && !cmd.Root().TraverseChildren {"},{"path":"command.go","start_line":163,"end_line":163,"text":"\t// that we can use on every pflag set and children commands"},{"path":"completions.go","start_line":55,"end_line":55,"text":"\t// ShellCompDirectiveError indicates an error occurred and completions should be ignored."}],"provenance":{"input_sha256":"b62eb29368bda0e08258a8cf3aa61fec706e82343529a51681f86e00f99b401d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/user_guide.md:280-287"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/user_guide.md","start_line":280,"end_line":287,"text":"### Local Flags\n\nA flag can also be assigned locally, which will only apply to that specific command.\n\n```go\nlocalCmd.Flags().StringVarP(\u0026Source, \"source\", \"s\", \"\", \"Source directory to read from\")\n```\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+With `Command.TraverseChildren` enabled, Cobra parses the root command’s local flags while traversing to the child, so root flags placed before the child command name are honored. Without it, parent-local flags are ignored. Evidence: `site/content/user_guide.md:287-292` states that `TraverseChildren` makes Cobra “parse local flags on each command before executing the target command.”
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6d-c4aa-7692-823b-f438e4fa5916"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer how annotations become handlers; it only reports missing logic. The bundle omits the required filename, custom-handler, and subdirectory branches, including handler-list registration and default behaviors."}}
+{"type":"turn.completed","usage":{"input_tokens":18238,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":63,"reasoning_output_tokens":15}}

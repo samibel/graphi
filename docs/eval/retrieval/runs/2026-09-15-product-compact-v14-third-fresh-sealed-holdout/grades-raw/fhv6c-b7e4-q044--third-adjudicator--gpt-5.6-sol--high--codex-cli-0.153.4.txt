@@ -1,0 +1,1 @@
+FAIL: The transcript supports hook inheritance, execution order, and context accessors, but never establishes that the parent’s persistent pre-run hook receives the executing child as `cmd`. That required link is unsupported, so the claimed replacement of the child’s context cannot be verified.

@@ -1,0 +1,1 @@
+The global `COBRA_ACTIVE_HELP=0` setting takes precedence over `<PROGRAM>_ACTIVE_HELP`. In `active_help.go:51-58`, `GetActiveHelpConfig` only reads the program-specific variable when the global value is not `"0"`; `site/content/active_help.md:126-128` confirms it returns `"0"` regardless of `<PROGRAM>_ACTIVE_HELP`.

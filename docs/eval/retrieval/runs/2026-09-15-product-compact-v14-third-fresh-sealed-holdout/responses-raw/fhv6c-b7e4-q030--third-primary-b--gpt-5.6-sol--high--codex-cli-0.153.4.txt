@@ -1,0 +1,9 @@
+`OnlyValidArgs` returns immediately with an error for the first positional argument not in `cmd.ValidArgs`. It strips any tab-separated descriptions from valid entries before comparing (`args.go:49–66`).
+
+The error is:
+
+```text
+invalid argument "<value>" for "<command path>"<optional suggestions>
+```
+
+It uses `cmd.CommandPath()` and appends suggestions based on `args[0]` via `cmd.findSuggestions(args[0])` (`args.go:61`; `command.go:750–765`). If every argument is valid—or `ValidArgs` is empty—it returns `nil`.

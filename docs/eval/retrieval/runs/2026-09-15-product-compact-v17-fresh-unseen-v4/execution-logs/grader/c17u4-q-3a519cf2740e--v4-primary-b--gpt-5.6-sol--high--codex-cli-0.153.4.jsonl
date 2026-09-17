@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d5-9e12-71c2-969a-508180a972f9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response declares insufficiency and omits the essential verification of the invocation name in both root and child help usage. The bundle shows the display-name annotation but lacks the help invocations and assertions."}}
+{"type":"turn.completed","usage":{"input_tokens":17813,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

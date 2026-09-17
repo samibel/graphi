@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 50,
+  "previous_sha256": "c5b4dfc0b8f46728f8a0a572cb744559e26a059156ac52e6358803a1956616af",
+  "kind": "response",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "5740a0450bc762d7958feadd85f5f174c9118eb848de539d7b1536aa632df011",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "SuggestionsFor checks each available child command and suggests its name if ld(typedName, cmd.Name(), true) is at most SuggestionsMinimumDistance or its lowercased name starts with the lowercased input. It also adds the command for case-insensitive matches against its explicit SuggestFor entries (command.go:832-849). findSuggestions returns nothing when DisableSuggestions is true, defaults a nonpositive distance to 2, and formats results under \"Did you mean this?\" (command.go:750-762).\n",
+  "sha256": "7a625b9e9a7952b51669f3b305e3b6db602a3a757b5ecad90355368a177af4a7"
+}

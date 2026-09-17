@@ -1,0 +1,8 @@
+It uppercases the root command’s name, replaces every non-ASCII-alphanumeric character with `_`, then appends `_ACTIVE_HELP`.
+
+Evidence:
+
+- `active_help.go:46-49` states this transformation.
+- `active_help.go:33` defines the replacement pattern as `[^A-Z0-9_]`.
+- `active_help.go:28` defines the suffix as `_ACTIVE_HELP`.
+- `command.go:1495-1503` shows the command name is the first word of its `Use` string.

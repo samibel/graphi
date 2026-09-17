@@ -45,17 +45,35 @@ type hybridSearchBridge struct {
 // converting its results. The limit is the per-source top-k from the
 // retrieval's candidate-union stage.
 func (b *hybridSearchBridge) search(ctx context.Context, query string, limit int) ([]lexicalHit, error) {
+	return b.searchWith(ctx, query, limit, false)
+}
+
+// searchReady selects the retrieval/6 term-balanced admission method. It is
+// only called for a ready semantic generation; degradation and explicit
+// lexical-only requests continue through the byte-frozen search method above.
+func (b *hybridSearchBridge) searchReady(ctx context.Context, query string, limit int) ([]lexicalHit, error) {
+	return b.searchWith(ctx, query, limit, true)
+}
+
+func (b *hybridSearchBridge) searchWith(ctx context.Context, query string, limit int, fairCandidates bool) ([]lexicalHit, error) {
 	if b == nil {
 		return nil, fmt.Errorf("retrieval: hybrid search adapter is nil")
 	}
 	if !b.deps.Available() || b.deps.Search == nil {
 		return nil, fmt.Errorf("retrieval: hybridsearch bridge has no available deps")
 	}
-	res, err := hybridsearch.Search(ctx, hybridsearch.Params{
+	params := hybridsearch.Params{
 		Query:    query,
 		MaxItems: limit,
 		Deps:     b.deps,
-	})
+	}
+	var res *contract.Result
+	var err error
+	if fairCandidates {
+		res, err = hybridsearch.SearchFairCandidates(ctx, params)
+	} else {
+		res, err = hybridsearch.Search(ctx, params)
+	}
 	if err != nil {
 		return nil, err
 	}

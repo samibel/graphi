@@ -1,0 +1,3 @@
+Alias invocation is handled during child-command lookup: `command.go:768-772` checks whether the input matches `cmd.Name()` or `cmd.HasAlias(next)`. On a match, it records the exact invoked token in `cmd.commandCalledAs.name = next` and returns that command.
+
+`HasAlias` iterates over `Command.Aliases` (`command.go:1505-1513`), using `commandNameMatches`, which performs case-insensitive matching when `EnableCaseInsensitive` is enabled and exact matching otherwise (`command.go:1876-1885`). Prefix matching similarly records whether the command was selected by its canonical name or alias (`command.go:1524-1538`).

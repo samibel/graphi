@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-6664-7210-8ae7-627c4e12d6a3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`command_notwin.go` declares:\n\n- Package `cobra` ([line 18]).\n- Package-level variable `preExecHookFn` with type `func(*Command)` ([line 20]).\n\nThe response contains no other visible declarations."}}
+{"type":"turn.completed","usage":{"input_tokens":15768,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":123,"reasoning_output_tokens":68}}

@@ -1,0 +1,1 @@
+INSUFFICIENT The responses show `mergePersistentFlags` merging command and parent persistent flags (`command.go:1847–1853`), but omit the implementation of `updateParentsPflags` and any code showing where `pflag.CommandLine` enters those flag sets.

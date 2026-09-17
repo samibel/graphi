@@ -1,0 +1,15 @@
+`(*Command).ExecuteC()` executes a command and returns the selected `*Command` plus any error (`command.go:1051–1052`).
+
+Its visible flow is:
+
+- Initializes a missing context with `context.Background()` (`1053–1055`).
+- Redirects execution to the root command when called on a child (`1058–1060`).
+- Runs the optional Windows pre-execution hook (`1063–1066`).
+- Initializes default help, completion, and command groups (`1068–1075`).
+- Uses configured arguments, or `os.Args[1:]` except for `cobra.test` (`1077–1083`).
+- Initializes the hidden completion command (`1085–1086`).
+- Selects the target using `Traverse(args)` when `TraverseChildren` is enabled; otherwise `Find(args)` (`1088–1094`).
+- On lookup failure, optionally prints the error and help hint, then returns (`1095–1106`).
+- Marks the command as called, records its invoked name, propagates the parent context when needed, and invokes `cmd.execute(flags)` (`1108–1116`).
+
+The supplied snippet ends immediately after `if err != nil {`, so its final error-handling and return behavior are not present.

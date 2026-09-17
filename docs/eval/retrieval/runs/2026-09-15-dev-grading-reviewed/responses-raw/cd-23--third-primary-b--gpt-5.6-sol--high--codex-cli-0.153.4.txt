@@ -1,0 +1,13 @@
+When a command runs, Cobra checks whether `c.Deprecated` is non-empty. If so, it prints:
+
+```text
+Command "<name>" is deprecated, <deprecation message>
+```
+
+Evidence: `command.go:879-881`:
+
+```go
+if len(c.Deprecated) > 0 {
+    c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)
+}
+```

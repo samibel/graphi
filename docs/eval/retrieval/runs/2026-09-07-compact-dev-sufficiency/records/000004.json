@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 4,
+  "previous_sha256": "2c9636b0bc362d8f2fdbf71b5978296651cd63b5c21dc2d45564ed24b4d0d2dc",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "2b6af3492ed8be69c603c9a8b3b3bb33b947c66114ed38cb593e6b532d6f73db",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).RegisterFlagCompletionFunc(flagName string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error` registers a completion function for a flag and begins by resolving it with `c.Flag(flagName)` (`completions.go:132–134`). The callback returns completion strings and a `ShellCompDirective`. This Go completion mechanism works across all shells (`shell_completions.go:51–53`). `GetFlagCompletionFunc(flagName)` retrieves a registered callback with an availability boolean (`completions.go:148–150`).\n",
+  "sha256": "9d2b5d742e1fcad8b5ba644a7e6c35ff569e315f0beec31a7bd233a12e7b0abd"
+}

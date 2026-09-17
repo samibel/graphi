@@ -1,0 +1,9 @@
+`flag_groups.go` belongs to package `cobra` and implements grouped-flag handling.
+
+- Lines 25–29 define annotation keys for required-together, one-required, and mutually-exclusive flag groups.
+- Lines 32–40 begin `(*Command).MarkFlagsRequiredTogether`, which merges persistent flags, validates each named flag exists, panics if one is missing, and attaches the group annotation.
+- Lines 111–119 define `hasAllFlags`, checking that every named flag exists in a `pflag.FlagSet`.
+- Line 121 declares `processFlagForGroupAnnotation`.
+- Lines 144–145 begin `validateRequiredFlagGroups`, sorting the group-status keys before validation.
+
+The response is truncated, so the remainder of these implementations is unavailable.

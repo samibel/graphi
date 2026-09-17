@@ -1,0 +1,93 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 994ab7c97c49c584126f7a73437566399587633c80b306a1bdaa2623f6af1712
+QUERY ID: fhv6c-b7e4-q018
+
+QUESTION:
+doc/cmd_test.go
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/cmd_test.go:24-45 anchor="func init() {" reason=The shared documentation-test setup builds the flag and command tree exercised by the package's generators.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 00c5597ff0b5; read in order (277/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"doc/cmd_test.go","start_line":15,"end_line":15,"text":"package doc"},{"path":"doc/cmd_test.go","start_line":101,"end_line":105,"text":"func checkStringOmits(t *testing.T, got, expected string) {\n\tif strings.Contains(got, expected) {\n\t\tt.Errorf(\"Expected to not contain: \\n %v\\nGot: %v\", expected, got)\n\t}\n}"},{"path":"doc/cmd_test.go","start_line":24,"end_line":24,"text":"func emptyRun(*cobra.Command, []string) {}"},{"path":"doc/cmd_test.go","start_line":26,"end_line":40,"text":"func init() {\n\trootCmd.PersistentFlags().StringP(\"rootflag\", \"r\", \"two\", \"\")\n\trootCmd.PersistentFlags().StringP(\"strtwo\", \"t\", \"two\", \"help message for parent flag strtwo\")\n\n\techoCmd.PersistentFlags().StringP(\"strone\", \"s\", \"one\", \"help message for flag strone\")\n\techoCmd.PersistentFlags().BoolP(\"persistentbool\", \"p\", false, \"help message for flag persistentbool\")\n\techoCmd.Flags().IntP(\"intone\", \"i\", 123, \"help message for flag intone\")\n\techoCmd.Flags().BoolP(\"boolone\", \"b\", true, \"help message for flag boolone\")\n\n\ttimesCmd.PersistentFlags().StringP(\"strtwo\", \"t\", \"2\", \"help message for child flag strtwo\")\n\ttimesCmd.Flags().IntP(\"inttwo\", \"j\", 234, \"help message for flag inttwo\")\n\ttimesCmd.Flags().BoolP(\"booltwo\", \"c\", false, \"help message for flag booltwo\")\n\n\tprintCmd.PersistentFlags().StringP(\"strthree\", \"s\", \"three\", \"help message for flag strthree\")\n\tprintCmd.Flags().IntP(\"intthree\", \"i\", 345, \"help message for flag intthree\")"},{"path":"doc/cmd_test.go","start_line":47,"end_line":52,"text":"var rootCmd = &cobra.Command{\n\tUse:   \"root\",\n\tShort: \"Root short description\",\n\tLong:  \"Root long description\",\n\tRun:   emptyRun,\n}"},{"path":"doc/cmd_test.go","start_line":54,"end_line":60,"text":"var echoCmd = &cobra.Command{\n\tUse:     \"echo [string to echo]\",\n\tAliases: []string{\"say\"},\n\tShort:   \"Echo anything to the screen\",\n\tLong:    \"an utterly useless command for testing\",\n\tExample: \"Just run cobra-test echo\",\n}"},{"path":"doc/cmd_test.go","start_line":62,"end_line":67,"text":"var echoSubCmd = &cobra.Command{\n\tUse:   \"echosub [string to print]\",\n\tShort: \"second sub command for echo\",\n\tLong:  \"an absolutely utterly useless command for testing gendocs!.\",\n\tRun:   emptyRun,\n}"},{"path":"doc/cmd_test.go","start_line":69,"end_line":75,"text":"var timesCmd = &cobra.Command{\n\tUse:        \"times [# times] [string to echo]\",\n\tSuggestFor: []string{\"counts\"},\n\tShort:      \"Echo anything to the screen more times\",\n\tLong:       `a slightly useless command for testing.`,\n\tRun:        emptyRun,\n}"},{"path":"doc/cmd_test.go","start_line":77,"end_line":82,"text":"var deprecatedCmd = &cobra.Command{\n\tUse:        \"deprecated [can't do anything here]\",\n\tShort:      \"A command which is deprecated\",\n\tLong:       `an absolutely utterly useless command for testing deprecation!.`,\n\tDeprecated: \"Please use echo instead\",\n}"},{"path":"doc/cmd_test.go","start_line":84,"end_line":88,"text":"var printCmd = &cobra.Command{\n\tUse:   \"print [string to print]\",\n\tShort: \"Print anything to the screen\",\n\tLong:  `an absolutely utterly useless command for testing.`,\n}"}],"provenance":{"input_sha256":"fd97da9f3c399ffe5ab78afb23e3f22c296be1090fa1e7978a96da7ebfb48fd8","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`doc/cmd_test.go` is in package `doc` (line 15) and defines Cobra command fixtures plus test helpers:
+
+- `emptyRun` is a no-op Cobra command handler (line 24).
+- `init` configures persistent/local string, integer, and boolean flags on `rootCmd`, `echoCmd`, `timesCmd`, and `printCmd` (lines 26–40).
+- Command variables:
+  - `rootCmd`: root command with short/long descriptions and `emptyRun` (lines 47–52).
+  - `echoCmd`: `echo` command, alias `say`, with description and example (lines 54–60).
+  - `echoSubCmd`: `echosub` subcommand using `emptyRun` (lines 62–67).
+  - `timesCmd`: repeat-echo command, suggested for `counts`, using `emptyRun` (lines 69–75).
+  - `deprecatedCmd`: deprecated command directing users to `echo` (lines 77–82).
+  - `printCmd`: print command with short/long descriptions (lines 84–88).
+- `checkStringOmits` fails a test when `got` contains the supposedly omitted string (lines 101–105).
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,8 @@
+Set test flags as command arguments with `SetArgs`, then execute the command:
+
+```go
+cmd.SetArgs([]string{"--flag", "value"})
+err := cmd.Execute()
+```
+
+Evidence: `command.go:275-279` says `SetArgs` is “particularly useful when testing” and stores the slice in `c.args`. Execution reads `args := c.args` (`command.go:1075-1084`), and the arguments are parsed by `c.ParseFlags(a)` (`command.go:888-890`).

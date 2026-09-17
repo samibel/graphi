@@ -1,0 +1,1 @@
+The exact-path answer correctly describes GenMan and its nil-header allocation from doc/man_docs.go:103-108. The options fields and their use are visible at 82-86. The empty-title transformation and empty-section default are directly implemented in preserved lines 118-124.

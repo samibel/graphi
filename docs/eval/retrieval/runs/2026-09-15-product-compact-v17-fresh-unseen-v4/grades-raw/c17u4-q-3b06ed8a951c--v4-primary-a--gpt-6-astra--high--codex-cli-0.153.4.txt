@@ -1,0 +1,1 @@
+PASS: The response states the exact error `required flag(s) "foo1", "foo2" not set`, including both missing flags in order, and accurately describes the assertion in the preserved `command_test.go:818–834` span.

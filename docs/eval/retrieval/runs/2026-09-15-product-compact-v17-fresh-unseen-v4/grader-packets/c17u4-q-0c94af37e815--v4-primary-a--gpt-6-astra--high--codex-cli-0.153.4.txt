@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 64e9c1b7bd4d78e54541210f64ea3a94a10ef1592165832deaf65724029df559
+QUERY ID: c17u4-q-0c94af37e815
+
+QUESTION:
+In cobra.go, how does AddTemplateFuncs add an entire map to the template function registry?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:89-95 anchor="func AddTemplateFuncs(tmplFuncs template.FuncMap)" reason=The implementation iterates over each map entry and assigns it to the shared registry.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query a8e323a15597; read in order (300/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":82,"end_line":95,"text":"\n// AddTemplateFunc adds a template function that's available to Usage and Help\n// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {\n\ttemplateFuncs[name] = tmplFunc\n}\n\n// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"},{"path":"command.go","start_line":310,"end_line":314,"text":"\n// SetUsageTemplate sets usage template. Can be defined by Application.\nfunc (c *Command) SetUsageTemplate(s string) {\n\tc.usageTemplate = s\n}"},{"path":"command.go","start_line":477,"end_line":495,"text":"\n// UsageString returns usage string.\nfunc (c *Command) UsageString() string {\n\t// Storing normal writers\n\ttmpOutput := c.outWriter\n\ttmpErr := c.errWriter\n\n\tbb := new(bytes.Buffer)\n\tc.outWriter = bb\n\tc.errWriter = bb\n\n\tCheckErr(c.Usage())\n\n\t// Setting things back to normal\n\tc.outWriter = tmpOutput\n\tc.errWriter = tmpErr\n\n\treturn bb.String()\n}"},{"path":"cobra.go","start_line":178,"end_line":185,"text":"\n// tmpl executes the given template text on data, writing the result to w.\nfunc tmpl(w io.Writer, text string, data interface{}) error {\n\tt := template.New(\"top\")\n\tt.Funcs(templateFuncs)\n\ttemplate.Must(t.Parse(text))\n\treturn t.Execute(w, data)\n}"},{"path":"cobra.go","start_line":31,"end_line":40,"text":"\nvar templateFuncs = template.FuncMap{\n\t\"trim\":                    strings.TrimSpace,\n\t\"trimRightSpace\":          trimRightSpace,\n\t\"trimTrailingWhitespaces\": trimRightSpace,\n\t\"appendIfNotPresent\":      appendIfNotPresent,\n\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}"},{"path":"command.go","start_line":60,"end_line":63,"text":"\t// Example: add [-F file | -D dir]... [-f format] profile\n\tUse string\n\n\t// Aliases is an array of aliases that can be used instead of the first word in Use."},{"path":"command.go","start_line":1050,"end_line":1053,"text":"\n// ExecuteC executes the command.\nfunc (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {"},{"path":"command.go","start_line":1600,"end_line":1613,"text":"// HasHelpSubCommands determines if a command has any available 'help' sub commands\n// that need to be shown in the usage/help default template under 'additional help\n// topics'.\nfunc (c *Command) HasHelpSubCommands() bool {\n\t// return true on the first found available 'help' sub command\n\tfor _, sub := range c.commands {\n\t\tif sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no available 'help' sub commands\n\treturn false\n}"}],"provenance":{"input_sha256":"0a67a26758bf8fdd57476a5033095061220da463eff4c4666d7293cc1dbbbc10","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `cobra.go:91–95`, `AddTemplateFuncs(tmplFuncs template.FuncMap)` loops over every entry with `for k, v := range tmplFuncs` and assigns `templateFuncs[k] = v`. This adds each function to the registry, overwriting any existing entry with the same key.
+----- END THE RATER'S RESPONSE -----

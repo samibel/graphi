@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-1408:primary-a
+Outcome: pass
+Rationale: Gives the supported subcommand Flag(name) route for a global/parent flag object, grounded in the explicit tree-climbing contract, and limits claims because typed value getters are absent.

@@ -1,0 +1,1 @@
+PASS: The response identifies Command.Root and accurately describes its recursive parent traversal and return of itself when no parent exists, supported by command.go:860–866. Its HasParent explanation is supported by command.go:1631–1634.

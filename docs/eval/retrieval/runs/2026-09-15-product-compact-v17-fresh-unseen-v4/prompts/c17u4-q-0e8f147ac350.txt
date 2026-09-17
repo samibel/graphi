@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+In cobra.go, how are functions supplied to OnFinalize accumulated?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query e270c2e2282d; read in order (226/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":102,"end_line":107,"text":"\n// OnFinalize sets the passed functions to be run when each command's\n// Execute method is terminated.\nfunc OnFinalize(y ...func()) {\n\tfinalizers = append(finalizers, y...)\n}"},{"path":"cobra.go","start_line":37,"end_line":49,"text":"\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}\n\nvar initializers []func()\nvar finalizers []func()\n\nconst (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false"},{"path":".github/labeler.yml","start_line":1,"end_line":6,"text":"# changes to documentation generation\n\"area/docs-generation\": doc/**/*\n\n# changes to the core cobra command\n\"area/cobra-command\":\n- any: ['./cobra.go', './cobra_test.go', './*command*.go']"},{"path":"bash_completions.go","start_line":492,"end_line":499,"text":"\t}\n}\n\nconst cbn = \"\\\")\\n\"\n\nfunc writeShortFlag(buf io.StringWriter, flag *pflag.Flag, cmd *Command) {\n\tname := flag.Shorthand\n\tformat := \"    \""},{"path":"command.go","start_line":32,"end_line":36,"text":"\nconst (\n\tFlagSetByCobraAnnotation     = \"cobra_annotation_flag_set_by_cobra\"\n\tCommandDisplayNameAnnotation = \"cobra_annotation_command_display_name\"\n)"},{"path":"completions.go","start_line":34,"end_line":36,"text":"\n// Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it.\nvar flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}"},{"path":"bash_completions.go","start_line":507,"end_line":533,"text":"\nfunc writeFlag(buf io.StringWriter, flag *pflag.Flag, cmd *Command) {\n\tname := flag.Name\n\tformat := \"    flags+=(\\\"--%s\"\n\tif len(flag.NoOptDefVal) == 0 {\n\t\tformat += \"=\"\n\t}\n\tformat += cbn\n\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\tif len(flag.NoOptDefVal) == 0 {\n\t\tformat = \"    two_word_flags+=(\\\"--%s\" + cbn\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\t}\n\twriteFlagHandler(buf, \"--\"+name, flag.Annotations, cmd)\n}\n\nfunc writeLocalNonPersistentFlag(buf io.StringWriter, flag *pflag.Flag) {\n\tname := flag.Name\n\tformat := \"    local_nonpersistent_flags+=(\\\"--%[1]s\" + cbn\n\tif len(flag.NoOptDefVal) == 0 {\n\t\tformat += \"    local_nonpersistent_flags+=(\\\"--%[1]s=\" + cbn\n\t}\n\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\tif len(flag.Shorthand) > 0 {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    local_nonpersistent_flags+=(\\\"-%s\\\")\\n\", flag.Shorthand))\n\t}\n}"}],"provenance":{"input_sha256":"6cbf6f8fc406173344d06b1a2944177a01f9c3ead90451bbac7f1e76ba61bd47","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

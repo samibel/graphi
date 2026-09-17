@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits `Traverse`’s implementation and any no-parent-flags test path; it only includes general `TraverseChildren` documentation (`command.go:222-227`, `site/content/user_guide.md:288-294`).

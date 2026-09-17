@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 95,
+  "previous_sha256": "1c46fc1ab894a76a56222d82bc6f1059cdb7488f74d742de407f72dc382966bb",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 0,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "71614b8a59d00688eabe4a935484570e5aaeaab521acdb7668bea3c5496fd970",
+  "outcome": "pass",
+  "rationale": "The answer supplies the requested implementation location: ValidateRequiredFlags at command.go:1146-1148, whose preserved comment explicitly describes the required-flag check and error result. The visible DisableFlagParsing condition is accurately described. The question asks where validation is implemented; the answer correctly avoids asserting unsupported callback ordering and expressly notes that the call site is absent.\n",
+  "sha256": "457cce1db576f50a02e3364214781aab9cfe4e59e1164199bf0ecd1bff4b943c"
+}

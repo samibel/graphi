@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q018",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "4614760f7f5bb7fa120f3ed07b98a452fe6200cb537b271bd20b330f6ddd6683",
+  "bundle_sha256": "7ffb3de42b4be9e27496f23183c4636050f7336ecb94cc7984517a23ed230f44",
+  "prompt_sha256": "69b41cf4f7330f410c4e66caa5ecc88ac763c9af81e5121a5ab5c56d079fff53",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It produces default reStructuredText hyperlink markup:\n\n```text\n`name \u003cref.rst\u003e`_\n```\n\nEvidence: `doc/rest_docs.go`, lines 52–54, symbol `defaultLinkHandler`:\n\n```go\nreturn fmt.Sprintf(\"`%s \u003c%s.rst\u003e`_\", name, ref)\n```",
+  "responded_at": "2026-09-15T18:36:58Z",
+  "sha256": "8bc91ab76a3703707ef4e0a4831bdc33e0369f3ae55a6f4e29fce2d964d5f55a"
+}

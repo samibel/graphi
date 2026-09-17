@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q030",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "5a62630292daee20b6b51e495be4ec2a1726abe5e2963fd797a224787fd858f5",
+  "bundle_sha256": "afe9c98a1dee1b8a1f6cbdec736e066c6ac72fc6d9bdb1988cc725f706bc690a",
+  "prompt_sha256": "18148cb413f4ba60f856245f58b9e4297b7d6e2cd944928fa5e5243b1cff4c31",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The default top-level `--version` flag is added when the root command’s `Version` field is set (`site/content/user_guide.md:594`).\n\nIf short `-v` is unused, `InitDefaultVersionFlag` registers `--version` with shorthand `-v`. If `-v` already exists, it registers only `--version`, leaving the existing `-v` intact (`command.go:1217–1221`, `ShorthandLookup(\"v\")`, `BoolP`, and `Bool`).",
+  "responded_at": "2026-09-13T12:34:41Z",
+  "sha256": "b22a66efac1f00578115a1b6cbb0a65bfe42a918c246922493bb74ceb80910de"
+}

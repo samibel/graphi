@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q061",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "e45995abca84c875aad8fbf4d3cba88ace8a8d5b37cbf2bf1f48574ad4f5ed92",
+  "bundle_sha256": "ed5c059042865d9babddc854c60c02f1d09d9edf8b3350faf53c085b590b264e",
+  "prompt_sha256": "4b7edc582141ea32ea8327018d3b99350654002b57c3f7b00e17947ef42840ba",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A descendant will use the ancestor’s custom help function. In `command.go:450-468`, `HelpFunc()` checks `c.helpFunc`, then recursively calls `c.Parent().HelpFunc()` when a parent exists; Cobra’s default help function is returned only after reaching a command with no parent and no custom function.",
+  "responded_at": "2026-09-13T12:38:44Z",
+  "sha256": "32e8bf48a1b69f8800e136a49c520ee1aba1d1bf964838ea99c3a485404909de"
+}

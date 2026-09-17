@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Must a command define both Run and RunE to count as runnable?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 11088ed95891; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":127,"end_line":153,"text":"\tPersistentPreRunE func(cmd *Command, args []string) error\n\t// PreRun: children of this command will not inherit.\n\tPreRun func(cmd *Command, args []string)\n\t// PreRunE: PreRun but returns an error.\n\tPreRunE func(cmd *Command, args []string) error\n\t// Run: Typically the actual work function. Most commands will only implement this.\n\tRun func(cmd *Command, args []string)\n\t// RunE: Run but returns an error.\n\tRunE func(cmd *Command, args []string) error\n\t// PostRun: run after the Run command.\n\tPostRun func(cmd *Command, args []string)\n\t// PostRunE: PostRun but returns an error.\n\tPostRunE func(cmd *Command, args []string) error\n\t// PersistentPostRun: children of this command will inherit and execute after PostRun.\n\tPersistentPostRun func(cmd *Command, args []string)\n\t// PersistentPostRunE: PersistentPostRun but returns an error.\n\tPersistentPostRunE func(cmd *Command, args []string) error\n\n\t// groups for subcommands\n\tcommandgroups []*Group\n\n\t// args is actual args parsed from flags.\n\targs []string\n\t// flagErrorBuf contains all error messages from pflag.\n\tflagErrorBuf *bytes.Buffer\n\t// flags is full set of flags.\n\tflags *flag.FlagSet"},{"path":"command.go","start_line":1550,"end_line":1553,"text":"// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"command.go","start_line":1570,"end_line":1581,"text":"\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}\n\n// IsAdditionalHelpTopicCommand determines if a command is an additional\n// help topic command; additional help topic command is determined by the\n// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated."},{"path":"command.go","start_line":48,"end_line":53,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:"},{"path":"command.go","start_line":56,"end_line":56,"text":"\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"completions.go","start_line":91,"end_line":94,"text":"\t// behavior after completions have been provided.\n\t// This one must be last to avoid messing up the iota count.\n\tShellCompDirectiveDefault ShellCompDirective = 0\n)"},{"path":"completions.go","start_line":67,"end_line":67,"text":"\t// should be used as file extension filters."}],"provenance":{"input_sha256":"6299bb663b123de46318d8a6472c42a117e14ae6f77ee48cfeb35958114f9137","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

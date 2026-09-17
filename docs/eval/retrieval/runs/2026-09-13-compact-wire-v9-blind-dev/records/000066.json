@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 66,
+  "previous_sha256": "840963216b0fd523dd5728bde48c632f77c9db7fb65d76c31c75215b7899a6a7",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "9211cb79c0959c20ec83c94babe85de1e1167d561a721ae793e815f71c8ac1b6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Completion is built in and customizable:\n\n- `Command.InitDefaultCompletionCmd()` adds a default `completion` command unless it is disabled, the command has no subcommands, or the program already defines one (`completions.go:678–685`).\n- The command name is `completion`; it supports `--no-descriptions`, defaulting to `false` (`completions.go:95–102`).\n- Generated scripts automatically complete commands and flags. Noun completion can use `ValidArgs`, while descriptions can be globally disabled with `rootCmd.CompletionOptions.DisableDescriptions = true` (`site/content/completions/_index.md:112–127`).",
+  "sha256": "6b92aa926b8fdc79e5a55492a2d4e0508bc9afe229c8b3f8c00289667e7c3c89"
+}

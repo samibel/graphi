@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 123,
+  "previous_sha256": "94b0357dcffbd8727eeb27bddee5549151c34ba0c3a5ae20f7ef610c8bec3ef0",
+  "kind": "grade",
+  "query_id": "cb-28",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "c4122e95dae1ab219e293cc861febb0b38483331ed33e925ef046c9ae5e8f01b",
+  "outcome": "pass",
+  "rationale": "The answer correctly states the core behavior directly supported by the bundle: `GroupID` places a subcommand under a group in its parent’s help output (`command.go:73-75`). Its supporting details are also evidenced: a group has `ID` and `Title` (`command.go:41-45`), groups are registered with `AddGroup` (`command.go:1356-1359`), and help/completion command group IDs have dedicated setters (`command.go:332-345`). Although the bundle omits the validation/panic behavior referenced by the development key, that detail is not necessary to answer what the group ID does.\n",
+  "sha256": "2af24d2c54d8edc009c807b08cf0840b36c55c37762209db91353540fe44a09c"
+}

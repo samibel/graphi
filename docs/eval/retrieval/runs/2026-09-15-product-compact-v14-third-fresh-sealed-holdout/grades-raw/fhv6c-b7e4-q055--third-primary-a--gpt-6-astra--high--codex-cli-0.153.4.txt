@@ -1,0 +1,1 @@
+PASS: The transcript supports alias invocation selecting and returning the same command, recording the supplied invocation token, and matching aliases exactly unless EnableCaseInsensitive enables strings.EqualFold. All cited ranges exist and support the attached claims.

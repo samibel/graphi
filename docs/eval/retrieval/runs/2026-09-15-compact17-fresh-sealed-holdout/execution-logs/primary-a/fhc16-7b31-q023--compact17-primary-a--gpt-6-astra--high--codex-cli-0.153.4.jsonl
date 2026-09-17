@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-c0d8-7493-983d-b5c7b342beef"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When a child’s `inReader` is nil, `getIn(def)` calls `c.parent.getIn(def)`, recursively choosing the nearest ancestor with a non-nil reader. If no ancestor has one, it returns `def` (`command.go`, lines 413–422).\n\nFor `InOrStdin()`, that default is `os.Stdin`, supplied by `c.getIn(os.Stdin)` (`command.go`, lines 388–392)."}}
+{"type":"turn.completed","usage":{"input_tokens":17054,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":98,"reasoning_output_tokens":0}}

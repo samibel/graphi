@@ -1,0 +1,1 @@
+`ContainsGroup` compares against **group IDs**. In `command.go:1347–1350`, `ContainsGroup(groupID string)` loops over `c.commandgroups` and checks `if x.ID == groupID`. It does not compare the separate `Title` field defined in `Group` (`command.go:42–44`).

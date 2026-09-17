@@ -1,0 +1,1 @@
+PASS: The bundle supports default section `"1"` and separator `"_"`, their non-empty option overrides, replacing command-path spaces with the separator, and constructing the filename with `filepath.Join(opts.Path, basename+"."+section)`.

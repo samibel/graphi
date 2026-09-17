@@ -1,0 +1,1 @@
+PASS: The response correctly describes current-command then parent lookup, and the fallback’s persistent-flag merge, usage-template rendering to OutOrStderr with command data, and error printing and return. All cited locations exist and support the claims.

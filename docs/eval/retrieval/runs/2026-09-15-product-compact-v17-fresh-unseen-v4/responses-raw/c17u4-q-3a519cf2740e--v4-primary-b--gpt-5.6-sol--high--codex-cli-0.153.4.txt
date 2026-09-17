@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `TestPlugin` setting `CommandDisplayNameAnnotation` to `"kubectl plugin"` in `command_test.go:369-381`, but omits the help invocation and assertion verifying the displayed name.

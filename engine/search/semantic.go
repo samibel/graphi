@@ -157,7 +157,7 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 	if query == "" {
 		return SemanticResponse{Query: query, Available: true, State: embed.StateReady, Hits: []SemanticHit{}}, nil
 	}
-	vecs, err := emb.Embed(ctx, []string{query})
+	vecs, err := embed.EmbedQuery(ctx, emb, query)
 	if err != nil {
 		// AC-5: an embedder that surfaces a typed UnavailableError must
 		// reach SemanticSearch as the typed unavailable response with

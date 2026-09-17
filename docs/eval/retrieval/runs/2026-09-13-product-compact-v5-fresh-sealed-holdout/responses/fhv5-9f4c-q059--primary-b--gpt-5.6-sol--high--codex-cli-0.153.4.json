@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q059",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "315c4972e1db1ce94c4183d1399a1eadd73ed3a8a22768d93716d261ed19d423",
+  "bundle_sha256": "793b43bbaebc7385520aa4e724dc8782cb544bc704bcf501194ae2650a74afae",
+  "prompt_sha256": "1ae7da2509a7a56b42002280d8c10e404883e2a7e79bf8a356231d1269ef6403",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Related state is updated too. In `command.go:1363-1392`, `RemoveCommand`:\n\n- Sets each removed child’s `command.parent = nil` (`command.go:1369`).\n- Replaces the parent’s `c.commands` slice with the retained children (`command.go:1375`).\n- Resets and recomputes the parent’s layout-length caches: `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen` (`command.go:1377-1392`).",
+  "responded_at": "2026-09-13T12:38:29Z",
+  "sha256": "113a8cd04af292b0e2d746c6e99535235b9edb4492bdd7b44387a0879b44fcfa"
+}

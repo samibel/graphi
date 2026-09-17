@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a484-54e0-7232-b220-ffe3f022f573"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly gives `command.DisableSuggestions = true`, supported by `site/content/user_guide.md:713`, and accurately cites `command.go:751-753` for the immediate empty-string return that suppresses suggestions."}}
+{"type":"turn.completed","usage":{"input_tokens":17943,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":120,"reasoning_output_tokens":67}}

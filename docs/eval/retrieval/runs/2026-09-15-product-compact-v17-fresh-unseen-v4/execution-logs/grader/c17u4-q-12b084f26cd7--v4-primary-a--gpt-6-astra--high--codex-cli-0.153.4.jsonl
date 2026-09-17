@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cc-66be-7f10-bd83-bb25a065870f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the local errWriter check, recursive parent inheritance, and fallback to def. It also correctly identifies os.Stderr as the default supplied by ErrOrStderr(); all cited lines resolve within the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17567,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

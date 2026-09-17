@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-2e6ac50719f4",
+  "response_sha256": "459fca785b7eeef4cefb3346d93a58ec5d877763c269663051b9babb57a00a6c",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response names all four CompletionOptions switches and accurately describes their independent effects. Every claim and cited line is supported by the preserved completions.go:103–116 span.",
+  "graded_at": "2026-09-15T20:47:13Z",
+  "sha256": "b6e44dbeb5a500918079dff5f9353092c72b8a1fc71689c2673f6211f51c22f9"
+}

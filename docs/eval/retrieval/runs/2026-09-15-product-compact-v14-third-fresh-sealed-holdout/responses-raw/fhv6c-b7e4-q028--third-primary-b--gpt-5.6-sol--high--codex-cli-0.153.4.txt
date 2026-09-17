@@ -1,0 +1,1 @@
+Yes. In `command.go:478–495`, `UsageString` assigns both `c.outWriter` and `c.errWriter` to the same `bytes.Buffer` (`bb`) before calling `c.Usage()`, then returns `bb.String()`. Thus normal and error writes are appended to one buffer in the order they occur.

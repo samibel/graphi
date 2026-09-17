@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q030",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "497a8ac850d4ffbbddb9b5499ce367ce1a184c194812130266ee89bbd902efeb",
+  "bundle_sha256": "9fa4d2a939d1a3e9cacce179afa87a8c336c132f897b2c61739a00023f57b51f",
+  "prompt_sha256": "1c7df1aa3d931770d1bacb47dacad6fe8525b10493418e04a4d404a185c7a770",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnlyValidArgs` returns immediately with an error for the first positional argument not in `cmd.ValidArgs`. It strips any tab-separated descriptions from valid entries before comparing (`args.go:49–66`).\n\nThe error is:\n\n```text\ninvalid argument \"\u003cvalue\u003e\" for \"\u003ccommand path\u003e\"\u003coptional suggestions\u003e\n```\n\nIt uses `cmd.CommandPath()` and appends suggestions based on `args[0]` via `cmd.findSuggestions(args[0])` (`args.go:61`; `command.go:750–765`). If every argument is valid—or `ValidArgs` is empty—it returns `nil`.",
+  "responded_at": "2026-09-15T08:30:03Z",
+  "sha256": "efa4acf4559febe37c664d9744ed9cd453150ab08debeacf3dd58fb82f0da7a2"
+}

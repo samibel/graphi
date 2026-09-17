@@ -1,0 +1,1 @@
+The help-output grouping purpose is explicitly preserved at command.go:73, with GroupID usage at command_test.go:1866. The cited Groups/AddGroup bodies support parent group management, and the help/completion group setter declarations are present at command.go:332-334 and 342-343.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 121,
+  "previous_sha256": "5c0b3ef2ce7c8be532bed87650c614d8d4ce97e17648856df0011af07397601d",
+  "kind": "grade",
+  "query_id": "cb-33",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ccfbab1cc147ee3bdc28b34af64fa9d9a10884f4f18db5f2816f1eddb7d96188",
+  "outcome": "pass",
+  "rationale": "The answer directly addresses the ambiguous “Flags” query and accurately summarizes the strongest keyed result. `command.go:1641-1653` explicitly says `(*Command).Flags()` returns the complete applicable set, including local and persistent flags declared by the command and its parents. The broader description is supported by `README.md:68-74`; `LocalFlags` behavior and shadowing are supported by `command.go:1668-1693`; and `LocalNonPersistentFlags` filtering is supported by `command.go:1655-1666`. The statement about persistent-flag merging is a reasonable, limited inference from the preserved `mergePersistentFlags` symbol at `command.go:1849` and its explicit invocation in `LocalFlags`; it does not introduce unsupported repository details.\n",
+  "sha256": "e3d46963850969913a13994d85eaa2ab73e49bd4b368b699b06ad02b3e3f619b"
+}

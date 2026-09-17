@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows how commands are deemed available (`command.go:1559–1576`) but not how the legacy Bash generator collects child commands or aliases.

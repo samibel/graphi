@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved writer: initializes the noun array, sorts ValidArgs, strips tab descriptions, emits noun entries, and marks a non-nil ValidArgsFunction without invoking it. Both cited line ranges support the attached claims.

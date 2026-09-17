@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-7358-7882-98da-18017fb037b2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Completion is built in and customizable:\n\n- `Command.InitDefaultCompletionCmd()` adds a default `completion` command unless it is disabled, the command has no subcommands, or the program already defines one (`completions.go:678–685`).\n- The command name is `completion`; it supports `--no-descriptions`, defaulting to `false` (`completions.go:95–102`).\n- Generated scripts automatically complete commands and flags. Noun completion can use `ValidArgs`, while descriptions can be globally disabled with `rootCmd.CompletionOptions.DisableDescriptions = true` (`site/content/completions/_index.md:112–127`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16254,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":210,"reasoning_output_tokens":70}}

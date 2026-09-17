@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 73,
+  "previous_sha256": "8ffeea223ab31dbcb4122d63a00123784d2bb8b928f53f440919727351a65b63",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f4d951e1e4b2d1a3dd22098a749f981b80adb9f4e5d964df336dd30d0e579e3f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.Flag(name)`, which searches the current command and its parents, then read the returned flag’s `Value`:\n\n```go\nf := cmd.Flag(\"name\")\nif f != nil {\n    value := f.Value\n}\n```\n\nEvidence: `command.go:1794-1803` says `Flag` “climbs up the command tree” and checks `c.Flags().Lookup(name)` followed by `c.persistentFlag(name)`. `command.go:1641-1653` states that `Flags()` includes flags declared by all parents.",
+  "sha256": "0f382954bb9617ad3535dcb5ab2db65b51432106b3c408b1eb91b5b034877129"
+}

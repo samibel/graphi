@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6c-82dc-79f1-89a0-339e5ade6adb"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes recursive parent-path construction with space-separated descendant names and the root’s annotation-based display name fallback to Name(). Both cited ranges exist in the bundle and support the claims, including the annotation key."}}
+{"type":"turn.completed","usage":{"input_tokens":18363,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

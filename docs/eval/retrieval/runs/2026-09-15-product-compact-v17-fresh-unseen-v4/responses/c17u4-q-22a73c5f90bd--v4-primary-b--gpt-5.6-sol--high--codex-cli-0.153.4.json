@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-22a73c5f90bd",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "2ce9320e1c325a203c257f495f3a6c934f62466ea5b229b0699a6dc7f31ad8cb",
+  "bundle_sha256": "78e8bcedf4c482e5d6ccce964faff9a08e7b4fa0d202a9481d92e7db24ead00a",
+  "prompt_sha256": "e314e4ea2d4eb1e07ad38723a00b769cf17527a357bb980885f6902523977558",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the bodies of `Command.UsageFunc()` and `Command.UsageTemplate()` in `command.go` (lines 425–426 and 542–545), so neither the complete selection logic nor the default rendering behavior is shown.",
+  "responded_at": "2026-09-15T20:26:31Z",
+  "sha256": "b5a5d8b6751b83f6e38ee49015e4f64bb765547827b24fcd61dce53c44f2fcbb"
+}

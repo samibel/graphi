@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ca-5ef0-78c3-84c5-893885001e20"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the captured `choices` slice and `directive` as the values returned unchanged on every invocation, independent of callback arguments. The cited code is present in the preserved `completions.go` bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17605,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

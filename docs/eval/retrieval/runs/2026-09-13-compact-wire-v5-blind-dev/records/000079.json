@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 79,
+  "previous_sha256": "22bd4fb6f8e1b2f1b6c517bf6da061577b16a6dd19c6caa354e1b3cd463512d7",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "fbfe18d3188a76d09603bc52913eb9b7ddd921ee935fb65ded431211cda48e81",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Implement custom completion in Go with a command's `ValidArgsFunction` and/or `RegisterFlagCompletionFunc`, rather than a Bash-script annotation. Those Go mechanisms are portable across Bash, Zsh, Fish, and PowerShell (`site/content/completions/_index.md:477-478`). Cobra's generated shell scripts invoke the hidden `__complete` command (or `__completeNoDesc`) to request results from the program (`completions.go:25-34`); for Zsh, `GenZshCompletion` emits the script to an `io.Writer` (`zsh_completions.go:29-33`).\n",
+  "sha256": "d278ae998093667b1154a48373232a495c9cdb6a51abd38a9509293198eb4f76"
+}

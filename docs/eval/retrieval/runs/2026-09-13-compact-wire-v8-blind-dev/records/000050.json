@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 50,
+  "previous_sha256": "5c43faebefb658f0137eae8e057774872d55412954420f8dc3fc8327df0e2b83",
+  "kind": "response",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f310e58e1fffe3c2d2291d50241964d925b057852a54129dbbb692e945bf8db0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Unknown-command suggestions are computed in `(*Command).SuggestionsFor` as follows:\n\n- Iterate over `c.commands`, considering only commands where `cmd.IsAvailableCommand()` is true (`command.go:834-835`).\n- Suggest the command when either:\n  - the case-insensitive Levenshtein distance between the typed name and `cmd.Name()` is at most `c.SuggestionsMinimumDistance` (`command.go:836-838`; `cobra.go:187-188`), or\n  - the command name has the typed text as a case-insensitive prefix (`command.go:838-840`).\n- Also suggest it when the typed name case-insensitively equals any entry in `cmd.SuggestFor` (`command.go:842-845`).\n- The suggested value is `cmd.Name()`, defined as the first word of the command’s `Use` string (`command.go:1495-1503`).\n\nBefore this runs, `findSuggestions` returns nothing if `DisableSuggestions` is set, and defaults `SuggestionsMinimumDistance` to `2` when it is non-positive (`command.go:750-756`). Results are emitted in command traversal order beneath `Did you mean this?`; the shown code performs no sorting or deduplication (`command.go:757-765`, `command.go:831-850`).",
+  "sha256": "2c42e8e5d50276055ac6c5f784dfb11f1d58a0d59c3750e89159aee5016a289b"
+}

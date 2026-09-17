@@ -1,0 +1,1 @@
+PASS: The response correctly states `command.DisableSuggestions = true`, documented within `site/content/user_guide.md:710–714`. Its explanation that `findSuggestions` immediately returns an empty string when this flag is enabled is supported by `command.go:750–753`.

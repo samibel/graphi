@@ -1,0 +1,12 @@
+`flagCompError.Error()` constructs:
+
+```text
+Subcommand '<subCommand>' does not support flag '<flagName>'
+```
+
+In `completions.go:50–52`, its return statement is:
+```go
+return "Subcommand '" + e.subCommand + "' does not support flag '" + e.flagName + "'"
+```
+
+There is no trailing period or newline.

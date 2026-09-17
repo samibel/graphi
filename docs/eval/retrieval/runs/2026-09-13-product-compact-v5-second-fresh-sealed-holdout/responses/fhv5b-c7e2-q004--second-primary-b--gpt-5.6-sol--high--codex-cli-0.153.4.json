@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q004",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "ed729dda5140bd2942b3e139e4fb41a2ac9f8ad5b7c0bf0d0ba1771ae0b92813",
+  "bundle_sha256": "1465a65a82b0fec2a35cc2ad40a43980d99fb513330906b76f55a3d61e6affa8",
+  "prompt_sha256": "cc9b6faabd09940c38526c72670341bda4f428d478e3749a8833e515671a8817",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`MinimumNArgs` compares `len(args) \u003c n`. If true, it returns:\n\n```go\nfmt.Errorf(\"requires at least %d arg(s), only received %d\", n, len(args))\n```\n\nOtherwise, it returns `nil` ([args.go, lines 73–81](args.go)). The test confirms that `MinimumNArgs(2)` with one argument produces `\"requires at least 2 arg(s), only received 1\"` ([args_test.go, lines 66–75](args_test.go)).",
+  "responded_at": "2026-09-13T15:20:42Z",
+  "sha256": "6688c44b7c2beacc7ea31b12b85214077ec596738e18f9df56f9adf9c924602a"
+}

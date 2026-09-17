@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-b9a5-7951-a0a6-65d53b562d03"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that ExactArgs(2) with three positional values returns `accepts 2 arg(s), received 3`, directly supported by the count check and error formatting in the preserved `args.go:93-101` span."}}
+{"type":"turn.completed","usage":{"input_tokens":17934,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

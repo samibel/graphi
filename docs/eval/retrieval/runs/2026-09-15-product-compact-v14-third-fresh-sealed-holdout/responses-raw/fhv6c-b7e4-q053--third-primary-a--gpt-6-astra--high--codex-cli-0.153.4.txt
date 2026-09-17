@@ -1,0 +1,7 @@
+Run:
+
+```sh
+go install github.com/spf13/cobra-cli@latest
+```
+
+Evidence: `README.md`, lines 95–104, identifies `cobra-cli` as the application generator and gives this installation command.

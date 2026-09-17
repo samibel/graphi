@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 76,
+  "previous_sha256": "23dd186c598979ae404f38ed2579d10f704a63b0e8ca6048e9eec94a539a5fef",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f0bd9d0e9fab4c27058e095549520330a70cfab2b45e9c4db57807df7404c512",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows that `cmd.Flag(name)` finds an inherited persistent `*flag.Flag`, but it does not show an API for extracting that flag's typed value.",
+  "sha256": "7d28240d5751fc0b58320fe24856976d991f57249ad34c80cbc0565bc97c9eb0"
+}

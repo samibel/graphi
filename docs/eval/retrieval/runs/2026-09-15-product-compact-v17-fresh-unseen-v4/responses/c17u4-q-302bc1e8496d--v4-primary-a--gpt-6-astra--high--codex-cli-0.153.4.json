@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-302bc1e8496d",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "b31970f8b9b55cfe0621ee283bf92130ba86cc3e896396d7176a62ba1811167c",
+  "bundle_sha256": "d58b41ee5a71b9e511f6280990b7973680e29725914f4b2b98bcd6d3e821b41e",
+  "prompt_sha256": "8a0f7ee74a2de71e1ba1864bb36af10d4c374c80e97a04a5c2789e76422ffd48",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetIn` replaces standard input (`stdin`) with the supplied `io.Reader`: it assigns `c.inReader = newIn` (`command.go:299–304`), whose field comment says it “replaces stdin” (`command.go:192–193`).\n\nIf the reader is nil, input is inherited from a parent if available; otherwise it falls back to `os.Stdin` (`getIn`, `command.go:413–422`; `InOrStdin`, `command.go:388–392`).",
+  "responded_at": "2026-09-15T20:29:26Z",
+  "sha256": "ee795cebf9a38a3b220672038b2214d4580660d68f992bc7ee24700e16ac7c36"
+}

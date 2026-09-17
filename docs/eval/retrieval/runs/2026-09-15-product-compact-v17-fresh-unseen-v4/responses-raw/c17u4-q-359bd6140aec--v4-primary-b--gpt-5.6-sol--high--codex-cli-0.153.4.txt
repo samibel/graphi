@@ -1,0 +1,1 @@
+`DisableFlagParsing` stops the framework from parsing flags, so every flag token is passed unchanged to the command as a normal argument. Evidence: `command.go:236-237` states, “If this is true all flags will be passed to the command as arguments.” Consequently, the command must handle all flags itself, including flag completion (`completions.go:301-305`).

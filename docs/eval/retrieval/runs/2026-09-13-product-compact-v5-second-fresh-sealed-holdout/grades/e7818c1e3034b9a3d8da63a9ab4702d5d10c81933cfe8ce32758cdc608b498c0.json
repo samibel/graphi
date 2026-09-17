@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q044",
+  "response_sha256": "e7818c1e3034b9a3d8da63a9ab4702d5d10c81933cfe8ce32758cdc608b498c0",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer how man-page bytes, relationships, and history are generated. It correctly identifies that the preserved bundle lacks the necessary man-page generation code, but this leaves the essential behavior unsupported and unanswered.",
+  "graded_at": "2026-09-13T15:42:33Z",
+  "sha256": "d97c6345fe91763b8ea5eef47a525297f47161e52c65e87484fceb1a69f856f4"
+}

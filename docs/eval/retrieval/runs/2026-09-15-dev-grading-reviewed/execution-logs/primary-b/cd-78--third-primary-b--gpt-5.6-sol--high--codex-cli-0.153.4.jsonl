@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-a0a2-70c0-846a-4140b09b4a8a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s internal `(*Command).execute` returns an error immediately:\n\n`Called Execute() on a nil Command`\n\nThis is the explicit nil check in `command.go:874-877`; no flags or run hooks execute afterward."}}
+{"type":"turn.completed","usage":{"input_tokens":17598,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":127,"reasoning_output_tokens":74}}

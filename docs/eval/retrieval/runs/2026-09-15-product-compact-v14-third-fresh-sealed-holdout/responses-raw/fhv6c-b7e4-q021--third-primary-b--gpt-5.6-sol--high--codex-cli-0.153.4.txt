@@ -1,0 +1,1 @@
+`powershell_completions_test.go` belongs to package `cobra` (line 15). It declares `TestPwshCompletionNoActiveHelp` (lines 23–33), which generates PowerShell completion for a `Command` and verifies the output disables active help by containing `${env:<activeHelpVar>}=0`.

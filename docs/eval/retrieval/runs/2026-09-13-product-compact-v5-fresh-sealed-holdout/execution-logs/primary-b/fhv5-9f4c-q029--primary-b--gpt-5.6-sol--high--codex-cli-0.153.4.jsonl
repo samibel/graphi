@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac2-938b-79b0-9cb6-e1b96d901d03"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"A typed prefix is accepted only when it uniquely matches exactly one subcommand by the start of its name or an alias. In `command.go:767–786`, prefix matches are collected and returned only when `len(matches) == 1`; `hasNameOrAliasPrefix` checks `strings.HasPrefix` against the command name and each alias (`command.go:1524–1538`). Exact name or alias matches are accepted immediately."}}
+{"type":"turn.completed","usage":{"input_tokens":16443,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":92,"reasoning_output_tokens":0}}

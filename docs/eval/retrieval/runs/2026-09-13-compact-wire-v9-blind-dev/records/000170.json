@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 170,
+  "previous_sha256": "18dbfca3ead2509909d044d45d8ced773dd3e7f9240ee76e695acd53dec44f50",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2fd4673ad64bd899c953376b9e3233fb2c3cec9c04a2243c238144c5e851e8e6",
+  "outcome": "fail",
+  "rationale": "The candidate correctly cites that the default `BoolP(\"help\", \"h\", ...)` makes both spellings one boolean flag and that execution reads only `GetBool(\"help\")`. However, its proposed solution is incomplete: merely overriding/predefining the `help` flag does not distinguish the spellings. It needed to state that `--help` must be declared without the `h` shorthand and `-h` registered as a separate flag. The preserved evidence at `command.go:1183–1198` supports suppression of the default flag when `help` already exists, but the candidate never supplies the necessary separate-flag configuration.\n",
+  "sha256": "a813d88560b0bf836e75082ec1cf6932b3118d8adef4f153543fe1d24c6e3e8b"
+}

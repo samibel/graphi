@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only the starts of Find (command.go:726–728), findNext (command.go:767), and the TraverseChildren branch, without the argument matching and traversal logic needed to explain subcommand selection.

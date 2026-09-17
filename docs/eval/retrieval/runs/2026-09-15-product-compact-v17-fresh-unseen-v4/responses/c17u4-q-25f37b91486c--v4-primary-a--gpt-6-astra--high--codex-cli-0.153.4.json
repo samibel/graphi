@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-25f37b91486c",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "a9743869ee5381fb4ea2de5c66606ece79ab1f93dc47f9bee691ab8aad99e86f",
+  "bundle_sha256": "16317ef5f6f127ba0a9a836f814617cd24eda6595977235ba461d51162c60911",
+  "prompt_sha256": "7f05e19985e4c6ef14ba2999f85e8cd934fcc1c54da404a760c1a8000aae3b01",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `command.go`, `(*Command).IsAvailableCommand` (lines 1559–1576) makes a command unavailable if:\n\n- `len(c.Deprecated) != 0` or `c.Hidden`.\n- It has a parent and is that parent’s help command: `c.Parent().helpCommand == c`.\n- It is neither runnable nor has any available subcommands.\n\nAfter passing the first two exclusions, it is available when **`c.Runnable() || c.HasAvailableSubCommands()`**:\n\n- `Runnable()` means `c.Run != nil || c.RunE != nil` (lines 1549–1553).\n- `HasAvailableSubCommands()` means at least one subcommand’s `IsAvailableCommand()` returns true (lines 1614–1628).",
+  "responded_at": "2026-09-15T20:27:53Z",
+  "sha256": "bf1d2e1afde0a8af5014f8966d56647f350b9149a36bfcc8d1d48534404690e4"
+}

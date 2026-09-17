@@ -1,0 +1,87 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 3cb87f05495f45b0e519cf7d7e2f93f5025facb58004e015911dcd0af475eea4
+QUERY ID: fhv6c-b7e4-q002
+
+QUESTION:
+expectSuccess
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args_test.go:35-42 anchor="func expectSuccess(" reason=The complete helper declaration defines the success condition shared by positional-argument tests.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query dd06c8aa0e31; read in order (227/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"args_test.go","start_line":35,"end_line":42,"text":"func expectSuccess(output string, err error, t *testing.T) {\n\tif output != \"\" {\n\t\tt.Errorf(\"Unexpected output: %v\", output)\n\t}\n\tif err != nil {\n\t\tt.Fatalf(\"Unexpected error: %v\", err)\n\t}\n}"},{"path":"args_test.go","start_line":246,"end_line":250,"text":"func TestMaximumNArgs_WithValid_WithInvalidArgs(t *testing.T) {\n\tc := getCommand(MaximumNArgs(2), true)\n\toutput, err := executeCommand(c, \"a\", \"b\")\n\texpectSuccess(output, err, t)\n}"},{"path":"bash_completions_test.go","start_line":83,"end_line":117,"text":"func TestBashCompletions(t *testing.T) {\n\trootCmd := &Command{\n\t\tUse:                    \"root\",\n\t\tArgAliases:             []string{\"pods\", \"nodes\", \"services\", \"replicationcontrollers\", \"po\", \"no\", \"svc\", \"rc\"},\n\t\tValidArgs:              []string{\"pod\", \"node\", \"service\", \"replicationcontroller\"},\n\t\tBashCompletionFunction: bashCompletionFunc,\n\t\tRun:                    emptyRun,\n\t}\n\trootCmd.Flags().IntP(\"introot\", \"i\", -1, \"help message for flag introot\")\n\tassertNoErr(t, rootCmd.MarkFlagRequired(\"introot\"))\n\n\t// Filename.\n\trootCmd.Flags().String(\"filename\", \"\", \"Enter a filename\")\n\tassertNoErr(t, rootCmd.MarkFlagFilename(\"filename\", \"json\", \"yaml\", \"yml\"))\n\n\t// Persistent filename.\n\trootCmd.PersistentFlags().String(\"persistent-filename\", \"\", \"Enter a filename\")\n\tassertNoErr(t, rootCmd.MarkPersistentFlagFilename(\"persistent-filename\"))\n\tassertNoErr(t, rootCmd.MarkPersistentFlagRequired(\"persistent-filename\"))\n\n\t// Filename extensions.\n\trootCmd.Flags().String(\"filename-ext\", \"\", \"Enter a filename (extension limited)\")\n\tassertNoErr(t, rootCmd.MarkFlagFilename(\"filename-ext\"))\n\trootCmd.Flags().String(\"custom\", \"\", \"Enter a filename (extension limited)\")\n\tassertNoErr(t, rootCmd.MarkFlagCustom(\"custom\", \"__complete_custom\"))\n\n\t// Subdirectories in a given directory.\n\trootCmd.Flags().String(\"theme\", \"\", \"theme to use (located in /themes/THEMENAME/)\")\n\tassertNoErr(t, rootCmd.Flags().SetAnnotation(\"theme\", BashCompSubdirsInDir, []string{\"themes\"}))\n\n\t// For two word flags check\n\trootCmd.Flags().StringP(\"two\", \"t\", \"\", \"this is two word flags\")\n\trootCmd.Flags().BoolP(\"two-w-default\", \"T\", false, \"this is not two word flags\")\n\n\techoCmd := &Command{"},{"path":"args_test.go","start_line":23,"end_line":33,"text":"func getCommand(args PositionalArgs, withValid bool) *Command {\n\tc := &Command{\n\t\tUse:  \"c\",\n\t\tArgs: args,\n\t\tRun:  emptyRun,\n\t}\n\tif withValid {\n\t\tc.ValidArgs = []string{\"one\", \"two\", \"three\"}\n\t}\n\treturn c\n}"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"}],"provenance":{"input_sha256":"8a8afff842b87bf0be34e947d4c5952296df8480d19bdbad5daa00492514dddb","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`expectSuccess(output string, err error, t *testing.T)` is a test helper defined in `args_test.go:35–42`. It checks that:
+
+- `output` is empty; otherwise it calls `t.Errorf("Unexpected output: %v", output)` (lines 36–38).
+- `err` is nil; otherwise it calls `t.Fatalf("Unexpected error: %v", err)` (lines 39–41).
+
+It is used in `TestMaximumNArgs_WithValid_WithInvalidArgs` after `executeCommand(c, "a", "b")` (`args_test.go:246–250`).
+----- END THE RATER'S RESPONSE -----

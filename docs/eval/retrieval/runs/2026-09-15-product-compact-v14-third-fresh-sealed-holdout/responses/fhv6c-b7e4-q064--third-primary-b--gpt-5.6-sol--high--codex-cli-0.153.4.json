@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q064",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "de65b73438541c5f4ac7c84ebab4ef034352a6f00938f18074ddf418855287ee",
+  "bundle_sha256": "0685147eb0774d474ab41be8f5b086d7a13ff1e7720ba59f431f6c10a86abd68",
+  "prompt_sha256": "0bbb56aedf5ffea6ca74eff7c2d8c8ed3c80cc351b6ac8f124a1083e3aba7124",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The sibling test is truncated at `command_test.go:2452`, before sibling configuration, execution, and assertions reveal the intended whitelist behavior.",
+  "responded_at": "2026-09-15T08:31:58Z",
+  "sha256": "48eab53419af8972ad46c607f465d8dffd4decedaabb200b92ee46376fe2ba71"
+}

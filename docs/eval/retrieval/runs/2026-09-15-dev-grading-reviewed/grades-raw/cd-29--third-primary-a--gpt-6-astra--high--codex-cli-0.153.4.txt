@@ -1,0 +1,1 @@
+FAIL: The response does not explain shorthand resolution. The preserved transcript shows shorthand suggestion generation but omits the required conversion through local and inherited flag sets before Flag lookup.

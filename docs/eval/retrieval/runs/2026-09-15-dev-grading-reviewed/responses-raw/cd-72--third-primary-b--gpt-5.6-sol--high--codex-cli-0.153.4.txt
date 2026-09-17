@@ -1,0 +1,9 @@
+`AddGroup` is a variadic method on `*Command` that appends one or more `*Group` values to the command’s existing groups:
+
+```go
+func (c *Command) AddGroup(groups ...*Group) {
+	c.commandgroups = append(c.commandgroups, groups...)
+}
+```
+
+Evidence: `command.go:1356–1359`. A `Group` contains `ID` and `Title` fields (`command.go:41–45`), and the registered groups can be retrieved with `Command.Groups()` (`command.go:1331–1334`).

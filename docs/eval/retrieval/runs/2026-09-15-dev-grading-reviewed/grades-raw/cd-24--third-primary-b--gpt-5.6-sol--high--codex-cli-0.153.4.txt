@@ -1,0 +1,1 @@
+PASS: The transcript supports both ErrHelp returns: a true help flag and a non-runnable command. It defines Runnable as having Run or RunE set and shows both returns occur before invocation. The cited locations support these claims.

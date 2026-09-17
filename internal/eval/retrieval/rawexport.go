@@ -106,7 +106,15 @@ const RunIndexNotes = "SW-258 retrieval-eval run directory: the dataset-qualifie
 	"bytes it was scored against, raw/hits-<baseline>.json every ranking (the scorer's input, nothing derived) and " +
 	"raw/latency-<baseline>.json every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) " +
 	"with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. " +
-	"`go run ./cmd/retrieval-eval -aggregate <dir>` recomputes every published statistic from these and exits non-zero on a discrepancy."
+	"`go run ./cmd/retrieval-eval -aggregate <dir>` recomputes every published statistic from these and exits non-zero on a discrepancy, " +
+	// The precondition is load-bearing: -aggregate's closed-world check is
+	// against the harness's DEFAULT baseline set. SW-282's comparator-only
+	// derivation run advertised the command without it and the command
+	// returned four discrepancies that were artefacts of the substitution,
+	// contradicting the same directory's README.
+	"PROVIDED the run carries the harness's full default baseline set: the check is closed-world against that set, so a run measured " +
+	"on a deliberate subset of baselines reports the absent ones as discrepancies instead of reproducing. Such a run's README names " +
+	"the full-set run its numbers are gated against."
 
 // RawFileName names a series file for a baseline.
 func RawFileName(series string, b Baseline) string {

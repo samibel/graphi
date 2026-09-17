@@ -1,0 +1,3 @@
+Setting `<PROGRAM>_ACTIVE_HELP=0` removes Active Help entries for that specific program: `GetActiveHelpConfig` reads the program-specific variable (`active_help.go:46-57`), and completion removes entries when its value is `"0"` (`completions.go:216-217`).
+
+Setting `COBRA_ACTIVE_HELP=0` globally forces `GetActiveHelpConfig` to return `"0"` regardless of the program-specific setting (`active_help.go:46-57`), thereby disabling Active Help across Cobra programs.

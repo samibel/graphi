@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q007",
+  "response_sha256": "b62d56ad6708b186e91d46aa445c94081ab05cfd8728fa09a4d2b76d60e19e7c",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies the inclusive endpoints and rejection only for counts below min or above max. The cited args.go lines 104–109 support the condition, error message, and nil return.",
+  "graded_at": "2026-09-13T15:32:47Z",
+  "sha256": "aa2da27a1d2631436da096ab28dfebcf1dd06f2359bc52e37cf4ad0eafc5a659"
+}

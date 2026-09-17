@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 68,
+  "previous_sha256": "fb7d64c814549b927a97576800fd2560f6c6c56746413c2f865b183ca95002eb",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "4c40dc938739cf4110942198f0e4bec704cb734de8f23fa2aec1f83ca326cdee",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Write a Go completion callback with this signature:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n    return []string{\"choice1\", \"choice2\"}, directive\n}\n```\n\nRegister it for a flag:\n\n```go\nerr := cmd.RegisterFlagCompletionFunc(\"flag-name\", completionFunc)\n```\n\nEvidence: [`completions.go:133`](completions.go:133) defines `RegisterFlagCompletionFunc` with that callback signature; lines 134–142 verify the flag exists and reject duplicate registration.\n\nFor static choices, use:\n\n```go\ncompletionFunc := FixedCompletions(\n    []string{\"choice1\", \"choice2\"},\n    directive,\n)\n```\n\n[`completions.go:124`](completions.go:124) shows `FixedCompletions` returning a callback that always returns the supplied choices and directive. The response does not identify the available `ShellCompDirective` constants.",
+  "sha256": "69d804fa2e8fed5ca64b99ebd8e7759227792e8ce9ab0b5827db87ce5b73e385"
+}

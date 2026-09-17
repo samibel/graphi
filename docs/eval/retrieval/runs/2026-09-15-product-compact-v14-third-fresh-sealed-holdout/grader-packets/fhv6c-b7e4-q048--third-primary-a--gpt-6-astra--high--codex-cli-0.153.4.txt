@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 9d327c6a4015dbe80736373f393c1091cbdd1406ab361e1a5f4ee18429f7e558
+FOLLOW-UP READ CONTENT ADDRESS: dd713b061e67ab1107a55830324e3fabc79769c59c2fab3294e4de62bfe73963
+QUERY ID: fhv6c-b7e4-q048
+
+QUESTION:
+Where should a legacy custom Bash completion function be attached, and when is it called?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/completions/bash.md:50-64 anchor="BashCompletionFunction: bash_completion_func" reason=The documentation attaches BashCompletionFunction to the root and explains that its custom processor runs when the built-in processor cannot resolve a completion.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 70f3f395e841; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/completions/_index.md","start_line":421,"end_line":436,"text":"### Bash completion V2\n\nCobra provides two versions for bash completion.  The original bash completion (which started it all!) can be used by calling\n`GenBashCompletion()` or `GenBashCompletionFile()`.\n\nA new V2 bash completion version is also available.  This version can be used by calling `GenBashCompletionV2()` or\n`GenBashCompletionFileV2()`.  The V2 version does **not** support the legacy dynamic completion\n(see [Bash Completions](bash.md)) but instead works only with the Go dynamic completion\nsolution described in this document.\nUnless your program already uses the legacy dynamic completion solution, it is recommended that you use the bash\ncompletion V2 solution which provides the following extra features:\n- Supports completion descriptions (like the other shells)\n- Small completion script of less than 300 lines (v1 generates scripts of thousands of lines; `kubectl` for example has a bash v1 completion script of over 13K lines)\n- Streamlined user experience thanks to a completion behavior aligned with the other shells\n\n`Bash` completion V2 supports descriptions for completions. When calling `GenBashCompletionV2()` or `GenBashCompletionFileV2()`"},{"path":"bash_completions.go","start_line":28,"end_line":34,"text":"// Annotations for Bash completion.\nconst (\n\tBashCompFilenameExt     = \"cobra_annotation_bash_completion_filename_extensions\"\n\tBashCompCustom          = \"cobra_annotation_bash_completion_custom\"\n\tBashCompOneRequiredFlag = \"cobra_annotation_bash_completion_one_required_flag\"\n\tBashCompSubdirsInDir    = \"cobra_annotation_bash_completion_subdirs_in_dir\"\n)"},{"path":"site/content/completions/_index.md","start_line":475,"end_line":481,"text":"### Limitations\n\n* Custom completions implemented in Bash scripting (legacy) are not supported and will be ignored for `zsh` (including the use of the `BashCompCustom` flag annotation).\n  * You should instead use `ValidArgsFunction` and `RegisterFlagCompletionFunc()` which are portable to the different shells (`bash`, `zsh`, `fish`, `powershell`).\n* The function `MarkFlagCustom()` is not supported and will be ignored for `zsh`.\n  * You should instead use `RegisterFlagCompletionFunc()`.\n"},{"path":"site/content/completions/_index.md","start_line":398,"end_line":401,"text":"### Dependencies\n\nThe bash completion script generated by Cobra requires the `bash_completion` package. You should update the help text of your completion command to show how to install the `bash_completion` package ([Kubectl docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/#enabling-shell-autocompletion))\n"},{"path":"bash_completions.go","start_line":685,"end_line":697,"text":"// GenBashCompletion generates bash completion file and writes to the passed writer.\nfunc (c *Command) GenBashCompletion(w io.Writer) error {\n\tbuf := new(bytes.Buffer)\n\twritePreamble(buf, c.Name())\n\tif len(c.BashCompletionFunction) > 0 {\n\t\tbuf.WriteString(c.BashCompletionFunction + \"\\n\")\n\t}\n\tgen(buf, c)\n\twritePostscript(buf, c.Name())\n\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"}],"provenance":{"input_sha256":"4606968bee3fa8139beb8c209f8e2e586119bd8467ac274dd5fc28f7a7a4520d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/completions/_index.md:421-441"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/completions/_index.md","start_line":421,"end_line":441,"text":"### Bash completion V2\n\nCobra provides two versions for bash completion.  The original bash completion (which started it all!) can be used by calling\n`GenBashCompletion()` or `GenBashCompletionFile()`.\n\nA new V2 bash completion version is also available.  This version can be used by calling `GenBashCompletionV2()` or\n`GenBashCompletionFileV2()`.  The V2 version does **not** support the legacy dynamic completion\n(see [Bash Completions](bash.md)) but instead works only with the Go dynamic completion\nsolution described in this document.\nUnless your program already uses the legacy dynamic completion solution, it is recommended that you use the bash\ncompletion V2 solution which provides the following extra features:\n- Supports completion descriptions (like the other shells)\n- Small completion script of less than 300 lines (v1 generates scripts of thousands of lines; `kubectl` for example has a bash v1 completion script of over 13K lines)\n- Streamlined user experience thanks to a completion behavior aligned with the other shells\n\n`Bash` completion V2 supports descriptions for completions. When calling `GenBashCompletionV2()` or `GenBashCompletionFileV2()`\nyou must provide these functions with a parameter indicating if the completions should be annotated with a description; Cobra\nwill provide the description automatically based on usage information.  You can choose to make this option configurable by\nyour users.\n\n```"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The `bash_completions.go:685–697` snippet shows `GenBashCompletion` embedding `c.BashCompletionFunction`, but neither response specifies which command should hold it or when the custom function is called.
+----- END THE RATER'S RESPONSE -----

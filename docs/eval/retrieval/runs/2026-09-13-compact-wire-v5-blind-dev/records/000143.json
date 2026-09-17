@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 143,
+  "previous_sha256": "a282eb3c72ddf1b0e743ad905d5d19437db279798a6a142cc095794daa318366",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e348d1c7bf3c860f05b89deb5b726b61a95439616e0a7427d22fbd5acc99933b",
+  "outcome": "pass",
+  "rationale": "PASS: The response's access operation, cmd.Flag(\"name\"), is directly supported by the bundled comment and implementation showing lookup on the command and then up the persistent-flag chain.\n",
+  "sha256": "63d79f9ae364089e3e9d069d3439abbb538ff97a86c335ae1c3ee3163a9b4732"
+}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response exposes `cmd.Flags()` returning a `*flag.FlagSet` (`command.go:1643`) and related flag-set accessors, but omits the iteration or listing API needed to obtain a list of the flags.

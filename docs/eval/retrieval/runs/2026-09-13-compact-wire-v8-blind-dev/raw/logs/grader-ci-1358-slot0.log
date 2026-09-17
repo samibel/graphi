@@ -1,0 +1,53 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp/graphi-v8-blind-empty
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a098b6-5cf2-75b0-b800-8a19ee9a856e
+--------
+user
+You are the independent grader for one preregistered development-only blind sufficiency record. Grade only the candidate answer correctness and sufficiency for the question using the development answer key below. Every factual claim required for a correct answer must be supported by the exact preserved bundle bytes inside the sealed prompt. External repository knowledge cannot repair missing bundle evidence. Pass only a concrete, correct, supported answer; otherwise fail. Cite the supporting or missing bundle evidence in the rationale. Do not disclose the answer key or other answers. Return only the required JSON object.
+
+--- SEALED ANSWERER PROMPT ---
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to define mutually exlusive flags
+
+----- BEGIN task_context/compact-dev/8 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query 7fe1b05f2beb; read in order (247/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/8","sources":[{"path":"flag_groups.go","start_line":62,"end_line":77,"text":"\n// MarkFlagsMutuallyExclusive marks the given flags with annotations so that Cobra errors\n// if the command is invoked with more than one flag from the given set of flags.\nfunc (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a mutually exclusive flag group\", v))\n\t\t}\n\t\t// Each time this is called is a single new entry; this allows it to be a member of multiple groups if needed.\n\t\tif err := c.Flags().SetAnnotation(v, mutuallyExclusive, append(f.Annotations[mutuallyExclusive], strings.Join(flagNames, \" \"))); err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t}\n}"},{"path":"flag_groups.go","start_line":223,"end_line":224,"text":"// - when a flag in a mutually exclusive group is present, other flags in the group will be marked as hidden\n// This allows the standard completion logic to behave appropriately for flag groups"},{"path":"flag_groups.go","start_line":236,"end_line":236,"text":"\t\tprocessFlagForGroupAnnotation(flags, pflag, oneRequired, oneRequiredGroupStatus)"},{"path":"flag_groups.go","start_line":128,"end_line":128,"text":"\t\t\t\t// Only consider this flag group at all if all the flags are defined."},{"path":"flag_groups.go","start_line":79,"end_line":79,"text":"// ValidateFlagGroups validates the mutuallyExclusive/oneRequired/requiredAsGroup logic and returns the"},{"path":"flag_groups.go","start_line":95,"end_line":95,"text":"\t\tprocessFlagForGroupAnnotation(flags, pflag, oneRequired, oneRequiredGroupStatus)"},{"path":"command.go","start_line":109,"end_line":109,"text":"\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,"},{"path":"command.go","start_line":169,"end_line":169,"text":"\tusageTemplate string"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1847,"end_line":1853,"text":"// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"},{"path":"command.go","start_line":643,"end_line":643,"text":"func stripFlags(args []string, c *Command) []string {"},{"path":"command.go","start_line":649,"end_line":649,"text":"\tcommands := []string{}"},{"path":"flag_groups.go","start_line":63,"end_line":63,"text":"// MarkFlagsMutuallyExclusive marks the given flags with annotations so that Cobra errors"}],"provenance":{"input_sha256":"a37518ec3a5f27c10938f341ceb0f2c2f87d6ad75af36584b7e374e294c30e3c","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/8 RESPONSE BYTES -----
+
+--- CANDIDATE ANSWER ---
+Define the flags first, then pass their names to:
+
+```go
+cmd.MarkFlagsMutuallyExclusive("flag-a", "flag-b")
+```
+
+`flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)`. It looks up every name with `c.Flags().Lookup(v)` and panics if a flag is undefined (`flag_groups.go:67-71`). When more than one flag in the set is supplied, Cobra reports an error (`flag_groups.go:63-64`). Each call creates a separate group, so a flag may belong to multiple mutually exclusive groups (`flag_groups.go:72-73`).
+--- DEVELOPMENT ANSWER KEY ---
+{"id":"ci-1358","query":"How to define mutually exlusive flags","stratum":"config_docs","judgements":[{"path":"flag_groups.go","start_line":63,"end_line":77,"anchor":"func (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string) {","grade":3,"reason":"The exact operation the query asks for, with its conditions: the named flags must already exist on the command (otherwise it panics), persistent flags are merged in first, and each call records one group so a flag may belong to several.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"flag_groups.go","start_line":188,"end_line":207,"anchor":"if any flags in the group [%v] are set none of the others can be","grade":2,"reason":"Defines what the marking then enforces at run time and the exact error text produced when more than one flag from the group is set.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"command.go","start_line":978,"end_line":980,"anchor":"if err := c.ValidateFlagGroups(); err != nil {","grade":2,"reason":"Locates when the rule is enforced: after flag parsing and the PreRun hooks, before Run.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"site/content/user_guide.md","start_line":344,"end_line":350,"anchor":"rootCmd.MarkFlagsMutuallyExclusive(","grade":2,"reason":"Tracked in-repo documentation showing the caller-side sequence of declaring the flags and then marking the group; supporting only.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"}]}
+
+codex
+{"outcome":"pass","rationale":"The candidate directly and correctly identifies `cmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")`. The preserved bundle supports every material claim: `flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)`; lines 67-71 look up each flag and panic when absent; lines 63-64 state that using more than one flag from the set causes an error; and lines 72-73 state that each call creates a separate group and permits membership in multiple groups. Although the bundle lacks the user-guide example and runtime validation site, those details are not necessary for this concrete answer."}
+tokens used
+4.157
+{"outcome":"pass","rationale":"The candidate directly and correctly identifies `cmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")`. The preserved bundle supports every material claim: `flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)`; lines 67-71 look up each flag and panic when absent; lines 63-64 state that using more than one flag from the set causes an error; and lines 72-73 state that each call creates a separate group and permits membership in multiple groups. Although the bundle lacks the user-guide example and runtime validation site, those details are not necessary for this concrete answer."}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac2-58bb-7ac0-9291-6b05ee744815"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The invocation produces an error if only some flags in a required-together group are supplied. `MarkFlagsRequiredTogether` explicitly documents this behavior in `flag_groups.go:31–32`: “Cobra errors … if the command is invoked with a subset (but not all) of the given flags.”"}}
+{"type":"turn.completed","usage":{"input_tokens":17403,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":65,"reasoning_output_tokens":0}}

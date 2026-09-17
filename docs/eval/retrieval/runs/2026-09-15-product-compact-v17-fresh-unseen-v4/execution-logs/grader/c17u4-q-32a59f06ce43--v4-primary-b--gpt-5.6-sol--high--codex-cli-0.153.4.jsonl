@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d3-dabd-72d2-a760-6edae9cf3bb2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies the flag-error callback, its configuration through SetFlagErrorFunc, and its func(*Command, error) error signature. Both cited spans resolve within the bundle and support its role in handling flag-parsing errors."}}
+{"type":"turn.completed","usage":{"input_tokens":17761,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":70,"reasoning_output_tokens":17}}

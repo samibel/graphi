@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 74,
+  "previous_sha256": "b7216ccac86b107fcd8a124866e4903b9ffbbe68264bbdfc762a50b8f0a8316d",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "9c38271c13a12423acdce9a24d4643c6b4c8b13435743d1c3c92d1040bae010e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Create a child command whose parent defines a persistent flag, then assert:\n\n- `child.InheritedFlags().Lookup(flagName) != nil`; inherited flags come from `parentsPflags`, excluding names already present in `LocalFlags()` (`command.go:1695–1718`).\n- `child.HasInheritedFlags()` is true (`command.go:1766–1769`).\n- `child.HasAvailableInheritedFlags()` reflects whether inherited flags are neither hidden nor deprecated (`command.go:1788–1792`).\n- A locally defined flag with the same name is not included in `InheritedFlags()` (`command.go:1713–1717`).\n- `child.NonInheritedFlags()` contains only local flags, since it directly returns `LocalFlags()` (`command.go:1721–1723`).",
+  "sha256": "f3c0aef73d7982cfb4b525b424ba892c6ef19ac4c19f754945d736c635ab284e"
+}

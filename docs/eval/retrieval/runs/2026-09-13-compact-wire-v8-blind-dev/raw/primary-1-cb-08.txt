@@ -1,0 +1,1 @@
+INSUFFICIENT — no question about `doc/man_docs.go` was provided.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-b894-7212-80ff-4c548f13fc9c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the preserved callback’s prefix filtering of both described choices, its nil/NoFileComp return when args is nonempty, and its Default directive otherwise. The cited lines support these claims, and cmd is unused."}}
+{"type":"turn.completed","usage":{"input_tokens":17966,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

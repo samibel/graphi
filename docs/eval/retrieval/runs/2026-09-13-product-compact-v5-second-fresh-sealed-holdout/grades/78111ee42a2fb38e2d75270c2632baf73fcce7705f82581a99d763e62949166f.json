@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q006",
+  "response_sha256": "78111ee42a2fb38e2d75270c2632baf73fcce7705f82581a99d763e62949166f",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly states that ExactArgs accepts only when len(args) equals n, returns nil on a match, and otherwise reports expected and received counts. Its citation to args.go lines 92–101 directly supports every claim.",
+  "graded_at": "2026-09-13T15:32:41Z",
+  "sha256": "cebdf6d40665a1834a1047a193e836cd511adb381fe8eebc0dd622fbd0365d3c"
+}

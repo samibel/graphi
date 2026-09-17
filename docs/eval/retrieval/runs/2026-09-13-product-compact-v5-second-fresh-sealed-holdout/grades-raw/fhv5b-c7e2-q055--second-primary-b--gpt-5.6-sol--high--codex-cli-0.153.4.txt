@@ -1,0 +1,1 @@
+PASS: The response correctly explains that the choice is preserved in `c.helpCommandGroupID` and that an existing help command is updated immediately, both supported by `command.go:332-339`.

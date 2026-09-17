@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 77,
+  "previous_sha256": "9cc3b4843082a28eebd9d403acb397487742f25c2ba84e7a260c536f1d6ee798",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "13642216e0d7858b672fa6a5759c92064410db67b642eace171b72c9ab1f418c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Register the initializer with `OnInitialize`. It runs after flags are parsed:\n\n```go\nOnInitialize(func() {\n    f := cmd.Flag(\"my-flag\")\n    // read f's parsed value here\n})\n```\n\nEvidence: `Execute` calls `c.ParseFlags(a)` first (`command.go:887`), then `c.preRun()` (`command.go:926`), which invokes all registered initializers (`command.go:1015-1019`). `Command.Flag(name)` searches both local and persistent flags up the command tree (`command.go:1794-1803`).\n\nA normal Go `init()` runs too early; it should register the callback, not read the parsed value.",
+  "sha256": "47fdd53449dab3a0f7e90afdc07585e0261c92a3d1fc4bb2a8dfb8802b0cd352"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-27b9146fd352",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "46f4b38e05b68bcd2f9ef3bbbb9c0b14f2d6672c5b35d7253217c54d68f3022e",
+  "bundle_sha256": "5d1b777b636d5602aae102e6ec5c478741777ba9d9b1153a15ea6e9e6292fe68",
+  "prompt_sha256": "e1d618ce922888915c738b0455211ea74df438ac2181ddb909b23fa1f0818ff5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Command.HasHelpSubCommands` loops through `c.commands` and calls `sub.IsAdditionalHelpTopicCommand()` for each child. It returns `true` on the first match; otherwise it returns `false` (`command.go:1599–1613`).\n\nA child qualifies when it is not runnable, hidden, or deprecated and has no runnable, hidden, or deprecated subcommands (`command.go:1578–1584`). Runnable means having either `Run` or `RunE` set (`command.go:1549–1553`).",
+  "responded_at": "2026-09-15T20:27:15Z",
+  "sha256": "aae665b57fe4c104059c8d788b49c2735e36fbe92254b21e55b0a0e36caebaf3"
+}

@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the appended element as activeHelpMarker concatenated with activeHelpStr and explains that existing completion entries are preserved. The implementation at active_help.go:42-44 and comments at lines 39-41 support these claims and the ordering of repeated help lines.

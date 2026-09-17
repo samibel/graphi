@@ -1,0 +1,8 @@
+In `doc/md_docs.go`, each filename is formed from `cmd.CommandPath()` by replacing spaces with underscores, then appending `.md`:
+
+```go
+basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + markdownExtension
+filename := filepath.Join(dir, basename)
+```
+
+Evidence: `doc/md_docs.go:143–145`; `markdownExtension` is defined as `".md"` at `doc/md_docs.go:30`. Thus `root subcommand` becomes `root_subcommand.md` in the specified directory.

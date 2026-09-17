@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2f108dcb753a",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "6cc74fefb38393cc8d92daa6e3c6fdac0b320577fdb935812c14e2d5ff2f9a0d",
+  "bundle_sha256": "8ac2bb8c03b850226f8842d8da0a4587f61f689b3703537c5c4a89f7812f8bbf",
+  "prompt_sha256": "c78f5da8ff1e3ade472f248b6f8eee6df509fd92bca08df6cc6a97d033352b53",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ValidArgs` provides completion candidates for the first positional argument; `ValidArgsFunction` dynamically provides candidates for any positional argument, including the first (`zsh_completions.go:61-64`).\n\nThey may not both be configured on one command: `command.go:86-87` explicitly states, “Only one of ValidArgs and ValidArgsFunction can be used for a command.”",
+  "responded_at": "2026-09-15T20:28:13Z",
+  "sha256": "244ee2c970a59f69c919b6810a73a63dbcb38ec660fcc90ae3e649cd7320ac54"
+}

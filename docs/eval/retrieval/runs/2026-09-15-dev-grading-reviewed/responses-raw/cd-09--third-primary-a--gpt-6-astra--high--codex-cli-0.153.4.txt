@@ -1,0 +1,7 @@
+`(*Command).GetFlagCompletionFunc(flagName string)` retrieves a flag’s completion callback and a boolean indicating whether it is registered.
+
+- Resolves the flag using `c.Flag(flagName)`; returns `nil, false` if absent (`completions.go:150–153`).
+- Reads `flagCompletionFunctions[flag]` under `flagCompletionMutex.RLock()` and returns the callback and map-presence boolean (`completions.go:156–160`).
+- The callback signature is `func(*Command, []string, string) ([]string, ShellCompDirective)` (`completions.go:149`).
+
+Flag lookup checks the command’s flags, then `c.persistentFlag(name)` (`command.go:1794–1803`).

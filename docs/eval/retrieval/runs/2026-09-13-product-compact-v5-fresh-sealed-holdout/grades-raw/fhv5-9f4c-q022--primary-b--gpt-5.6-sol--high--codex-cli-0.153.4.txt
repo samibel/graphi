@@ -1,0 +1,1 @@
+FAIL: The response describes the printed message and default duration but omits the essential wait behavior and exit with status 1. The preserved bundle does not establish the exit behavior, so the required answer cannot be fully supported.

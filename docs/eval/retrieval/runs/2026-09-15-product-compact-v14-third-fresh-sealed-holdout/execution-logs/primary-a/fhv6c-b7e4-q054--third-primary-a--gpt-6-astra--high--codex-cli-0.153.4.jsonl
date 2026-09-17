@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-23c8-75b1-a67b-81205c7c5f84"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"- **`GenYamlTreeCustom`** accepts both `filePrepender` and `linkHandler`, each of type `func(string) string` (`doc/yaml_docs.go:59–60`). It writes `filePrepender(filename)` before generating the YAML and passes `linkHandler` to `GenYamlCustom` (`doc/yaml_docs.go:78–81`).\n- **`GenYamlCustom`** accepts only the link-rewriting callback, `linkHandler func(string) string`, alongside the command and output writer (`doc/yaml_docs.go:92–93`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17515,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":122,"reasoning_output_tokens":0}}

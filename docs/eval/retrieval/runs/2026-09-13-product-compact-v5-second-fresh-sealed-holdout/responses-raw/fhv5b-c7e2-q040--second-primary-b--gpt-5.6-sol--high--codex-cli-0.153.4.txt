@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the body of `InitDefaultHelpCmd` and the completion/execution paths needed to show how `helpCommand` is created, used, and reattached to the root.

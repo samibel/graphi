@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q009",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "2a648cab5c71bba2a317bd9e210e6feb2735a48a18f131e11d33c495aec26374",
+  "bundle_sha256": "6739ea273f051195efcbb7c627a291947cb45efe475db6cea60ceb330d6fda5f",
+  "prompt_sha256": "d2f61f83096b6e0c3bb77af8f50149d8af1d153422cadc5c98d93d396f8f7fd2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`executeCommandWithContext` is a test helper that executes a `*Command` with a supplied context and arguments, capturing both standard and error output in one buffer.\n\nEvidence from `command_test.go:37-46`:\n\n- Creates `bytes.Buffer`\n- Redirects `root.SetOut` and `root.SetErr` to it\n- Sets arguments with `root.SetArgs(args)`\n- Calls `root.ExecuteContext(ctx)`\n- Returns `buf.String()` and the execution error\n\n`ExecuteContext` stores the context on the command and delegates to `Execute()` (`command.go:1027-1033`).",
+  "responded_at": "2026-09-15T08:28:49Z",
+  "sha256": "f081ac57bc72f7167fdd2ef801643a42720195383f90019a319154947a36b03a"
+}

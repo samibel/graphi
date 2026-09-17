@@ -1,0 +1,11 @@
+Flags modify command behavior and support both POSIX-compliant syntax and Go’s `flag` package (`README.md:68-74`).
+
+A command may have:
+
+- Persistent flags inherited by child commands.
+- Local flags available only to that command (`README.md:72-74`).
+- `Command.Flags()`, which returns the complete applicable `FlagSet`, including local and inherited persistent flags (`command.go:1641-1653`).
+- `Command.LocalFlags()`, which excludes unshadowed parent persistent flags (`command.go:1668-1693`).
+- `Command.LocalNonPersistentFlags()`, which filters out flags found in `PersistentFlags()` (`command.go:1655-1666`).
+
+New flag sets use `flag.ContinueOnError`, with errors written to `c.flagErrorBuf` (`command.go:1644-1651`).

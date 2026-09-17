@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b66-b7da-78d3-87c6-7bfedb6f63f0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that AddTemplateFuncs assigns every supplied key/value into the shared templateFuncs map, adding new names and overwriting matching names. Both cited ranges exist in the bundle and support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18221,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

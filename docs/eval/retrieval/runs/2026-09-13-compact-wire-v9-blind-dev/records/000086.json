@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 86,
+  "previous_sha256": "bce85f41f01346a27b42edab99cb59f0ec97b6f933c37757af9ec7366f552117",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "648c82a4172195bb1865ee75759f57852bb47f763b93dafb3c970e955529ecbc",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved response. `doc/md_docs.go:119–129` supports the signature, command-tree purpose, delegation, empty prepender, identity link handler, and hyphen warning. `doc/md_docs.go:131–158` supports recursive traversal, filtering unavailable/additional-help commands, filename construction, file creation, prepender writing, Markdown generation, and immediate error returns; `doc/md_docs.go:30` supports the `.md` extension.\n",
+  "sha256": "630a210e3515481e6771a694dafb7dfd29545c9d3a685f9a441d6754be79eb5b"
+}

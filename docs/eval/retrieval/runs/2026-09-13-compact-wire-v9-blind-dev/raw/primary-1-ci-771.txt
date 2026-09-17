@@ -1,0 +1,9 @@
+Create a shell-specific adapter that:
+
+1. Invokes the program’s hidden `__complete [command-line]` command (`completions.go:26-33`, `194-205`).
+2. Reads completion candidates from stdout, one per line (`completions.go:240-242`).
+3. Treats the final stdout line as `:<directive>` and maps that directive to the target shell’s completion behavior (`completions.go:244-247`).
+4. Ignores stderr (`completions.go:249-251`).
+5. Optionally invokes `__completeNoDesc` when descriptions are unwanted (`completions.go:30-33`).
+
+The response does not include the directive values or their full semantics, so the exact shell-specific mappings cannot be derived from it.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-08f2ad751c63",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "af0354672647d40a5b7cb2d25ca34f51ab5a57b7d399c78fd75f4b26cbce1749",
+  "bundle_sha256": "dfd97a97fdacbe395c52ed03593dbd5584ae29a21932a41700404e09fbba1107",
+  "prompt_sha256": "7c24acc5297a32f0cba2ea98b20ed5aa235ddfc2bdd732e15abbc1839b9d0830",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`getFlagNameCompletions` in `completions.go:533-565` works as follows:\n\n- It returns no suggestions when `nonCompletableFlag(flag)` is true; `bash_completions.go:698-701` defines that as a hidden or deprecated flag.\n- It constructs the long spelling as `\"--\" + flag.Name` and suggests it only when that string starts with `toComplete` (`completions.go:540-543`).\n- It intentionally suggests only `--flag`, never the `--flag=` variant; the commented code at `completions.go:545-557` says the equals form remains valid but is omitted to shorten suggestions and avoid forcing users to type `=` or a space.\n- It constructs the shorthand as `\"-\" + flag.Shorthand` and suggests it only when the shorthand is nonempty and the constructed spelling starts with `toComplete` (`completions.go:560-562`).\n- Each suggestion is formatted as `\"\u003cspelling\u003e\\t\u003cflag.Usage\u003e\"`.",
+  "responded_at": "2026-09-15T20:23:19Z",
+  "sha256": "6105d0b98ff2252dc200e6a3486af286ee2974f0e314686e894bd46b7f9844c5"
+}

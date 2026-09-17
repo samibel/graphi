@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Before a command has been invoked, what does asking which name or alias called it return?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 0d7a74518ea9; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":207,"end_line":239,"text":"\t// commandCalledAs is the name or alias value used to call this command.\n\tcommandCalledAs struct {\n\t\tname   string\n\t\tcalled bool\n\t}\n\n\tctx context.Context\n\n\t// commands is the list of commands supported by this program.\n\tcommands []*Command\n\t// parent is a parent command for this command.\n\tparent *Command\n\t// Max lengths of commands' string lengths for use in padding.\n\tcommandsMaxUseLen         int\n\tcommandsMaxCommandPathLen int\n\tcommandsMaxNameLen        int\n\n\t// TraverseChildren parses flags on all parents before executing child command.\n\tTraverseChildren bool\n\n\t// Hidden defines, if this command is hidden and should NOT show up in the list of available commands.\n\tHidden bool\n\n\t// SilenceErrors is an option to quiet errors down stream.\n\tSilenceErrors bool\n\n\t// SilenceUsage is an option to silence usage when an error occurs.\n\tSilenceUsage bool\n\n\t// DisableFlagParsing disables the flag parsing.\n\t// If this is true all flags will be passed to the command as arguments.\n\tDisableFlagParsing bool\n"},{"path":"command.go","start_line":121,"end_line":131,"text":"\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current\n\t// command has been declared.\n\t//\n\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)\n\t// PersistentPreRunE: PersistentPreRun but returns an error.\n\tPersistentPreRunE func(cmd *Command, args []string) error\n\t// PreRun: children of this command will not inherit.\n\tPreRun func(cmd *Command, args []string)\n\t// PreRunE: PreRun but returns an error.\n\tPreRunE func(cmd *Command, args []string) error"},{"path":"command.go","start_line":122,"end_line":127,"text":"\t// command has been declared.\n\t//\n\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)\n\t// PersistentPreRunE: PersistentPreRun but returns an error.\n\tPersistentPreRunE func(cmd *Command, args []string) error"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1228,"end_line":1233,"text":"// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n"}],"provenance":{"input_sha256":"72d35daa5012b2e5761c914bf377c196a282eef9e97b8343ba52c0316d825d84","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

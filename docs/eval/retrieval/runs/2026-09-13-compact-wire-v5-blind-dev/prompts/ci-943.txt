@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Why does `--version` not work?
+
+----- BEGIN task_context/compact-dev/5 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s) for \"Why does `--version` not work?\"; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/5","sources":[{"path":"command.go","start_line":598,"end_line":609,"text":"// VersionTemplate return version template for the command.\nfunc (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.VersionTemplate()\n\t}\n\treturn `{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n`\n}"},{"path":"command.go","start_line":108,"end_line":109,"text":"\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,"},{"path":"command.go","start_line":53,"end_line":53,"text":"\t// Recommended syntax is as follows:"},{"path":"command.go","start_line":1202,"end_line":1203,"text":"// If c already has a version flag, it will do nothing.\n// If c.Version is empty, it will do nothing."},{"path":"command.go","start_line":1221,"end_line":1226,"text":"\t\t}\n\t\t_ = c.Flags().SetAnnotation(\"version\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}\n\n// InitDefaultHelpCmd adds default help command to c."},{"path":"command.go","start_line":352,"end_line":355,"text":"// SetVersionTemplate sets version template to be used. Application can use it to set custom template.\nfunc (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":1203,"end_line":1203,"text":"// If c.Version is empty, it will do nothing."},{"path":"doc/man_docs.go","start_line":34,"end_line":35,"text":"// in the directory given. The header may be nil. This function may not work\n// correctly if your command names have `-` in them. If you have `cmd` with two"},{"path":"command.go","start_line":1631,"end_line":1634,"text":"// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":1643,"end_line":1644,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {"},{"path":"command.go","start_line":1496,"end_line":1497,"text":"func (c *Command) Name() string {\n\tname := c.Use"},{"path":"command.go","start_line":1847,"end_line":1853,"text":"// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"}],"provenance":{"input_sha256":"e1fb66b8b15e81b36e52093b987d844f730460a1189d493d455b4f0c9476ff02","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/5 RESPONSE BYTES -----

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+GenMarkdownTree
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s) for \"GenMarkdownTree\"; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"doc/md_docs.go","start_line":119,"end_line":129,"text":"// GenMarkdownTree will generate a markdown page for this command and all\n// descendants in the directory given. The header may be nil.\n// This function may not work correctly if your command names have `-` in them.\n// If you have `cmd` with two subcmds, `sub` and `sub-third`,\n// and `sub` has a subcommand called `third`, it is undefined which\n// help output will be in the file `cmd-sub-third.1`.\nfunc GenMarkdownTree(cmd *cobra.Command, dir string) error {\n\tidentity := func(s string) string { return s }\n\temptyStr := func(s string) string { return \"\" }\n\treturn GenMarkdownTreeCustom(cmd, dir, emptyStr, identity)\n}"},{"path":"doc/md_docs.go","start_line":131,"end_line":158,"text":"// GenMarkdownTreeCustom is the the same as GenMarkdownTree, but\n// with custom filePrepender and linkHandler.\nfunc GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenMarkdownTreeCustom(c, dir, filePrepender, linkHandler); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", \"_\") + markdownExtension\n\tfilename := filepath.Join(dir, basename)\n\tf, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer f.Close()\n\n\tif _, err := io.WriteString(f, filePrepender(filename)); err != nil {\n\t\treturn err\n\t}\n\tif err := GenMarkdownCustom(cmd, f, linkHandler); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}"},{"path":"doc/md_docs.go","start_line":56,"end_line":61,"text":"// GenMarkdownCustom creates custom markdown output.\nfunc GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tbuf := new(bytes.Buffer)"},{"path":"doc/md_docs.go","start_line":30,"end_line":30,"text":"const markdownExtension = \".md\""},{"path":"command.go","start_line":97,"end_line":97,"text":"\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator."}],"provenance":{"input_sha256":"350cd240489ac57bec62683a280fa6047d53db5d1fab5bfb1897d98f69fbea8d","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----

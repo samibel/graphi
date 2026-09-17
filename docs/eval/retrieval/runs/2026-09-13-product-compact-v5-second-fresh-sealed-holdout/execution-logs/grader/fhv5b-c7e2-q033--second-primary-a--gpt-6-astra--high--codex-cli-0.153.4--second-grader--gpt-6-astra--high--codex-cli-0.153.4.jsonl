@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6c-9fe1-7b71-9b57-51d5fae891f6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes nearest-ancestor inheritance, precedence of a nonempty local prefix, and the default `\"Error:\"`, supported by command.go:611–621. Its explanation that an empty setter value preserves inheritance is supported by command.go:357–360 and the lookup logic."}}
+{"type":"turn.completed","usage":{"input_tokens":18184,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":0}}

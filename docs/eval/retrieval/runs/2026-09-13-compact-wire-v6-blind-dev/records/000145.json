@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 145,
+  "previous_sha256": "10f47d91f1fcfc77b50d0ce6de02fc967293e9c67f5660a43963c91f9e0eddc5",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "5c0106621f6fd25866a3169b01521bd374bf15c357a3d94dbcdab1f66e042563",
+  "outcome": "fail",
+  "rationale": "FAIL: It does not explain the necessary mechanism of defining --help without shorthand and a separate -h flag; overriding HelpFunc alone does not distinguish the two spellings.",
+  "sha256": "92ced4b622582e00496a7aa4e9c878f00028c2e7ec233070f59aa4c49fa66b12"
+}

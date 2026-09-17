@@ -1,0 +1,7 @@
+`AppendActiveHelp` appends one string: `activeHelpMarker` immediately followed by `activeHelpStr`, with no added separator, and returns the resulting slice:
+
+```go
+return append(compArray, fmt.Sprintf("%s%s", activeHelpMarker, activeHelpStr))
+```
+
+This preserves earlier completion entries in their existing order (`active_help.go:42–44`). The comments explicitly allow calls before or after adding completions and say successive ActiveHelp lines appear below previous ones (`active_help.go:38–41`). The marker’s literal value is not included in the response.

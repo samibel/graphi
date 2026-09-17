@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 	"github.com/samibel/graphi/engine/embed/static"
 )
 
@@ -143,6 +144,15 @@ func TestSetupEmbedder_StaticEmptyRevision_IsRefusedBeforeNetwork(t *testing.T) 
 
 func TestSetupEmbedder_CustomCachePrintsRuntimeModelPath(t *testing.T) {
 	src := t.TempDir()
+	tokenizerBytes, err := os.ReadFile(filepath.Join("..", "..", "core", "tokenizer", "testdata", "artifact", evaltokenizer.PinnedVocabularyFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, evaltokenizer.PinnedVocabularyFile), tokenizerBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tokenizerDest := filepath.Join(t.TempDir(), "tokenizer")
+	t.Setenv("GRAPHI_EVAL_TOKENIZER_DIR", tokenizerDest)
 	pins := map[string]string{}
 	for name, body := range map[string][]byte{
 		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
@@ -167,6 +177,9 @@ func TestSetupEmbedder_CustomCachePrintsRuntimeModelPath(t *testing.T) {
 	})
 	if rc != 0 {
 		t.Fatalf("runSetupEmbedder rc=%d, want 0", rc)
+	}
+	if _, err := evaltokenizer.Load(tokenizerDest); err != nil {
+		t.Fatalf("setup-embedder did not install the pinned task-context tokenizer: %v", err)
 	}
 	for _, want := range []string{
 		"export GRAPHI_EMBEDDER=" + static.PinnedSelector,

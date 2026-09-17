@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the argument is reported. The bundle omits the `NoArgs` implementation needed to establish that the error names the first argument and command path, and that validation otherwise succeeds.

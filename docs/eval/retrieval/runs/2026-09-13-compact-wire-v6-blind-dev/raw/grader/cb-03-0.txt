@@ -1,0 +1,1 @@
+FAIL: The traversal description is correct, but the exact bundle only shows appending markdownExtension; it does not establish that the extension is '.md'.

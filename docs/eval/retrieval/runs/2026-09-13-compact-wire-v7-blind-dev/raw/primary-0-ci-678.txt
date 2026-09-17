@@ -1,0 +1,7 @@
+Use the command’s `SetArgs` method to supply flags as CLI arguments:
+
+```go
+cmd.SetArgs([]string{"--flag-name", "value"})
+```
+
+`command.go:275-278` explicitly says `SetArgs` is “particularly useful when testing” and stores the arguments in `c.args`. Applicable local and persistent flags are exposed through `Command.Flags()` (`command.go:1641-1653`), with persistent and parent flags merged by `mergePersistentFlags()` (`command.go:1847-1853`).

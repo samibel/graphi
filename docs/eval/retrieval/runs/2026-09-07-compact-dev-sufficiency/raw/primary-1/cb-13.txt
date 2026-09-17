@@ -1,0 +1,1 @@
+INSUFFICIENT The response says unknown-command suggestions use Levenshtein distance (`command.go:248–249`) and names `SuggestionsFor` and `findSuggestions` (`command.go:831–833,750–751`), but omits their computation, matching rules, and thresholds.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5e-126a-75b1-aec8-0c9b1bc2b2e8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Command.ResetCommands` clears four fields: the parent relationship (`c.parent`), child commands (`c.commands`), the cached/help command (`c.helpCommand`), and cached parent persistent flags (`c.parentsPflags`) by setting each to `nil` ([`command.go`, lines 1277–1283])."}}
+{"type":"turn.completed","usage":{"input_tokens":16506,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":69,"reasoning_output_tokens":0}}

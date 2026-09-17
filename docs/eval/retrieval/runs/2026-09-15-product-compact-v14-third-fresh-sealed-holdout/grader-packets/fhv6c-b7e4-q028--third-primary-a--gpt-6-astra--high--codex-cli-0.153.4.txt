@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 2d79aadf48385bce34f86fed93b01a4cfa23da450d3b92aed35b44d617cf3091
+QUERY ID: fhv6c-b7e4-q028
+
+QUESTION:
+Does UsageString preserve the relative order of writes sent through both normal and error output helpers?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:2026-2040 anchor="expected := \"[stdout1][stderr2][stdout3]\"" reason=The test writes through both output paths and verifies their combined order in the returned usage string.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 32e45716088f; read in order (322/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":478,"end_line":495,"text":"// UsageString returns usage string.\nfunc (c *Command) UsageString() string {\n\t// Storing normal writers\n\ttmpOutput := c.outWriter\n\ttmpErr := c.errWriter\n\n\tbb := new(bytes.Buffer)\n\tc.outWriter = bb\n\tc.errWriter = bb\n\n\tCheckErr(c.Usage())\n\n\t// Setting things back to normal\n\tc.outWriter = tmpOutput\n\tc.errWriter = tmpErr\n\n\treturn bb.String()\n}"},{"path":"command.go","start_line":443,"end_line":448,"text":"// Usage puts out the usage for the command.\n// Used when a user provides invalid input.\n// Can be defined by user by overriding UsageFunc.\nfunc (c *Command) Usage() error {\n\treturn c.UsageFunc()(c)\n}"},{"path":"cobra.go","start_line":232,"end_line":238,"text":"// CheckErr prints the msg with the prefix 'Error:' and exits with error code 1. If the msg is nil, it does nothing.\nfunc CheckErr(msg interface{}) {\n\tif msg != nil {\n\t\tfmt.Fprintln(os.Stderr, \"Error:\", msg)\n\t\tos.Exit(1)\n\t}\n}"},{"path":"bash_completions.go","start_line":618,"end_line":630,"text":"func writeRequiredNouns(buf io.StringWriter, cmd *Command) {\n\tWriteStringAndCheck(buf, \"    must_have_one_noun=()\\n\")\n\tsort.Strings(cmd.ValidArgs)\n\tfor _, value := range cmd.ValidArgs {\n\t\t// Remove any description that may be included following a tab character.\n\t\t// Descriptions are not supported by bash completion.\n\t\tvalue = strings.Split(value, \"\\t\")[0]\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    must_have_one_noun+=(%q)\\n\", value))\n\t}\n\tif cmd.ValidArgsFunction != nil {\n\t\tWriteStringAndCheck(buf, \"    has_completion_function=1\\n\")\n\t}\n}"},{"path":"cobra.go","start_line":240,"end_line":244,"text":"// WriteStringAndCheck writes a string into a buffer, and checks if the error is not nil.\nfunc WriteStringAndCheck(b io.StringWriter, s string) {\n\t_, err := b.WriteString(s)\n\tCheckErr(err)\n}"},{"path":"bash_completions.go","start_line":647,"end_line":653,"text":"func writeArgAliases(buf io.StringWriter, cmd *Command) {\n\tWriteStringAndCheck(buf, \"    noun_aliases=()\\n\")\n\tsort.Strings(cmd.ArgAliases)\n\tfor _, value := range cmd.ArgAliases {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    noun_aliases+=(%q)\\n\", value))\n\t}\n}"},{"path":"bash_completions.go","start_line":685,"end_line":697,"text":"// GenBashCompletion generates bash completion file and writes to the passed writer.\nfunc (c *Command) GenBashCompletion(w io.Writer) error {\n\tbuf := new(bytes.Buffer)\n\twritePreamble(buf, c.Name())\n\tif len(c.BashCompletionFunction) > 0 {\n\t\tbuf.WriteString(c.BashCompletionFunction + \"\\n\")\n\t}\n\tgen(buf, c)\n\twritePostscript(buf, c.Name())\n\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"},{"path":"bash_completions.go","start_line":404,"end_line":408,"text":"func writePostscript(buf io.StringWriter, name string) {\n\tname = strings.ReplaceAll(name, \":\", \"__\")\n\tWriteStringAndCheck(buf, fmt.Sprintf(\"__start_%s()\\n\", name))\n\tWriteStringAndCheck(buf, fmt.Sprintf(`{\n    local cur prev words cword split"},{"path":"completions.go","start_line":77,"end_line":85,"text":"\t// obtain the same behavior but only for flags.\n\tShellCompDirectiveFilterDirs\n\n\t// ShellCompDirectiveKeepOrder indicates that the shell should preserve the order\n\t// in which the completions are provided\n\tShellCompDirectiveKeepOrder\n\n\t// ===========================================================================\n"}],"provenance":{"input_sha256":"e8281bfeaf94e661eda45ab2be7f7ee516effddb34f8c4890b0e6b1610761a3f","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Yes. `UsageString` assigns both `c.outWriter` and `c.errWriter` to the same `bytes.Buffer` (`command.go:484–486`), calls `c.Usage()` (line 488), and returns `bb.String()` (line 494). Writes through those writers therefore accumulate in their relative write order.
+----- END THE RATER'S RESPONSE -----

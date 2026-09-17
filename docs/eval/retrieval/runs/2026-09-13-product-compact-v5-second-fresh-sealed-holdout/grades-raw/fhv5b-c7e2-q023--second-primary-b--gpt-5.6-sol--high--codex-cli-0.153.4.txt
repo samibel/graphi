@@ -1,0 +1,1 @@
+PASS: The response correctly states that Context() returns nil before execution and a background context after Execute() or ExecuteC() replaces the nil context, as explicitly supported by command.go:258–266.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 5,
+  "previous_sha256": "4a84f17407d5ae30d448180f80744af48357f09fcadcc6defdead9b31a8702a2",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "1f893f9e70a218b3d059f836d8fc365729ae2f592dc287e0fe35b4364f6feb0c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` contains flag-group validation helpers. `ValidateFlagGroups` skips validation when flag parsing is disabled and collects required-together, one-required, and mutually-exclusive annotation groups (`flag_groups.go:81–99`). `processFlagForGroupAnnotation` ignores a group unless all its flags exist, using `hasAllFlags` (`flag_groups.go:121–134`, `111–119`). `validateRequiredFlagGroups` accepts all flags set or all unset, but returns a deterministically sorted missing-flags error for a partially set group (`flag_groups.go:144–165`).\n",
+  "sha256": "19f5a1f9d4e43438dbad98938dcbbfa8ddb3f04e2ba89d80d812a2921fc4529d"
+}

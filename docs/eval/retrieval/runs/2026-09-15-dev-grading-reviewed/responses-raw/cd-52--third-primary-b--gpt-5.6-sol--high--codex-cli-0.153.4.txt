@@ -1,0 +1,12 @@
+Use `MatchAll`, passing each `PositionalArgs` validator:
+
+```go
+cmd := &cobra.Command{
+    Args: cobra.MatchAll(
+        cobra.ExactArgs(2),
+        cobra.OnlyValidArgs,
+    ),
+}
+```
+
+`args.go:113-123` shows that `MatchAll(pargs ...PositionalArgs)` runs each validator in order and returns the first error. The same combination is demonstrated in `site/content/user_guide.md:386-400`.

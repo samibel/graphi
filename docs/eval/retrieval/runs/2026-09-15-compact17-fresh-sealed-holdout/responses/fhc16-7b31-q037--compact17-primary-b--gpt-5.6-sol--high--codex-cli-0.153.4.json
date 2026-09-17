@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q037",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "8066879782d8e6896842e7bb92d32765a329d9a13a47b2b28080a8ba92fc0b0d",
+  "bundle_sha256": "226afa60b6104079245b7a4f7c65214d607132e9efc369ff6af7c1bb0320c222",
+  "prompt_sha256": "9b01a31af4ee92c8b3369ce409c6062fb43d28daf6e1d14d6e8327f0766458a2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`DebugFlags` performs a depth-first, pre-order traversal starting at its receiver:\n\n- It defines a recursive `debugflags(*Command)` function and starts it with `debugflags(c)` (`command.go:1457–1490`).\n- For each command `x`, it prints the command name if it has local or persistent flags (`command.go:1459–1461`).\n- It visits `x.flags` first (`command.go:1462–1470`):\n  - `[LP]` when the flag also resolves through `x.persistentFlag(f.Name)` and the command has persistent flags (`command.go:1464–1466`).\n  - `[L]` otherwise (`command.go:1467–1468`).\n- It then visits `x.pflags` (`command.go:1471–1481`), labeling entries `[P]`. When local flags exist, it prints a persistent flag only if `x.flags.Lookup(f.Name) == nil`, preventing an `[LP]` flag from being printed again (`command.go:1473–1477`).\n- It prints `x.flagErrorBuf` (`command.go:1482`), then recursively processes each child in `x.commands` when `HasSubCommands()` is true (`command.go:1483–1487`).\n\nThus `[L]` means local-only, `[P]` persistent-only, and `[LP]` a flag present in the local/complete flag set that is also persistently owned or inherited.",
+  "responded_at": "2026-09-15T18:39:33Z",
+  "sha256": "a8001cddb37ca86e327e6ee10588fd064830e54655e0fbb518d605fd4c76043c"
+}

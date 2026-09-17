@@ -1,0 +1,1 @@
+PASS: The response accurately identifies package cobra and TestZshCompletionWithActiveHelp. Its description is supported by lines 23–33, including the essential check that generated Zsh completion omits the Active Help environment-variable assignment to zero, leaving Active Help enabled.

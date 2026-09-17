@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Why does `--version` not work?
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"Why does `--version` not work?\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"command.go","start_line":108,"end_line":121,"text":"\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the\n\t// command does not define one.\n\tVersion string\n\n\t// The *Run functions are executed in the following order:\n\t//   * PersistentPreRun()\n\t//   * PreRun()\n\t//   * Run()\n\t//   * PostRun()\n\t//   * PersistentPostRun()\n\t// All functions get the same args, the arguments after the command name.\n\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current"},{"path":"command.go","start_line":1202,"end_line":1209,"text":"// If c already has a version flag, it will do nothing.\n// If c.Version is empty, it will do nothing.\nfunc (c *Command) InitDefaultVersionFlag() {\n\tif c.Version == \"\" {\n\t\treturn\n\t}\n\n\tc.mergePersistentFlags()"},{"path":"command.go","start_line":1203,"end_line":1203,"text":"// If c.Version is empty, it will do nothing."},{"path":"doc/man_docs.go","start_line":34,"end_line":35,"text":"// in the directory given. The header may be nil. This function may not work\n// correctly if your command names have `-` in them. If you have `cmd` with two"},{"path":"command.go","start_line":599,"end_line":601,"text":"func (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate"},{"path":"command.go","start_line":353,"end_line":355,"text":"func (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":1632,"end_line":1633,"text":"func (c *Command) HasParent() bool {\n\treturn c.parent != nil"},{"path":"command.go","start_line":1643,"end_line":1644,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {"},{"path":"command.go","start_line":1496,"end_line":1497,"text":"func (c *Command) Name() string {\n\tname := c.Use"},{"path":"command.go","start_line":1849,"end_line":1850,"text":"func (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()"}],"provenance":{"input_sha256":"7a0b8f4310c5d3570f6578e05d6a52252d91e5e4a4a248472fd101a20d6e3d92","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

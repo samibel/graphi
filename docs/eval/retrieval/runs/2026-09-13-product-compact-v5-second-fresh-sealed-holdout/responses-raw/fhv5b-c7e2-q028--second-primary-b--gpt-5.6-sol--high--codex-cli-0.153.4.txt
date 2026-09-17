@@ -1,0 +1,5 @@
+The program panics during recursive group validation. `checkCommandGroups` walks every subcommand, and when `sub.GroupID` is nonempty but absent from the parent’s groups (`!c.ContainsGroup(sub.GroupID)`), it panics with:
+
+`group id '<ID>' is not defined for subcommand '<command path>'`
+
+Evidence: `command.go:1170-1181`. The validation runs after command creation (`command.go:1072-1075`), and `ContainsGroup` checks only the parent’s `commandgroups` (`command.go:1346-1354`).

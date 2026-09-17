@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q031",
+  "response_sha256": "9f0a7a54c3201701bc63fabdde63ff24f4a6868899300e559320272114a779ea",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The preserved args.go:73–81 checks len(args) \u003c n and returns the cited formatted error. With n=2 and one positional value, this supports the response’s exact error message and the reviewed too-few-arguments behavior.",
+  "graded_at": "2026-09-15T08:34:11Z",
+  "sha256": "c3a2426f9407286031fac46369790f2d351ee69ea98796311e8d52a58821f235"
+}

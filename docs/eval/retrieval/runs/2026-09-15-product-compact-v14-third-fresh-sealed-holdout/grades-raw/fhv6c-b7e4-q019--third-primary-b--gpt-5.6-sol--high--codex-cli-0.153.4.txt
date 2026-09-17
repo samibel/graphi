@@ -1,0 +1,1 @@
+PASS: The response identifies the visible helpers and tests, including the essential `translate` behavior: replacing hyphens with `\-` using `strings.ReplaceAll` at doc/man_docs_test.go:36–38. Its cited locations match the preserved transcript, and it acknowledges the truncated coverage.

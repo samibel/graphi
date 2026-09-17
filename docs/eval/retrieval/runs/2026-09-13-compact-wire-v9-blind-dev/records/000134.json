@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 134,
+  "previous_sha256": "3b56f4784e677b1c769cede3519639dcb75ed11d4330e40234f2a9ad44742324",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e173da9a344fa45ceb823393ab7fed269875c5a9bb34867d4a5fde077f4bc83a",
+  "outcome": "pass",
+  "rationale": "The candidate directly gives the supported mechanism: call `cmd.Flag(\"flag-name\")` on the command passed to the execution callback. The bundle shows `Run func(cmd *Command, args []string)` at `command.go:132–134`, and `(*Command).Flag` at `command.go:1794–1803`, where it checks `c.Flags().Lookup(name)` and then `c.persistentFlag(name)`. The nil check is consistent with the lookup behavior. The extra value-reading example is not necessary to the core answer, but it does not undermine the correctly supported flag lookup.\n",
+  "sha256": "d1b76927d38acbf2013bdb64aa648895ca9d7a9d260c5799aea0c9e1c2bbf14c"
+}

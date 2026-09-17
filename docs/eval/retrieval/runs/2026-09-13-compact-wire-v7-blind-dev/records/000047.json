@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 47,
+  "previous_sha256": "de3f7ddd776e8fa6b3404bb99be381d8f3132fe429b1b493bd2aef25e829b25c",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "6d1f3fd9b09e629ca54011773c5dc372bd7d993e027437f752d48d514120ef31",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shell_completions.go` belongs to package `cobra` and imports `github.com/spf13/pflag` (lines 15–19). It defines `(*Command).MarkFlagRequired` and `(*Command).MarkPersistentFlagRequired`, which delegate to `MarkFlagRequired` using `c.Flags()` and `c.PersistentFlags()` respectively (lines 21–33). Comments also identify filename and directory completion helpers, including `MarkFlagFilename`, `MarkPersistentFlagFilename`, and `MarkFlagDirname` (lines 42, 58–59, and 94).",
+  "sha256": "74078e39bbdf7702453bce9f6bd1802494c4e7e9cd014d99bdc5694ea2028859"
+}

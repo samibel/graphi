@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q055",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "5d1ccf8dc2c0534c760fe9ae11cdd723c7a0ea44f2eac9f0c299aa8ebb12da04",
+  "bundle_sha256": "5f90a2c68bb4d69ead27bda6af63344ec14f11d33d69c1f0508f79f3c1ecf1c6",
+  "prompt_sha256": "894aa0d399dae23819aace417ee2fded7aebba0470d60b5531027acbafd3c71f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Alias invocation is handled during child-command lookup: `command.go:768-772` checks whether the input matches `cmd.Name()` or `cmd.HasAlias(next)`. On a match, it records the exact invoked token in `cmd.commandCalledAs.name = next` and returns that command.\n\n`HasAlias` iterates over `Command.Aliases` (`command.go:1505-1513`), using `commandNameMatches`, which performs case-insensitive matching when `EnableCaseInsensitive` is enabled and exact matching otherwise (`command.go:1876-1885`). Prefix matching similarly records whether the command was selected by its canonical name or alias (`command.go:1524-1538`).",
+  "responded_at": "2026-09-15T08:31:32Z",
+  "sha256": "ac36ce4d0787dbd80ed30d5db0eddec196521682ee5ed53400221c77c931511b"
+}

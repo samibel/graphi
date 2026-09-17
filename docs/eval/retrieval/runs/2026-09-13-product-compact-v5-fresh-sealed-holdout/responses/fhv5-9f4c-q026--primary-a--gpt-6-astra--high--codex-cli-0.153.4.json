@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q026",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "95575c75596894ab978abc1ae52bd8939d0c1f29db8bd9947558bd8e38a8b19d",
+  "bundle_sha256": "7bf6345029eb8e66056a2ef933a74ee698b9fc970cbb5a0756f7f851afa5020c",
+  "prompt_sha256": "098f1d4f44aa29c761d12c1b1895e29d595ad4228786e1a8fc747bca7ea8f925",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response says `ValidateFlagGroups` returns the first error encountered (`flag_groups.go:79–80`), but omits the validation logic showing what is returned when two mutually exclusive flags are set.",
+  "responded_at": "2026-09-13T12:34:10Z",
+  "sha256": "84a590c8b549f3326010cff0f912bdbc61edfbe2f255b87e0fb7781c30515ccd"
+}

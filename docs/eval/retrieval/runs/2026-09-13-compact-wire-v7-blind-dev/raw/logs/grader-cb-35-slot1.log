@@ -1,0 +1,52 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a09880-26f9-7610-9de7-10331cd9668b
+--------
+user
+You are the independent grader for one preregistered development-only blind sufficiency record. Grade only the candidate answer correctness and sufficiency for the question using the development answer key below. Every factual claim required for a correct answer must be supported by the exact preserved bundle bytes in the registered blind prompt; external repository knowledge cannot repair missing evidence. Pass only a concrete, correct, supported answer; otherwise fail. Cite the supporting or missing bundle evidence in the rationale. Return only the requested JSON object.
+----- REGISTERED BLIND PROMPT AND BUNDLE -----
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+completion
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s) for \"completion\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"site/content/completions/_index.md","start_line":115,"end_line":127,"text":"```\n\n# Customizing completions\n\nThe generated completion scripts will automatically handle completing commands and flags.  However, you can make your completions much more powerful by providing information to complete your program's nouns and flag values.\n\n## Completion of nouns\n\n### Static completion of nouns\n\nCobra allows you to provide a pre-defined list of completion choices for your nouns using the `ValidArgs` field.\nFor example, if you want `kubectl get [tab][tab]` to show a list of valid \"nouns\" you have to set them.\nSome simplified code from `kubectl get` looks like:"},{"path":"site/content/completions/_index.md","start_line":112,"end_line":120,"text":"To tell Cobra to completely disable descriptions for completions:\n```\nrootCmd.CompletionOptions.DisableDescriptions = true\n```\n\n# Customizing completions\n\nThe generated completion scripts will automatically handle completing commands and flags.  However, you can make your completions much more powerful by providing information to complete your program's nouns and flag values.\n"},{"path":"completions.go","start_line":678,"end_line":685,"text":"// InitDefaultCompletionCmd adds a default 'completion' command to c.\n// This function will do nothing if any of the following is true:\n// 1- the feature has been explicitly disabled by the program,\n// 2- c has no subcommands (to avoid creating one),\n// 3- c already has a 'completion' command provided by the program.\nfunc (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn"},{"path":"completions.go","start_line":95,"end_line":102,"text":"\nconst (\n\t// Constants for the completion command\n\tcompCmdName              = \"completion\"\n\tcompCmdNoDescFlagName    = \"no-descriptions\"\n\tcompCmdNoDescFlagDesc    = \"disable completion descriptions\"\n\tcompCmdNoDescFlagDefault = false\n)"},{"path":"completions.go","start_line":96,"end_line":102,"text":"const (\n\t// Constants for the completion command\n\tcompCmdName              = \"completion\"\n\tcompCmdNoDescFlagName    = \"no-descriptions\"\n\tcompCmdNoDescFlagDesc    = \"disable completion descriptions\"\n\tcompCmdNoDescFlagDefault = false\n)"}],"provenance":{"input_sha256":"b647c01b0d7467f5a32d1982b5ef789c8f7216a3fccab21fe9af1802ab5599fe","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----
+----- SEALED CANDIDATE ANSWER -----
+Completion is a default Cobra command named `"completion"` (`completions.go:95-102`). `Command.InitDefaultCompletionCmd` adds it unless completion is disabled, the command has no subcommands, or a program-defined completion command already exists (`completions.go:678-685`).
+
+Generated scripts complete commands and flags; noun and flag-value completion can be customized, including static noun choices through `ValidArgs` (`site/content/completions/_index.md:115-127`). Descriptions can be disabled with:
+
+```go
+rootCmd.CompletionOptions.DisableDescriptions = true
+```
+
+(`site/content/completions/_index.md:112-120`).----- DEVELOPMENT ANSWER KEY -----
+{"query":"completion","stratum":"ambiguous","judgements":[{"path":"completions.go","start_line":678,"end_line":839,"anchor":"func (c *Command) InitDefaultCompletionCmd(","grade":3,"reason":"The completion command itself.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"},{"path":"bash_completions.go","start_line":685,"end_line":697,"anchor":"func (c *Command) GenBashCompletion(","grade":2,"reason":"A per-shell generator a user may mean.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"},{"path":"zsh_completions.go","start_line":29,"end_line":33,"anchor":"func (c *Command) GenZshCompletion(","grade":2,"reason":"A per-shell generator a user may mean.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"},{"path":"fish_completions.go","start_line":275,"end_line":281,"anchor":"func (c *Command) GenFishCompletion(","grade":2,"reason":"A per-shell generator a user may mean.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"},{"path":"powershell_completions.go","start_line":310,"end_line":314,"anchor":"func (c *Command) GenPowerShellCompletion(","grade":2,"reason":"A per-shell generator a user may mean.","annotator":"claude-delegate (SW-258 build)","reviewer":"orchestrator"}]}
+
+codex
+{"outcome":"pass","rationale":"The candidate gives a concrete, accurate summary supported entirely by the preserved bundle. `completions.go:95-102` establishes the command name `completion`; `completions.go:678-685` states that `InitDefaultCompletionCmd` adds the default command and lists the three conditions preventing it; `site/content/completions/_index.md:115-127` supports automatic command/flag completion and customization via `ValidArgs`; and lines 112-120 support the exact `DisableDescriptions` assignment. Although the development key identifies additional shell-specific generators, the one-word query is ambiguous and the candidate correctly addresses the highest-grade completion-command anchor using available evidence."}
+tokens used
+4.009
+{"outcome":"pass","rationale":"The candidate gives a concrete, accurate summary supported entirely by the preserved bundle. `completions.go:95-102` establishes the command name `completion`; `completions.go:678-685` states that `InitDefaultCompletionCmd` adds the default command and lists the three conditions preventing it; `site/content/completions/_index.md:115-127` supports automatic command/flag completion and customization via `ValidArgs`; and lines 112-120 support the exact `DisableDescriptions` assignment. Although the development key identifies additional shell-specific generators, the one-word query is ambiguous and the candidate correctly addresses the highest-grade completion-command anchor using available evidence."}

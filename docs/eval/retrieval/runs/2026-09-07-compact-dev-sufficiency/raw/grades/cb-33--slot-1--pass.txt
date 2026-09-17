@@ -1,0 +1,1 @@
+command.go:1641-1645 supports the accessor's documented contents, return type and initialization arguments. The related-accessor descriptions follow the comments at 1668-1670 and 1695-1697, while the ResetFlags purpose is explicit at 1737-1740.

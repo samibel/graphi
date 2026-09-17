@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 97,
+  "previous_sha256": "1850511fc067bf313d1eb4b244999e3e0e97a920940f2dfd5e6cc11c94357919",
+  "kind": "grade",
+  "query_id": "cb-14",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "26ac5797800d9b3b172a41f5d8d5aba23eabc7d284854568dcb6eb28efe59f4e",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-14:primary-a\nOutcome: pass\nRationale: Accurately traces shell requests through hidden __complete, initCompleteCmd configuration, and its Run callback to getCompletions using completions.go:27-29,193-208.\n",
+  "sha256": "0cbb5a34db94d05a11014b6ea0eae76e4ec0feaa76903eca4ca4a448de428811"
+}

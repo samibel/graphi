@@ -1,0 +1,1 @@
+Use `cmd.CalledAs()` on a command to inspect whether it was called: the provided comment specifies an empty string when the command has not been called, and the implementation checks `c.commandCalledAs.called` (`command.go:1516–1518`). The response does not show an API that directly returns the selected command object.

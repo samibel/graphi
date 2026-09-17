@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 23,
+  "previous_sha256": "c4122e95dae1ab219e293cc861febb0b38483331ed33e925ef046c9ae5e8f01b",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "d88b57a8f57c04114554797c1697d214874ac4ceba42033415dd330f5b3c06c8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `doc.GenManTree` with the root command and an output directory; it generates a man page for that command and every descendant. The header may be `nil` (`doc/man_docs.go:33-34`).\n\nAlternatively, use `doc.GenManTreeFromOpts`; it also processes the command and all descendants and writes the pages to `opts.Path` (`doc/man_docs.go:46-47`).",
+  "sha256": "be11fb7cbec070aa5440192be819b7ac3982bbff20ac6c9b74262de8d90886e9"
+}

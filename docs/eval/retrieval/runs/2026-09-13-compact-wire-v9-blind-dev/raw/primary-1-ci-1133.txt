@@ -1,0 +1,10 @@
+Inside `Run`, `RunE`, or a pre-run hook, use the `cmd` argument:
+
+```go
+f := cmd.Flag("flag-name")
+if f != nil {
+    value := f.Value.String()
+}
+```
+
+`(*Command).Flag(name)` first checks the command’s local flags with `c.Flags().Lookup(name)`, then searches persistent/inherited flags via `c.persistentFlag(name)` ([command.go lines 1794–1803]). The currently executing command is passed into hooks as `cmd *Command`, including `Run` and `RunE` ([command.go lines 124–134]).

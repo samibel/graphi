@@ -1,0 +1,3 @@
+It panics with `group id '<ID>' is not defined for subcommand '<command path>'`.
+
+In `command.go:1170–1181`, `checkCommandGroups()` checks each child’s nonempty `GroupID` against its parent’s `ContainsGroup()` and recursively checks descendants, so this applies at any nesting depth. `ContainsGroup()` searches only that parent’s defined groups (`command.go:1346–1354`). The validation is called after all commands have been created (`command.go:1072–1075`), and its comment identifies an undefined group as a coding error.

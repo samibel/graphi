@@ -1,0 +1,7 @@
+For an already-configured parent/child command hierarchy, test the child by asserting:
+
+- `child.InheritedFlags().Lookup(name) != nil` for a parent flag. `InheritedFlags` collects flags from `parentsPflags` unless a same-named inherited or local flag exists ([command.go:1695–1718](command.go)).
+- `child.HasInheritedFlags()` is true; it delegates to `InheritedFlags().HasFlags()` ([command.go:1766–1769](command.go)).
+- A child-local flag is not inherited, since local-name collisions are excluded ([command.go:1712–1716](command.go)).
+- `child.HasAvailableInheritedFlags()` reflects only inherited flags that are neither hidden nor deprecated ([command.go:1788–1792](command.go)).
+- `child.NonInheritedFlags()` returns the child’s local flags ([command.go:1720–1723](command.go)).

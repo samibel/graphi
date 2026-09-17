@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q038",
+  "response_sha256": "e24709ac3dec603b6e96e57eaa932157d142a3feeadf74dee0d013a042d92b30",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response does not answer how pflag.CommandLine enters a command’s effective flags. The transcript shows persistent flag merging but omits both the global flag incorporation and the test body verifying lookup through Flags after merging.",
+  "graded_at": "2026-09-15T08:34:26Z",
+  "sha256": "3076187bc43b6877eab40c4c2180217e6af70ee300eb82373fa0f363a2c4c61b"
+}

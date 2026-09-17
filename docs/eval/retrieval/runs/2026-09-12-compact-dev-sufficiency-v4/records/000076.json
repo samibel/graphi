@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 76,
+  "previous_sha256": "4093fe23efb9dff1da3315bbbb4e7abb46b018d93cf74219466cdb7955f0893c",
+  "kind": "response",
+  "query_id": "ci-467",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "acc7ec6e5ea3c2d384a428f67fcd149131c4a7829c3dbfc2e2e146a2658971a6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response names `Traverse`, `Find`, and `stripFlags`, but omits the traversal-selection condition and argument-handling logic needed to establish which flags or positional arguments can appear between the root and a subcommand.\n",
+  "sha256": "e9058f513a78da6d0c11460cf9a6a7429f834c1a485369ceadd1c75d7cffae96"
+}

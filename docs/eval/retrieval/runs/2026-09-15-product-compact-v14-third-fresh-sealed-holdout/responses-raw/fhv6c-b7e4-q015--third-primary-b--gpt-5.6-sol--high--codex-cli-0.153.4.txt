@@ -1,0 +1,13 @@
+`bash_completions_test.go` is a Go test file in package `cobra` (`bash_completions_test.go:15`). It contains:
+
+- Assertion helpers:
+  - `check` verifies generated text contains an expected string (`33–36`).
+  - `checkOmit` verifies text excludes an unexpected string (`27–28`).
+  - `checkNumOccurrences` counts occurrences of expected text (`39–40`).
+- `bashCompletionFunc`, a shell-function string that always sets `COMPREPLY` to `"hello"` (`77–80`).
+- Bash-completion tests:
+  - `TestBashCompletions` constructs a root `Command` with aliases, valid arguments, a custom completion function, and a required `--introot`/`-i` flag (`83–93`).
+  - `TestBashCompletionHiddenFlag` tests a hidden Boolean flag (`229–235`).
+  - `TestBashCompletionDeprecatedFlag` tests a deprecated flag and calls `GenBashCompletion` (`245–253`).
+  - `TestBashCompletionTraverseChildren` tests completion with `TraverseChildren: true` and string/Boolean flags (`261–266`).
+  - `TestBashCompletionNoActiveHelp` tests completion behavior without active help (`279–281`).

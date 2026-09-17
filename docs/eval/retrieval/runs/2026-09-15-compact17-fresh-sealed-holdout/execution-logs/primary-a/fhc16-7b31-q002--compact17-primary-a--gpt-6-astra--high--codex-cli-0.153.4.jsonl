@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-0369-74e1-b5f8-0d32669f6a6a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`NoFileCompletions` returns `nil` for the `[]string` completion candidates and `ShellCompDirectiveNoFileComp`, disabling file completion. Evidence: `completions.go:120–122` contains `return nil, ShellCompDirectiveNoFileComp`; the comment at lines 118–119 states that it disables file completion."}}
+{"type":"turn.completed","usage":{"input_tokens":17303,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":75,"reasoning_output_tokens":0}}

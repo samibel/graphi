@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d6-a79a-7e01-84e5-f38134a3c561"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer the question, and the bundle lacks evidence verifying that the combined shorthand version form is absent from help while the long `--version` flag remains when `-v` is already owned."}}
+{"type":"turn.completed","usage":{"input_tokens":17594,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d1-698b-7143-b335-d0fb4e40cbe8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies the replaced error buffer, rebuilt `c.flags` and `c.pflags` sharing that buffer, and invalidated `c.lflags`, `c.iflags`, and `c.parentsPflags`. All claims and citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17987,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":61,"reasoning_output_tokens":0}}

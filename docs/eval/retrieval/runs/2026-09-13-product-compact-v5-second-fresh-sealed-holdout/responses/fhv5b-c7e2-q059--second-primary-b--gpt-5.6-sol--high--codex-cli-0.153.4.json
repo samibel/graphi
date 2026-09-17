@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q059",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "34a7cf291bfffd0ceb06855d4c3b5878a6ce70281192c21371b7a19ca7dd0a28",
+  "bundle_sha256": "cd003089cc4ea9bbdcccc3db9a3e0e95ec98a427cceb6bd77352917fe24c23d6",
+  "prompt_sha256": "f7b0f31f983b233a7ff050792428c9e4f87143f2ba4ce9d102c3fe75416319f7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Alias recognition does not always require exact case. `Command.HasAlias` calls `commandNameMatches(a, s)` for each alias (`command.go:1505–1513`). That matcher uses `strings.EqualFold` when the global `EnableCaseInsensitive` setting is enabled, otherwise `s == t` (`command.go:1876–1885`). The setting is case-sensitive by default (`cobra.go:61–62`).",
+  "responded_at": "2026-09-13T15:28:00Z",
+  "sha256": "b1dbbae9bf6bafcc33db84416adf64c8a7c151202469d45ca4bd8145c91c0fd9"
+}

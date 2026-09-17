@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q012",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "2e02e176e3eb717965d38466df19d6e8ea8b7bbd36c115481a626db8155c2203",
+  "bundle_sha256": "08d5b326dcb2e8735af6f3ba31d57476f261e57cd0e19a3be5c9cbd443862a56",
+  "prompt_sha256": "cdc1f84742e716ef7c55c4a3379884c1953ac84ce4367fa5de2d944223a6d732",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains no `args.go` excerpts or legacy argument-validation logic for comparing a root with subcommands against a subcommand.",
+  "responded_at": "2026-09-13T12:31:58Z",
+  "sha256": "4b82cb0ff326ff1b86ede09f56fba0b042856a57f7805088d2e6381bb1856f37"
+}

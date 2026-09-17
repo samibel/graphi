@@ -1,0 +1,1 @@
+`NoFileCompletions` returns `nil` for the `[]string` completion candidates and `ShellCompDirectiveNoFileComp`, disabling file completion. Evidence: `completions.go:120–122` contains `return nil, ShellCompDirectiveNoFileComp`; the comment at lines 118–119 states that it disables file completion.

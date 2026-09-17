@@ -1,0 +1,1 @@
+INSUFFICIENT The response only states that `Command.Flags()` includes local and inherited persistent flags; it lacks implementation snippets showing how legacy Bash completion filters hidden/deprecated flags and handles traversal.

@@ -1,0 +1,1 @@
+PASS: The exact setting and the early-return condition are both explicitly shown in completions.go:103-117 and 683-687.

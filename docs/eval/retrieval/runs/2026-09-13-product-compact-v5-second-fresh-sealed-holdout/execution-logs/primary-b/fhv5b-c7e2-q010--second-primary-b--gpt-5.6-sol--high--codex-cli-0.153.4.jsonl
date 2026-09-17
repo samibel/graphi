@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-b7be-7980-8582-d127be29c1ed"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnInitialize` appends every supplied callback to the package-level `initializers []func()` slice, preserving registration order rather than replacing prior callbacks (`cobra.go:41, 96–101`). Later, `(*Command).preRun` iterates over that slice and invokes each callback in order (`command.go:1015–1019`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16474,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":74,"reasoning_output_tokens":0}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q002",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "7daba0b6b9cd214fbb9922f3475111dfa38cf7556cc77139ae7e2576ec820756",
+  "bundle_sha256": "2e39f41cbf668fae047278d30460f43ebd0e37eccc58a102b74c64419d81417a",
+  "prompt_sha256": "12c1c14480f82c9f62a188e797d0bf56af07a1b23b6969a4d68bee43ed346f3a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnlyValidArgs` ignores descriptions following a tab in each `ValidArgs` entry. It builds a separate list using `strings.Split(v, \"\\t\")[0]` (`args.go:53–58`), then validates arguments against that list (`args.go:59–60`). Thus, `\"name\\tdescription\"` permits `\"name\"`; the original `cmd.ValidArgs` entries remain unchanged.",
+  "responded_at": "2026-09-13T15:20:41Z",
+  "sha256": "72c67fafbcc652cb624ec1ccd9a0831574b22d488e0c96bc1498fdf3889c6179"
+}

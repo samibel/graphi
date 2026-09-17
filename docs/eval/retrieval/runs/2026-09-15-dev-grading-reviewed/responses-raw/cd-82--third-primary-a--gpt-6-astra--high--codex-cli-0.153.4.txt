@@ -1,0 +1,9 @@
+Cobra considers a command to have an available subcommand when **at least one direct child passes `IsAvailableCommand()`** (`command.go:1615–1629`, `HasAvailableSubCommands`).
+
+That child must:
+
+- Have an empty `Deprecated` field and not be `Hidden`.
+- Not be its parent’s designated `helpCommand`.
+- Be `Runnable()` **or recursively have an available subcommand**.
+
+These checks appear in `command.go:1560–1576`, `IsAvailableCommand`. If no child qualifies, `HasAvailableSubCommands()` returns `false`; its comment explicitly ties this check to the default usage/help template’s “available commands” section.

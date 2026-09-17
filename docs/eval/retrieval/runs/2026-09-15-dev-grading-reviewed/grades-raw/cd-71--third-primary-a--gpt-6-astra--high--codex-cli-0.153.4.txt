@@ -1,0 +1,1 @@
+PASS: The response accurately identifies that SetIn stores the supplied io.Reader in c.inReader at command.go:302–304 and correctly attributes the nil-to-os.Stdin behavior to the documentation at lines 300–301, noting that the fallback implementation is not shown.

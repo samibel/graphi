@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows deprecated-flag warnings enter `c.flagErrorBuf` during parsing (`command.go:1833-1835`), but omits the code or test demonstrating that the notice is actually emitted to observable output.

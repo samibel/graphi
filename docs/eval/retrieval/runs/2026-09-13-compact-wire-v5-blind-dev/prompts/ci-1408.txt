@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how to access Global Flag in subCommand?
+
+----- BEGIN task_context/compact-dev/5 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"how to access Global Flag in subCommand?\"; read in order (245/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/5","sources":[{"path":"completions.go","start_line":841,"end_line":858,"text":"func findFlag(cmd *Command, name string) *pflag.Flag {\n\tflagSet := cmd.Flags()\n\tif len(name) == 1 {\n\t\t// First convert the short flag into a long flag\n\t\t// as the cmd.Flag() search only accepts long flags\n\t\tif short := flagSet.ShorthandLookup(name); short != nil {\n\t\t\tname = short.Name\n\t\t} else {\n\t\t\tset := cmd.InheritedFlags()\n\t\t\tif short = set.ShorthandLookup(name); short != nil {\n\t\t\t\tname = short.Name\n\t\t\t} else {\n\t\t\t\treturn nil\n\t\t\t}\n\t\t}\n\t}\n\treturn cmd.Flag(name)\n}"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"bash_completions.go","start_line":574,"end_line":575,"text":"\t\t// localNonPersistentFlags are used to stop the completion of subcommands when one is set\n\t\t// if TraverseChildren is true we should allow to complete subcommands"},{"path":"bash_completions.go","start_line":551,"end_line":551,"text":"func writeFlags(buf io.StringWriter, cmd *Command) {"},{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":1806,"end_line":1807,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {"},{"path":"command.go","start_line":1655,"end_line":1656,"text":"// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands.\nfunc (c *Command) LocalNonPersistentFlags() *flag.FlagSet {"},{"path":"command.go","start_line":109,"end_line":110,"text":"\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1637,"end_line":1638,"text":"func (c *Command) GlobalNormalizationFunc() func(f *flag.FlagSet, name string) flag.NormalizedName {\n\treturn c.globNormFunc"}],"provenance":{"input_sha256":"59d0721b93ffda390d17e5363460548f5979fa5cd4cb185fc6b92a008636b7ca","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/5 RESPONSE BYTES -----

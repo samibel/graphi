@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-7e21-7e32-aca8-e9b1a2fb3040"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetIn` replaces standard input (`stdin`) with a user-defined `io.Reader`, as stated by `Command.inReader` in `command.go:192–193`. If the configured reader is `nil`, `os.Stdin` is used (`command.go:299–304`), via `InOrStdin()` calling `c.getIn(os.Stdin)` (`command.go:388–392`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16353,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":87,"reasoning_output_tokens":0}}

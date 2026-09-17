@@ -1,0 +1,6 @@
+Cobra’s `(*Command).IsAdditionalHelpTopicCommand` recursively classifies a command as an additional help topic when:
+
+- The command is not runnable (`Run` and `RunE` are both nil), not deprecated, and not hidden (`command.go:1584-1587`; `Runnable` is defined at `command.go:1551-1553`).
+- Every child in `c.commands` is itself an additional help-topic command. It recursively calls `sub.IsAdditionalHelpTopicCommand()` and returns false upon the first child that fails (`command.go:1589-1594`).
+
+Thus, a qualifying command either has no subcommands or has only recursively qualifying help-topic subcommands (`command.go:1596-1597`).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-9678-7cd0-a1c3-2f91d9bc1ab1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When a command’s `inReader` is nil, `getIn(def)` recursively calls `c.parent.getIn(def)`, so it inherits the nearest ancestor’s non-nil input reader. If no ancestor has one, it returns the supplied default `def` (`command.go`, lines 414–422).\n\n`SetIn` assigns `c.inReader` directly (`command.go`, lines 300–304); `HasParent` checks whether `c.parent != nil` (lines 1631–1634)."}}
+{"type":"turn.completed","usage":{"input_tokens":17307,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":0}}

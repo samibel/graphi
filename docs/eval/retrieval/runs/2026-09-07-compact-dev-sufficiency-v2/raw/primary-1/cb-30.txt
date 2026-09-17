@@ -1,0 +1,1 @@
+Use `GenManTree` from `doc/man_docs.go`: its documentation says it generates a man page for the command and all descendants in a supplied directory and allows a nil header (lines 33–34). `GenManTreeFromOpts` is the options-based alternative, using `GenManTreeOptions` (lines 46 and 82–83). The bundle does not include either function's signature for an exact invocation.

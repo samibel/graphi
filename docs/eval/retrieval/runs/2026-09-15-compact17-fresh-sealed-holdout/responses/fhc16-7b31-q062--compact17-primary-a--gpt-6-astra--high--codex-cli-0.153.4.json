@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q062",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "e0c1675d2112533d5c32654488f4f4ab0322eff6404915f548255bd546642c41",
+  "bundle_sha256": "65556aca6617bc426ec2888007471acb3b5d87726e2cc35d9058a269aac8883d",
+  "prompt_sha256": "7b1cecf9f568488a83021712367150555b624261c21db8f738d3b6ba87829277",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. In `command.go:1356–1359`, `AddGroup` only executes:\n\n```go\nc.commandgroups = append(c.commandgroups, groups...)\n```\n\nIt performs no duplicate check or validation of empty `ID` or `Title` fields (defined in `Group` at `command.go:42–45`). The separate `checkCommandGroups` function at `command.go:1172–1181` checks for subcommands referencing undefined, nonempty group IDs; it does not reject duplicate or empty group definitions.",
+  "responded_at": "2026-09-15T18:45:27Z",
+  "sha256": "e10620a1dc2af38abae055bd8522763444c09562b7d047d4f40c959f35ccf00e"
+}

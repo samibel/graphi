@@ -1,0 +1,1 @@
+INSUFFICIENT The response documents help overrides and default-help initialization, but omits the `-h` shorthand declaration and flag-dispatch logic needed to determine whether and how `-h` and `--help` can be handled separately.

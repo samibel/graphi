@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c3-6085-7160-b2af-bd8542b62514"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`TestEnablePrefixMatching` in `command_test.go:305–332` proves this. It sets `EnablePrefixMatching = true`, defines `aCmd` with `ExactArgs(2)` and a `Run` callback that captures its arguments, then calls `executeCommand(rootCmd, \"a\", \"one\", \"two\")`. It checks for no error or output and verifies the captured arguments, joined with spaces, equal `onetwo`."}}
+{"type":"turn.completed","usage":{"input_tokens":17446,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":95,"reasoning_output_tokens":0}}

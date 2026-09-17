@@ -1,0 +1,1 @@
+PASS: The transcript shows SetOut(nil) clears c.outWriter, and OutOrStdout calls getOut(os.Stdout), which inherits a non-nil parent output writer or returns os.Stdout. All cited ranges exist and support these claims.

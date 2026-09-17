@@ -1,0 +1,1 @@
+INSUFFICIENT The response defines `TraverseChildren` (`command.go:224-225`) but does not include `Traverse`’s implementation or tests showing how it handles a child-only flag before the child name.

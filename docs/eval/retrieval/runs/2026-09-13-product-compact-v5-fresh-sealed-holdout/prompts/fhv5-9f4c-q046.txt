@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How is the program-specific Active Help environment variable named and consumed by application completion code?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 66e474a91af6; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/active_help.md","start_line":3,"end_line":6,"text":"Active Help is a framework provided by Cobra which allows a program to define messages (hints, warnings, etc) that will be printed during program usage.  It aims to make it easier for your users to learn how to use your program.  If configured by the program, Active Help is printed when the user triggers shell completion.\n\nFor example, \n```"},{"path":"site/content/active_help.md","start_line":66,"end_line":67,"text":"**Hint**: As can be seen in the above example, a good place to use Active Help messages is when the normal completion system does not provide any suggestions. In such cases, Active Help nicely supplements the normal shell completions.\n"},{"path":"active_help.go","start_line":40,"end_line":44,"text":"// the array.  Each time this function is called with the same array, the new\n// ActiveHelp line will be shown below the previous ones when completion is triggered.\nfunc AppendActiveHelp(compArray []string, activeHelpStr string) []string {\n\treturn append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))\n}"},{"path":"active_help.go","start_line":59,"end_line":59,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment"},{"path":"active_help.go","start_line":46,"end_line":46,"text":"// GetActiveHelpConfig returns the value of the ActiveHelp environment variable"},{"path":"site/content/active_help.md","start_line":143,"end_line":144,"text":"When debugging with the `__complete` command, if you want to specify different Active Help configurations, you should use the active help environment variable.  That variable is named `<PROGRAM>_ACTIVE_HELP` where any non-ASCII-alphanumeric characters are replaced by an `_`.  For example, we can test deactivating some Active Help as shown below:\n```"},{"path":"active_help.go","start_line":60,"end_line":60,"text":"// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the"},{"path":"site/content/active_help.md","start_line":94,"end_line":94,"text":"variable.  That variable is named `<PROGRAM>_ACTIVE_HELP` where `<PROGRAM>` is the name of your "},{"path":"active_help.go","start_line":49,"end_line":49,"text":"// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP"}],"provenance":{"input_sha256":"7da3d118e27f78ea4e04185afaf16b19691b49115a6ce47b371039c3640baeec","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

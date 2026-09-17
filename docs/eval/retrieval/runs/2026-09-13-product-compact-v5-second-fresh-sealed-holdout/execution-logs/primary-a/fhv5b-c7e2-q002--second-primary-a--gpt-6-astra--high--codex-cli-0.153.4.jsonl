@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-1b3b-7791-bdbc-e6b0712201a5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnlyValidArgs` ignores descriptions following a tab in each `ValidArgs` entry. It builds a separate list using `strings.Split(v, \"\\t\")[0]` (`args.go:53–58`), then validates arguments against that list (`args.go:59–60`). Thus, `\"name\\tdescription\"` permits `\"name\"`; the original `cmd.ValidArgs` entries remain unchanged."}}
+{"type":"turn.completed","usage":{"input_tokens":17465,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":0}}

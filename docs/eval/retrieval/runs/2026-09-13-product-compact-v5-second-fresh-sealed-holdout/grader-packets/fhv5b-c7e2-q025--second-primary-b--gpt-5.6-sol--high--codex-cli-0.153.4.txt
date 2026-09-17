@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 136389f9c2490024798c17434313da78c392824d36c78e93e490360fd77c4983
+QUERY ID: fhv5b-c7e2-q025
+
+QUESTION:
+How can tests or embedding code replace the process command-line arguments used by a command?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:274-278 anchor="c.args = a" reason=Calling SetArgs stores an explicit argument slice, overriding the default os.Args[1:] source.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 76523b0d6c71; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":57,"end_line":59,"text":"\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command.\n\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are\n\t//       optional, they are enclosed in brackets ([ ])."},{"path":"command.go","start_line":85,"end_line":85,"text":"\t// It is a dynamic version of using ValidArgs."},{"path":"command.go","start_line":196,"end_line":198,"text":"\t// errWriter is a writer defined by the user that replaces stderr\n\terrWriter io.Writer\n"},{"path":"args.go","start_line":24,"end_line":39,"text":"// legacyArgs validation has the following behaviour:\n// - root commands with no subcommands can take arbitrary arguments\n// - root commands with subcommands will do subcommand validity checking\n// - subcommands will always accept arbitrary arguments\nfunc legacyArgs(cmd *Command, args []string) error {\n\t// no subcommand, always take args\n\tif !cmd.HasSubCommands() {\n\t\treturn nil\n\t}\n\n\t// root command with subcommands, do subcommand checking.\n\tif !cmd.HasParent() && len(args) > 0 {\n\t\treturn fmt.Errorf(\"unknown command %q for %q%s\", args[0], cmd.CommandPath(), cmd.findSuggestions(args[0]))\n\t}\n\treturn nil\n}"},{"path":"command.go","start_line":750,"end_line":765,"text":"func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance <= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}"},{"path":"powershell_completions.go","start_line":57,"end_line":59,"text":"    # Get the current command line and convert into a string\n    $Command = $CommandAst.CommandElements\n    $Command = \"$Command\""},{"path":"command.go","start_line":276,"end_line":278,"text":"func (c *Command) SetArgs(a []string) {\n\tc.args = a\n}"},{"path":"command.go","start_line":282,"end_line":282,"text":"// Deprecated: Use SetOut and/or SetErr instead"},{"path":"active_help.go","start_line":58,"end_line":67,"text":"\n// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the\n// root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`.\nfunc activeHelpEnvVar(name string) string {\n\t// This format should not be changed: users will be using it explicitly.\n\tactiveHelpEnvVar := strings.ToUpper(fmt.Sprintf(\"%s%s\", name, activeHelpEnvVarSuffix))\n\tactiveHelpEnvVar = activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")\n\treturn activeHelpEnvVar\n}"},{"path":"active_help.go","start_line":50,"end_line":50,"text":"// is set to \"0\"."},{"path":"command.go","start_line":1437,"end_line":1437,"text":"func (c *Command) UseLine() string {"}],"provenance":{"input_sha256":"bd53d7ed5b8c34c827494ec239d9cd617ebfd04edafa7b2009a7b10a2c1348dd","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Call `SetArgs` on the command with the replacement argument slice:
+
+```go
+cmd.SetArgs([]string{"arg1", "arg2"})
+```
+
+Evidence: [`command.go`, lines 276–278] defines `func (c *Command) SetArgs(a []string)` and assigns the supplied slice to the command’s internal `c.args` field.
+----- END THE RATER'S RESPONSE -----

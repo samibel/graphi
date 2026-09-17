@@ -1,0 +1,1 @@
+The command reports an error when invoked without a required flag. The evidence is `shell_completions.go:30`: “causes your command to report an error if invoked without the flag.” Lines 38–39 show `MarkFlagRequired` marking the flag with the `BashCompOneRequiredFlag` annotation.

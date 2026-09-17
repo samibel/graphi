@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 34,
+  "previous_sha256": "6af006a477979d0e3aa60dbdf8ed1ffed1ac49ce20926349bfb5245bb4b7d9d6",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "83a113d878b7634c25c6607d8b87507899611dc8e899edc62f17c8fe86ceb381",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Test a child command after configuring a parent with persistent flags:\n\n- Assert `child.InheritedFlags().Lookup(\"flag-name\") != nil`.\n- Assert `child.HasInheritedFlags()` is `true`.\n- For hidden/deprecated flags, assert `child.HasAvailableInheritedFlags()` appropriately.\n\nEvidence: [`command.go:1695`](command.go:1695) says `InheritedFlags()` merges persistent parent flags and excludes names shadowed by local flags (`c.parentsPflags.VisitAll`, lines 1711–1715). [`command.go:1766`](command.go:1766) defines `HasInheritedFlags()` via `InheritedFlags().HasFlags()`, while [`command.go:1788`](command.go:1788) defines the availability check via `HasAvailableFlags()`. Also test shadowing: a same-named local flag should not appear in `InheritedFlags()`.",
+  "sha256": "16cee8d83b13730bbce04f99ada5eac9a9b3ffab1f4bb8b6ce66c4e1f3f1f593"
+}

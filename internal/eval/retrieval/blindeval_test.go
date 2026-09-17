@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 )
 
 // ---------------------------------------------------------------------------
@@ -87,6 +89,20 @@ func fixturePrecondition(t *testing.T) PreconditionRecord {
 	return sealed
 }
 
+func fixturePreconditionV2(t *testing.T) PreconditionRecord {
+	t.Helper()
+	rec := fixturePrecondition(t)
+	rec.ContractVersion = QrelBlindSmokeContractVersion2
+	rec.MeasurementContractVersion = MeasurementContractVersion2
+	rec.FollowupMaxLines = compactv9.FollowupMaxLines
+	rec.ClaimWordingSHA256 = SHA256Hex([]byte(SecondResponseClaimWording()))
+	sealed, err := SealPreconditionRecord(rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sealed
+}
+
 func fixtureParticipants() ([]Participant, Participant, Participant) {
 	primaries := []Participant{
 		{ID: "rater-a", Role: RaterRolePrimary, Provider: "fixture", Model: "fixture-model-a",
@@ -107,16 +123,23 @@ func fixtureBundleBytes(id string) []byte {
 }
 
 func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArtifacts {
+	return buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion, specs)
+}
+
+func buildBlindEvalArtifactsForContract(t *testing.T, contractVersion string, specs []blindEvalSpec) EvaluationArtifacts {
 	t.Helper()
 	precondition := fixturePrecondition(t)
+	if contractVersion == QrelBlindSmokeContractVersion2 {
+		precondition = fixturePreconditionV2(t)
+	}
 	primaries, grader, adjudicator := fixtureParticipants()
 
-	derivation, err := DerivePassCount(len(specs), precondition.DatasetSHA256, "fixture population")
+	derivation, err := DerivePassCountForContract(contractVersion, len(specs), precondition.DatasetSHA256, "fixture population")
 	if err != nil {
 		t.Fatalf("DerivePassCount(%d): %v", len(specs), err)
 	}
 	pre := PreRegistration{
-		ContractVersion:    QrelBlindSmokeContractVersion,
+		ContractVersion:    contractVersion,
 		Evaluation:         QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
 		PreconditionCommit: "fedcbafedcbafedcbafedcbafedcbafedcbafedc",
@@ -178,9 +201,11 @@ func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArti
 			}
 		}
 		artifacts.Adjudications = append(artifacts.Adjudications, Adjudication{
-			QueryID:  spec.queryID,
-			Response: adjResponse,
+			ContractVersion: pre.ContractVersion,
+			QueryID:         spec.queryID,
+			Response:        adjResponse,
 			Disclosure: DisclosureRecord{
+				ContractVersion:           pre.ContractVersion,
 				QueryID:                   spec.queryID,
 				AdjudicatorResponseSHA256: adjResponse.SHA256,
 				DisclosedArtifactSHA256:   disclosed,
@@ -207,7 +232,7 @@ func newFixtureResponse(t *testing.T, pre PreRegistration, q PreRegisteredQuery,
 		text = ""
 	}
 	response := RaterResponse{
-		ContractVersion:       QrelBlindSmokeContractVersion,
+		ContractVersion:       pre.ContractVersion,
 		Evaluation:            QrelBlindSmokeEvaluationName,
 		Role:                  role,
 		QueryID:               q.QueryID,
@@ -233,7 +258,7 @@ func newFixtureResponse(t *testing.T, pre PreRegistration, q PreRegisteredQuery,
 func newFixtureGrade(t *testing.T, grader Participant, response RaterResponse, outcome string, at time.Time) Grade {
 	t.Helper()
 	grade := Grade{
-		ContractVersion: QrelBlindSmokeContractVersion,
+		ContractVersion: response.ContractVersion,
 		Evaluation:      QrelBlindSmokeEvaluationName,
 		QueryID:         response.QueryID,
 		ResponseSHA256:  response.SHA256,
@@ -362,6 +387,132 @@ func TestQrelBlindSmoke_CompleteEvaluationAtKReleasesYes(t *testing.T) {
 	}
 }
 
+func TestQrelBlindSmoke_ContractTwoRecordsEvaluateUnderContractTwo(t *testing.T) {
+	artifacts := buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion2, specsFor(20, 19))
+	comparison := matchingComparison(t, artifacts.Precondition)
+	if comparison.ContractVersion != QrelBlindSmokeContractVersion2 {
+		t.Fatalf("comparison contract_version=%q, want %q", comparison.ContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	outcome, err := EvaluateQrelBlindSmoke(artifacts, comparison)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.ContractVersion != QrelBlindSmokeContractVersion2 {
+		t.Fatalf("outcome contract_version=%q, want %q", outcome.ContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	for _, response := range artifacts.Responses {
+		if response.ContractVersion != QrelBlindSmokeContractVersion2 {
+			t.Fatalf("response for query %s contract_version=%q, want %q", response.QueryID, response.ContractVersion, QrelBlindSmokeContractVersion2)
+		}
+	}
+	for _, grade := range artifacts.Grades {
+		if grade.ContractVersion != QrelBlindSmokeContractVersion2 {
+			t.Fatalf("grade for query %s contract_version=%q, want %q", grade.QueryID, grade.ContractVersion, QrelBlindSmokeContractVersion2)
+		}
+	}
+	if err := ValidateEvaluationOutcome(outcome, artifacts); err != nil {
+		t.Fatalf("contract-2 outcome does not revalidate: %v", err)
+	}
+}
+
+func TestQrelBlindSmoke_OutcomeValidatorRejectsUnknownContractVersion(t *testing.T) {
+	artifacts := buildBlindEvalArtifacts(t, specsFor(20, 19))
+	outcome, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+	if err != nil {
+		t.Fatal(err)
+	}
+	outcome.ContractVersion = "sw280-qrel-blind-smoke-evaluation/3"
+	err = ValidateEvaluationOutcome(outcome, artifacts)
+	if err == nil {
+		t.Fatal("the outcome validator accepted an unknown contract version")
+	}
+	for _, want := range []string{QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal %q does not name %q", err, want)
+		}
+	}
+}
+
+func TestQrelBlindSmoke_ContractOneGradeIsRefusedInContractTwoRun(t *testing.T) {
+	artifacts := buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion2, specsFor(20, 19))
+	queryID := artifacts.Grades[0].QueryID
+	artifacts.Grades[0].ContractVersion = QrelBlindSmokeContractVersion
+	sealed, err := SealGrade(artifacts.Grades[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts.Grades[0] = sealed
+
+	_, err = EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+	if err == nil {
+		t.Fatal("a contract-1 grade was accepted in a contract-2 run")
+	}
+	for _, want := range []string{queryID, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal %q does not name %q", err, want)
+		}
+	}
+}
+
+func TestQrelBlindSmoke_ContractOneRecordsAreRefusedInContractTwoRun(t *testing.T) {
+	specs := specsFor(20, 19)
+	specs[19] = blindEvalSpec{
+		queryID:   specs[19].queryID,
+		stratum:   StratumNLBehaviour,
+		status:    [2]string{ResponseStatusAnswered, ResponseStatusAnswered},
+		grades:    [2]string{GradeOutcomePass, GradeOutcomeFail},
+		adjStatus: ResponseStatusAnswered,
+		adjGrade:  GradeOutcomePass,
+	}
+	build := func(t *testing.T) EvaluationArtifacts {
+		return buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion2, specs)
+	}
+	tests := []struct {
+		name    string
+		queryID func(EvaluationArtifacts) string
+		mutate  func(*testing.T, *EvaluationArtifacts)
+	}{
+		{"primary response", func(a EvaluationArtifacts) string { return a.Responses[0].QueryID }, func(t *testing.T, a *EvaluationArtifacts) {
+			a.Responses[0].ContractVersion = QrelBlindSmokeContractVersion
+			sealed, err := SealRaterResponse(a.Responses[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+			a.Responses[0] = sealed
+		}},
+		{"adjudicator response", func(a EvaluationArtifacts) string { return a.Adjudications[0].QueryID }, func(t *testing.T, a *EvaluationArtifacts) {
+			a.Adjudications[0].Response.ContractVersion = QrelBlindSmokeContractVersion
+			sealed, err := SealRaterResponse(a.Adjudications[0].Response)
+			if err != nil {
+				t.Fatal(err)
+			}
+			a.Adjudications[0].Response = sealed
+		}},
+		{"adjudication", func(a EvaluationArtifacts) string { return a.Adjudications[0].QueryID }, func(_ *testing.T, a *EvaluationArtifacts) {
+			a.Adjudications[0].ContractVersion = QrelBlindSmokeContractVersion
+		}},
+		{"disclosure", func(a EvaluationArtifacts) string { return a.Adjudications[0].QueryID }, func(_ *testing.T, a *EvaluationArtifacts) {
+			a.Adjudications[0].Disclosure.ContractVersion = QrelBlindSmokeContractVersion
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			artifacts := build(t)
+			queryID := tc.queryID(artifacts)
+			tc.mutate(t, &artifacts)
+			_, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+			if err == nil {
+				t.Fatalf("a contract-1 %s was accepted in a contract-2 run", tc.name)
+			}
+			for _, want := range []string{queryID, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("refusal %q does not name %q", err, want)
+				}
+			}
+		})
+	}
+}
+
 // Positive control: a disagreement is adjudicated and the majority of the three
 // graded outcomes decides the query.
 func TestQrelBlindSmoke_AdjudicatedMajorityDecidesTheQuery(t *testing.T) {
@@ -452,6 +603,166 @@ func dropInput(inputs []FrozenInput, role string) []FrozenInput {
 		}
 	}
 	return out
+}
+
+func TestQrelBlindSmoke_PreconditionRejectsFollowupMaxLinesBeforeContractTwoAdoption(t *testing.T) {
+	t.Run("zero keeps contract one valid", func(t *testing.T) {
+		rec := fixturePrecondition(t)
+		if rec.FollowupMaxLines != 0 {
+			t.Fatalf("followup_max_lines = %d, want zero", rec.FollowupMaxLines)
+		}
+		if err := ValidatePreconditionRecord(rec); err != nil {
+			t.Fatalf("contract-1 precondition: %v", err)
+		}
+	})
+
+	t.Run("non-zero requires the unadopted contract", func(t *testing.T) {
+		rec := fixturePrecondition(t)
+		rec.FollowupMaxLines = 120
+		sealed, err := SealPreconditionRecord(rec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ValidatePreconditionRecord(sealed)
+		if err == nil || !strings.Contains(err.Error(), "second-response contract is not adopted") {
+			t.Fatalf("error = %v, want the contract-adoption refusal", err)
+		}
+	})
+}
+
+func TestQrelBlindSmoke_PreconditionVersionTwoCoupling(t *testing.T) {
+	if err := ValidatePreconditionRecord(fixturePreconditionV2(t)); err != nil {
+		t.Fatalf("complete contract-2 precondition: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		edit func(*PreconditionRecord)
+		want string
+	}{
+		{"contract one refuses measurement contract two", func(rec *PreconditionRecord) {
+			rec.ContractVersion = QrelBlindSmokeContractVersion
+			rec.FollowupMaxLines = 0
+			rec.ClaimWordingSHA256 = SHA256Hex([]byte(FrozenClaimWording()))
+		}, QrelBlindSmokeContractVersion},
+		{"contract two requires the line cap", func(rec *PreconditionRecord) {
+			rec.FollowupMaxLines = 0
+		}, QrelBlindSmokeContractVersion2},
+		{"contract two requires the exact imported line cap", func(rec *PreconditionRecord) {
+			rec.FollowupMaxLines = compactv9.FollowupMaxLines - 1
+		}, QrelBlindSmokeContractVersion2},
+		{"contract two requires measurement contract two", func(rec *PreconditionRecord) {
+			rec.MeasurementContractVersion = MeasurementContractVersion
+			rec.ClaimWordingSHA256 = SHA256Hex([]byte(FrozenClaimWording()))
+		}, QrelBlindSmokeContractVersion2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := fixturePreconditionV2(t)
+			tc.edit(&rec)
+			sealed, err := SealPreconditionRecord(rec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ValidatePreconditionRecord(sealed)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want refusal naming %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestQrelBlindSmoke_PreRegistrationVersionTwoCoupling(t *testing.T) {
+	v1Artifacts := buildBlindEvalArtifacts(t, specsFor(20, 19))
+	v2Precondition := fixturePreconditionV2(t)
+	v2 := v1Artifacts.PreRegistration
+	v2.ContractVersion = QrelBlindSmokeContractVersion2
+	v2.PreconditionSHA256 = v2Precondition.SHA256
+	derivation, err := DerivePassCountForContract(QrelBlindSmokeContractVersion2, v2.Derivation.N, v2.Derivation.DatasetSHA256, v2.Derivation.NSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v2.Derivation = derivation
+	sealedV2, err := SealPreRegistration(v2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidatePreRegistration(sealedV2, v2Precondition); err != nil {
+		t.Fatalf("contract-2 pre-registration without designated follow-ups: %v", err)
+	}
+
+	withFollowup := sealedV2
+	withFollowup.Queries = append([]PreRegisteredQuery(nil), sealedV2.Queries...)
+	followupBytes := []byte(`{"path":"answer.go","start_line":1,"end_line":2,"text":"answer"}` + "\n")
+	withFollowup.Queries[0].FollowupSHA256 = SHA256Hex(followupBytes)
+	withFollowup.Queries[0].FollowupByteCount = len(followupBytes)
+	withFollowup.Queries[0].FollowupTokenCounts = []PayloadTokenCount{
+		{TokenizerID: TokenizerID, Tokens: 4},
+		{TokenizerID: "tiktoken:cl100k_base:ordinary", VocabularySHA256: fixtureVocabSHA, Tokens: 17},
+	}
+	withFollowup, err = SealPreRegistration(withFollowup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidatePreRegistration(withFollowup, v2Precondition); err != nil {
+		t.Fatalf("contract-2 pre-registration with a follow-up binding: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		edit func(*PreRegisteredQuery)
+	}{
+		{"sha only", func(q *PreRegisteredQuery) { q.FollowupSHA256 = strings.Repeat("a", 64) }},
+		{"byte count only", func(q *PreRegisteredQuery) { q.FollowupByteCount = 12 }},
+		{"token counts only", func(q *PreRegisteredQuery) {
+			q.FollowupTokenCounts = []PayloadTokenCount{{TokenizerID: TokenizerID, Tokens: 1}}
+		}},
+	} {
+		t.Run("contract two refuses partial "+tc.name, func(t *testing.T) {
+			broken := sealedV2
+			broken.Queries = append([]PreRegisteredQuery(nil), sealedV2.Queries...)
+			tc.edit(&broken.Queries[0])
+			broken, err = SealPreRegistration(broken)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ValidatePreRegistration(broken, v2Precondition)
+			if err == nil || !strings.Contains(err.Error(), QrelBlindSmokeContractVersion2) {
+				t.Fatalf("error = %v, want partial-field refusal naming contract version 2", err)
+			}
+		})
+	}
+
+	for _, tc := range []struct {
+		name string
+		edit func(*PreRegisteredQuery)
+	}{
+		{"sha", func(q *PreRegisteredQuery) { q.FollowupSHA256 = strings.Repeat("a", 64) }},
+		{"byte count", func(q *PreRegisteredQuery) { q.FollowupByteCount = 12 }},
+		{"token counts", func(q *PreRegisteredQuery) {
+			q.FollowupTokenCounts = []PayloadTokenCount{{TokenizerID: TokenizerID, Tokens: 1}}
+		}},
+	} {
+		t.Run("contract one refuses follow-up "+tc.name, func(t *testing.T) {
+			broken := v1Artifacts.PreRegistration
+			broken.Queries = append([]PreRegisteredQuery(nil), v1Artifacts.PreRegistration.Queries...)
+			tc.edit(&broken.Queries[0])
+			broken, err = SealPreRegistration(broken)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ValidatePreRegistration(broken, v1Artifacts.Precondition)
+			if err == nil || !strings.Contains(err.Error(), QrelBlindSmokeContractVersion) {
+				t.Fatalf("error = %v, want v1 refusal naming its version", err)
+			}
+		})
+	}
+
+	t.Run("pre-registration and precondition versions must agree", func(t *testing.T) {
+		err := ValidatePreRegistration(sealedV2, v1Artifacts.Precondition)
+		if err == nil || !strings.Contains(err.Error(), "precondition") {
+			t.Fatalf("error = %v, want cross-record version refusal", err)
+		}
+	})
 }
 
 // Refusal: a hand-edited precondition record no longer matches its own content
@@ -1274,8 +1585,17 @@ func TestQrelBlindSmoke_CandidateBindingRefusals(t *testing.T) {
 			WorktreeClean: func(_ context.Context, root string) (bool, error) {
 				return !dirty[root], nil
 			},
+			WorktreeCleanOutside: func(_ context.Context, root, _ string) (bool, error) {
+				return !dirty[root], nil
+			},
 			PathsDifferingOutside: func(_ context.Context, root, from, to, exclude string) ([]string, error) {
 				return differing, nil
+			},
+			DiffOutside: func(_ context.Context, root, from, to, exclude string) ([]byte, error) {
+				if len(differing) == 0 {
+					return nil, nil
+				}
+				return []byte("diff --git a/changed b/changed\n"), nil
 			},
 		}
 	}
@@ -1286,6 +1606,16 @@ func TestQrelBlindSmoke_CandidateBindingRefusals(t *testing.T) {
 		}
 		if !binding.CandidateMatchesFrozen || !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean {
 			t.Fatalf("binding = %+v", binding)
+		}
+		if binding.CandidateDiffSHA256 != SHA256Hex(nil) {
+			t.Fatalf("outside diff sha256=%q, want exact empty diff", binding.CandidateDiffSHA256)
+		}
+	})
+	t.Run("a valid-looking but wrong expected diff digest is refused", func(t *testing.T) {
+		wrong := options
+		wrong.ExpectedCandidateDiffSHA256 = strings.Repeat("9", 64)
+		if _, err := ObserveCandidateBinding(context.Background(), cleanProbe(nil, nil), wrong); err == nil || !strings.Contains(err.Error(), "candidate diff digest") {
+			t.Fatalf("wrong expected diff digest error = %v", err)
 		}
 	})
 	for _, tc := range []struct {

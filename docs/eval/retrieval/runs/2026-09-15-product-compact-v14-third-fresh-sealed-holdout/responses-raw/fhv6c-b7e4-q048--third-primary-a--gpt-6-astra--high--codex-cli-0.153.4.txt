@@ -1,0 +1,1 @@
+INSUFFICIENT The `bash_completions.go:685–697` snippet shows `GenBashCompletion` embedding `c.BashCompletionFunction`, but neither response specifies which command should hold it or when the custom function is called.

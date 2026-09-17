@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0c94af37e815",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "a8e323a15597bdf8ce645f2e8771453576b0c80e1b76c49d1e7295a35f875c1e",
+  "bundle_sha256": "0d6f15d24d39928e69ddf8ffd03eaebeb62f708776de41d73178379d917d5af9",
+  "prompt_sha256": "856fc1319994ae20d8d5b5ac9322de898627c69668ddbbd7073bfc075e5ec9f8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `cobra.go:91–95`, `AddTemplateFuncs(tmplFuncs template.FuncMap)` loops over every entry with `for k, v := range tmplFuncs` and assigns `templateFuncs[k] = v`. This adds each function to the registry, overwriting any existing entry with the same key.",
+  "responded_at": "2026-09-15T20:23:54Z",
+  "sha256": "64e9c1b7bd4d78e54541210f64ea3a94a10ef1592165832deaf65724029df559"
+}

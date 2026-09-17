@@ -1,0 +1,9 @@
+`GenBashCompletionV2` is a `*Command` method that generates Bash completion version 2 and writes it to an `io.Writer`:
+
+```go
+func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error
+```
+
+It delegates to `c.genBashCompletion(w, includeDesc)` (`bash_completionsV2.go:392–396`). That helper creates a buffer, calls `genBashComp(buf, c.Name(), includeDesc)`, writes the buffer to `w`, and returns the write error (`bash_completionsV2.go:24–29`).
+
+The snippet shows `includeDesc` being forwarded but does not establish its precise effect.

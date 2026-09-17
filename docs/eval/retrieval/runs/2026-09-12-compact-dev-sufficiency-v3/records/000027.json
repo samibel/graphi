@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 27,
+  "previous_sha256": "1045d76c05ab788b701981b1499a99d83757760a8ab62687af020e5796489016",
+  "kind": "response",
+  "query_id": "ci-1133",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "9cf432667f23047ed31331dc2d06bdcfe610a6fb7fa3b4721a8a85f074e1341c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "On the currently executing command object, use `cmd.Flag(\"flag-name\")` to get the flag. The shown `(*Command).Flag(name string) *flag.Flag` begins by calling `c.Flags().Lookup(name)` (`command.go:1795–1798`); equivalently, that lookup accesses the command's flag set directly. The excerpt does not show the rest of `Flag`'s fallback logic.\n",
+  "sha256": "a2dd1805706df743c91505c48118922e0a4c751c6c187f6f3195bb7cdf576c92"
+}

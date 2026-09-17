@@ -1,0 +1,1 @@
+No pre-execution hook is installed. `command_notwin.go:20` declares `var preExecHookFn func(*Command)` without an initializer, leaving it `nil`. In `command.go:1062–1065`, the hook is called only if `preExecHookFn != nil`.

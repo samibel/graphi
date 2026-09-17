@@ -1,0 +1,7 @@
+They were replaced by `ValidArgsFunction`:
+
+- For positional word choices, use `ValidArgsFunction`.
+- For file-extension filtering, use it with `ShellCompDirectiveFilterFileExt`.
+- File completion is now the default; disable it per argument with `ShellCompDirectiveNoFileComp`.
+
+The old `MarkZshCompPositionalArgumentFile()` and `MarkZshCompPositionalArgumentWords()` helpers are deprecated and silently ignored (`site/content/completions/zsh.md`, lines 25–29).

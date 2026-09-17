@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 14,
+  "previous_sha256": "280daec71b632c0f1ad7005f67e6c13216eed629af95f654cea2c7999b7e7f21",
+  "kind": "response",
+  "query_id": "cb-19",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "2acb2fd51dc0578de6b1f6f8238208cc829f6e904581f6e34ef1a26385e22f66",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows `Execute` delegating to `ExecuteC`, the runnable check, and comments about persistent-hook traversal, but omits the execution body that establishes the complete validation and Run-hook order.\n",
+  "sha256": "57a82440a140bc5625776b12a275173148361e2122dde43cbcc07172f8b7abc1"
+}

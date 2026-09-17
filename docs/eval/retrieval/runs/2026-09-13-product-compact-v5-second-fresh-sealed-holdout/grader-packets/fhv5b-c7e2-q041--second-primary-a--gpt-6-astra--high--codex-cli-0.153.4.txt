@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 3af4f820bb23a30302ee56e195c9a35980bf61c6b15c00bf5b3c03eeda7f8bc2
+QUERY ID: fhv5b-c7e2-q041
+
+QUESTION:
+How do the Zsh completion file and writer APIs propagate the description choice into script generation?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- zsh_completions.go:24-44 anchor="return c.genZshCompletion(w, false)" reason=Description and no-description entry points select a boolean, file variants delegate to the file generator, and writer variants pass it to the common generation path.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 850ce17d0004; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"site/content/completions/_index.md","start_line":446,"end_line":458,"text":"\n# Without descriptions\n$ helm s[tab][tab]\nsearch  show  status\n```\n**Note**: Cobra's default `completion` command uses bash completion V2.  If for some reason you need to use bash completion V1, you will need to implement your own `completion` command.\n## Zsh completions\n\nCobra supports native zsh completion generated from the root `cobra.Command`.\nThe generated completion script should be put somewhere in your `$fpath` and be named\n`_<yourProgram>`.  You will need to start a new shell for the completions to become available.\n\nZsh supports descriptions for completions. Cobra will provide the description automatically,"},{"path":"zsh_completions.go","start_line":70,"end_line":78,"text":"func (c *Command) genZshCompletionFile(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer outFile.Close()\n\n\treturn c.genZshCompletion(outFile, includeDesc)\n}"},{"path":"zsh_completions.go","start_line":40,"end_line":44,"text":"// GenZshCompletionNoDesc generates zsh completion file without descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletionNoDesc(w io.Writer) error {\n\treturn c.genZshCompletion(w, false)\n}"},{"path":"zsh_completions.go","start_line":24,"end_line":27,"text":"// GenZshCompletionFile generates zsh completion file including descriptions.\nfunc (c *Command) GenZshCompletionFile(filename string) error {\n\treturn c.genZshCompletionFile(filename, true)\n}"},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"zsh_completions.go","start_line":218,"end_line":236,"text":"    # - file completion will be performed (so there will be choices after the activeHelp)\n    if [ $hasActiveHelp -eq 1 ]; then\n        if [ ${#completions} -ne 0 ] || [ $((directive & shellCompDirectiveNoFileComp)) -eq 0 ]; then\n            __%[1]s_debug \"Adding activeHelp delimiter\"\n            compadd -x \"--\"\n            hasActiveHelp=0\n        fi\n    fi\n\n    if [ $((directive & shellCompDirectiveNoSpace)) -ne 0 ]; then\n        __%[1]s_debug \"Activating nospace.\"\n        noSpace=\"-S ''\"\n    fi\n\n    if [ $((directive & shellCompDirectiveKeepOrder)) -ne 0 ]; then\n        __%[1]s_debug \"Activating keep order.\"\n        keepOrder=\"-V\"\n    fi\n"},{"path":"zsh_completions.go","start_line":87,"end_line":87,"text":"func genZshComp(buf io.StringWriter, name string, includeDesc bool) {"},{"path":"zsh_completions.go","start_line":35,"end_line":38,"text":"// GenZshCompletionFileNoDesc generates zsh completion file without descriptions.\nfunc (c *Command) GenZshCompletionFileNoDesc(filename string) error {\n\treturn c.genZshCompletionFile(filename, false)\n}"},{"path":"zsh_completions.go","start_line":80,"end_line":85,"text":"func (c *Command) genZshCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)\n\tgenZshComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"},{"path":"zsh_completions.go","start_line":31,"end_line":31,"text":"func (c *Command) GenZshCompletion(w io.Writer) error {"}],"provenance":{"input_sha256":"2900c0e5cbb84ba51ae8d18f19ff53ee07fabc286a1e3d4570e096d2d3e6f1b2","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The APIs propagate the description choice as an `includeDesc` boolean:
+
+- **File APIs:** `GenZshCompletionFile` passes `true` (descriptions), while `GenZshCompletionFileNoDesc` passes `false` to `genZshCompletionFile` (`zsh_completions.go:24–27, 35–38`). That helper creates the file, defers its close, and forwards the boolean unchanged to `c.genZshCompletion(outFile, includeDesc)` (lines 70–78).
+- **Writer APIs:** `GenZshCompletion` directly calls `c.genZshCompletion(w, true)`, and `GenZshCompletionNoDesc` calls it with `false` (lines 29–33, 40–44).
+- **Script generation:** The shared `genZshCompletion` creates a buffer, calls `genZshComp(buf, c.Name(), includeDesc)`, then writes the buffer to the destination writer and returns the write error (lines 80–85).
+
+The response shows `genZshComp` accepting the boolean (line 87), but does not show how it uses it inside the generated script.
+----- END THE RATER'S RESPONSE -----

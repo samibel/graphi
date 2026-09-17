@@ -1,0 +1,1 @@
+PASS: The response accurately describes ContainsGroup scanning c.commandgroups, returning true for a matching ID and false otherwise. Both cited ranges exist in the transcript and support the method behavior and Group.ID field.

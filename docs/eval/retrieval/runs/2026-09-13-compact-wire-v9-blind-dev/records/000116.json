@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 116,
+  "previous_sha256": "cf3b9537e930832c6fccb580c87556ff0ae41324c362875ccfd1e3aba44bed32",
+  "kind": "grade",
+  "query_id": "cb-24",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "18709fc6f690ebec7fb3d9a5df49779efd0fdd062b2e5cf3c335505a46a6c857",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains the completion flow using only preserved evidence: `completions.go:379-381` shows `finalCmd.enforceFlagGroupsForCompletion()` is called before flag completions; `flag_groups.go:220-228` states the required/hidden transformations and the `DisableFlagParsing` early return; and `flag_groups.go:273-277` supports hiding mutually exclusive alternatives when one is set. Its conclusion that standard completion behavior is driven through required/hidden flag state is explicitly supported by `flag_groups.go:224-225`.\n",
+  "sha256": "37b9b83b68451762f3926385a4f58eddc873fef2e36ff061fd8147d48fd84803"
+}

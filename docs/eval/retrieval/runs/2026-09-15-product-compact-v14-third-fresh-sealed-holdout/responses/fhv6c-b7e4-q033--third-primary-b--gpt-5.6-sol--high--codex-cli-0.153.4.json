@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q033",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "2c53b1ea5dbab9f8cd08cffc8443ca236439d46b4bf190453a281d8d0f54fa4b",
+  "bundle_sha256": "ec5eb39962965926b35a053be6119b0a0bbaab4a20f716ef63d74bd9a4c306dd",
+  "prompt_sha256": "f3b886a484aeca3096544d19beecdda457ca7d12ebca3725b5084cc182d23131",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It returns an error: `accepts 2 arg(s), received 3`. In `args.go:93-101`, `ExactArgs` checks `len(args) != n` and formats that error with `n` and the received length.",
+  "responded_at": "2026-09-15T08:30:11Z",
+  "sha256": "0102a794d0a38e60f4eccb02545b3a1c5925176609dd8dbbd7fc4f6d1a3b402e"
+}

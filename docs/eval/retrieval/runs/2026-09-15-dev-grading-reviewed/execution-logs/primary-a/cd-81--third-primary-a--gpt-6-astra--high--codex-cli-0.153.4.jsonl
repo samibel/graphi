@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-c081-7e23-86ee-27e3a45c7ed4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`NoFileCompletions` returns no suggestions (`nil`) plus the directive `ShellCompDirectiveNoFileComp` (`completions.go`, lines 120–121). That directive tells the shell not to provide file completion **even when no completions are provided**, as documented in `completions.go`, lines 62–64."}}
+{"type":"turn.completed","usage":{"input_tokens":17287,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":74,"reasoning_output_tokens":0}}

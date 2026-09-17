@@ -1,0 +1,1 @@
+FAIL: The response does not describe the file’s structure or declarations or identify the essential TestSingleCommand behavior. The transcript shows only that test’s setup through ExactArgs(2), omitting the Run callback and argument verification needed to establish the reviewed behavior.

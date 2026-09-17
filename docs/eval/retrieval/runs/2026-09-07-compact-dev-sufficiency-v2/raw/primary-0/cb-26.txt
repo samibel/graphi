@@ -1,0 +1,1 @@
+The program-specific variable is <PROGRAM>_ACTIVE_HELP, where <PROGRAM> is the root command name uppercased with non-ASCII-alphanumeric characters replaced by underscores. COBRA_ACTIVE_HELP=0 globally overrides it and makes GetActiveHelpConfig return "0" (active_help.go:46–52; constants at lines 28–29).

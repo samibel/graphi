@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 13,
+  "previous_sha256": "52e27b154d42c372717cb0a6b823720361f08e21863a2b7315bb2a9cd96c0ab7",
+  "kind": "response",
+  "query_id": "cb-16",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "2ca24f47bc8352233dfb63151e6474f4f10dffc0e9d22ea99722fb6151295be0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The distance is computed by `ld(s, t string, ignoreCase bool) int` in `cobra.go:188` (comment at line 187). The shown implementation optionally lowercases the inputs and fills a two-dimensional distance matrix (`cobra.go:188–213`). Command suggestions call it as `ld(typedName, cmd.Name(), true)` and compare the result with `SuggestionsMinimumDistance` (`command.go:836–837`).\n",
+  "sha256": "ff06eb2b67618cf3f233f5d45d56208144c64f9106b212c4690c6b60cefdc14a"
+}

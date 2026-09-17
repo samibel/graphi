@@ -1,0 +1,1 @@
+Using Flag on the current command concretely answers the named-flag access question. Its return type, initial Flags().Lookup and tree-climbing behavior are all present in command.go:1794-1796. The direct flag-set lookup alternative is the preserved implementation expression.

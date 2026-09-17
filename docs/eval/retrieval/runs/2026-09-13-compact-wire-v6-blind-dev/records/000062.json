@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 62,
+  "previous_sha256": "7ddd0d41fb93b2a7a702f0161d2e546f605273e0b580a0986122c0fe46a95ead",
+  "kind": "response",
+  "query_id": "ci-943",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "23157b4a47fef3da60c1f2f48b661eae816fea96f287de608402fcb46cad26f6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Most likely `Command.Version` is empty. `InitDefaultVersionFlag` immediately returns in that case, so no `--version` flag is created; when `Version` is nonempty and no custom `version` flag exists, Cobra adds `--version` and optionally `-v` (`command.go:1200-1225`).",
+  "sha256": "8a9e3778da9ee914d6589b03ac18897cbebf302281cc92c7821d3dd365cbbb3c"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 103,
+  "previous_sha256": "a7b20d605e4240e9e5a8671e4364e5f6e881dac156f9c03d65aa6e9f4f6663c9",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f6ed6d27949e7d0248079dc7799a77e9053c701e7db9889976a1efcb070f1769",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `command.go:1847-1853` explicitly says `mergePersistentFlags()` adds missing persistent flags from all parents and shows the child’s own `PersistentFlags()` and `parentsPflags` being added to `c.Flags()`. `command.go:1805-1816` supports the stated lookup order, and `command.go:1654-1666` explicitly states that local non-persistent flags do not persist to subcommands.\n",
+  "sha256": "8b93154d8f3e274668554c29f6a0ee6f1f83b62b0f0c14ea0634c6249a33bb3d"
+}

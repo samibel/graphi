@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Command.Flag` checking `c.Flags().Lookup(name)` and falling back to `c.persistentFlag(name)` (`command.go:1794–1803`), but omits the `persistentFlag` implementation that would show how it climbs the parent chain.

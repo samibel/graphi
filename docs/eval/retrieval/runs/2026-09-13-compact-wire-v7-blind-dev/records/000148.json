@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 148,
+  "previous_sha256": "494e9f69a871205d40f9db7496c528d96341cd7a84c6a4f5c27357f8d0ccc207",
+  "kind": "grade",
+  "query_id": "ci-943",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a5df28fb4db3eb47e199c7c8aeccec4816f72b79578a60766186d11d8eaf47ea",
+  "outcome": "pass",
+  "rationale": "The answer correctly identifies the supported primary cause: Cobra adds the top-level `--version` flag only when the root command’s `Version` field is set. This is directly supported by `site/content/user_guide.md:590-592` and by the preserved `command.go:1202-1204` evidence stating that initialization does nothing when `c.Version` is empty. The candidate does not incorrectly claim that a non-empty version is sufficient in every case, so omission of the separate preexisting-`version`-flag condition does not make this direct answer incorrect.\n",
+  "sha256": "2f39bc6aac12cd12f53221057294149767b3bbcb7b9f32a31df43a700c86c7a5"
+}

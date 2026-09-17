@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q033",
+  "response_sha256": "1d1f53396c0b7bd47d12323375006078c8d119d32b3a24dcb2b57bb826bc3ae6",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies that warnings print only when parsing succeeds (`err == nil`) and new warning text has accumulated in the buffer, directly supported by the supplied `command.go:1834–1835` span.",
+  "graded_at": "2026-09-13T12:50:52Z",
+  "sha256": "1405568cf7d07e8e834ec9446fcd34efb61d2512e47b3d73797c9e2f5550bea0"
+}

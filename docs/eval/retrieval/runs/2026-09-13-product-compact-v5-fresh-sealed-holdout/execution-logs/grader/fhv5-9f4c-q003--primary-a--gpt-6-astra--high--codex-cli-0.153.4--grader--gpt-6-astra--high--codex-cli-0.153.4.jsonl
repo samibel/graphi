@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09aca-dc0e-7e90-9b60-f6576be83d25"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle supports uppercasing the program name, replacing characters outside A–Z, 0–9, and underscore with underscores, and adding `_ACTIVE_HELP`. The cited caller and `Command.Name()` behavior are also supported; the described transformation order yields the same name."}}
+{"type":"turn.completed","usage":{"input_tokens":18047,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":135,"reasoning_output_tokens":72}}

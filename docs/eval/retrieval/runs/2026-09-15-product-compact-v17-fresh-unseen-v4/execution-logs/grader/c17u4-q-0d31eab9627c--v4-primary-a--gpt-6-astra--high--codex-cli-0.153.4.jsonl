@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cb-3d34-7d43-9917-68ca8cff4aba"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that OnInitialize appends every supplied function to the package-level initializers slice, retaining existing registrations for later execution. Both citations resolve within the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17484,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":41,"reasoning_output_tokens":0}}

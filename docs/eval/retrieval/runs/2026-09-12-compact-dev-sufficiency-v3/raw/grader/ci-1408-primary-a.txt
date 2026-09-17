@@ -1,0 +1,1 @@
+The preserved Flags documentation explicitly includes parent persistent flags and Flag begins with its lookup, supporting the concrete subcommand-access operation.

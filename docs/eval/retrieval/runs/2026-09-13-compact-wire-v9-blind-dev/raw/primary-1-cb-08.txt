@@ -1,0 +1,15 @@
+`doc/man_docs.go` is in package `doc` ([line 15]).
+
+Its declarations include:
+
+- `GenManTreeOptions` with `Header`, `Path`, and `CommandSeparator` fields ([lines 82–88]).
+- `GenManHeader` with title, section, date, internal formatted date, source, and manual fields ([lines 90–101]).
+- Exported generators:
+  - `GenManTree` recursively generates man pages into a directory ([lines 33–38]).
+  - `GenManTreeFromOpts` accepts `GenManTreeOptions` ([line 48]).
+  - `GenMan` writes one command’s man page to an `io.Writer` ([lines 103–105]).
+- Internal helpers:
+  - `fillHeader` ([line 118]).
+  - `manPreamble` ([line 143]).
+  - `manPrintFlags` ([line 159]).
+  - `genMan`, which initializes Cobra’s default help command and flag ([lines 202–204]).

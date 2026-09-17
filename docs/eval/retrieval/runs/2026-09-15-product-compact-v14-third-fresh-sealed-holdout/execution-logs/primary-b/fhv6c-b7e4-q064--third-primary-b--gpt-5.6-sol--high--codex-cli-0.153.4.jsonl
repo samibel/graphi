@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-9dcb-7b21-9032-79bd1a4b16d4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The sibling test is truncated at `command_test.go:2452`, before sibling configuration, execution, and assertions reveal the intended whitelist behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":16534,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":164,"reasoning_output_tokens":126}}

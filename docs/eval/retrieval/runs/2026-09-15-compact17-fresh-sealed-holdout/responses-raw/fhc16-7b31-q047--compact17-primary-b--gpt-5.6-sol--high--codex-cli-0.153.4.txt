@@ -1,0 +1,1 @@
+Setup messages must be removed from stdout because the completion script treats every stdout line as a completion candidate. Any setup text would therefore appear as bogus completion choices. This is stated in `completions.go:861-863` and `site/content/completions/_index.md:270`; diagnostics should instead use Cobra’s debugging functions or stderr (`completions.go:879-880`).

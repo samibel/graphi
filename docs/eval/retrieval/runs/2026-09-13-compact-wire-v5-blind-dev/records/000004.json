@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 4,
+  "previous_sha256": "93aaed19d36863c20efec943289da62d89ac22492c8ab6a67979bf0e9164b5dd",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "333eb563024bd371db45e06043f2cf1c7034dd4f1e659c365e9d92e47dbe6ead",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).RegisterFlagCompletionFunc(flagName, f)` registers a portable Go completion function for an existing flag. It returns an error if the flag does not exist or already has a function, and otherwise stores the function in the global flag-keyed map while holding `flagCompletionMutex` (`completions.go:35-36`, `completions.go:132-148`). The registered function can be retrieved with `GetFlagCompletionFunc`, which uses the read lock and returns `(func, exists)` (`completions.go:148-160`).\n",
+  "sha256": "12a8b4c78db73852fc5e41e44870dc41bc6d84b4cf5d280662e87b987a7d5618"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 113,
+  "previous_sha256": "40f366989c0dd38861aec40ef2d751dc9072e534d501c91e0ae3e6fe64a26690",
+  "kind": "grade",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "f55eb8475cfb8c696e4f7e1c5afb90cc64f7dccb19e0f54f6feca899d282af34",
+  "outcome": "pass",
+  "rationale": "The preserved package switch and lookup branch support enabling prefix matching, preferring exact name/alias matches and requiring a unique prefix match.\n",
+  "sha256": "1fc40503675f4e7415b818ac8e26c9df7027c3411c1c95202bf7076c347f1526"
+}

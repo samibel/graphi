@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q025",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "06043169bd59909fdc03044b8bed8e24439ec5129bf7c288864b09a8a9ea5ebc",
+  "bundle_sha256": "a8e8295cd2462114537df04c4c013c5b7d5f5ac2927ff0a453c4d74ac1eaf6e2",
+  "prompt_sha256": "03bb27cf772d6bd31a3b3c1a42d52c2cc76349f7500d73a8b10a4ed1445c4540",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetOut(nil)` clears the command’s `outWriter` (`command.go:290–291`). `OutOrStdout()` then returns the nearest ancestor’s non-nil output writer, or `os.Stdout` if none exists: it calls `getOut(os.Stdout)` (`command.go:374–377`), which checks the current writer, recurses through parents, and finally returns the default (`command.go:394–402`).",
+  "responded_at": "2026-09-15T08:29:51Z",
+  "sha256": "409e3a6c53271aadd992818a2c140d977182d9a8fcd7987a74dacab46ed96808"
+}

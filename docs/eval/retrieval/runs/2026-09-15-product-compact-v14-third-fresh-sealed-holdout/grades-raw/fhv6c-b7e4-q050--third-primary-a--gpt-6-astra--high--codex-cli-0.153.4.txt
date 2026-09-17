@@ -1,0 +1,1 @@
+PASS: The response accurately covers all six flag-value behaviors preserved in the follow-up transcript, including default file completion, filtering syntax, directory completion, repeated flags, and equals-form suggestions. Its line citations 34–39 and 48 exist and support the attached claims.

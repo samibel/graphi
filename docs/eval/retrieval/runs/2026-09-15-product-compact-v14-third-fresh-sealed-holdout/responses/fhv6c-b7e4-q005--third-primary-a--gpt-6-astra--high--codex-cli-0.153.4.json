@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q005",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "7431a0c832b242d2aa0e28d748b787991407a864fe257169388454c6d40f1b7b",
+  "bundle_sha256": "c6662235ffd62b596e70e5c137aed976670ded05f7af5b9329759517d66f86fe",
+  "prompt_sha256": "26b68912fcdcfcad57ab1cde32b0b7629f9c107e11e713424a4f07c8a3082774",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`minimumNArgsWithLessArgs(err error, t *testing.T)` is a test helper in `args_test.go:66–75`. It verifies that:\n\n- `err` is non-nil; otherwise it calls `t.Fatal(\"Expected an error\")` (lines 67–69).\n- `err.Error()` exactly equals `\"requires at least 2 arg(s), only received 1\"`; otherwise it reports the expected and actual strings with `t.Fatalf` (lines 70–73).",
+  "responded_at": "2026-09-15T08:28:38Z",
+  "sha256": "3fd03ee9f85c5a97c9893d3d5b6c2dd28d5e0ae5c037b76b1fd42cb317c2ce59"
+}

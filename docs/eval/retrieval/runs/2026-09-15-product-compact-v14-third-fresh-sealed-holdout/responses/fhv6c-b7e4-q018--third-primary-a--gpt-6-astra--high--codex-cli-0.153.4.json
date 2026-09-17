@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q018",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "00c5597ff0b5e85ba33b2f4214ea239846e4ad19c29bdf24f6e6b574c0c3f647",
+  "bundle_sha256": "b303f641dfb98960c5afd1d111195fb52d097cbaa87c26456b4fb631b8685ef3",
+  "prompt_sha256": "8f4fca2fbfdb8daf817f959dc2fbbdc42be62a9217a4e9a6389b436fdec0476d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`doc/cmd_test.go` belongs to package `doc` (line 15). The supplied snippets show:\n\n- **Helper:** `emptyRun(*cobra.Command, []string)` is a no-op command handler (line 24).\n- **Initialization:** `init()` registers persistent and local string, Boolean, and integer flags on `rootCmd`, `echoCmd`, `timesCmd`, and `printCmd` (lines 26–40).\n- **Command declarations:** Six `*cobra.Command` variables: `rootCmd` (47–52), `echoCmd` with alias `say` and an example (54–60), `echoSubCmd` (62–67), `timesCmd` with `SuggestFor: []string{\"counts\"}` (69–75), `deprecatedCmd` with deprecation message “Please use echo instead” (77–82), and `printCmd` (84–88).\n- **Assertion helper:** `checkStringOmits(t *testing.T, got, expected string)` reports an error when `strings.Contains(got, expected)` is true (101–105).\n\nThe response is truncated, so it does not establish the file’s complete declarations or the remainder of `init()`.",
+  "responded_at": "2026-09-15T08:29:22Z",
+  "sha256": "5d1a677d92449311d79c538faed1a75af2beb1dae17574c0bb3762713a51a771"
+}

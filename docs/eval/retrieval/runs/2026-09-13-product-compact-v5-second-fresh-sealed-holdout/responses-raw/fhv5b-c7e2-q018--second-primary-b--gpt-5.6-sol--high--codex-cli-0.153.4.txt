@@ -1,0 +1,7 @@
+Filename extensions are attached as a pflag annotation:
+
+```go
+flags.SetAnnotation(name, BashCompFilenameExt, extensions)
+```
+
+Here, `extensions` is the variadic `[]string`, and `BashCompFilenameExt` is `"cobra_annotation_bash_completion_filename_extensions"` ([shell_completions.go, lines 65–69]; [bash_completions.go, lines 28–34]). The command method applies this to `c.Flags()` ([shell_completions.go, lines 42–46]); persistent flags use `c.PersistentFlags()` ([shell_completions.go, lines 58–63]).

@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 2b6cf8d6f2e12cff6a22e625b58257d479620d2740980ff35d43e6fb6204b375
+QUERY ID: fhv5b-c7e2-q048
+
+QUESTION:
+What commands and import are documented for installing and adding the Cobra library?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- README.md:81-93 anchor="go get -u github.com/spf13/cobra@latest" reason=The README uses go get with the latest module and then imports github.com/spf13/cobra.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 0897a767079d; read in order (318/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":1302,"end_line":1329,"text":"// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {\n\t\tif cmds[i] == c {\n\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}\n\t\tcmds[i].parent = c\n\t\t// update max lengths\n\t\tusageLen := len(x.Use)\n\t\tif usageLen > c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(x.CommandPath())\n\t\tif commandPathLen > c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(x.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t\t// If global normalization function exists, update all children\n\t\tif c.globNormFunc != nil {\n\t\t\tx.SetGlobalNormalizationFunc(c.globNormFunc)\n\t\t}\n\t\tc.commands = append(c.commands, x)\n\t\tc.commandsAreSorted = false\n\t}\n}"},{"path":"command.go","start_line":1578,"end_line":1586,"text":"// IsAdditionalHelpTopicCommand determines if a command is an additional\n// help topic command; additional help topic command is determined by the\n// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated.\n// Concrete example: https://github.com/spf13/cobra/issues/393#issuecomment-282741924.\nfunc (c *Command) IsAdditionalHelpTopicCommand() bool {\n\t// if a command is runnable, deprecated, or hidden it is not a 'help' command\n\tif c.Runnable() || len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false"},{"path":"command.go","start_line":1590,"end_line":1590,"text":"\tfor _, sub := range c.commands {"},{"path":"README.md","start_line":92,"end_line":99,"text":"import \"github.com/spf13/cobra\"\n```\n\n# Usage\n`cobra-cli` is a command line program to generate cobra applications and command files.\nIt will bootstrap your application scaffolding to rapidly\ndevelop a Cobra-based application. It is the easiest way to incorporate Cobra into your application.\n"},{"path":"command.go","start_line":32,"end_line":36,"text":"\nconst (\n\tFlagSetByCobraAnnotation     = \"cobra_annotation_flag_set_by_cobra\"\n\tCommandDisplayNameAnnotation = \"cobra_annotation_command_display_name\"\n)"},{"path":"command.go","start_line":516,"end_line":516,"text":"func (c *Command) UsagePadding() int {"},{"path":"site/content/user_guide.md","start_line":32,"end_line":34,"text":"Cobra-CLI is its own program that will create your application and add any commands you want.\nIt's the easiest way to incorporate Cobra into your application.\n"},{"path":"README.md","start_line":82,"end_line":85,"text":"Using Cobra is easy. First, use `go get` to install the latest version\nof the library.\n\n```"},{"path":"cobra.go","start_line":59,"end_line":63,"text":"var EnableCommandSorting = defaultCommandSorting\n\n// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive\n"},{"path":"site/content/user_guide.md","start_line":494,"end_line":494,"text":"Cobra automatically adds a help command to your application when you have subcommands."},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"}],"provenance":{"input_sha256":"0349dd428539701bc2c9082d3831ea2102de97d1f72c6f60907d92f2ebebd41c","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows the import `github.com/spf13/cobra` (`README.md:92`) and mentions `go get` (`README.md:82-85`), but omits the actual installation and add-command command lines.
+----- END THE RATER'S RESPONSE -----

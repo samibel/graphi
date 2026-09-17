@@ -1,0 +1,10 @@
+Cobra considers a command to have an available subcommand when at least one entry in `c.commands` returns `true` from `IsAvailableCommand()` (`command.go:1615–1629`).
+
+A subcommand is available when it:
+
+- is not deprecated (`Deprecated` is empty),
+- is not hidden,
+- is not its parent’s help command, and
+- is either runnable or itself has an available subcommand.
+
+This logic is in `Command.IsAvailableCommand()` (`command.go:1560–1576`).

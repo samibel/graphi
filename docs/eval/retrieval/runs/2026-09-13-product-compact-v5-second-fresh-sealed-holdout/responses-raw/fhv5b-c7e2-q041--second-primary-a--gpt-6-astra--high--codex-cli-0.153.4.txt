@@ -1,0 +1,7 @@
+The APIs propagate the description choice as an `includeDesc` boolean:
+
+- **File APIs:** `GenZshCompletionFile` passes `true` (descriptions), while `GenZshCompletionFileNoDesc` passes `false` to `genZshCompletionFile` (`zsh_completions.go:24–27, 35–38`). That helper creates the file, defers its close, and forwards the boolean unchanged to `c.genZshCompletion(outFile, includeDesc)` (lines 70–78).
+- **Writer APIs:** `GenZshCompletion` directly calls `c.genZshCompletion(w, true)`, and `GenZshCompletionNoDesc` calls it with `false` (lines 29–33, 40–44).
+- **Script generation:** The shared `genZshCompletion` creates a buffer, calls `genZshComp(buf, c.Name(), includeDesc)`, then writes the buffer to the destination writer and returns the write error (lines 80–85).
+
+The response shows `genZshComp` accepting the boolean (line 87), but does not show how it uses it inside the generated script.

@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the help command is constructed, used for completion and execution, or reattached. It correctly identifies that these essential behaviors are absent from the preserved bundle, which supplies only opening checks of `InitDefaultHelpCmd`.

@@ -1,0 +1,10 @@
+Commands are added through `(*Command).AddCommand(cmds ...*Command)` in `command.go:1302-1329`.
+
+For each child command, it:
+
+1. Rejects adding the parent to itself (`command.go:1305-1307`).
+2. Sets the child’s parent pointer with `cmds[i].parent = c` (`command.go:1308`).
+3. Updates the parent’s cached maximum usage/path/name lengths and propagates its global normalization function (`command.go:1309-1325`).
+4. Appends the child with `c.commands = append(c.commands, x)` and marks sorting stale via `c.commandsAreSorted = false` (`command.go:1326-1327`).
+
+The pointer is exposed by `(*Command).Parent`, which returns `c.parent` (`command.go:1842-1845`).

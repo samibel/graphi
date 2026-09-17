@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-9a9a-79f0-aecd-246e3fdf9644"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `cmd.SetUsageFunc` with a function of type `func(*Command) error`. The setter stores it in `c.usageFunc` (`command.go:305–309`), and `cmd.Usage()` invokes the resolved usage function with the command: `c.UsageFunc()(c)` (`command.go:442–448`).\n\nTo customize the usage template instead, call `cmd.SetUsageTemplate(s)` with a string. Both public customization methods are documented under “Defining your own usage” (`site/content/user_guide.md:583–590`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17220,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":120,"reasoning_output_tokens":0}}

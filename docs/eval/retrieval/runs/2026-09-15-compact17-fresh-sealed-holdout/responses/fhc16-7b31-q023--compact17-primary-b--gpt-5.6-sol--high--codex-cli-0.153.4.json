@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q023",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "e06114dd63c90c7ec0bd903c8443691a23d19ed562bcabf031d6a063d651084a",
+  "bundle_sha256": "2a6388c21cb542a106f666d34498541d170093f11e6eaac76ebe18b5135953bb",
+  "prompt_sha256": "e1fad4578e7434f492e46117aed8bbfb6c1c489b56d86deebd972495cfafc3ea",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A child command recursively inherits its parent’s input reader. In `command.go:413-422`, `getIn` returns `c.inReader` if set; otherwise, when `c.HasParent()` is true, it calls `c.parent.getIn(def)`. If no ancestor has a reader, it returns the default—`os.Stdin` when invoked through `InOrStdin` (`command.go:388-392`).",
+  "responded_at": "2026-09-15T18:37:35Z",
+  "sha256": "3433a4be7c88b9116eba0eb3ea9a279ebb97474bf8311e05ae994096f679029a"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 71,
+  "previous_sha256": "85c29eb8d845784c1e7120ccc1a5cc92630263c8764c309a937b272a469427d9",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "b97d8546ea82f3f9f6568a04563385f65f159f77e3525ee60bcb8e0b3a4952fb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use the subcommand's cmd.Flag(\"name\") or cmd.Flags().Lookup(\"name\") for a global flag defined persistently on an ancestor. Flags is documented as the complete flag set including persistent flags declared by all parents (command.go:1641-1643), and Flag begins by looking up the name in that set (command.go:1795-1796). Local nonpersistent flags explicitly do not persist to subcommands (command.go:1655-1656).\n",
+  "sha256": "5ad6c1f47fb3150fff29696382bd1a25db3aeb68e6395af7d3e13b7a94a517fa"
+}

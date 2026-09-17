@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+go.mod
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 33ef32bf6c23; read in order (232/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"go.mod","start_line":1,"end_line":10,"text":"module github.com/spf13/cobra\n\ngo 1.15\n\nrequire (\n\tgithub.com/cpuguy83/go-md2man/v2 v2.0.3\n\tgithub.com/inconshreveable/mousetrap v1.1.0\n\tgithub.com/spf13/pflag v1.0.5\n\tgopkg.in/yaml.v3 v3.0.1\n)"},{"path":".golangci.yml","start_line":12,"end_line":24,"text":"# See the License for the specific language governing permissions and\n# limitations under the License.\n\nrun:\n  deadline: 5m\n\nlinters:\n  disable-all: true\n  enable:\n    #- bodyclose\n    # - deadcode ! deprecated since v1.49.0; replaced by 'unused'\n    #- depguard\n    #- dogsled"},{"path":"site/content/user_guide.md","start_line":253,"end_line":257,"text":"## Working with Flags\n\nFlags provide modifiers to control how the action command operates.\n\n### Assign flags to a command"},{"path":"site/content/docgen/md.md","start_line":9,"end_line":20,"text":"\t\"log\"\n\n\t\"github.com/spf13/cobra\"\n\t\"github.com/spf13/cobra/doc\"\n)\n\nfunc main() {\n\tcmd := &cobra.Command{\n\t\tUse:   \"test\",\n\t\tShort: \"my test program\",\n\t}\n\terr := doc.GenMarkdownTree(cmd, \"/tmp\")"},{"path":"site/content/docgen/man.md","start_line":1,"end_line":31,"text":"# Generating Man Pages For Your Own cobra.Command\n\nGenerating man pages from a cobra command is incredibly easy. An example is as follows:\n\n```go\npackage main\n\nimport (\n\t\"log\"\n\n\t\"github.com/spf13/cobra\"\n\t\"github.com/spf13/cobra/doc\"\n)\n\nfunc main() {\n\tcmd := &cobra.Command{\n\t\tUse:   \"test\",\n\t\tShort: \"my test program\",\n\t}\n\theader := &doc.GenManHeader{\n\t\tTitle: \"MINE\",\n\t\tSection: \"3\",\n\t}\n\terr := doc.GenManTree(cmd, header, \"/tmp\")\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n```\n\nThat will get you a man page `/tmp/test.3`"},{"path":".golangci.yml","start_line":1,"end_line":4,"text":"# Copyright 2013-2023 The Cobra Authors\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License."},{"path":"powershell_completions.go","start_line":209,"end_line":219,"text":"            return\n        }\n    }\n\n    # Get the current mode\n    $Mode = (Get-PSReadLineKeyHandler | Where-Object {$_.Key -eq \"Tab\" }).Function\n    __%[1]s_debug \"Mode: $Mode\"\n\n    $Values | ForEach-Object {\n\n        # store temporary because switch will overwrite $_"}],"provenance":{"input_sha256":"452556c4018c38bc30e01af3d143dc6daee1e09e11f257c76dea2430e0e5f934","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

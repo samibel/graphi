@@ -1,0 +1,1 @@
+The program-specific variable is `<PROGRAM>_ACTIVE_HELP`, with non-ASCII-alphanumeric characters replaced by `_` (`site/content/active_help.md:143`; suffix defined at `active_help.go:28`). There is also a global variable named `COBRA_ACTIVE_HELP` (`active_help.go:29`). The response does not show the precedence or meanings of their values.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 22,
+  "previous_sha256": "4788b167424e5dbe6d588faa85c08c9aedd1a34fd41ba2c7f5ff1b17e9f160ed",
+  "kind": "response",
+  "query_id": "cb-14",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "980784547391168e59edf41c0d7d945862f77be1c67f217fd2173f45da5a03f4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Shell scripts invoke the hidden `__complete` command, or `__completeNoDesc` when descriptions are unwanted (`completions.go:26-33`; `powershell_completions.go:34-37`). The hidden command's `Run` function dispatches the supplied command line to `cmd.getCompletions(args)`, receiving the final command, choices, directive, and any error (`completions.go:202-213`).",
+  "sha256": "136b7d064670a0cd2b60be6abafba3e5e7ebcac5ed6127b4158f66eb5136ed6e"
+}

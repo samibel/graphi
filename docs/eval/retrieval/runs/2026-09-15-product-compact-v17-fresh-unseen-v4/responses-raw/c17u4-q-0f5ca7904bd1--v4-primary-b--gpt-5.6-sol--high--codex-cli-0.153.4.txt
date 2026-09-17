@@ -1,0 +1,1 @@
+In `cobra.go:166–172`, `appendIfNotPresent` returns `s` unchanged when `strings.Contains(s, stringToAppend)` is true. Otherwise, it returns `s + " " + stringToAppend`, inserting one space before the appended string.

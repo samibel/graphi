@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 95,
+  "previous_sha256": "22a106c54cdfac683f6014dc49303e45758cb2a1254cff9aa01e746d0d2ff2ff",
+  "kind": "grade",
+  "query_id": "cb-13",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "0855bfebaf8b22ccc46480422f1ddadb6f53bccdae32062519740630324057ca",
+  "outcome": "pass",
+  "rationale": "The candidate accurately and sufficiently describes the preserved implementation. `command.go:831-850` shows that `SuggestionsFor` considers only `cmd.IsAvailableCommand()`, appends `cmd.Name()` when `ld(typedName, cmd.Name(), true) \u003c= c.SuggestionsMinimumDistance` or when the lowercased command name starts with the lowercased typed name, and also appends it for a case-insensitive match against any `cmd.SuggestFor` entry. `command.go:1495-1503` supports the statement that `Name()` is the first word of `Use`. `command.go:750-765` supports disabling suggestions, defaulting a nonpositive threshold to 2, and formatting nonempty results under `Did you mean this?`. All required claims are grounded in the bundle.\n",
+  "sha256": "dd9bfa412a163fcbd3552f6bf780474ff413649fe5a5facf201980b7d2f383b6"
+}

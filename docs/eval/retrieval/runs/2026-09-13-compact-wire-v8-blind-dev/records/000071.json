@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 71,
+  "previous_sha256": "6316ac5e485ebb48f17055aeb84d66d9098969b9a06a281b012c63615bbcabeb",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "1447cacd3035833e5cc6e2922df47010e57d8dd1053a83681586e874d232e592",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use the subcommand’s `Command.Flag` method:\n\n```go\nf := cmd.Flag(\"flagName\")\n```\n\n`command.go:1794-1803` says `Flag` “climbs up the command tree” and falls back to `persistentFlag`. That method searches the command and its parents’ persistent flags (`command.go:1805-1816`). Therefore, define the global option as a persistent flag on a parent/root command, then access it from the subcommand via `cmd.Flag(\"flagName\")`.",
+  "sha256": "caf762f733626067b02e11c311c66a7225fe5d6599dcb4465d3305909733a6ac"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 119,
+  "previous_sha256": "de9a98f7474a00b8810659b68c4b43f3fb2a477c223a090d783adda1800861a5",
+  "kind": "grade",
+  "query_id": "cb-27",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "bec9c60cdb96a09e7375c0e131f4fa7fbb3615dda4eefa1423f3359dab39b40b",
+  "outcome": "pass",
+  "rationale": "PASS: It directly answers how to enable prefix matching and ties the setting to the lookup predicate.",
+  "sha256": "c5ae259a3dc946a1d1acd78dc0632b960fa6d78e680426b3703593da25def55f"
+}

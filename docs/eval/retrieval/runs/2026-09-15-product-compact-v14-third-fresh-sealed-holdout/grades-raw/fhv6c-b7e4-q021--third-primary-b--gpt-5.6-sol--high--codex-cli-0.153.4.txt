@@ -1,0 +1,1 @@
+PASS: The response accurately identifies package `cobra` and the test at lines 23–33, which generates PowerShell completion and checks that the output disables Active Help through `${env:<activeHelpVar>}=0`.

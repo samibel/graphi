@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q058",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "d570fc32915e3f3a4218b482101f70610e131db537392ef48c4fcb6ba5a728e2",
+  "bundle_sha256": "e68d70f3a77983c7fa629718f1f96c75fe7a7466c94b3712c67972ca81604975",
+  "prompt_sha256": "1c7ee88448194ea61e5dc3351e6b2940c4d60feefcfcf0d935ffa02f90adfe28",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. `HasAvailableFlags` excludes hidden and deprecated flags. In `command.go:1770-1775`, its comment explicitly says it checks for flags “which are not hidden or deprecated,” and the method delegates to `c.Flags().HasAvailableFlags()`.",
+  "responded_at": "2026-09-15T18:42:41Z",
+  "sha256": "a40478040a88bfc68175ffc9feb4baf7d4c594c9f999842904788979d379ea84"
+}

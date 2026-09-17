@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 4b4ef5445621b34bac2abc2d9cda6116a697672c9544e3b864efbe50d8a227c5
+QUERY ID: c17u4-q-1426dbe970af
+
+QUESTION:
+In command.go, what state does RemoveCommand repair after detaching selected children?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1361-1393 anchor="func (c *Command) RemoveCommand(cmds ...*Command)" reason=The method clears removed parents, rebuilds the slice, and recomputes all three cached maximum lengths.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query deab4a4cd013; read in order (311/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1360,"end_line":1393,"text":"\n// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}\nmain:\n\tfor _, command := range c.commands {\n\t\tfor _, cmd := range cmds {\n\t\t\tif command == cmd {\n\t\t\t\tcommand.parent = nil\n\t\t\t\tcontinue main\n\t\t\t}\n\t\t}\n\t\tcommands = append(commands, command)\n\t}\n\tc.commands = commands\n\t// recompute all lengths\n\tc.commandsMaxUseLen = 0\n\tc.commandsMaxCommandPathLen = 0\n\tc.commandsMaxNameLen = 0\n\tfor _, command := range c.commands {\n\t\tusageLen := len(command.Use)\n\t\tif usageLen > c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(command.CommandPath())\n\t\tif commandPathLen > c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(command.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t}\n}"},{"path":"command.go","start_line":1276,"end_line":1283,"text":"\n// ResetCommands delete parent, subcommand and help command from c.\nfunc (c *Command) ResetCommands() {\n\tc.parent = nil\n\tc.commands = nil\n\tc.helpCommand = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1335,"end_line":1344,"text":"\n// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"},{"path":"command.go","start_line":1559,"end_line":1576,"text":"\n// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"command.go","start_line":1841,"end_line":1845,"text":"\n// Parent returns a commands parent command.\nfunc (c *Command) Parent() *Command {\n\treturn c.parent\n}"},{"path":"completions.go","start_line":49,"end_line":52,"text":"\nfunc (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":138,"end_line":140,"text":"\t// PostRunE: PostRun but returns an error.\n\tPostRunE func(cmd *Command, args []string) error\n\t// PersistentPostRun: children of this command will inherit and execute after PostRun."},{"path":"completions.go","start_line":277,"end_line":278,"text":"\tif c.Root().TraverseChildren {\n\t\tfinalCmd, finalArgs, err = c.Root().Traverse(trimmedArgs)"}],"provenance":{"input_sha256":"17be6c1a8ed9782c8d8977c3449dff2d3ed69bc5fe4a63615549660af0e6a6a5","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`RemoveCommand` repairs the parent’s cached maximum child lengths: `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen`. After clearing removed children’s `parent` pointers and replacing `c.commands` with the survivors, it resets these caches to zero and recomputes them from each remaining child’s `Use`, `CommandPath()`, and `Name()` (`command.go`, `RemoveCommand`, lines 1362–1393; comment: `// recompute all lengths`).
+----- END THE RATER'S RESPONSE -----

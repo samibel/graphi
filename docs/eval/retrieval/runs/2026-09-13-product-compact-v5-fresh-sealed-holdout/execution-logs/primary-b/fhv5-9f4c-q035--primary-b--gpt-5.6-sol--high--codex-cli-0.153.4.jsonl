@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-a569-73e2-9bb4-57452ee45fc7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `RunE`/`Run` followed by `PostRunE` in `command.go:981-992`, but omits argument validation, persistent/local hook ordering, and flag-group checks."}}
+{"type":"turn.completed","usage":{"input_tokens":16510,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":56}}

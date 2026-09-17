@@ -1,0 +1,1 @@
+PASS: The response correctly instructs setting `cobra.EnableTraverseRunHooks = true` to run all parents’ persistent hooks. The preserved transcript supports the default behavior, cited locations, and stated pre-run and post-run execution order.

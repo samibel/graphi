@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how to enable prefix matching for commands
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"how to enable prefix matching for commands\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"cobra.go","start_line":55,"end_line":70,"text":"var EnablePrefixMatching = defaultPrefixMatching\n\n// EnableCommandSorting controls sorting of the slice of commands, which is turned on by default.\n// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting\n\n// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive\n\n// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.\n// By default this is disabled, which means only the first run hook to be found is executed.\nvar EnableTraverseRunHooks = defaultTraverseRunHooks\n\n// MousetrapHelpText enables an information splash screen on Windows\n// if the CLI is started from explorer.exe.\n// To disable the mousetrap, just set this variable to blank string (\"\")."},{"path":"command.go","start_line":770,"end_line":786,"text":"\t\tif commandNameMatches(cmd.Name(), next) || cmd.HasAlias(next) {\n\t\t\tcmd.commandCalledAs.name = next\n\t\t\treturn cmd\n\t\t}\n\t\tif EnablePrefixMatching \u0026\u0026 cmd.hasNameOrAliasPrefix(next) {\n\t\t\tmatches = append(matches, cmd)\n\t\t}\n\t}\n\n\tif len(matches) == 1 {\n\t\t// Temporarily disable gosec G602, which produces a false positive.\n\t\t// See https://github.com/securego/gosec/issues/1005.\n\t\treturn matches[0] // #nosec G602\n\t}\n\n\treturn nil\n}"},{"path":"cobra.go","start_line":52,"end_line":52,"text":"// EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing"},{"path":"command.go","start_line":1879,"end_line":1884,"text":"func commandNameMatches(s string, t string) bool {\n\tif EnableCaseInsensitive {\n\t\treturn strings.EqualFold(s, t)\n\t}\n\n\treturn s == t"},{"path":"command.go","start_line":612,"end_line":613,"text":"func (c *Command) ErrPrefix() string {\n\tif c.errPrefix != \"\" {"},{"path":"command.go","start_line":358,"end_line":360,"text":"func (c *Command) SetErrPrefix(s string) {\n\tc.errPrefix = s\n}"},{"path":"command.go","start_line":1526,"end_line":1527,"text":"func (c *Command) hasNameOrAliasPrefix(prefix string) bool {\n\tif strings.HasPrefix(c.Name(), prefix) {"},{"path":"cobra.go","start_line":58,"end_line":59,"text":"// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting"},{"path":"command.go","start_line":1508,"end_line":1509,"text":"\t\tif commandNameMatches(a, s) {\n\t\t\treturn true"},{"path":"command.go","start_line":611,"end_line":611,"text":"// ErrPrefix return error message prefix for the command"}],"provenance":{"input_sha256":"74874efc9add9ef4222dbad69a3686a3cfcdb0c77d949caf7f4a7e41e12059b5","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

@@ -1,0 +1,1 @@
+On the currently executing *Command, call cmd.Flag("name") to obtain the flag object, or cmd.Flags().Lookup("name"). command.go:1795–1798 shows Flag beginning with c.Flags().Lookup(name), and command.go:1643 declares Flags() *flag.FlagSet. The snippet does not show how the active command is supplied to execution callbacks or the remainder of Flag's fallback logic.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-db40-7a13-b8f5-60e3f14ce0e9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s pre-run stage calls every function registered through `OnInitialize`, in registration order, with no arguments.\n\nEvidence: `OnInitialize` appends the functions to `initializers` (`cobra.go:97–101`), and `(*Command).preRun` loops over that slice and invokes each with `x()` (`command.go:1015–1019`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17232,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":80,"reasoning_output_tokens":0}}

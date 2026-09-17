@@ -1,0 +1,9 @@
+`Traverse` descends recursively, one subcommand at a time (`command.go:788–829`).
+
+For arguments such as `["child", "grandchild", "arg"]`:
+
+1. The parent finds `child` using `c.findNext(arg)`, parses accumulated parent flags with `c.ParseFlags(flags)`, then calls `cmd.Traverse(args[i+1:])` with `["grandchild", "arg"]`.
+2. The child repeats this process to find `grandchild`, parse its own accumulated flags, and recurse with `["arg"]`.
+3. If `arg` does not match another subcommand, the grandchild returns itself and those remaining arguments: `return c, args, nil`. It also returns itself when there are no arguments.
+
+A parent flag-parsing error stops descent with `return nil, args, err` (same snippet).

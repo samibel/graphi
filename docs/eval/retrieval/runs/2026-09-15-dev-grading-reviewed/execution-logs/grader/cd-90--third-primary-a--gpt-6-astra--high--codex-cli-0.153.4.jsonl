@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a484-5092-76a0-a144-f9864a15079f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states `command.DisableSuggestions = true`, documented within `site/content/user_guide.md:710–714`. Its explanation that `findSuggestions` immediately returns an empty string when this flag is enabled is supported by `command.go:750–753`."}}
+{"type":"turn.completed","usage":{"input_tokens":17950,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":132,"reasoning_output_tokens":71}}

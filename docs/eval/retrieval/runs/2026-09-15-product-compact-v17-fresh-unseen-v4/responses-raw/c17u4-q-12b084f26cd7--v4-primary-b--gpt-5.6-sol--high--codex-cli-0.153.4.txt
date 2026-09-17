@@ -1,0 +1,7 @@
+`getErr(def)` uses the first available error writer up the command hierarchy:
+
+1. Return `c.errWriter` if non-nil.
+2. Otherwise, if `c` has a parent, recursively call `c.parent.getErr(def)`.
+3. If no command defines one, return `def`.
+
+Evidence: `command.go:402–411` (`getErr`) and `command.go:1630–1634` (`HasParent`). `ErrOrStderr` supplies `os.Stderr` as the default via `c.getErr(os.Stderr)` at `command.go:383–386`.

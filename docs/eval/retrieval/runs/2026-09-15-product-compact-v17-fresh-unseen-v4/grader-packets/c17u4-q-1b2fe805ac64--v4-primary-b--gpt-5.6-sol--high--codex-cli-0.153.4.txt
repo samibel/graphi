@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 95b6c56af4714235dbab9454e630c6da2be04a2decc3da7163a62a0f2293952b
+QUERY ID: c17u4-q-1b2fe805ac64
+
+QUESTION:
+How does Cobra's greater-than template helper convert collections, integers, and numeric strings before comparison?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:109-139 anchor="func Gt(a interface{}, b interface{}) bool" reason=The implementation derives lengths or integer values for both operands, parses strings, and compares the resulting int64 values.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 2ff7e9da8ba8; read in order (208/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":82,"end_line":95,"text":"\n// AddTemplateFunc adds a template function that's available to Usage and Help\n// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {\n\ttemplateFuncs[name] = tmplFunc\n}\n\n// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"},{"path":"command.go","start_line":351,"end_line":355,"text":"\n// SetVersionTemplate sets version template to be used. Application can use it to set custom template.\nfunc (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":597,"end_line":609,"text":"\n// VersionTemplate return version template for the command.\nfunc (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.VersionTemplate()\n\t}\n\treturn `{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n`\n}"},{"path":"command.go","start_line":310,"end_line":314,"text":"\n// SetUsageTemplate sets usage template. Can be defined by Application.\nfunc (c *Command) SetUsageTemplate(s string) {\n\tc.usageTemplate = s\n}"},{"path":"cobra.go","start_line":111,"end_line":111,"text":"// Gt takes two types and checks whether the first type is greater than the second. In case of types Arrays, Chans,"},{"path":"command.go","start_line":110,"end_line":111,"text":"\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the\n\t// command does not define one."},{"path":"command.go","start_line":911,"end_line":915,"text":"\t\t\tc.Println(\"\\\"version\\\" flag declared as non-bool. Please correct your code\")\n\t\t\treturn err\n\t\t}\n\t\tif versionVal {\n\t\t\terr := tmpl(c.OutOrStdout(), c.VersionTemplate(), c)"}],"provenance":{"input_sha256":"4edbf059364e05c5dd279d9e5996f76250fbe11a13a39166c321d32dc281b42d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains only the first line of `Gt`’s comment at `cobra.go:111`, not its implementation or the lines describing conversions for collections, integers, and numeric strings.
+----- END THE RATER'S RESPONSE -----

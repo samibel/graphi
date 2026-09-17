@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q053",
+  "response_sha256": "556fff0515a28d6609cdb0f2052a8d27813a678f112ff3ded796ab1ad49fa518",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response gives the exact installation command preserved in README.md:95–104, and its citation supports both the generator’s purpose and the command.",
+  "graded_at": "2026-09-15T08:35:05Z",
+  "sha256": "b6a10e3d497ac4372bf49e095741980a4f11295936b4c4e7b9017a439b8d756e"
+}

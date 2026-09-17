@@ -1,0 +1,1 @@
+Set `cobra.EnablePrefixMatching = true` before resolving commands (`cobra.go:52–55`). Command lookup first accepts an exact name or alias; otherwise, when prefix matching is enabled, it collects commands satisfying `hasNameOrAliasPrefix(next)` and returns a match only if exactly one command qualifies (`command.go:770–785`).

@@ -1,0 +1,1 @@
+command.go:1517-1522 directly supports checking CalledAs for a recorded invocation name; the answer correctly does not claim root-to-child selection retrieval.

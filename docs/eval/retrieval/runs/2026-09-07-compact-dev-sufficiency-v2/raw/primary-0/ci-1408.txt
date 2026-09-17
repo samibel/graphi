@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains Flag and Flags signatures but no global or persistent flag registration, inheritance, or value-reading logic showing how a subcommand accesses a global flag.

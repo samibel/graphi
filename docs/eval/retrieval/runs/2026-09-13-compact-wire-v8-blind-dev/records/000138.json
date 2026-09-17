@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 138,
+  "previous_sha256": "f5fdc48c59d2f9a6b427a8bfea89a732d52d2b7fa0caba215d7823e0f0135b07",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6316ac5e485ebb48f17055aeb84d66d9098969b9a06a281b012c63615bbcabeb",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly answers with `cmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")`. The preserved bundle supports every substantive claim: `flag_groups.go:62-65` gives the method signature and says Cobra errors when more than one flag in the set is used; lines 67-71 show lookup and panic for an undefined name; and lines 72-73 state that each call creates one group and permits membership in multiple groups. The instruction to define flags first is a correct consequence of the documented lookup-and-panic behavior.\n",
+  "sha256": "1c2f3a2be3027cd6b8312a444e570aba1b6c1222ec0a44b6e19ca78d3007953e"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 106,
+  "previous_sha256": "90280c44d0838b22221d9c3a801d45ddd7cc3f4924a3fd072a3edf2343e6d732",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "b448c06ec6d718c8860b53f4f5e35740a1df02fc8c976ff4e0dbdbf6e630dcea",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete and fully supported description of the traversal visible in the bundle. In `doc/man_docs.go:46-80`, `GenManTreeFromOpts` iterates through `cmd.Commands()`, skips commands failing `IsAvailableCommand()` or satisfying `IsAdditionalHelpTopicCommand()`, recursively processes each eligible child with immediate error propagation, and only afterward calls `GenMan` for the current command. This supports the stated depth-first post-order behavior. The candidate also correctly limits its scope by noting that `doc/md_docs.go:125,133` contains only Markdown function declarations in the preserved response, not their implementations.\n",
+  "sha256": "5fa4863e7418acb64bbb617f3afaa322e70c8e0c3b8d8f2db160ab8a1c6067b4"
+}

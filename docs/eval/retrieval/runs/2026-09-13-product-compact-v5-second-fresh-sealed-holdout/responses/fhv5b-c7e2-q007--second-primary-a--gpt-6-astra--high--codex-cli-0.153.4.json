@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q007",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "26ec289d5e5ceebb6069a58181838243590e7f912732de0db87e0bc80ae2e2dc",
+  "bundle_sha256": "ce195b314ac6628f07dec09fb269c0823370785d2dad864d1c03a3aebce3279b",
+  "prompt_sha256": "52c8b715845720fff827ad6d3c8d7416e6b9c829b63c37a5f38ccdc5b83ada1f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes. `RangeArgs(min, max)` accepts both endpoints: argument counts equal to `min` or `max` return `nil`. It rejects only when `len(args) \u003c min || len(args) \u003e max`, returning `\"accepts between %d and %d arg(s), received %d\"` (`args.go`, lines 104–109).",
+  "responded_at": "2026-09-13T15:21:34Z",
+  "sha256": "b62d56ad6708b186e91d46aa445c94081ab05cfd8728fa09a4d2b76d60e19e7c"
+}

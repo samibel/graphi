@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q008",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "f687b5b3875d5b689edae431a6b9724a43688b9614119fe32f125989d657f808",
+  "bundle_sha256": "db4b974783db4db660750e1093555ac5c1785879e270305fdf52ee35d5d9ae4e",
+  "prompt_sha256": "84b8191aa32e1609c679e15ed526506d55bc6a05dc7b13479fb55ed9a2e8c999",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ExactValidArgs(n)` returns an error if there are not exactly `n` positional arguments or if any positional argument is absent from `Command.ValidArgs` (`args.go`, lines 125–126).\n\nIts deprecation note recommends `MatchAll(ExactArgs(n), OnlyValidArgs)` (`args.go`, line 128), which is also what its implementation returns (line 130).",
+  "responded_at": "2026-09-13T12:31:40Z",
+  "sha256": "fdd01507b7b9f22ac974eaa8882cc6586b146495485dce1e1284205b0cb8f470"
+}

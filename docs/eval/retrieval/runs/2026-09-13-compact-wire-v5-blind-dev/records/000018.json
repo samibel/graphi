@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 18,
+  "previous_sha256": "294ccb9195913f3bd3f6805cff46f6e0b79f70562c94d587a9ec7b74998b5743",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e4036c9acc1095ab1d8edb16eb44ad0d2d7b260f9a34bff721edd9a65a8cc865",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Completion calls `enforceFlagGroupsForCompletion`, which is a no-op when flag parsing is disabled (`flag_groups.go:220-226`). It derives per-group status from annotations: `processFlagForGroupAnnotation` splits each encoded group, ignores groups unless all flags exist, initializes every member as unset, and records each member's `Changed` state (`flag_groups.go:121-142`). The resulting enforcement marks every member of an unsatisfied one-required group as required and hides the remaining members after a mutually-exclusive flag is present, allowing normal completion filtering to enforce the groups (`flag_groups.go:220-226`, `flag_groups.go:273`).\n",
+  "sha256": "23f28fd74bf806899976fdd4361d227dfab8f815928d875d6dd10fd77d275f35"
+}

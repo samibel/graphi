@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q050",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "3a38f92216efbbdfa3057517741578aabd05279a14a835d3686ac810a95b283b",
+  "bundle_sha256": "a01fbf90b85aee4845269936eef074c3fa2c2bb04f60490462d79c899e9f7022",
+  "prompt_sha256": "3d99ab3dc259f595e96f603fa8020be342835b52af2b154fd262b18011e98ed8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For flag-value completion, Cobra changed these behaviors:\n\n- File completion became the default; disable it via `RegisterFlagCompletionFunc()` with `ShellCompDirectiveNoFileComp` ([site/content/completions/zsh.md, line 34]).\n- `cmd.MarkFlagFilename(flag, []string{})` became unnecessary and is silently ignored ([line 35]).\n- `cmd.MarkFlagFilename(flag, glob[])` still works, but cross-shell extension syntax such as `[]string{\"yaml\", \"yml\"}` was added and preferred over Zsh globs like `\"*.yaml\"` ([line 36]).\n- `cmd.MarkFlagDirname(flag)` directory-only completion was extended from Zsh to all shells ([line 37]).\n- Suppressing repeated flag-name completion—except for `*Array` and `*Slice` flags—was retained in Zsh and added to Fish ([line 38]).\n- Omitting the `=` form when completing flag names was retained in Zsh and added to Fish ([line 39]).",
+  "responded_at": "2026-09-15T08:31:19Z",
+  "sha256": "2ff950b27312662c5c6ab8c86b94b16d0f8b9e8dea92cfec13af35a71b4373db"
+}

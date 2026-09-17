@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b67-3363-7f02-b3aa-0867f24e24d7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies that OnFinalize appends all supplied callbacks to the finalizers slice in their supplied order, supported by the cited cobra.go:105-107."}}
+{"type":"turn.completed","usage":{"input_tokens":18245,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":39,"reasoning_output_tokens":0}}

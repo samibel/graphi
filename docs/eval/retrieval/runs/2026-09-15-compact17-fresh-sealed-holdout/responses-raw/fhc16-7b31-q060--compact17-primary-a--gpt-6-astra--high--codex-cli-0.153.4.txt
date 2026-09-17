@@ -1,0 +1,1 @@
+No. In `command.go:1656–1664`, `LocalNonPersistentFlags()` gets `c.PersistentFlags()` and adds a local flag only if `persistentFlags.Lookup(f.Name) == nil`, excluding flags declared persistent on the current command. `PersistentFlags()` explicitly returns that command’s persistent flag set (`command.go:1725–1726`).

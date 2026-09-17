@@ -1,0 +1,1 @@
+PASS: The response states the exact condition, `len(s) > 60 && !strings.Contains(s, "\n")`, and correctly describes appending one newline and otherwise returning the text unchanged. Its citations resolve to the preserved `doc/util.go` span.

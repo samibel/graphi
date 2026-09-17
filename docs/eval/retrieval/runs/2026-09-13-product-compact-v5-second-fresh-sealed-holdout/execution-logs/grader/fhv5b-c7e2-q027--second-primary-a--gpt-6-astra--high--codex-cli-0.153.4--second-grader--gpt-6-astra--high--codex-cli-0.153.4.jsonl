@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6b-3e4a-7462-bdd7-06ab89eb17f2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer how all three widths are chosen. The bundle supports UsagePadding() using the fixed minimum at the root and the larger of that minimum and the parent’s commandsMaxUseLen otherwise, but omits the command-path and name padding selection implementations."}}
+{"type":"turn.completed","usage":{"input_tokens":18105,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

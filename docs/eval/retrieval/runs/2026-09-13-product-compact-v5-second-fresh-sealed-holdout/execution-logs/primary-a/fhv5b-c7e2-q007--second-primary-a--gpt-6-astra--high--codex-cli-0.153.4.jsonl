@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-e89f-7861-ac34-60e019c14230"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Yes. `RangeArgs(min, max)` accepts both endpoints: argument counts equal to `min` or `max` return `nil`. It rejects only when `len(args) < min || len(args) > max`, returning `\"accepts between %d and %d arg(s), received %d\"` (`args.go`, lines 104–109)."}}
+{"type":"turn.completed","usage":{"input_tokens":17365,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":0}}

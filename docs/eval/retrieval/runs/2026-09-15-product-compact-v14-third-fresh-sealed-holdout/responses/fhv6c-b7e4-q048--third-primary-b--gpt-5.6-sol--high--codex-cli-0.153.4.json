@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q048",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "70f3f395e841fd9d27691387f57b2988266f8e924c7b3304dd7ae7081c0a0d73",
+  "bundle_sha256": "6b5d3ff92abcd6ff4e643bfa611d09d6e7cf6ee0f8bb0ec7ae65ab6cb3befe46",
+  "prompt_sha256": "c4fb02a9e92ab70a961bf6ec52a0fcaf3cb3949937293795a604e8576bbb3441",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — `bash_completions.go:688-693` shows it is attached to `Command.BashCompletionFunction` and emitted by `GenBashCompletion()`, but the responses do not show where or when the generated Bash function is invoked.",
+  "responded_at": "2026-09-15T08:31:09Z",
+  "sha256": "d12b11b5683ca80a0bbb73abc988d9685f59318737d80f14ff7ef9d1b0888361"
+}

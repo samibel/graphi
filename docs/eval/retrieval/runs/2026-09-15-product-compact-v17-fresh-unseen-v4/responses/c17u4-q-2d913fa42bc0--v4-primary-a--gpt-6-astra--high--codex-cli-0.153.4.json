@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2d913fa42bc0",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "ca691b9bcc26bbbedacbd7cdae466b15774ecb95bd31465b8ec46e9b2fe89098",
+  "bundle_sha256": "30ba6a47ecadf11ecf3f905de70f113bf566bb8b2df0f02d75cf7694aa130380",
+  "prompt_sha256": "eab59b2b7c98588f4d7475e682f8bb0412ae20b5f54b140490a6187d97595201",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetOutput` preserves the legacy ability to route both usage and error messages to one writer. It changes `c.outWriter` and `c.errWriter` to the supplied `output` (`command.go:283–285`). Its comments mark it deprecated in favor of `SetOut` and/or `SetErr` and document `os.Stderr` when output is nil (`command.go:280–282`).",
+  "responded_at": "2026-09-15T20:28:57Z",
+  "sha256": "01d8ef1ead30789e409b54105b48fb407cf79ce72110b593340d772e6c0af436"
+}

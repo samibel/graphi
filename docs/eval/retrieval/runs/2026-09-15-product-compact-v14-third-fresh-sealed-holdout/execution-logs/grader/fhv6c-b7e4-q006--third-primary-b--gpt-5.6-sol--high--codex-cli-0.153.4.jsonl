@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-8af9-7653-8162-8f4d662053f2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the helper’s non-nil error check, exact expected error string, and fatal mismatch assertion, all supported by args_test.go:77-86 in the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17640,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":44,"reasoning_output_tokens":0}}

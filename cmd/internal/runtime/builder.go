@@ -305,6 +305,7 @@ func (a retrievalAdapter) Retrieve(ctx context.Context, req resolve.RetrieverReq
 			Span:       row.Span,
 			Region:     row.Region,
 			Explain: resolve.RetrieverExplain{
+				Base:           row.Explain.Base,
 				LexicalRank:    row.Explain.LexicalRank,
 				SemanticRank:   row.Explain.SemanticRank,
 				RRF:            row.Explain.RRF,

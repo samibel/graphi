@@ -1,0 +1,6 @@
+`(*Command).execute` returns `flag.ErrHelp` before running the command in two cases:
+
+- The parsed boolean `help` flag is true, regardless of other flags (`command.go:895-906`, `helpVal` check).
+- The command is not runnable (`command.go:923-925`). `Runnable()` means either `Run` or `RunE` is non-nil (`command.go:1550-1553`).
+
+The actual `RunE`/`Run` invocation occurs later at `command.go:979-985`, so neither case reaches it.

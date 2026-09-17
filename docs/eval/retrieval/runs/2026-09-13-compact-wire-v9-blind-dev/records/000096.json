@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 96,
+  "previous_sha256": "869ffec3b4035051c6731aed7771b1ea0f78750c9575e51b19fde17bd1cbd7a8",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "77e1eda68da1b6c1f9e62e5b6b4569dc0e6b1cd694f4d14c252352c38293c895",
+  "outcome": "pass",
+  "rationale": "The answer correctly identifies `command.go:1146–1168` and `(*Command).ValidateRequiredFlags()` as the validator, accurately describing its scan of `c.Flags()`, its `BashCompOneRequiredFlag` annotation check, and its use of `pflag.Changed`. It also cites the preserved invocation at `command.go:975–977`, where an error from `c.ValidateRequiredFlags()` is returned, and correctly points to `shell_completions.go:21–26` for `(*Command).MarkFlagRequired`. These claims are concrete and supported by the sealed bundle.\n",
+  "sha256": "116a410522c4d7ced5a9d4759cc1f4680ea6c351dc51e948c8b03c3ff8db4f0b"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 88,
+  "previous_sha256": "91f53f40d96411101c8ade9f598353c0fa03fddf810ff7bfad26e82d8c6129ab",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "503447c0c959e18524f34a9409b5820f437c331564384bb2c5ae346ac4c2722b",
+  "outcome": "pass",
+  "rationale": "PASS: The callback signature and registration behavior are accurately and sufficiently described from the bundled completions.go implementation.\n",
+  "sha256": "dc256c7bcad67e5076191a3b69bf45f83d8cc72bc285198cdfbabd64791069c0"
+}

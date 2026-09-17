@@ -1,0 +1,1 @@
+FAIL: The response does not trace command selection, context propagation to the selected command, execution, or error/help handling. The preserved bundle supports root delegation and context assignment but lacks the essential remaining ExecuteC flow.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-2605-73f1-ae68-ad1494cede87"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"A command alias selects the same command as its name: `command.go:768–772` checks `commandNameMatches(cmd.Name(), next) || cmd.HasAlias(next)`, records the supplied invocation token in `cmd.commandCalledAs.name`, and returns that command.\n\n`HasAlias` searches `c.Aliases` (`command.go:1505–1513`). Matching is exact by default; with `EnableCaseInsensitive`, it uses `strings.EqualFold` (`command.go:1876–1885`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17248,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":108,"reasoning_output_tokens":0}}

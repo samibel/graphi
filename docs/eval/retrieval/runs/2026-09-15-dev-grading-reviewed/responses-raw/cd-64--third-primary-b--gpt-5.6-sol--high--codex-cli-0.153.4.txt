@@ -1,0 +1,1 @@
+The error-message prefix defaults to `Error:`. Calling `cmd.SetErrPrefix(s)` sets a custom prefix; child commands inherit their parent’s prefix unless they define their own (`command.go:357–360`, `command.go:611–621`). It is printed before `err.Error()` when errors aren’t silenced (`command.go:1095–1101`).

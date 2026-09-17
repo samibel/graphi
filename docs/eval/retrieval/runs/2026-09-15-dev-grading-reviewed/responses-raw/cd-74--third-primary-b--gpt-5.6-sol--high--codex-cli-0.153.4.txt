@@ -1,0 +1,8 @@
+`bash_completionsV2.go` belongs to package `cobra` (line 15) and contains these declarations:
+
+- `(*Command).genBashCompletion(w io.Writer, includeDesc bool) error` (lines 24–29): buffers generated completion code, calls `genBashComp(buf, c.Name(), includeDesc)`, then writes the buffer to `w`.
+- `genBashComp(buf io.StringWriter, name string, includeDesc bool)` (lines 31–85): selects either `ShellCompRequestCmd` or `ShellCompNoDescRequestCmd` and emits a Bash completion-v2 script. The shown script defines debug, initialization, and completion-result functions.
+- `(*Command).GenBashCompletionFileV2(filename string, includeDesc bool) error` (lines 381–390): creates a file with `os.Create`, defers closing it, and delegates to `GenBashCompletionV2`.
+- `(*Command).GenBashCompletionV2(w io.Writer, includeDesc bool) error` (lines 392–396): public writer-based API delegating to `genBashCompletion`.
+
+The response truncates the middle of `genBashComp`, so its complete generated Bash script is not shown.

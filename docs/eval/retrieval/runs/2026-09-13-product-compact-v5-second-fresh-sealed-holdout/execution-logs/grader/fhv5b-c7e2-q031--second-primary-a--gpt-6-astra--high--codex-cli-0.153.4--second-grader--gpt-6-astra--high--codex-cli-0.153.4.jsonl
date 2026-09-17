@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6c-2ef5-7822-aae7-e88a6f25e895"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies all four fields cleared by ResetCommands: parent, child commands, help command, and parent persistent-flags cache. The cited bundle also supports that commandsAreSorted is not reset and is used by Commands()."}}
+{"type":"turn.completed","usage":{"input_tokens":18126,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

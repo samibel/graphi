@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 122,
+  "previous_sha256": "3cfa781fc98249bd9857e33b9aa4a695a12c0bf504fae9557661db1e51629ea4",
+  "kind": "grade",
+  "query_id": "cb-27",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "95667655d5ed6ebf5a80a298e112cd5a43da1b7aa1d913432d548b8c44d80703",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly identifies the package-level switch (`cobra.EnablePrefixMatching = true`). This is supported by `cobra.go:55`, which defines `EnablePrefixMatching`, and `command.go:767-786`, where prefix lookup is gated by that flag and succeeds only for one match. Its statement that matching covers command names and aliases is also supported by `command.go:1524-1538`.\n",
+  "sha256": "94b0357dcffbd8727eeb27bddee5549151c34ba0c3a5ae20f7ef610c8bec3ef0"
+}

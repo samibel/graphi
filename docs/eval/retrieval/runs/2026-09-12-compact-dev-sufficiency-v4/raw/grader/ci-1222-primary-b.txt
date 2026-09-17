@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-1222:primary-b
+Outcome: fail
+Rationale: The callback declaration and flag registration are supported, but the answer explicitly lacks the positional-argument completion API and usable directive choices, leaving essential completion behavior unspecified.

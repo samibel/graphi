@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 58,
+  "previous_sha256": "9ce211b30d9087770d9c0eaddb7d0f200a451cec7a0c51475585a617f1d45e1c",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "7b3392cfa48ef41336c8bd0ed69c9b9586a8db2c4118a3a61c7f794d37d14234",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response identifies `enforceFlagGroupsForCompletion` and its early return when `DisableFlagParsing` is set (`flag_groups.go:224–227`), but omits how it modifies flags or completion candidates to enforce group constraints.\n",
+  "sha256": "dad8beef3ef757e7d09b9d5a7e711d59e0d3d51bbf38dcd57720ed92e835f90d"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q055",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "58cc4543a79e99fb248149fc4abea1243da9b2cf3753219148686d3b8cc5312a",
+  "bundle_sha256": "2fc02566744d7eb3f9b205cc2556938a91a96b4f353bb6a07b38492bdc6f2120",
+  "prompt_sha256": "4e8e0d67adf0dd149e83e1559efa8e86618ed0fb395e6919a55ec29ba53364ba",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It accepts **arbitrary positional arguments**. In `command.go:1139–1144`, `Command.ValidateArgs` calls `ArbitraryArgs(c, args)` when `c.Args == nil`; `args.go:68` states that `ArbitraryArgs` “never returns an error.”\n\nTo reject all positional arguments, use `NoArgs`, which errors when `len(args) \u003e 0` (`args.go:41–47`).",
+  "responded_at": "2026-09-13T12:38:04Z",
+  "sha256": "357974b4945f9462bdc2bffbfbc197fe96d752d4dfdaae17bf7d0f5d9959e9b9"
+}

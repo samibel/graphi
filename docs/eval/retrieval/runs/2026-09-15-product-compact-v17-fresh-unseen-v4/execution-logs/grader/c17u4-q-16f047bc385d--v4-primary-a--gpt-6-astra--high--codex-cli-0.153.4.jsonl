@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cd-4402-7350-a68d-2932533861b2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the bundled function: `EnableCaseInsensitive` selects `strings.EqualFold(s, t)` when true and exact equality (`s == t`) otherwise. Its citation resolves within the preserved `command.go` span."}}
+{"type":"turn.completed","usage":{"input_tokens":17728,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

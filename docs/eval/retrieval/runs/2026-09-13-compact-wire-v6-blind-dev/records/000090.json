@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 90,
+  "previous_sha256": "ec83e517c6527ee3cf9fac2b9d2b1f0849120416c839276ca1bf4acfffe78484",
+  "kind": "grade",
+  "query_id": "cb-07",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a2fa7a9b41962ce63fa53c45cce3309aaceef2a11d8a9e8b786963faba2e2f3d",
+  "outcome": "pass",
+  "rationale": "PASS: It provides a correct overview of symbols and validation behavior in the file named by the path query.",
+  "sha256": "354a625d782468c8705d06ad68261c97f23c2ed54e5ced03f082ea4fb598abdf"
+}

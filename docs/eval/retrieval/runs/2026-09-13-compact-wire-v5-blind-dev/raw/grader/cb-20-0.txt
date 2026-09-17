@@ -1,0 +1,1 @@
+PASS: The declaration, merging, and lookup of parent persistent flags are accurately described from command.go:1725-1735, 1805-1816, and 1847-1857.

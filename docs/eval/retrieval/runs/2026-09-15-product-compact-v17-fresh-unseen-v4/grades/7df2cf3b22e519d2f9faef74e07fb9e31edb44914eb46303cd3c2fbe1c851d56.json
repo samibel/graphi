@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-19d60a8f3b27",
+  "response_sha256": "7df2cf3b22e519d2f9faef74e07fb9e31edb44914eb46303cd3c2fbe1c851d56",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response does not answer how the message is encoded. The preserved bundle shows AppendActiveHelp usage but lacks the marker-prefix implementation required for the essential reviewed behavior.",
+  "graded_at": "2026-09-15T20:42:03Z",
+  "sha256": "8e8fa5a8cf96663948dc3c4c8341c2d5ee5f052a300e2a5c8ec69873bacf920e"
+}

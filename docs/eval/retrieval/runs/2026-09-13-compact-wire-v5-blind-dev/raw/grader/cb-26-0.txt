@@ -1,0 +1,1 @@
+PASS: The program-specific variable transformation and global COBRA_ACTIVE_HELP=0 override are explicitly supported by active_help.go:27-29 and 45-67.

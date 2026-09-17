@@ -1,0 +1,1 @@
+FAIL: The response describes error-message prefixes but omits the essential prefix-matching behavior: `hasNameOrAliasPrefix` checks command names and aliases using `strings.HasPrefix` (`command.go:1524–1538`), and `EnablePrefixMatching` enables automatic prefix matching (`cobra.go:52–55`).

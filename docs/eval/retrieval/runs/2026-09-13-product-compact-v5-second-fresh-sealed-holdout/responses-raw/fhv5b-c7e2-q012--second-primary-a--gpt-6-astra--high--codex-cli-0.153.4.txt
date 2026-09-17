@@ -1,0 +1,5 @@
+`Gt` converts both operands to `int64` representations, then compares `left > right` (`cobra.go:115–138`):
+
+- **Collections** (arrays, channels, maps, slices): their lengths, via `int64(av.Len())` and `int64(bv.Len())` (lines 119–120, 130–131).
+- **Signed integers** (`Int`, `Int8`, `Int16`, `Int32`, `Int64`): their numeric values via `.Int()` (lines 121–122, 132–133).
+- **Strings**: integers parsed in base 10 with 64-bit width via `strconv.ParseInt(..., 10, 64)`; parse errors are ignored (lines 123–124, 134–135).

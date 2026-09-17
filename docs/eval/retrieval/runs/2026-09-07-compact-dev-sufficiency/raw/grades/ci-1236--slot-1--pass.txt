@@ -1,0 +1,1 @@
+The answer concretely recommends CalledAs for a command object already available. command.go:1516-1518 supplies that accessor and explicitly documents the empty string for a command not called, with the called-state branch visible. The answer stays within that evidence and correctly identifies the absent direct selected-command-return API.

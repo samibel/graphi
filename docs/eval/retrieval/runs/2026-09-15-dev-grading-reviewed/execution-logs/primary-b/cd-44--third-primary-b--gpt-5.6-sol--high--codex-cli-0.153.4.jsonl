@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-3dd5-7231-a4d5-4acb9fbe4361"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Command.LocalNonPersistentFlags()` builds a set of local flags excluding names found in `PersistentFlags()` (`command.go:1655–1666`). During completion, each flag is checked with:\n\n`localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed`\n\n(`completions.go:444`).\n\nThus, once a local non-persistent flag has been parsed and marked `Changed`, subcommand-name completion is stopped—the generated Bash completion explicitly documents this purpose (`bash_completions.go:574`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16679,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":299,"reasoning_output_tokens":188}}

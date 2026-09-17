@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d8-db21-7683-8ad7-a5f948828722"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Active Help is controlled per program by `<PROGRAM>_ACTIVE_HELP`, where `<PROGRAM>` is the uppercase root-command name with non-`[A-Z0-9_]` characters replaced by `_` (`active_help.go:45-66`). It can be globally disabled by setting `COBRA_ACTIVE_HELP=0` (`active_help.go:49, 29-30`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16442,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":81,"reasoning_output_tokens":0}}

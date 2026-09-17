@@ -1,0 +1,1 @@
+FAIL: It explains creation and completion suppression but omits execution-time handling: reading the version flag, rendering VersionTemplate to stdout, and returning before Run.

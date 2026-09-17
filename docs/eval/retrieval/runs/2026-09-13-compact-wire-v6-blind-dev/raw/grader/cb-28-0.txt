@@ -1,0 +1,1 @@
+PASS: It correctly explains that GroupID places a subcommand under a registered ID/title group in its parent's help output.

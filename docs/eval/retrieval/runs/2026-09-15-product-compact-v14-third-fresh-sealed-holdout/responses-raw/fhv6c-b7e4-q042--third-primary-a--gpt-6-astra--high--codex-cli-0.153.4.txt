@@ -1,0 +1,5 @@
+`Traverse` parses flags only when it finds another child command. In `command.go:788–829`, it calls `c.ParseFlags(flags)` immediately before `return cmd.Traverse(args[i+1:])`.
+
+After descending into the final child, trailing flags are collected with `flags = append(flags, arg)` and `continue`. If the loop ends, it returns `c, args, nil` without parsing those collected flags. The `cmd == nil` branch also returns without parsing.
+
+This matches the function’s comment: “parse args for each parent.”

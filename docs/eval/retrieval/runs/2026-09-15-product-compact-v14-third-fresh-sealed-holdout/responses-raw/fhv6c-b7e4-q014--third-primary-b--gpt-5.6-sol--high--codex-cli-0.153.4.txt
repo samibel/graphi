@@ -1,0 +1,5 @@
+`bash_completionsV2_test.go`:
+
+- Belongs to package `cobra` ([line 15]).
+- Declares `TestBashCompletionV2WithActiveHelp` ([lines 23–33]).
+- The test creates a `Command`, generates Bash V2 completion with active help enabled, and verifies the output does not contain `<activeHelpEnvVar>=0` using `checkOmit`.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 41,
+  "previous_sha256": "60e7207ca7862e2c4e9133400075f9a71ee8463192c8a4497c7d3cc37518f437",
+  "kind": "response",
+  "query_id": "cb-01",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "a92b439bfb188f19892cec030044f4505f26cada6b28fabb7433832fd2d43366",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ExecuteC` is a method on `*Command` that executes the command and returns `(cmd *Command, err error)` (`command.go:1051–1052`). It initializes an absent context with `context.Background()` (`command.go:1053–1054`). `ExecuteContextC` sets `c.ctx` before calling it (`command.go:1046–1048`), while `Execute` calls it and returns only the error (`command.go:1038–1040`).\n",
+  "sha256": "f866c210ffae93128f905a123709eb671780f8b747937c2a05643629d3250293"
+}

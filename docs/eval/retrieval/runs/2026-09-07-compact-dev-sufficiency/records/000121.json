@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 121,
+  "previous_sha256": "5bdc66b3e45e54ade240e1b6b7fd7d887826911da44d342f8d2c4f478fd177ef",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "19d6784a00c3c7d1c8d7d2f0beaed1aea6eb395fe83c8f25fa9bb6083365612d",
+  "outcome": "pass",
+  "rationale": "The concrete marking call follows the preserved variadic declaration at flag_groups.go:64-66, with the all-flags-defined condition at 128-129. ValidateFlagGroups' comment at 79 supports its role, and line 223 states that the other mutually exclusive flags are hidden when one is present. No missing registration loop, panic text or lifecycle ordering is asserted.\n",
+  "sha256": "19652838d038ad2b1004dc87f86bc9f6ea0e6f0729bada2d883d1b3be1ff77e5"
+}

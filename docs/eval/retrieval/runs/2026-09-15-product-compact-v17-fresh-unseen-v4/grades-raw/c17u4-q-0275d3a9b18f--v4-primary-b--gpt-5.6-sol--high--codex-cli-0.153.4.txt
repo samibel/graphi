@@ -1,0 +1,1 @@
+PASS: The response correctly states that OnlyValidArgs removes tab-separated descriptions from ValidArgs before checking positional arguments for exact matches. Both the implementation and exact-match behavior are supported by the cited args.go and cobra.go spans in the bundle.

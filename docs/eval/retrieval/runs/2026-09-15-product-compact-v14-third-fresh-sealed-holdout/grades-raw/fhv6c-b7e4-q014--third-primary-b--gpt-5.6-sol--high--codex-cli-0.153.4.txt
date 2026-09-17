@@ -1,0 +1,1 @@
+FAIL: The transcript supports checking that generated completion does not disable Active Help by emitting `<activeHelpEnvVar>=0`. It does not establish that Active Help is enabled during generation, as the response claims.

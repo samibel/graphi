@@ -1,0 +1,1 @@
+PASS: It accurately summarizes the supplied required-flag and filename-completion facilities in the named file.

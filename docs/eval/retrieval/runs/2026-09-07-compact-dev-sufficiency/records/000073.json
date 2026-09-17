@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 73,
+  "previous_sha256": "94a67ec6a113061533f6a31915e5a4d819d0ea2d5e7b4070a5b048cb5e15d7b0",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "8a809cbab683ea11ae335155af22ef81cf377e87568c02102923fcd847107431",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The excerpts show `Parent()` returning `c.parent` (`command.go:1843–1844`) and name flag accessors, but omit the API or example for extracting a parent flag's value.\n",
+  "sha256": "e7394a1153e3404da7d975b83133ad36d9844dc5d95f3d17f629aadc56186806"
+}

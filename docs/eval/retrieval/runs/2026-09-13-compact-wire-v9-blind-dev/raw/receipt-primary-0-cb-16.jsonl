@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d8-6e34-79b0-a4ed-4907586945aa"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The Levenshtein distance is computed by `ld(s, t string, ignoreCase bool)` in `cobra.go`, lines 188–221. It builds the distance matrix `d`, fills it via nested loops, and returns `d[len(s)][len(t)]`.\n\nIt is invoked in `command.go`, line 836:\n\n```go\nlevenshteinDistance := ld(typedName, cmd.Name(), true)\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":16527,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":92,"reasoning_output_tokens":0}}

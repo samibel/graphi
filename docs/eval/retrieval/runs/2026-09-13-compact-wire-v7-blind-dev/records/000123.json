@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 123,
+  "previous_sha256": "9550242f7cd42c4a8364966df65f17ad7b8bf279f3266689fa899bb592aff030",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ce2589726eb84feffd64662853a5e70f44b880b5ac2a54718ff56cbf42b222fd",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, accurate completion overview grounded entirely in the bundle. It correctly cites `site/content/completions/_index.md:115–127` for automatic command/flag completion and `ValidArgs` noun customization; `completions.go:678–685` for `(*Command).InitDefaultCompletionCmd` and its three documented suppression conditions, matching the development key’s primary grade-3 anchor; `site/content/completions/_index.md:112–120` for `DisableDescriptions`; and `completions.go:95–102` for the `no-descriptions` name and false default. No required claim relies on external knowledge.\n",
+  "sha256": "a753918b318395ae3fe199d71000741fc88cff1e70dd1d2cabe33a31c87c1ef1"
+}

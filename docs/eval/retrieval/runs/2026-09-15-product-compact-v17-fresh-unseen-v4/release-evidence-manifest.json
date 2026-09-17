@@ -1,0 +1,71 @@
+{
+  "schema": "graphi-fresh-holdout-release-evidence/1",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v4",
+  "release": "NO",
+  "pass_count": 47,
+  "n": 64,
+  "k": 56,
+  "product_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+  "product_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+  "corpus_commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "phase_commits": {
+    "static_inputs": "ed49ba060a010432303ef8984105ed7d329bdadb",
+    "freeze": "3899309e75b40f62cf81cfd7552238c3cb33b570",
+    "capture": "fc50b8f79073239921ba89a35abd8a917ee511d9",
+    "primary_raw": "122fb073696b3f9c46ce3538e16932b1a60baa0c",
+    "response_seal": "0ae5692f353c4136f7558bb004240b4cc93dee53",
+    "primary_grade_raw": "fdb98a2f39faba2f20c7a3e1bad4a578e4529a90",
+    "primary_grade_seal": "5e2b1edf112377393ea8c8fafd7f4ab9ebe6ea60",
+    "adjudication_raw": "680c256b5e7ebbc5d45801af368799ff88e064d7",
+    "adjudication_seal": "876cdd1f1b90d4922e2a229e3f274b5c0c74fb8e",
+    "adjudication_grade_raw": "580299ff7307e8e98fc31e5e7dc134df5a4dfc3e",
+    "final_seal": "d1bb7ecff3a613fe129293e56b4dbd560fb81a40",
+    "decision": "14d589d3617fcabbd9b4f26baa3fcdc8def1d83b"
+  },
+  "artifacts": {
+    "dataset": {
+      "path": "sealed-dataset.json",
+      "sha256": "c4115b6331e46f1a8c0b0daad020e86e4826a51de8e06a68e3211dea0770a3a6"
+    },
+    "pre_registration": {
+      "path": "pre-registration.json",
+      "sha256": "1da2d5a479c549661032eab6687346f5d348b4e1e746f657ad926e50c5003dd4"
+    },
+    "capture_provenance": {
+      "path": "capture-provenance.json",
+      "sha256": "3051d8b366a493e18f220170a603a2015f232af2bc723bae6074e01291816db2"
+    },
+    "capture_validation": {
+      "path": "capture-validation.json",
+      "sha256": "83b9b58ceae7ecb3e0a3d1f67035c599b12904a35322c509cbc42ec7653de961"
+    },
+    "sidecar_manifest": {
+      "path": "sidecar-manifest.json",
+      "sha256": "6d43162b887fa35851b250926e143e00119f62ed7394b0876e6bdd0c0af7036d"
+    },
+    "outcome": {
+      "path": "outcome.json",
+      "sha256": "79ceb514d173617f895f1d3159cf972939dd176d8d5e23bb18e6efefd7053b1c"
+    },
+    "end_of_run_hash_comparison": {
+      "path": "end-of-run-hash-comparison.json",
+      "sha256": "0c08400e50c65d36cb35f9a5c507dbf9ca6f209fa84bbb189ad5e9aceef0f9ee"
+    },
+    "operator_attestation": {
+      "path": "operator-attestation.json",
+      "sha256": "b8d843034d4773fabf7f5908a9cb943839a1c89404b79927e215d998ff10f43e"
+    },
+    "validity_audit": {
+      "path": "validity-audit.json",
+      "sha256": "74d8fa8b94916170cb46df35e200601e6b9171c377fafb8874cc8ac959f75273"
+    }
+  },
+  "audit": {
+    "holdout_decision_valid": true,
+    "procedure_invalidating_error": false,
+    "cgo0_build": "PASS",
+    "cgo0_holdout_scoped_tests": "PASS",
+    "cgo0_full_go_test": "FAIL",
+    "release_blocked": true
+  }
+}

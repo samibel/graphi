@@ -1,0 +1,1 @@
+FAIL: The response identifies the local lookup and fallback in command.go:1794–1803 but does not explain the parent-chain lookup. The preserved transcript omits the persistentFlag implementation needed to verify that essential behavior.

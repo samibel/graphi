@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q001",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "4a935727d5672fe2250e9bf95e30517806aba25ff3c6fb933fd72db0db6a6239",
+  "bundle_sha256": "e812e3eda4a63f6a29ce75f4c03e513afe184618c00ddf893de6bf5baa85c3c2",
+  "prompt_sha256": "25d4986f8830d972df92f10d220c058aa56d51149eda02ec384e7041850520c0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`AppendActiveHelp` appends one string: `activeHelpMarker` immediately followed by `activeHelpStr`, with no added separator, and returns the resulting slice:\n\n```go\nreturn append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))\n```\n\nThis preserves earlier completion entries in their existing order (`active_help.go:42–44`). The comments explicitly allow calls before or after adding completions and say successive ActiveHelp lines appear below previous ones (`active_help.go:38–41`). The marker’s literal value is not included in the response.",
+  "responded_at": "2026-09-13T12:30:39Z",
+  "sha256": "3c96693191b33511bf1cbc577f348f60ea008db0950dbaf673a51dc6d723a6c7"
+}

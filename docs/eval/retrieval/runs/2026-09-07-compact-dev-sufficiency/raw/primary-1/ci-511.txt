@@ -1,0 +1,1 @@
+INSUFFICIENT The response documents the persistent flag-set accessor (`command.go:1725–1727`) and only a fragment of the `OnInitialize` comment (`cobra.go:97`), omitting value retrieval and when parsing occurs relative to initialization.

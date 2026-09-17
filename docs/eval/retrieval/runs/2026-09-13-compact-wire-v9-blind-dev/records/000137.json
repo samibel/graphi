@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 137,
+  "previous_sha256": "0ff39ad4aabe0296293a6ae75e1c3d124162a1db935f4eeef4919719b276031c",
+  "kind": "grade",
+  "query_id": "ci-1236",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "aa67fc34a516199d09fd289f6e0594b01b8df627be1a4b4cb10b5a7f78c8a88d",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and directly supported by the sealed bundle: `command.go` lines 1515–1522 define `(*Command).CalledAs()` and state that it returns the command name or alias used to invoke the command, or an empty string if it has not been called. The candidate accurately cites this symbol and behavior.\n",
+  "sha256": "494df8655beec111a2ac8f3e92182bd99724548066d9a0f4d20622f5f325b1eb"
+}

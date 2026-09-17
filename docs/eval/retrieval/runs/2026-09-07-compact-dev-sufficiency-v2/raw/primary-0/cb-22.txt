@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows GenManTreeFromOpts beginning a cmd.Commands() loop and checking availability/help-topic status (doc/man_docs.go:48–54), but omits the recursive calls and generation order that explain the tree walk.

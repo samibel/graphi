@@ -1,0 +1,5 @@
+When `cmd.ValidArgs` is nonempty, `OnlyValidArgs` returns immediately on the first invalid value with an error formatted as `invalid argument %q for %q%s`, containing the value, full command path, and any suggestions (`args.go:59–62`).
+
+Matching uses exact string equality after stripping tab-separated descriptions from valid entries (`args.go:53–57`; `cobra.go:223–230`). Suggestions are based on `args[0]`, even if a later argument is invalid (`args.go:61`; `command.go:750–765`).
+
+If `cmd.ValidArgs` is empty, validation is skipped and it returns `nil` (`args.go:52–65`).

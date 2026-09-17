@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 140,
+  "previous_sha256": "56e1990900ca21f5c12e3de0206891b4d8a692d4de26147564dbd278a58ccaa1",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ba2f39923b69aee504ed42a1fe37fed0684546e86f4c31090354301b2014e52e",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies that the default `BoolP(\"help\", \"h\", false, usage)` in `command.go:1183-1198` binds `--help` and `-h` to one boolean, while execution checks only `c.Flags().GetBool(\"help\")` in `command.go:894-905`. It also correctly uses the documented override condition—`InitDefaultHelpFlag` does nothing when `Flags().Lookup(\"help\")` is non-nil—to explain how an application can define its own `help` flag and assign `-h` to a separate flag. The cited line number for `BoolP` is slightly imprecise, but the claim is supported by the preserved span.\n",
+  "sha256": "d1f78ccea6cbc52156cba061684da2d15fcee8b3b762e776137d869aa47e7f20"
+}

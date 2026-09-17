@@ -1,0 +1,2 @@
+- `GenYamlTreeCustom` accepts both `filePrepender` and `linkHandler` callbacks (`doc/yaml_docs.go:60`).
+- `GenYamlCustom` accepts only a `linkHandler` callback (`doc/yaml_docs.go:93`); prepending is handled by `GenYamlTreeCustom` before calling it (`doc/yaml_docs.go:78–82`).

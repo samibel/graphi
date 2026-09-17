@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 107,
+  "previous_sha256": "15ee1eaa82ab2f8ae7e77442f5fa7a5100b11d4181cee5945b7e321e7f06351b",
+  "kind": "grade",
+  "query_id": "cb-19",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "8cd3640fc5c09706c82e6606d904cc4ad86a642508564cc06124503ebaafee8b",
+  "outcome": "fail",
+  "rationale": "The bundle supports the core hook order inside `execute`: `ParseFlags` (`command.go:888`), persistent pre-runs, local `PreRunE`/`PreRun`, flag validation, and `RunE`/`Run` (`command.go:940-989`). It also supports that `Execute` is the entry point and execution is rooted (`command.go:1038`, `command.go:1057`). However, the candidate asserts that `ExecuteC` selects the command and that `TraverseChildren` governs that selection based only on the isolated line `if c.TraverseChildren` (`command.go:1087`); the preserved bytes do not show the branch body or command-selection logic. The response is explicitly truncated and omits the relevant `ExecuteC` body and other lifecycle stages, so a fully supported answer should have reported insufficient evidence rather than filling those gaps.\n",
+  "sha256": "32ba52e61138f62b4f18712451e088ed38ccbbe6fdbad36fdefc81b8021b5e4b"
+}

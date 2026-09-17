@@ -1,0 +1,1 @@
+PASS: The response accurately describes `stringInSlice` in the preserved `cobra.go:223–230` span: it scans using exact, case-sensitive equality, returns true on the first match, and otherwise returns false. The citation resolves inside the bundle.

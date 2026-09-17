@@ -1,0 +1,11 @@
+`AddGroup` adds one or more groups to a parent command:
+
+```go
+func (c *Command) AddGroup(groups ...*Group) {
+	c.commandgroups = append(c.commandgroups, groups...)
+}
+```
+
+In `command.go:1356–1359`, it accepts variadic `*Group` arguments and appends them to the existing `c.commandgroups` slice without validation or deduplication.
+
+Each `Group` has string fields `ID` and `Title` (`command.go:41–45`). A subcommand’s `GroupID` identifies its group in the parent’s help output (`command.go:73–74`).

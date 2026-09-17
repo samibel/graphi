@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 36,
+  "previous_sha256": "ee3e047fc53099273fd56402d2fdfa91a3ae13782314fc4559da6063543691e6",
+  "kind": "response",
+  "query_id": "ci-467",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "d9fb2ca5f6b5aa88b2d51e51e87514ece3c3be29d864fd299e4a2fad7da46261",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows `TraverseChildren: true` with root flags in test setup (`command_test.go:2188–2190`) but omits actual argument sequences, test results, and traversal logic establishing whether arguments or flags may appear before a subcommand.\n",
+  "sha256": "44abe4f3b61ac0e2bfb6ed3d8b9d623879bd61d04c410efc9fba4a983f2e49e3"
+}

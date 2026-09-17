@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q051",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "d4000b6d39bec4f735492c084645aebde598f0c41bfcb420b1b5ceabe7ac1621",
+  "bundle_sha256": "8dfde16310c3f75d241d9b3f8b998fb35c33014b78bd39a1c1327cafdc173321",
+  "prompt_sha256": "395e26eb05604a8bf2322dfe6d85d467609190367811ff717c4af529b8c3ece8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `GenMarkdown` for the specific command rather than `GenMarkdownTree`. The response names both APIs in `site/content/docgen/md.md:74`; lines 29–57 explain that `GenMarkdownTree` creates a file for every command in the tree.\n\nThe documented customizable single-command variant accepts a buffer (`site/content/docgen/md.md:83–85`):\n\n```go\nvar out bytes.Buffer\nerr := doc.GenMarkdownCustom(cmd, \u0026out, func(link string) string {\n\treturn link\n})\n```\n\nPass your chosen command as `cmd`, handle `err`, and use the Markdown in `out`.",
+  "responded_at": "2026-09-15T08:31:17Z",
+  "sha256": "da525e30eb605fd0c3f3caa8bc1bec9daf262909b7f9e9f658dbcd35446ff61e"
+}

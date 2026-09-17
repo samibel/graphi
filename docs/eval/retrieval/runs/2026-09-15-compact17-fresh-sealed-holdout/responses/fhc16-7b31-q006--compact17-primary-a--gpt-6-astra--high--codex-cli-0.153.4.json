@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q006",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "46d7e79b7393555e4d06a3898557481e97a009420dc1313aa1aa26cb095472e7",
+  "bundle_sha256": "e78e9c2439ebc103b9369693abfded547d81f7eaef27d6501186d3d7bcd7a711",
+  "prompt_sha256": "65bb0eb2dc9fc037a6fde62b758e5ff5538f8be7b0acb42ca807c948f9202b36",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `findFlag` (`completions.go:841–857`), when `len(name) == 1`, it:\n\n1. Tries `cmd.Flags().ShorthandLookup(name)` first.\n2. If absent, tries `cmd.InheritedFlags().ShorthandLookup(name)`.\n3. Replaces `name` with the matching flag’s long name, `short.Name`, or returns `nil` if neither lookup succeeds.\n4. Finally calls `cmd.Flag(name)`.\n\nThe comment at lines 844–845 explains the conversion: `cmd.Flag()` only accepts long flag names.",
+  "responded_at": "2026-09-15T18:35:51Z",
+  "sha256": "ad2c795b16e6bd7fdf6e373f38e8c6b916a2077dee910c3ecb047c86bae72246"
+}

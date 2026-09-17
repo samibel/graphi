@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains Execute signatures and partial hook documentation, but omits the Execute call chain, argument and flag processing, validation, and complete hook sequence needed to describe the lifecycle.

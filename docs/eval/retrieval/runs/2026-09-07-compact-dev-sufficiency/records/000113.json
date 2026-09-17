@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 113,
+  "previous_sha256": "7d7a993b50909b28bc47a8b3178ba0ebd4d3ff2599e5a51b5f5b58f03c1f013d",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "730edff11cbaa71edfde10074ac5eea0c5d25a5be04eecb8ae00a4b1e3e3b98c",
+  "outcome": "pass",
+  "rationale": "The completion-command overview is grounded in completions.go:681-685, including the two visible return conditions and existing-command comment. site/content/completions/_index.md:111-114 directly supports disabling descriptions; 268-270 supplies CompErrorln and the reason to avoid stdout debug traces.\n",
+  "sha256": "16f645d9fab105f5d80b4fb75e9e669220f47dcea696ee40bb95d1e99bc0bacc"
+}

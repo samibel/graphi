@@ -1,0 +1,1 @@
+completions.go:132-146 directly supplies the callback contract and registration mechanism that the development key accepts for flag completion.

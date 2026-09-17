@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 91,
+  "previous_sha256": "d92bce0461193d2e35c6765b5da874516df9d0bc5d70a11c599305949fa1b73a",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "5ac941f3a96ccfc821f03b8321fedfeaf537a200b137d8910a227477674ac071",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies `(*Command).ValidateRequiredFlags` in `command.go:1146–1168`. The bundle explicitly shows that it returns early when `DisableFlagParsing` is true, scans `c.Flags()`, reads the `BashCompOneRequiredFlag` annotation, treats annotated-but-unchanged flags as missing, and returns an error listing them. It also correctly cites `command.go:975–977`, where `c.ValidateRequiredFlags()` is called and its error returned before proceeding. These claims are concrete and fully supported by the preserved response bytes.\n",
+  "sha256": "679e468c5295ac02048cdf9f8295d7ec08210ff5fd8e2dfadb97019196000a13"
+}

@@ -1,0 +1,1 @@
+PASS: The response correctly describes appending `_ACTIVE_HELP`, uppercasing the entire string, and replacing characters outside `[A-Z0-9_]` with underscores. Its citations resolve within the bundle, and the `my-app` example follows the preserved implementation.

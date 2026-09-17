@@ -1,0 +1,1 @@
+Call `cmd.SetArgs([]string{"arg1", "arg2"})` with the desired arguments. In `command.go`, lines 276–278, `func (c *Command) SetArgs(a []string)` assigns the supplied slice directly to `c.args`.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q041",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "c1e1be5e41f70fad2ee5dca70d5b2eab3b8b880aee00ba3335d38b2093034d0b",
+  "bundle_sha256": "7eb9c91a568e6b4c7e2f3f3e2e9380827dc6c328c512705dc359b17eea357d36",
+  "prompt_sha256": "8be7c71a4d3ec5cc476448d376991c121995e564d20abd8d4d9e4a4b0e63c44b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes only the `TraverseChildren` comment (`command.go:224–225`), not the `Traverse` implementation or tests showing how it handles a child-only flag before the child name.",
+  "responded_at": "2026-09-15T08:30:34Z",
+  "sha256": "10c51d0fbb16d2a2f33f0c9b903c37156f53f0c6e3eefe184147ff6f2ade95c4"
+}

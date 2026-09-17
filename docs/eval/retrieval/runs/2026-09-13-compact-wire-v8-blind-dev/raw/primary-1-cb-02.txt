@@ -1,0 +1,9 @@
+`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` defines a mutually exclusive flag group: invoking the command with more than one named flag causes Cobra to error (`flag_groups.go:63-65`).
+
+It:
+
+- Merges persistent flags first (`flag_groups.go:66`).
+- Looks up every flag through `c.Flags()` (`flag_groups.go:68`).
+- Panics if a named flag does not exist (`flag_groups.go:69-72`).
+- Adds the space-joined group to each flag’s `"cobra_annotation_mutually_exclusive"` annotation (`flag_groups.go:25-29,74-76`).
+- Appends annotations, allowing a flag to belong to multiple mutually exclusive groups (`flag_groups.go:73-74`).

@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the Shell Completions guide at `site/content/completions/_index.md`, supported by the explicit relative link in `site/content/completions/fish.md` lines 1–4.

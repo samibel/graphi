@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 8,
+  "previous_sha256": "2c1d270c91bb6d9b02a33230405a1f0fba6e3c24892e18b4deabeae315c2080f",
+  "kind": "response",
+  "query_id": "cb-11",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e05893eb8ebbc661af555fa10361ba3fa6ed38a0c33dc5744bd42733b9a889b3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Required flags are validated in `(*Command).ValidateRequiredFlags` at `command.go:1147`. It scans `c.Flags()`, identifies flags annotated with `BashCompOneRequiredFlag == \"true\"`, and reports unchanged flags as missing (`command.go:1152–1164`).\n\nThis validation is invoked before execution at `command.go:975–977`:\n\n```go\nif err := c.ValidateRequiredFlags(); err != nil {\n    return err\n}\n```\n\nValidation is skipped when `c.DisableFlagParsing` is set (`command.go:1148–1150`).",
+  "sha256": "5ac941f3a96ccfc821f03b8321fedfeaf537a200b137d8910a227477674ac071"
+}

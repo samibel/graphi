@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q051",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "d4000b6d39bec4f735492c084645aebde598f0c41bfcb420b1b5ceabe7ac1621",
+  "bundle_sha256": "8dfde16310c3f75d241d9b3f8b998fb35c33014b78bd39a1c1327cafdc173321",
+  "prompt_sha256": "395e26eb05604a8bf2322dfe6d85d467609190367811ff717c4af529b8c3ece8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `GenMarkdown` instead of `GenMarkdownTree`; the latter generates one file for every command in the tree (`site/content/docgen/md.md:29-57`).\n\nFor customized single-command output, use:\n\n```go\nvar out bytes.Buffer\nerr := doc.GenMarkdownCustom(cmd, \u0026out, linkHandler)\n```\n\nIts signature is shown at `site/content/docgen/md.md:72-87`:\n\n```go\nfunc GenMarkdownCustom(\n    cmd *Command,\n    out *bytes.Buffer,\n    linkHandler func(string) string,\n) error\n```\n\nThe generated Markdown is written to `out`.",
+  "responded_at": "2026-09-15T08:31:22Z",
+  "sha256": "c61f55efef0002816b6a28a91e31142639ee71f04722ed34cff9bb266323b976"
+}

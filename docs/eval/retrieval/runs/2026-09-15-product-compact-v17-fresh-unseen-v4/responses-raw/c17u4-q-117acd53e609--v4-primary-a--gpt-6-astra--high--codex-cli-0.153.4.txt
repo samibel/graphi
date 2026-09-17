@@ -1,0 +1,7 @@
+`getOut` checks writers in this order:
+
+1. The current command’s `c.outWriter`, if non-nil.
+2. Its parent’s writer, recursively via `c.parent.getOut(def)`, continuing up the ancestor chain.
+3. The supplied default writer `def` if no command in the chain has a writer.
+
+Evidence: `command.go:394–401`, in `(*Command).getOut`, contains those three branches in order. `HasParent` checks `c.parent != nil` (`command.go:1632–1634`).

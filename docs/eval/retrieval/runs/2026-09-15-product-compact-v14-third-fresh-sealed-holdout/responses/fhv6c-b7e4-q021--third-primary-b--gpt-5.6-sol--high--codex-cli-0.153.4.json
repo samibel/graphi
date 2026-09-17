@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q021",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "1f46257b0dc56a885f70e2e14dc04b71d4a50666c96d6539780780313a77c04a",
+  "bundle_sha256": "ad40c79494a73b109bdbfe71ee06ec7210a54020690581f10179dde597e3a3fa",
+  "prompt_sha256": "7674fee7bb5f112fb1b2835c3205e03a65ef2c2004fa2b36f12718aac3f6a01d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`powershell_completions_test.go` belongs to package `cobra` (line 15). It declares `TestPwshCompletionNoActiveHelp` (lines 23–33), which generates PowerShell completion for a `Command` and verifies the output disables active help by containing `${env:\u003cactiveHelpVar\u003e}=0`.",
+  "responded_at": "2026-09-15T08:29:39Z",
+  "sha256": "571a98d355608052885ce05f56a9d231a66e1e17494295e938e17d8b76fdfb6b"
+}

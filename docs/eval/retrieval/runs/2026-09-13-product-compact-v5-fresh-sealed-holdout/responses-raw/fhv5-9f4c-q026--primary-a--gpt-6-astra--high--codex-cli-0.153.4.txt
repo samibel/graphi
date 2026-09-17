@@ -1,0 +1,1 @@
+INSUFFICIENT The response says `ValidateFlagGroups` returns the first error encountered (`flag_groups.go:79–80`), but omits the validation logic showing what is returned when two mutually exclusive flags are set.

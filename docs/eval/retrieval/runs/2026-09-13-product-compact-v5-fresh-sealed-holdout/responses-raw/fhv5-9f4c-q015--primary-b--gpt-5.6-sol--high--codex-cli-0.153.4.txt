@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits `completions.go` lines 537–541 and 543 onward—the body of `getFlagNameCompletions` that defines the candidates and explains the omitted equals form.

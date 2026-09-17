@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-9f0c-78e1-b660-d281c21c38d5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Related state is updated too. In `command.go:1363-1392`, `RemoveCommand`:\n\n- Sets each removed child’s `command.parent = nil` (`command.go:1369`).\n- Replaces the parent’s `c.commands` slice with the retained children (`command.go:1375`).\n- Resets and recomputes the parent’s layout-length caches: `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen` (`command.go:1377-1392`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16451,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":113,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-8dac-7631-8bb0-579c4ee143a1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It produces default reStructuredText hyperlink markup:\n\n```text\n`name <ref.rst>`_\n```\n\nEvidence: `doc/rest_docs.go`, lines 52–54, symbol `defaultLinkHandler`:\n\n```go\nreturn fmt.Sprintf(\"`%s <%s.rst>`_\", name, ref)\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":16511,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":68,"reasoning_output_tokens":0}}

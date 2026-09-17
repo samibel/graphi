@@ -1,0 +1,5 @@
+`maximumNArgsWithMoreArgs` is a test helper in `args_test.go:77-86`. It verifies that:
+
+- `err` is non-nil, otherwise calls `t.Fatal("Expected an error")`.
+- `err.Error()` exactly equals `"accepts at most 2 arg(s), received 3"`.
+- A mismatch triggers `t.Fatalf("Expected %q, got %q", expected, got)`.

@@ -1,0 +1,2 @@
+- **`GenYamlTreeCustom`** accepts both `filePrepender` and `linkHandler`, each of type `func(string) string` (`doc/yaml_docs.go:59–60`). It writes `filePrepender(filename)` before generating the YAML and passes `linkHandler` to `GenYamlCustom` (`doc/yaml_docs.go:78–81`).
+- **`GenYamlCustom`** accepts only the link-rewriting callback, `linkHandler func(string) string`, alongside the command and output writer (`doc/yaml_docs.go:92–93`).

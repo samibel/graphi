@@ -153,7 +153,7 @@ func classifyGate(err error) GateState {
 // deleting a gate would delete the requirement with it. AC-5 exists precisely
 // because a gate that silently stops running is invisible. TestDefaultGates...
 // in policy_test.go keeps the declaration and the producer in step.
-var requiredGates = []string{"bench-budget", "coverage", "privacy", "testgate"}
+var requiredGates = []string{"bench-budget", "coverage", "privacy", "retrieval-targets", "testgate"}
 
 // GateOutcome is one constituent gate's answer, its state, and what this
 // context did about it.

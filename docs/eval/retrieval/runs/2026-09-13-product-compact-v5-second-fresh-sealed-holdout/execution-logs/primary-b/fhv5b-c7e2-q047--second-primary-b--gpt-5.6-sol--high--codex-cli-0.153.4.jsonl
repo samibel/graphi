@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b60-7ef8-7d70-bd93-f6521a8a8d24"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The README describes two flag scopes:\n\n- Persistent flags, inherited by child commands.\n- Local flags, available only to the command that defines them.\n\nIt says Cobra supports fully POSIX-compliant flags and Go’s standard [`flag` package](https://golang.org/pkg/flag/). Evidence: `README.md:67–74`, especially “flags that persist through to children commands” and “flags that are only available to that command.”"}}
+{"type":"turn.completed","usage":{"input_tokens":16565,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":93,"reasoning_output_tokens":0}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q006",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "2df29377b149e99608fa6dcb694c4835ef6866dc926e70066d962f91ade5e826",
+  "bundle_sha256": "c91363897fda66d25408243c4536be78e6ab71afb501c740b299fbaf0848e751",
+  "prompt_sha256": "c06caec8ff5e5cbe2cdd308aa1cb1cfd07822fa9f9393e8a847bc2f6a4c061df",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `completions.go:162-191`, `ShellCompDirective.string`:\n\n- Combined values render as the enabled symbolic names joined with `\", \"`, in this fixed order: `Error`, `NoSpace`, `NoFileComp`, `FilterFileExt`, `FilterDirs`, `KeepOrder`.\n- A value with no recognized flags renders `\"ShellCompDirectiveDefault\"`.\n- Any value `\u003e= shellCompDirectiveMaxValue` renders `ERROR: unexpected ShellCompDirective value: \u003cdecimal value\u003e` via `fmt.Sprintf`.\n\nThe range check occurs after collecting/defaulting names, but its error string overrides that result.",
+  "responded_at": "2026-09-13T12:31:22Z",
+  "sha256": "05457d1920e11e9ea1ed1399f4c4f0231867e0e0c1e1420bd3c26cb18160fcec"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65d-d756-7a73-a7d7-c363edffa224"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `(*Command).InitDefaultHelpFlag`, usage starts as `\"help for \"`:\n\n- **Named command:** appends `c.Name()`, producing `\"help for <name>\"`.\n- **Unnamed command** (`c.Name() == \"\"`): appends `\"this command\"`, producing `\"help for this command\"`.\n\nThe text is passed to `c.Flags().BoolP(\"help\", \"h\", false, usage)`. This happens only if no `help` flag already exists after merging persistent flags. Evidence: `command.go`, lines 1186–1195."}}
+{"type":"turn.completed","usage":{"input_tokens":17393,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":122,"reasoning_output_tokens":0}}

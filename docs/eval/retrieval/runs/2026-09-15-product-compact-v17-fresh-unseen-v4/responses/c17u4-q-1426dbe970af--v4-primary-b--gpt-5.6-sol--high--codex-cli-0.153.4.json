@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1426dbe970af",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "deab4a4cd01353181b382f61d9a66cdb48eb4947d3544ddc77b2ee17375d97dd",
+  "bundle_sha256": "2101d22b06095131038ba60b0286d631ce81fb781ba29e34e2d69ac27ebd1adc",
+  "prompt_sha256": "5b6aeb0274f50c7d47639ea75d2af235c0f3a8ef83e161ebcec799a9c5528d9b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "After detaching selected children by setting each removed child’s `parent` to `nil`, `RemoveCommand` repairs the parent’s cached command-length state. It rebuilds `c.commands`, resets `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen` to zero, then recomputes them from the remaining children (`command.go:1362–1392`).",
+  "responded_at": "2026-09-15T20:24:41Z",
+  "sha256": "810eb88f780ee98635454ca3db4c9cbead8c4076c8d6e109025503f93118454b"
+}

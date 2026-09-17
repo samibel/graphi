@@ -1,0 +1,1 @@
+INSUFFICIENT The response only shows the signature and opening comment of `getCompletions` (`completions.go:266–267`), omitting the logic that selects between a flag completion function and `ValidArgsFunction`.

@@ -1,0 +1,1 @@
+`ExactValidArgs` returns an error unless there are exactly `n` positional arguments and every positional argument appears in the command’s `ValidArgs` field (`args.go:125-131`). Its deprecation note recommends replacing it with `MatchAll(ExactArgs(n), OnlyValidArgs)`.

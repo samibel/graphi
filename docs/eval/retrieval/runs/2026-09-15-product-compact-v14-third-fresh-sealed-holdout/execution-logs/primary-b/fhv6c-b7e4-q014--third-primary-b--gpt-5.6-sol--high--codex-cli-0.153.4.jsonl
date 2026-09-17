@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-f526-7591-825c-4da02bf4a90c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`bash_completionsV2_test.go`:\n\n- Belongs to package `cobra` ([line 15]).\n- Declares `TestBashCompletionV2WithActiveHelp` ([lines 23–33]).\n- The test creates a `Command`, generates Bash V2 completion with active help enabled, and verifies the output does not contain `<activeHelpEnvVar>=0` using `checkOmit`."}}
+{"type":"turn.completed","usage":{"input_tokens":15885,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":147,"reasoning_output_tokens":57}}

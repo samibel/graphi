@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 27,
+  "previous_sha256": "ce2589726eb84feffd64662853a5e70f44b880b5ac2a54718ff56cbf42b222fd",
+  "kind": "response",
+  "query_id": "ci-1133",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "dd0c378046e16d01f24ea4a0fe624e3296112437da191c59af3315947fb663ff",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `Flag` on the executing `*Command`:\n\n```go\nf := cmd.Flag(\"flag-name\")\nif f == nil {\n    // flag not found\n}\n```\n\n`(*Command).Flag(name)` first checks `c.Flags().Lookup(name)`, then searches persistent flags up the command tree (`command.go:1794–1803`). `ExecuteC` also returns the command that executed as `cmd *Command` (`command.go:1052`).",
+  "sha256": "6b417e9542bd4b410b653604584ba58b173232ebce5ec3c90bc9dbdcd106ac9b"
+}

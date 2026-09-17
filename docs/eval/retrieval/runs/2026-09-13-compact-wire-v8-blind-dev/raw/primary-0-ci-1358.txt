@@ -1,0 +1,7 @@
+Define the flags first, then pass their names to:
+
+```go
+cmd.MarkFlagsMutuallyExclusive("flag-a", "flag-b")
+```
+
+`flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)`. It looks up every name with `c.Flags().Lookup(v)` and panics if a flag is undefined (`flag_groups.go:67-71`). When more than one flag in the set is supplied, Cobra reports an error (`flag_groups.go:63-64`). Each call creates a separate group, so a flag may belong to multiple mutually exclusive groups (`flag_groups.go:72-73`).

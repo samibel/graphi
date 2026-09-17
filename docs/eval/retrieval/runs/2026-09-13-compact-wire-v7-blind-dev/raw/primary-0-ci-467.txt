@@ -1,0 +1,3 @@
+Yes—if the root command sets `TraverseChildren` to `true` (`command.go:225`). Execution then uses `c.Traverse(args)` instead of `c.Find(args)` (`command.go:1087-1092`).
+
+`Traverse` collects flags—including their values—while scanning arguments, parses them on the parent with `c.ParseFlags(flags)`, and then descends into the detected subcommand (`command.go:793-825`). The response does not establish support for arbitrary positional args between the root and subcommand; an unrecognized non-flag causes `Traverse` to return the current command (`command.go:817-819`).

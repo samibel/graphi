@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Execute()` delegating to `ExecuteC()` (`command.go:1035–1041`), `ExecuteC()` calling `cmd.execute(flags)` (`command.go:1115`), flag parsing (`command.go:874–892`), and `PreRun[E] → validation → Run[E] → PostRun[E]` (`command.go:967–995`), but omits command resolution and persistent Run-hook execution logic.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 61,
+  "previous_sha256": "6cf829554f4a0978e6e7a76daf8e7bec138eacba4c00a4ef3fe8d67a748aae0e",
+  "kind": "response",
+  "query_id": "ci-943",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "23157b4a47fef3da60c1f2f48b661eae816fea96f287de608402fcb46cad26f6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The likely cause is that `Command.Version` is empty: `InitDefaultVersionFlag` immediately returns in that case. Set the command's `Version` field to a nonempty value. Cobra then creates `--version` automatically unless a flag with that name already exists; it adds `-v` only if that shorthand is available (`command.go:1200-1225`).",
+  "sha256": "7ddd0d41fb93b2a7a702f0161d2e546f605273e0b580a0986122c0fe46a95ead"
+}

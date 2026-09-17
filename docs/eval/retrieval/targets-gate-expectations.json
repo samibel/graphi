@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "story": "SW-282",
+  "note": "SW-282 recorded per-target verdict of docs/eval/retrieval-targets.json against the committed gate report. The compact-v17 candidate reaches the architecture_flow target and exact_identifier Top-1 floor, while its valid independent qrel-blind holdout recorded RELEASE: NO at 47/64 against k=56. That remaining miss is recorded here, not fixed and not excepted: the release-gate retrieval-targets runner remains RED until a future candidate passes a new independent holdout. TestTargets_GateVerdictMatchesCheckedInExpectations fails on drift in EITHER direction — a target that starts passing must be recorded here deliberately.",
+  "targets_file_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+  "result": {
+    "targets_file": "docs/eval/retrieval-targets.json",
+    "report": "docs/eval/retrieval/runs/2026-09-15-compact17-release-dev/cobra-v2-dev-report.json",
+    "report_sha256": "556e93fcbccefb392fd32f620d67614a9cbb95cfb0f87bd54aa445b2ee01b70e",
+    "candidate_sha": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "baseline": "semantic_first",
+    "checks": [
+      {
+        "name": "nl_behaviour fusion_target",
+        "kind": "fusion_target",
+        "required": "semantic_first ndcg@10 >= 0.54497025306999103 (best semantic_name_only 0.44497025306999105 + min_delta 0.10, ceiling 1)",
+        "observed": "0.70290472235070689",
+        "met": true
+      },
+      {
+        "name": "architecture_flow fusion_target",
+        "kind": "fusion_target",
+        "required": "semantic_first ndcg@10 >= 0.4578575262772977 (best semantic_name_only 0.35785752627729767 + min_delta 0.10, ceiling 1)",
+        "observed": "0.46246715228468249",
+        "met": true
+      },
+      {
+        "name": "exact_identifier no_regression",
+        "kind": "no_regression",
+        "required": "semantic_first top1 >= 1 (best single baseline semantic_name_only)",
+        "observed": "1",
+        "met": true
+      },
+      {
+        "name": "bundle_coverage",
+        "kind": "bundle_coverage",
+        "required": "6 of 6 queries covered, at most 0 miss(es), at token budget 1200",
+        "observed": "6 of 6 covered (docs/eval/retrieval/runs/2026-09-15-compact17-release-coverage-dev/measurement.json)",
+        "met": true
+      },
+      {
+        "name": "qrel_blind_smoke",
+        "kind": "qrel_blind_smoke",
+        "required": "qrel-blind smoke evaluation outcome present and RELEASE: YES",
+        "observed": "RELEASE: NO (47 of 64 passed against a pre-registered k=56)",
+        "met": false,
+        "detail": "the smoke evaluation recorded RELEASE: NO. There is no override: the reviewed pass count is 47 of 64, below the pre-registered k=56 (reviewed 47, corrected 47, and the release is decided on the smaller); there is no override, exception or waiver"
+      }
+    ],
+    "miss_count": 1,
+    "first_miss": "qrel_blind_smoke"
+  }
+}

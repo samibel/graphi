@@ -1,0 +1,1 @@
+FAIL: The response does not answer the question. The preserved bundle contains only CONTRIBUTING.md’s heading and Slack guidance, omitting the bug-report requirements and feature-request explanation needed for a substantive answer.

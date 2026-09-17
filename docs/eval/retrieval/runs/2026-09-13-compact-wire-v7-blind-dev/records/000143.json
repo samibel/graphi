@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 143,
+  "previous_sha256": "a1e83a31b7cdf54c50e7dc420b545217677a565479f4273b41b5ecb548b4a362",
+  "kind": "grade",
+  "query_id": "ci-511",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "157600c681faddf5b2fac4b2130b4fb7385b1e3c5a68e17f2ca8e9a5f90d8bca",
+  "outcome": "pass",
+  "rationale": "The candidate correctly states that package init() runs before command-line parsing, supported by `command.go:883–898` showing `c.ParseFlags(a)` during execution. It correctly recommends `OnInitialize` (`cobra.go:97–101`), whose callbacks run through `preRun()` (`command.go:1015–1019`) after parsing, as shown by the later `c.preRun()` call at `command.go:926`. It also gives a supported access mechanism: `cmd.Flag(\"name\")`, which checks local flags and then persistent flags via `c.persistentFlag(name)` (`command.go:1794–1803`). The answer is concrete, correct, and fully supported by the preserved bundle.\n",
+  "sha256": "7b5014e94144bfce19aac83918d5d9cbe61380689ab43f12d3efabfb70be954d"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-4329-7e03-9000-6105cd4ffb86"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`UseLine` appends `\" [flags]\"` when:\n\n- `DisableFlagsInUseLine` is false,\n- `c.HasAvailableFlags()` is true, meaning there are non-hidden, non-deprecated local or inherited persistent flags, and\n- the usage line does not already contain `\"[flags]\"`.\n\nEvidence: `command.go:1436-1450` (`UseLine`) and `command.go:1770-1775` (`HasAvailableFlags`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16571,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":0}}

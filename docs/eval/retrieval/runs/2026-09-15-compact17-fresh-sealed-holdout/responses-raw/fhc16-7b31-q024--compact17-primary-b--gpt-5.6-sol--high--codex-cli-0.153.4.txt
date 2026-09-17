@@ -1,0 +1,7 @@
+Call `SetHelpCommand` on the parent/root command, passing your replacement command:
+
+```go
+cmd.SetHelpCommand(customHelpCmd)
+```
+
+Evidence: `site/content/user_guide.md:538-551` says help is “a command like any other” and lists `cmd.SetHelpCommand(cmd *Command)` under “Defining your own help.” Also, `command.go:1067-1068` says default help is initialized last “to allow for user overriding.”

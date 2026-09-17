@@ -1,0 +1,1 @@
+FAIL: The response does not answer the verified help behavior. The bundle contains no test or assertion showing that the combined shorthand form is absent while `--version` remains when `-v` is already owned.

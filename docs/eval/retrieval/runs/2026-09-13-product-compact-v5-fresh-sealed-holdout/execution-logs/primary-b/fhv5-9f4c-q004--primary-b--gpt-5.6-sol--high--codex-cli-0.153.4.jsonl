@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-e603-7dc1-b32e-f76f9b68f68c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`FixedCompletions` returns a closure with signature:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n```\n\nThe closure ignores all three arguments and always returns the captured `choices` slice and `directive` value passed to `FixedCompletions` (`completions.go`, lines 123–130):\n\n```go\nreturn choices, directive\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":16383,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":90,"reasoning_output_tokens":0}}

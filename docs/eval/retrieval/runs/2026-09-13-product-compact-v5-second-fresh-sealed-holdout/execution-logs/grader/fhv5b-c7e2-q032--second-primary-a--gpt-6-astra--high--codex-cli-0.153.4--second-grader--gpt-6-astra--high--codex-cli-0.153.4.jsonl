@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6c-670a-7c22-959c-5c4f39689011"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the preserved CommandPath implementation: roots use the display-name annotation when present, otherwise Name(); descendants recursively append a space and their Name(), inheriting the custom root display name while bypassing their own annotations. Both cited ranges exist and support the claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18373,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":60,"reasoning_output_tokens":0}}

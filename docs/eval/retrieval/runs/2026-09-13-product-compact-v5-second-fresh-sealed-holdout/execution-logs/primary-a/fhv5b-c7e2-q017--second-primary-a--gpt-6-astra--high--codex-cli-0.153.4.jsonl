@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-45a3-7b61-a299-5010aad40ee9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When `c.flagErrorFunc` is nil, `FlagErrorFunc()` recursively asks the parent via `c.parent.FlagErrorFunc()` if `c.HasParent()` (`command.go:505–506`). This finds the nearest ancestor with a handler. If none exists, it returns a default handler that returns the original error unchanged (`command.go:508–509`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17577,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

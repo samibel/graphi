@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-6d20-7953-8faf-87c6a5b01aa7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`AppendActiveHelp` appends one string: `activeHelpMarker` immediately followed by `activeHelpStr`, with no added separator, and returns the resulting slice:\n\n```go\nreturn append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))\n```\n\nThis preserves earlier completion entries in their existing order (`active_help.go:42–44`). The comments explicitly allow calls before or after adding completions and say successive ActiveHelp lines appear below previous ones (`active_help.go:38–41`). The marker’s literal value is not included in the response."}}
+{"type":"turn.completed","usage":{"input_tokens":17320,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":122,"reasoning_output_tokens":0}}

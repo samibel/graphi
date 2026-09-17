@@ -1,0 +1,1 @@
+PASS: The response accurately identifies command_test.go:70–72 and explains that the helper replaces pflag.CommandLine with a new flag set using os.Args[0] and pflag.ExitOnError, exactly as preserved in the transcript.

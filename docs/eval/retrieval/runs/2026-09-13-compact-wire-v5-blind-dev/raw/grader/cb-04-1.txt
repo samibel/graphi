@@ -1,0 +1,1 @@
+PASS: The callback signature and registration behavior are accurately and sufficiently described from the bundled completions.go implementation.

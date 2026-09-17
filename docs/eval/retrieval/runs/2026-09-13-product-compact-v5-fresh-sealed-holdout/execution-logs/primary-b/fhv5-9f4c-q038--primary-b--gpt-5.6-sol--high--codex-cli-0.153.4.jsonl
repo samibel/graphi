@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac4-031b-7323-98f6-2f6a75165256"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows flag lookup and completion-function registration in `command.go:1794-1803` and `completions.go:131-160`, but omits the code that resolves the target command, prepares parsing, and interprets file/directory annotations."}}
+{"type":"turn.completed","usage":{"input_tokens":16505,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":46}}

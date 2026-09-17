@@ -1,0 +1,7 @@
+Call `SetUsageTemplate` on your command with your template string:
+
+```go
+cmd.SetUsageTemplate(myTemplate)
+```
+
+This is documented in `site/content/user_guide.md:583-591`. The implementation stores the string in `Command.usageTemplate` (`command.go:311-314`), and the default `UsageFunc` renders `c.UsageTemplate()` (`command.go:424-441`).

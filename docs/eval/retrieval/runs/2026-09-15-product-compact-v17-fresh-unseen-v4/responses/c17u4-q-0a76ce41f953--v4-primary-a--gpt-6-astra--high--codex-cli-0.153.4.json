@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0a76ce41f953",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "3cb3bc41fa67614e5b2fa1f3ceed9bc1c7a02efbb6f7d43a512bd49784cf7fc9",
+  "bundle_sha256": "838a3212d6b559d7820e04f34e6c57d06c7fb2e1c7015779253e306f3eeb02ff",
+  "prompt_sha256": "328c58c935206cff5d8cb100bd8c1cbe642d771d065ebfb6e425fddecf870ebf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `completions.go`, `ShellCompDirective.string()` (lines 163–191):\n\n- **Combined flags:** Collects enabled flag names in this order: `ShellCompDirectiveError`, `ShellCompDirectiveNoSpace`, `ShellCompDirectiveNoFileComp`, `ShellCompDirectiveFilterFileExt`, `ShellCompDirectiveFilterDirs`, `ShellCompDirectiveKeepOrder` (lines 165–182), then joins them with `\", \"` (line 190).\n- **Default:** If no recognized flags are enabled, uses `\"ShellCompDirectiveDefault\"` (lines 183–185).\n- **Out of range:** If `d \u003e= shellCompDirectiveMaxValue`, returns `\"ERROR: unexpected ShellCompDirective value: %d\"` with `d` formatted as a decimal integer, overriding the collected names (lines 187–189).",
+  "responded_at": "2026-09-15T20:23:37Z",
+  "sha256": "56581643b1cf6c6f75b9004de3a690e57696e6fde6d04905d647b4ba19085378"
+}

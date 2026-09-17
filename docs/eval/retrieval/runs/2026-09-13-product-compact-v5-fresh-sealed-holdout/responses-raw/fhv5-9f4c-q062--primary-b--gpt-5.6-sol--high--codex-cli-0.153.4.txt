@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits most of `IsAdditionalHelpTopicCommand` (`command.go:1583–1590`) and the definition of `IsAvailableCommand`, so the distinguishing criteria cannot be determined.

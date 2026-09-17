@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-8894-7e62-bb1a-5af2a4ff7edf"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The cited command.go:478–495 span redirects both normal and error writers to the same bytes.Buffer during Usage(), then returns its contents, supporting preservation of the relative order of writes."}}
+{"type":"turn.completed","usage":{"input_tokens":18184,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":74,"reasoning_output_tokens":29}}

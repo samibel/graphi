@@ -1,0 +1,1 @@
+FAIL: The bundle only supplies the enforcement summary comments and group-state helper, not the enforcement body or its completion caller. The response also omits required-together groups, so it is not a complete, byte-supported explanation of how all flag groups are enforced during completion.

@@ -1,0 +1,3 @@
+`OnInitialize` appends all supplied callbacks to the `initializers` slice, preserving their order and retaining callbacks registered by earlier calls (`cobra.go:99–100`, `initializers = append(initializers, y...)`).
+
+`Command.preRun` then invokes each callback sequentially in that order (`command.go:1015–1019`, `for _, x := range initializers { x() }`). The comment documents that they run when each command’s `Execute` method is called (`cobra.go:97–98`).

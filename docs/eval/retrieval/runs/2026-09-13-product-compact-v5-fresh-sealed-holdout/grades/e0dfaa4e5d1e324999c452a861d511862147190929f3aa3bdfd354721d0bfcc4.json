@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q036",
+  "response_sha256": "e0dfaa4e5d1e324999c452a861d511862147190929f3aa3bdfd354721d0bfcc4",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly describes local-first, recursive parent help resolution; default persistent-flag merging and rendering through OutOrStdout(); template-error reporting via PrintErrln; and Help() invoking the resolved function with empty arguments and returning nil. Both cited ranges exist and support these claims.",
+  "graded_at": "2026-09-13T12:51:47Z",
+  "sha256": "87ac2bd27347ae3d8a35d954df0a0f20f8423bb8f5ffcde0a0ed73b69c974dc6"
+}

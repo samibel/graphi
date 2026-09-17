@@ -163,14 +163,16 @@ func sources() structReader {
 // module's own retriever is a private struct, so the test seam is a hand-rolled
 // Retriever that hands back rows + a degradation label the engine consumed.
 type stubRetriever struct {
-	state    string
-	rows     []resolve.RetrieverRow
-	strategy string
-	calls    int
+	state     string
+	rows      []resolve.RetrieverRow
+	strategy  string
+	calls     int
+	lastLimit int
 }
 
 func (s *stubRetriever) Retrieve(ctx context.Context, req resolve.RetrieverRequest) (resolve.RetrieverResult, error) {
 	s.calls++
+	s.lastLimit = req.Limit
 	return resolve.RetrieverResult{
 		Rows:        s.rows,
 		Degradation: s.state,

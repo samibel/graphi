@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 3,
+  "previous_sha256": "9435ae99fc54d8e9e6da2ba589ec3661c2505c22d8e6ffa4f99f7e76f3f0267a",
+  "kind": "response",
+  "query_id": "cb-03",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "28fa95de07e2cf2b5f8b460d8b8ed9b5489406c3eebf57fb3d9141630502368d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GenMarkdownTree(cmd, dir)` generates Markdown files for a Cobra command and all available descendants in `dir` (`doc/md_docs.go:119-129`). It delegates to:\n\n```go\nGenMarkdownTreeCustom(cmd, dir, emptyStr, identity)\n```\n\nThus, it adds no file preamble and leaves links unchanged.\n\n`GenMarkdownTreeCustom` recursively skips unavailable commands and additional help topics, names each file from `cmd.CommandPath()` with spaces replaced by underscores plus `.md`, creates it under `dir`, writes the optional preamble, then calls `GenMarkdownCustom` (`doc/md_docs.go:131-158`; extension defined at `doc/md_docs.go:30`).\n\nThe comments warn that command names containing `-` can cause filename collisions or undefined output (`doc/md_docs.go:119-125`).",
+  "sha256": "ffa757a6d67a7159e4b4476ad08cad5ab6b1e89fb359cb482ff331bbf2af44a6"
+}

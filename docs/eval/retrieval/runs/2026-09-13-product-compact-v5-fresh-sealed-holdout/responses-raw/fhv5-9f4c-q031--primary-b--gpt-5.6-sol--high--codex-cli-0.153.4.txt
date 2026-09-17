@@ -1,0 +1,8 @@
+Excluded commands are:
+
+- Deprecated commands (`len(c.Deprecated) != 0`)
+- Hidden commands (`c.Hidden`)
+- The parent’s configured help command (`c.Parent().helpCommand == c`)
+- Non-runnable commands with no available subcommands
+
+Evidence: `Command.IsAvailableCommand` in `command.go:1560–1576` returns `false` for the first three categories and returns `true` only when `c.Runnable()` or `c.HasAvailableSubCommands()` is true.

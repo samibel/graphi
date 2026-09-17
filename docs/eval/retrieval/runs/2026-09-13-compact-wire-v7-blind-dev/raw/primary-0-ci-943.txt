@@ -1,0 +1,1 @@
+`--version` does not work because the root command’s `Version` field is empty. Cobra only adds the flag when that field is non-empty: `site/content/user_guide.md:590` says it “adds a top-level '--version' flag if the Version field is set,” and `command.go:1202-1203` confirms `InitDefaultVersionFlag` does nothing when `c.Version` is empty.

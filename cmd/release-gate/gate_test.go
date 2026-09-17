@@ -20,10 +20,11 @@ func (r staticRunner) Run() (float64, error) { return r.score, r.err }
 
 func allPassGates() map[string]Runner {
 	return map[string]Runner{
-		"testgate":     staticRunner{score: 100},
-		"coverage":     staticRunner{score: 100},
-		"privacy":      staticRunner{score: 100},
-		"bench-budget": staticRunner{score: 100},
+		"testgate":          staticRunner{score: 100},
+		"coverage":          staticRunner{score: 100},
+		"privacy":           staticRunner{score: 100},
+		"bench-budget":      staticRunner{score: 100},
+		"retrieval-targets": staticRunner{score: 100},
 	}
 }
 

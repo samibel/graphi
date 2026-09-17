@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 117,
+  "previous_sha256": "d867a30932c5fe4f68c7467f2dc9e88c36965997d42f25037f52ea1124dfc16f",
+  "kind": "grade",
+  "query_id": "cb-32",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "10840b14c7a50094c4e7e1d71af190de8c19a54757b5d83a435508c3a3902df0",
+  "outcome": "pass",
+  "rationale": "command.go:1030-1041 preserves Execute's exact implementation and documentation plus ExecuteContext's context assignment and delegation.\n",
+  "sha256": "00f2158967f6fa364f5246fb9a9ac5773aa29e338c80ae97f426f9448d468256"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 55,
+  "previous_sha256": "0ab22d8d13f964abda30233fcd1ee576c557514920dd2620bf5a6c2432306f80",
+  "kind": "response",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "5b235bc7dc36a2f319f56f387d313fc4e3b12f0d0db333ba9cb96c8bbce3eb5e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Persistent flags are stored separately on each command by `PersistentFlags` (`command.go:1725-1735`). Before a command needs its complete flags, `mergePersistentFlags` calls `updateParentsPflags`, then adds both its own persistent set and the accumulated parent-persistent set to `c.Flags()` (`command.go:1847-1857`). A named persistent lookup checks the current command first, then refreshes and searches `parentsPflags` (`command.go:1805-1816`).\n",
+  "sha256": "9772c19cb332950ed60f2a3f115403b309adf9134254e230cb5cecb0b68901b9"
+}

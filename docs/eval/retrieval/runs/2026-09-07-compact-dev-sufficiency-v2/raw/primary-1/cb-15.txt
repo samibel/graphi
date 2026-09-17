@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows part of `InitDefaultVersionFlag` (`command.go:1204–1219`) but omits the execution branch that reads the version flag, renders version output, and determines whether command execution continues.

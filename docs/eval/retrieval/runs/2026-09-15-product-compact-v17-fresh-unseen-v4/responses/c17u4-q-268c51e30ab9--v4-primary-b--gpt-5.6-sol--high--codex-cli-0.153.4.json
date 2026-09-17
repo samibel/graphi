@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-268c51e30ab9",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "5dffb91de2a5071d9664e88fc39ed7dd6a6c11565a0ed9111ab4f56df3425ee6",
+  "bundle_sha256": "f67c6b939bdf43bc7517bb038fd878dd52dee58d448a5bb2cd239080c41e0022",
+  "prompt_sha256": "25c84d39669e1a63f6014c45f496e0e0479b866c462299540affbf360e756b2e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra’s `(*Command).IsAdditionalHelpTopicCommand` recursively classifies a command as an additional help topic when:\n\n- The command is not runnable (`Run` and `RunE` are both nil), not deprecated, and not hidden (`command.go:1584-1587`; `Runnable` is defined at `command.go:1551-1553`).\n- Every child in `c.commands` is itself an additional help-topic command. It recursively calls `sub.IsAdditionalHelpTopicCommand()` and returns false upon the first child that fails (`command.go:1589-1594`).\n\nThus, a qualifying command either has no subcommands or has only recursively qualifying help-topic subcommands (`command.go:1596-1597`).",
+  "responded_at": "2026-09-15T20:27:05Z",
+  "sha256": "9f13f4a8356589de7372fd8399fbac50869fa65fa35ea30ef25e455346e59220"
+}

@@ -1,0 +1,14 @@
+The lifecycle is:
+
+1. `Execute()` starts execution (`command.go:1038`) and always runs through the root command, regardless of which command received the call (`command.go:1057`).
+2. It proceeds through `ExecuteC`, resolves the command/flags—accounting for `TraverseChildren` (`command.go:1087`)—then invokes `cmd.execute(flags)` (`command.go:1115`).
+3. `execute` parses flags with `c.ParseFlags(a)` (`command.go:888`).
+4. Persistent pre-run hooks execute:
+   - Normally, the first `PersistentPreRunE` or `PersistentPreRun` found while walking from the selected command toward the root.
+   - With `EnableTraverseRunHooks`, all persistent pre-runs execute root-to-selected-command (`command.go:940-966`; option documented in `cobra.go:64`).
+   - An error from `PersistentPreRunE` stops execution.
+5. The selected command’s local `PreRunE`, or otherwise `PreRun`, executes (`command.go:968-974`). A `PreRunE` error stops execution.
+6. Required flags and flag groups are validated (`ValidateRequiredFlags` and `ValidateFlagGroups`, `command.go:976-982`).
+7. Finally, `RunE` executes if defined; otherwise `Run` executes. A `RunE` error is returned (`command.go:984-989`).
+
+All these hooks receive the selected command `c` and `argWoFlags`, the arguments remaining after flag processing.

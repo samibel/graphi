@@ -1,0 +1,37 @@
+{
+  "schema": "graphi-release-evidence-manifest/1",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v2",
+  "status": "REFUSED_INVALID_RUN",
+  "product_source_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+  "product_source_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+  "curator_commit": "a0bab89f5f0ae2e4f47d1a6a855ca9db933b7552",
+  "operator_static_commit": "6977c8cd172299d8725e44ec622637965098fdd5",
+  "freeze_commit": "e9978eedf64e7ada5b197bbc0abc9fa0a7775e87",
+  "capture_commit": "b8746f4a077b3eb2428c9721c66642981bd6643c",
+  "refusal_commit": "181c0e0f294a32d0a6ca4d372924f49a860c85ac",
+  "artifacts": {
+    "dataset_sha256": "fb7737442cd251c30f6800d557e3b89c600dd0a66374daf53837aa0144d8936c",
+    "curator_preregistration_sha256": "9ab484266eb3657cdadb60848d0cc78c852efa6b6cf269463cb1185e3478cd4e",
+    "operator_handoff_sha256": "9965e7712cef5e2eafaa519c43b4207c5c9293591808b0ab5a91973fb5883e5e",
+    "precondition_record_sha256": "fc16088b5e5183b3c9f8956c8366e0da196c02cac165071d332fab67aad69ff3",
+    "pre_registration_file_sha256": "81247641f802aeef8c22d7a64bf5d89cb84b0109756864c0920b2b958bbdc4d6",
+    "capture_provenance_sha256": "943feea45f7dd579afc1ce9c88cf5c507f9f73149214ce65874bfa125aee582b",
+    "capture_reproducibility_sha256": "e746d818fab92f103e31cc311fec5e27f45665280aa853087e57808d8e4a7213",
+    "operator_attestation_sha256": "d7ff69926a2d8aeb82785df9a8109df66bc65394dedace8fe7cb9aecff6d4e5d",
+    "run_refusal_sha256": "bbbbc56469dd977801fabb10d6a4be956c5c6eef5c3cf97c8a7f39162587d543"
+  },
+  "decision": {
+    "release": null,
+    "pass_count": null,
+    "k": 56,
+    "n": 64,
+    "validity": "INVALID_BEFORE_RATING"
+  },
+  "policy": {
+    "retries": 0,
+    "overwrites": 0,
+    "waivers": 0,
+    "seal_invocations": 0,
+    "decide_invocations": 0
+  }
+}

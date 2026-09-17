@@ -1,0 +1,7 @@
+Call `cmd.SetUsageTemplate` with your template string:
+
+```go
+cmd.SetUsageTemplate("Usage: myapp [options]\n")
+```
+
+The guide documents this method in `site/content/user_guide.md:583–591`. Its implementation stores the string in `c.usageTemplate` (`command.go:311–314`), and the default usage function renders `c.UsageTemplate()` with the command as template data (`command.go:424–441`).

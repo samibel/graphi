@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac7-545a-7c53-a9b9-eccf95484e02"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response omits the inherited-only view’s name-collision handling; `command.go:1700–1701` only shows initialization of `c.iflags`."}}
+{"type":"turn.completed","usage":{"input_tokens":17459,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":102,"reasoning_output_tokens":59}}

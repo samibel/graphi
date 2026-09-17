@@ -1,0 +1,51 @@
+{
+  "status": "development_diagnostic_not_release",
+  "dataset": {
+    "path": "../2026-09-06-sw282-gate-local/dataset.json",
+    "sha256": "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c",
+    "records": 44,
+    "grade3_answerable": 40,
+    "holdout_used": false
+  },
+  "budget": {
+    "snippet_tokens": 1200,
+    "changed": false
+  },
+  "before": {
+    "artifact": "../2026-09-06-bundle-selection-dev/bundles-after.json",
+    "sha256": "0ff12e789d34f9dc83c81cf978d792413b930473c2f6a78890d83372e5ca9287",
+    "overlap_queries": 36,
+    "complete_queries": 33,
+    "all_grade3_spans_complete_queries": 21,
+    "complete_spans": 39,
+    "grade3_spans": 63,
+    "mean_snippet_whitespace_tokens": 1107.6,
+    "mean_complete_mcp_cl100k_tokens": 8018.55
+  },
+  "after": {
+    "artifact": "bundles-after.json",
+    "sha256": "99e27862c8af1716fec566e16452a281e870fede441a88f2a63f6c51e919f1fe",
+    "independent_builds": 2,
+    "byte_identical_queries": 44,
+    "overlap_queries": 37,
+    "complete_queries": 34,
+    "all_grade3_spans_complete_queries": 21,
+    "complete_spans": 40,
+    "grade3_spans": 63,
+    "mean_snippet_whitespace_tokens": 1112.1,
+    "mean_complete_mcp_cl100k_tokens": 8026.975,
+    "source_miss_query_ids": ["ci-511", "ci-678", "ci-1222"]
+  },
+  "ranking_after": {
+    "artifact": "after/cobra-v2-dev-report.json",
+    "sha256": "e3898c752bb064edd453e213982444815ce608ceb77957c1ae041c655886d50d",
+    "semantic_first_architecture_flow_ndcg_at_10": 0.4624671522846825,
+    "architecture_required": 0.4578575262772977,
+    "semantic_first_nl_behaviour_ndcg_at_10": 0.7029047223507069,
+    "semantic_first_exact_identifier_top1": 1,
+    "semantic_first_overall_ndcg_at_10": 0.564549176764203,
+    "semantic_first_overall_top1": 0.5365853658536586,
+    "aggregate_metrics_reproduced": 761,
+    "aggregate_discrepancies": 0
+  }
+}

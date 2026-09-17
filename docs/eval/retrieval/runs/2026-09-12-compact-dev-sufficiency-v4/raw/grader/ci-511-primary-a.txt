@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-511:primary-a
+Outcome: fail
+Rationale: Response begins exactly INSUFFICIENT; bundle lacks the ParseFlags-to-OnInitialize/preRun ordering and parsed-value access needed to answer initialization-time flag access.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac4-3c50-7f42-a7e9-abb0a628125f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response includes only the `AddCommand` declaration at `command.go:1302-1303`, not its implementation showing parent linkage, layout metadata, normalization, or sorting-state changes."}}
+{"type":"turn.completed","usage":{"input_tokens":16497,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":46,"reasoning_output_tokens":0}}

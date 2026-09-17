@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 31,
+  "previous_sha256": "0086d9d3081db3ee2ddb32f2e93977e52e66203e9feaf293b0cb02569b25eb8e",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "e89b97088fbe237e223db0e5374e1211b7f23e980eae81feeaecdf7c3fa62e34",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows `Flag` and `InheritedFlags` signatures (`command.go:1795`, `command.go:1696–1697`) but omits how global flags are registered or inherited and how to retrieve their values from a subcommand.\n",
+  "sha256": "8a58fb58af38d5ad805c9cc23f018c47eac4b0f33bdbc5654dbbe49feee6317e"
+}

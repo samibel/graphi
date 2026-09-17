@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the deprecated compatibility behavior: assigning the same writer to usage output (`c.outWriter`) and error output (`c.errWriter`). Its documented nil fallback and citations are supported by the preserved `command.go` span.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-232a-7e73-8bba-c44d38758e64"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies `ShellCompDirective` as an `int` bitmap for shell-completion behavior, supported by `completions.go:41–43`. Its flag list, string formatting, invalid-value handling, and Error/NoSpace descriptions are supported by the cited transcript spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17970,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":20}}

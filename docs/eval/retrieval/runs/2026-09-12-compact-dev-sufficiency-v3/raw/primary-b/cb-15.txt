@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows how InitDefaultVersionFlag creates the flag, but omits the code that handles a supplied version flag and produces version output.

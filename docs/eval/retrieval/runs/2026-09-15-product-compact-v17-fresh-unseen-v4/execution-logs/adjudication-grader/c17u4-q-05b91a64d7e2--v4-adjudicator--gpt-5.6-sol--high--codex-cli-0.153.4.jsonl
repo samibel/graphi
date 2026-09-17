@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6db-4a71-7332-a567-8cf37fc4ea36"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes both branches: usable shorthand is included positionally with the raw default and formatted usage; absent or deprecated shorthand is omitted, and the default is also normalized with forceMultiLine. Its citations resolve within the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17784,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":113,"reasoning_output_tokens":58}}

@@ -1,0 +1,1 @@
+FAIL: It addresses parent flags with TraverseChildren but omits the other half of the question: a positional argument cannot precede the subcommand because the first non-flag token is used for lookup.

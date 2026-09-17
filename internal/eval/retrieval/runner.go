@@ -630,20 +630,15 @@ func buildSearchArtifacts(ctx context.Context, root string, store graphstore.Gra
 		return searchArtifacts{}, fmt.Errorf("retrieval-eval: generation store reopen: %v (SW-263 fail-closed)", rerr)
 	}
 	defer func() { _ = reloadStore.Close() }()
-	fp := embed.Fingerprint{
-		ModelID:         emb.ID(),
-		Dim:             emb.Dim(),
-		DocumentSchema:  embed.DocumentSchema,
-		GraphGeneration: graphGen,
-	}
+	fp := embed.FingerprintFor(emb, graphGen)
 	if fp.Dim == 0 {
 		if d, ok, derr := reloadStore.DimForModel(ctx, emb.ID()); derr == nil && ok {
 			fp.Dim = d
 		}
 	}
-	gen, _, aerr := reloadStore.Active(ctx, fp, nil)
-	if aerr != nil || gen.ID == "" {
-		return searchArtifacts{}, fmt.Errorf("retrieval-eval: active generation lookup: aerr=%v (SW-263 fail-closed)", aerr)
+	gen, state, aerr := reloadStore.Active(ctx, fp, nil)
+	if aerr != nil || gen.ID == "" || state != embed.StateReady || gen.Fingerprint.Canonical() != fp.Canonical() {
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: active generation lookup: state=%s aerr=%v (SW-263 fail-closed)", state, aerr)
 	}
 	rows, lerr := reloadStore.Load(ctx, gen.ID)
 	if lerr != nil {

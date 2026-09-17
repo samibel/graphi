@@ -1,0 +1,1 @@
+PASS: The response accurately describes comma-space joining of recognized flags in the preserved order, the default label when no flags are recognized, and the error returned for d >= shellCompDirectiveMaxValue. Its citation resolves to the bundled completions.go:161–191 implementation.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 129,
+  "previous_sha256": "c6d4285c9dd4d8263b346121ad2e1eea9d16e6880c3e3ab38d25f0d1ce3235dd",
+  "kind": "grade",
+  "query_id": "cb-33",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "bb5bead6fd2a840cc80dcfa65627e85915b8c6d044427391a150376b4eb179fd",
+  "outcome": "pass",
+  "rationale": "The answer directly identifies the exact `Command.Flags()` symbol and accurately describes it using `command.go:1641-1653`, whose comment says it returns the complete applicable local and persistent flag set declared by the command and its parents. Its overview of persistent versus command-only flags is supported by `README.md:68-74`, and its descriptions of `LocalFlags()` and `LocalNonPersistentFlags()` are supported by `command.go:1668-1693` and `command.go:1655-1666`, including parent-flag shadowing and filtering persistent flags. The response is concrete and all material claims are supported by the sealed bundle.\n",
+  "sha256": "644a1930fee30554c366a7441edf944ffb8ab2756a65651f809db1b57675c591"
+}

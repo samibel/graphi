@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-530f-7460-a9be-84269d323e4e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes ContainsGroup scanning c.commandgroups, returning true for a matching ID and false otherwise, fully supported by command.go:1346–1354 in the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17847,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

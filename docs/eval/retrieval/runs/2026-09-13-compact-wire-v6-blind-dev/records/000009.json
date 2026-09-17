@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 9,
+  "previous_sha256": "20de1434515bc7d96a27f27381114754a2a4abd7eb49552d440ba4701b7ec63e",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "efa00f356eab3cd065f7d9a49025dc73732a9dfc2eff8c501a15728d388bd359",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` implements Cobra flag-group annotations and validation. It defines annotation keys for required-together, one-required, and mutually-exclusive groups (`flag_groups.go:25-29`), includes helpers such as `hasAllFlags` (`flag_groups.go:111-119`), and reports partially set required groups with their missing flags (`flag_groups.go:144-165`).",
+  "sha256": "4ff68208097c110b6da3da252fa1be868828af0a45ddcfa435cbc492d4504c04"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-ee8d-7d92-aa09-d1989d4ad2e9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Use `GenMarkdown` instead of `GenMarkdownTree`; the latter generates one file for every command in the tree (`site/content/docgen/md.md:29-57`).\n\nFor customized single-command output, use:\n\n```go\nvar out bytes.Buffer\nerr := doc.GenMarkdownCustom(cmd, &out, linkHandler)\n```\n\nIts signature is shown at `site/content/docgen/md.md:72-87`:\n\n```go\nfunc GenMarkdownCustom(\n    cmd *Command,\n    out *bytes.Buffer,\n    linkHandler func(string) string,\n) error\n```\n\nThe generated Markdown is written to `out`."}}
+{"type":"turn.completed","usage":{"input_tokens":16596,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":303,"reasoning_output_tokens":170}}

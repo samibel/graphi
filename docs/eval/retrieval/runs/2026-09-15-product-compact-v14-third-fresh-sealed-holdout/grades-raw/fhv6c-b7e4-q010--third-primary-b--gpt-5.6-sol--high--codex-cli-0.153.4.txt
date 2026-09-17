@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper replacing global `pflag.CommandLine` with a fresh flag set using `os.Args[0]` and `pflag.ExitOnError`, exactly supported by the cited `command_test.go` lines 70–72.

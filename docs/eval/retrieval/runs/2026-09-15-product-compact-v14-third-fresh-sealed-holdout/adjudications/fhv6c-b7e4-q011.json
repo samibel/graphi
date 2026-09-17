@@ -1,0 +1,39 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "query_id": "fhv6c-b7e4-q011",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv6c-b7e4-q011",
+    "rater_id": "third-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+    "query_text_sha256": "5c2582cd27a283fefe4c19ba0573272606d4da04c7c7190991e1edcb458fe05a",
+    "bundle_sha256": "4a9d694ac8a073bb30b02fc16fe86e6cf39315a98c48e2e68e67b19f7f203dcd",
+    "prompt_sha256": "2e0fb90d6ff2979a55d9a9c8a471e7ebbcbcaa3cebb407bb3a96909ac375d4cd",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "`validArgsFunc2` is a shell-completion callback defined in `completions_test.go:40–52`.\n\n- If `args` is non-empty, it returns `nil` with `ShellCompDirectiveNoFileComp`.\n- Otherwise, it filters `\"three\\tThe third\"` and `\"four\\tThe fourth\"` by `strings.HasPrefix(comp, toComplete)`.\n- It returns matching completions with `ShellCompDirectiveDefault`.\n\nIts signature matches `Command.ValidArgsFunction` in `command.go:84–87`:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n```",
+    "responded_at": "2026-09-15T08:36:14Z",
+    "sha256": "7ccd76ce73fa1fd558809c469299e70472cb44c82dd42688f436921d2ffe7210"
+  },
+  "disclosure": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "query_id": "fhv6c-b7e4-q011",
+    "adjudicator_response_sha256": "7ccd76ce73fa1fd558809c469299e70472cb44c82dd42688f436921d2ffe7210",
+    "disclosed_artifact_sha256": [
+      "24e1e5ee248cead61689fa041948fdeab60227c953f827b73092cf6bb27a29ef",
+      "25412240bedbe7e3b7c59fc754a6f5cbc9dc54a123246841652db40a44e0c0a3",
+      "e6d3455da90b6793f1426af0a5e06eeec12836080e29d4286b06fb3743417b9a",
+      "f1007ffac146d1842053fa09a20449c8085ac702675a4fc78915ab7d6ace2a60"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

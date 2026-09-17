@@ -1,0 +1,11 @@
+Set Cobra’s global variable before executing the command:
+
+```go
+cobra.EnableTraverseRunHooks = true
+```
+
+Evidence:
+
+- `cobra.go:64-66` says `EnableTraverseRunHooks` “executes persistent pre-run and post-run hooks from all parents,” and it is disabled by default.
+- `site/content/user_guide.md:690-693` explicitly instructs setting `EnableTraverseRunHooks` to `true`.
+- `command.go:944-945` specifies the order: pre-run hooks execute from the root toward the command; post-run hooks execute from the command toward the root.

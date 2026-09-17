@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how to enable prefix matching for commands
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s) for \"how to enable prefix matching for commands\"; read in order (246/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"cobra.go","start_line":51,"end_line":56,"text":"\n// EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing\n// to automatically enable in CLI tools.\n// Set this to true to enable it.\nvar EnablePrefixMatching = defaultPrefixMatching\n"},{"path":"cobra.go","start_line":60,"end_line":68,"text":"\n// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive\n\n// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.\n// By default this is disabled, which means only the first run hook to be found is executed.\nvar EnableTraverseRunHooks = defaultTraverseRunHooks\n\n// MousetrapHelpText enables an information splash screen on Windows"},{"path":"command.go","start_line":611,"end_line":623,"text":"// ErrPrefix return error message prefix for the command\nfunc (c *Command) ErrPrefix() string {\n\tif c.errPrefix != \"\" {\n\t\treturn c.errPrefix\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.ErrPrefix()\n\t}\n\treturn \"Error:\"\n}\n\nfunc hasNoOptDefVal(name string, fs *flag.FlagSet) bool {"},{"path":"command.go","start_line":357,"end_line":360,"text":"// SetErrPrefix sets error message prefix to be used. Application can use it to set custom prefix.\nfunc (c *Command) SetErrPrefix(s string) {\n\tc.errPrefix = s\n}"},{"path":"command.go","start_line":1524,"end_line":1527,"text":"// hasNameOrAliasPrefix returns true if the Name or any of aliases start\n// with prefix\nfunc (c *Command) hasNameOrAliasPrefix(prefix string) bool {\n\tif strings.HasPrefix(c.Name(), prefix) {"},{"path":"cobra.go","start_line":58,"end_line":59,"text":"// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting"},{"path":"command.go","start_line":1052,"end_line":1053,"text":"func (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {"},{"path":"command.go","start_line":774,"end_line":775,"text":"\t\tif EnablePrefixMatching \u0026\u0026 cmd.hasNameOrAliasPrefix(next) {\n\t\t\tmatches = append(matches, cmd)"},{"path":"command.go","start_line":1362,"end_line":1363,"text":"func (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}"},{"path":"command.go","start_line":1367,"end_line":1367,"text":"\t\t\tif command == cmd {"},{"path":"cobra.go","start_line":52,"end_line":52,"text":"// EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing"}],"provenance":{"input_sha256":"74874efc9add9ef4222dbad69a3686a3cfcdb0c77d949caf7f4a7e41e12059b5","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

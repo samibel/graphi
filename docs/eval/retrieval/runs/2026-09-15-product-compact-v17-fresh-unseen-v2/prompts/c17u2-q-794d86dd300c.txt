@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+In command.go, how is an output writer resolved when the current command has no writer of its own?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query d503006cef0f; read in order (244/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":393,"end_line":412,"text":"\nfunc (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}\n\nfunc (c *Command) getErr(def io.Writer) io.Writer {\n\tif c.errWriter != nil {\n\t\treturn c.errWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getErr(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":279,"end_line":292,"text":"\n// SetOutput sets the destination for usage and error messages.\n// If output is nil, os.Stderr is used.\n// Deprecated: Use SetOut and/or SetErr instead\nfunc (c *Command) SetOutput(output io.Writer) {\n\tc.outWriter = output\n\tc.errWriter = output\n}\n\n// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"},{"path":"command.go","start_line":477,"end_line":495,"text":"\n// UsageString returns usage string.\nfunc (c *Command) UsageString() string {\n\t// Storing normal writers\n\ttmpOutput := c.outWriter\n\ttmpErr := c.errWriter\n\n\tbb := new(bytes.Buffer)\n\tc.outWriter = bb\n\tc.errWriter = bb\n\n\tCheckErr(c.Usage())\n\n\t// Setting things back to normal\n\tc.outWriter = tmpOutput\n\tc.errWriter = tmpErr\n\n\treturn bb.String()\n}"},{"path":"command.go","start_line":70,"end_line":73,"text":"\t// Short is the short description shown in the 'help' output.\n\tShort string\n\n\t// The group id under which this subcommand is grouped in the 'help' output of its parent."},{"path":"command.go","start_line":549,"end_line":557,"text":"\tif c.HasParent() {\n\t\treturn c.parent.UsageTemplate()\n\t}\n\treturn `Usage:{{if .Runnable}}\n  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}\n  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}\n\nAliases:\n  {{.NameAndAliases}}{{end}}{{if .HasExample}}"},{"path":"command.go","start_line":384,"end_line":387,"text":"// ErrOrStderr returns output to stderr\nfunc (c *Command) ErrOrStderr() io.Writer {\n\treturn c.getErr(os.Stderr)\n}"}],"provenance":{"input_sha256":"df62fb2402cd6d8f160d7fcd5a59943fcd6e81e011b928dcf58471bc038dbc21","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

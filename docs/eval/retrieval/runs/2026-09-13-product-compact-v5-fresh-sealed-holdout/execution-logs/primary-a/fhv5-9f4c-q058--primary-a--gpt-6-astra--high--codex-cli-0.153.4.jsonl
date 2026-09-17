@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-93cf-72c0-87d1-7be671963101"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Requesting children does **not always sort them**. In `command.go:1292–1294`, `(*Command).Commands()` explicitly comments: “do not sort commands if it already sorted or sorting was disabled.” Thus their current order can be returned unchanged when sorting is disabled or they are already sorted."}}
+{"type":"turn.completed","usage":{"input_tokens":17325,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":67,"reasoning_output_tokens":0}}

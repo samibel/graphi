@@ -1,0 +1,1 @@
+completions.go:202-217 directly shows the request handler calling getCompletions and preserving results/directives despite an error; request-command comments supply context.

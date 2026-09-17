@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 63,
+  "previous_sha256": "1a9cdd28ce8db314742cc4cf3144e699bf57b7b434067c3031de2d85e4f54b39",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "06b20133f2545a76c452e6c735a172c200e054d3414833cea0add71c7b937715",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call doc.GenManTree(cmd, nil, dir) and handle its returned error; nil is allowed for the header. It generates pages for the command and its descendants in the specified directory (doc/man_docs.go:33-44). For options, use GenManTreeFromOpts with GenManTreeOptions; GenManTree itself passes Header, Path, and CommandSeparator \"-\". Hyphens in command names can create ambiguous filenames, as documented at lines 35-37.\n",
+  "sha256": "f5e02a60a6f332b168d9d9d651832c3cdf53f946820d1573d355a0b1f744bf57"
+}

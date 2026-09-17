@@ -1,0 +1,1 @@
+Use `cmd.SetArgs([]string{"--your-flag", "value"})` to supply the flag arguments for your test. `SetArgs(a []string)` assigns the supplied slice to `c.args`, and its comment calls out testing as a use case (`command.go:275–277`). The response does not show the subsequent execution or assertion code.

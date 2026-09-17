@@ -1,0 +1,1 @@
+INSUFFICIENT The response does not identify a command callback that returns application errors or where those errors are caught; `SetFlagErrorFunc` (`command.go:316–320`) only addresses flag parsing failures.

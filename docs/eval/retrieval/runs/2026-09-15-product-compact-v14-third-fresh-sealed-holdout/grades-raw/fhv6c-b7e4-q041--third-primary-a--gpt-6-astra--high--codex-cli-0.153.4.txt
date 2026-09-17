@@ -1,0 +1,1 @@
+FAIL: The response does not answer what Traverse does. It correctly identifies insufficient transcript evidence, but the preserved bundle does not establish the required unknown-flag error and nil selected command.

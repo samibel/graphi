@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-dbbe-77f3-b8ab-012b27c98937"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra stores functions passed to `OnInitialize` in the package-level `initializers` slice (`cobra.go:42, 97–101`). During command execution, after confirming the command is runnable, it calls `c.preRun()` (`command.go:921–933`), which iterates over every registered initializer and invokes it in registration order (`command.go:1015–1019`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16463,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":84,"reasoning_output_tokens":0}}

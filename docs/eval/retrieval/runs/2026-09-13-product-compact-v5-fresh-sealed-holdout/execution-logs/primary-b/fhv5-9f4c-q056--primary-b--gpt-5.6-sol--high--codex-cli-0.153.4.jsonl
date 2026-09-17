@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-3af6-7532-b98d-6ce65c2e77b9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `Command.UseLine()` in `command.go:1436–1451`, but not the code that extracts the command name from `Use`."}}
+{"type":"turn.completed","usage":{"input_tokens":16368,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":43}}

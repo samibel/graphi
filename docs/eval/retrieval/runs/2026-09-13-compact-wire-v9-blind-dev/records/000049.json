@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 49,
+  "previous_sha256": "77e1eda68da1b6c1f9e62e5b6b4569dc0e6b1cd694f4d14c252352c38293c895",
+  "kind": "response",
+  "query_id": "cb-12",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c7d520e9d4bb542ddb0ec2953d1b735c820143c3d0fb101f4996a206596b199e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra’s `(*Command).Find` recursively walks downward from the current command:\n\n1. It removes flags from the remaining arguments with `stripFlags(innerArgs, c)`.\n2. If no non-flag arguments remain, it selects the current command.\n3. Otherwise, it treats the first non-flag argument as the potential subcommand name and calls `c.findNext(nextSubCmd)`.\n4. If found, it removes that argument using `c.argsMinusFirstX(...)` and repeats on the matched subcommand. If not found, it stops at the current command.\n\nEvidence: `command.go:724-748`, especially `stripFlags`, `argsWOflags[0]`, `findNext`, and the recursive `innerfind` call.\n\n`findNext` scans `c.commands` and immediately accepts an exact name match (`commandNameMatches`) or alias (`HasAlias`). If `EnablePrefixMatching` is enabled, it collects name/alias prefix matches and accepts one only when the match is unique; otherwise it returns `nil` (`command.go:767-786`). After traversal, `Find` also performs legacy argument validation when the selected command has no custom `Args` validator (`command.go:743-747`).",
+  "sha256": "71430f2edcae3990c8189703724c225712f3068375cc00ca7ae10fc5effee3f5"
+}

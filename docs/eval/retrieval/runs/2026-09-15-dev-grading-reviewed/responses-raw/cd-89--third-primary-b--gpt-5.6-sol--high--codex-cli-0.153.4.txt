@@ -1,0 +1,7 @@
+Set `HiddenDefaultCmd` on the root command:
+
+```go
+rootCmd.CompletionOptions.HiddenDefaultCmd = true
+```
+
+This preserves the default completion command but marks it hidden, as documented in `site/content/completions/_index.md` lines 92–107 and defined by `CompletionOptions.HiddenDefaultCmd` in `completions.go` lines 104–116. Do not set `DisableDefaultCmd`, which prevents Cobra from creating the command (`completions.go` lines 678–685).

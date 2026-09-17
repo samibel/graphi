@@ -1,0 +1,3 @@
+No. For the same flag, the second call returns `RegisterFlagCompletionFunc: flag '%s' already registered` and leaves the first callback intact.
+
+In `completions.go:141–144`, `RegisterFlagCompletionFunc` checks for an existing registration and returns before the assignment `flagCompletionFunctions[flag] = f`. The map is keyed by `*pflag.Flag` (`completions.go:36`).

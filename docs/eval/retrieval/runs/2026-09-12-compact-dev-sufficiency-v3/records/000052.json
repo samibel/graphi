@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 52,
+  "previous_sha256": "8438fb81efdd0eabd8993a3503d9403ffb7a428b11b49db2f3cadc3b5a817b13",
+  "kind": "response",
+  "query_id": "cb-15",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "12f8419e075ca01d99bb6a774713babd227c0ce340508b7363f0233a4a8c01ac",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows how InitDefaultVersionFlag creates the flag, but omits the code that handles a supplied version flag and produces version output.\n",
+  "sha256": "d933d6149bb557e9047fc07fcbd567113ff417e5b04b6fdb8f9ddc3387a27cb3"
+}

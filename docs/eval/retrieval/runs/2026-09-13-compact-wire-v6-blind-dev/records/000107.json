@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 107,
+  "previous_sha256": "a17b459dec32375d59ff37757597305105943103ab9310cc237967fd7d1a443a",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2066939be8f291429046b4ec08b8905ae850393ab9a686c6834d867b6f08bd82",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly explains persistent flag storage, merging of current and parent sets, and the fallback lookup path.",
+  "sha256": "f52287c8be3631d6ddf7ccd3530e1c51cdeb74ca123c979392819e4aee8eaa18"
+}

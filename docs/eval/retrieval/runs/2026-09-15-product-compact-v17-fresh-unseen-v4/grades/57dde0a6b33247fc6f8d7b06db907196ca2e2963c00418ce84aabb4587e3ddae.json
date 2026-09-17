@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-2b7ce1490ad3",
+  "response_sha256": "57dde0a6b33247fc6f8d7b06db907196ca2e2963c00418ce84aabb4587e3ddae",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response does not answer how legacy Bash completion assembles flag metadata. The bundle supports only `Command.Flags()` including local and inherited persistent flags; it lacks the required `writeFlags` behavior for annotations, parse state, distinct flag sets, hidden/deprecated filtering, and conditional local nonpersistent flag tracking.",
+  "graded_at": "2026-09-15T20:46:35Z",
+  "sha256": "d547bb3b78102dc20fbfcb31c1de55623ac14f0bb076155799c651fcf5d25506"
+}

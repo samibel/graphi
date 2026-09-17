@@ -1,0 +1,7 @@
+`Command.LocalNonPersistentFlags()` builds a set of local flags excluding names found in `PersistentFlags()` (`command.go:1655–1666`). During completion, each flag is checked with:
+
+`localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed`
+
+(`completions.go:444`).
+
+Thus, once a local non-persistent flag has been parsed and marked `Changed`, subcommand-name completion is stopped—the generated Bash completion explicitly documents this purpose (`bash_completions.go:574`).

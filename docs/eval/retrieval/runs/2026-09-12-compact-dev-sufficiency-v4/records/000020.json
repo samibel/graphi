@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 20,
+  "previous_sha256": "9eb1c1de1cdf7702aac345a5ee0ff54bc06aeef7b2d2953a4cd855ad33e45d27",
+  "kind": "response",
+  "query_id": "cb-26",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "4455d26f0e245f5317df60abc44e41095edee9a200229489696729a74fdc4438",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The program-specific variable is `\u003cPROGRAM\u003e_ACTIVE_HELP`, where `\u003cPROGRAM\u003e` is the root command name uppercased with non-ASCII-alphanumeric characters replaced by `_` (`active_help.go:46–48`, `59–64`). There is also a global override: setting `COBRA_ACTIVE_HELP=0` forces `GetActiveHelpConfig` to return `\"0\"` regardless of the program-specific setting (`active_help.go:49–52`; constant at line 29).\n",
+  "sha256": "1c3a467dffca35feccf9e48be336b4f00ebea7039109f9a58a13895b76a06da9"
+}

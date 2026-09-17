@@ -1,0 +1,7 @@
+`getCommand` is a test helper defined in `args_test.go:23–33`:
+
+```go
+func getCommand(args PositionalArgs, withValid bool) *Command
+```
+
+It creates and returns a `*Command` with `Use: "c"`, `Args: args`, and `Run: emptyRun` (lines 24–28). When `withValid` is true, it sets `ValidArgs` to `[]string{"one", "two", "three"}` (lines 29–31).

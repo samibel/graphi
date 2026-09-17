@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q046",
+  "response_sha256": "7be148952e782ffc2c51b276759cd661c93e934b9825819c40bc5bcc37570391",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies the Shell Completions guide at `site/content/completions/_index.md`, supported by the explicit relative link in `site/content/completions/fish.md` lines 1–4.",
+  "graded_at": "2026-09-15T08:34:48Z",
+  "sha256": "7593c3983302fc8e03e1932d6edad8c76b428fa6ed75963a27c195f22cd6958e"
+}

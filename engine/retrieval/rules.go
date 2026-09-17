@@ -51,7 +51,7 @@ var exactIdentifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za
 //
 // Note that shape 2 overlaps exactIdentifierPattern (a bare filename is
 // also a dotted-name shape); readyDispatch consults isExactPath first,
-// and the identifier half is lifted in ModeAuto, so the path override
+// before testing identifier equality in ModeAuto, so the path override
 // wins — TestSemanticFirst_PathOverride_BareFilenameFires pins that, and
 // TestSemanticFirst_PathOverride_RejectedSuffixesDoNotFire pins that the
 // rejected suffixes stay on the semantic-first path. Shape 2 was added by
@@ -75,8 +75,7 @@ func isExactPath(query string) bool {
 }
 
 // isExactQuery retains the old exact-query classifier for evaluator-only RRF
-// modes. Shipped ModeAuto calls isExactPath directly and deliberately does not
-// apply the identifier half.
+// modes. Shipped ModeAuto dispatches paths and actual name equality separately.
 func isExactQuery(query string) bool {
 	return isExactIdentifier(query) || isExactPath(query)
 }

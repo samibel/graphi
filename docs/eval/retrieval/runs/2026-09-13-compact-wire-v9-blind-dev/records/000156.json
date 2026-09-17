@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 156,
+  "previous_sha256": "064211a679c8ab676d1b3917d940c5a5d3c8a4b17cdf4b64342554abcc04bf03",
+  "kind": "grade",
+  "query_id": "ci-678",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "bd7fcfd9025cb4f2a9336ba9b88d5beb3c28103fa91eb9b9b323123fe09d84fe",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains that tests should supply flag syntax through `cmd.SetArgs(...)` before execution. This is supported by the preserved bundle: `command.go:275-279` documents `SetArgs` as particularly useful for testing and assigns the slice to `c.args`; `command.go:1075-1084` shows execution reading `args := c.args`; and `command.go:888-890` shows those arguments being passed to `c.ParseFlags(a)`. The concrete `--flag-name value` example is consistent with passing command-line arguments and introduces no unsupported repository-specific claim.\n",
+  "sha256": "15cb2ceebf028ad2b558c2ad432777c454bafdddbf6f30786e21dfb144e7260e"
+}

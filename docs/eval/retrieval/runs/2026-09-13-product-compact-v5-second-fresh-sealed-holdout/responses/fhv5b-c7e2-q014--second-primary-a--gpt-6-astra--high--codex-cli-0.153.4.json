@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q014",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "26388747a77338b849534710807ed57d01a6c25103e0b906399bf6e3d0f1769c",
+  "bundle_sha256": "e440b07835b9585eefcb5df416bc8d625c6c9da577bc1ef45a82326afa148f47",
+  "prompt_sha256": "23584273fff1d452f24b9252f098bbe8a5a1989fb063b814ccdf274306ce193b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The `ld` snippet in `cobra.go:187–202` shows matrix allocation and first-row/first-column initialization, but omits the code that updates the remaining cells.",
+  "responded_at": "2026-09-13T15:22:36Z",
+  "sha256": "9a1188124b66f0daa808c345389b0c29795df1ddbb4b8f2264a0b29b757edabe"
+}

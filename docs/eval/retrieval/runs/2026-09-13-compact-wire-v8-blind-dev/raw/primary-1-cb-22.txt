@@ -1,0 +1,8 @@
+The shown man-page generator performs a depth-first, post-order traversal:
+
+- `GenManTreeFromOpts` iterates over `cmd.Commands()` (`doc/man_docs.go:52`).
+- It skips children that are unavailable or additional help topics using `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()` (`doc/man_docs.go:53-55`).
+- It recursively calls `GenManTreeFromOpts(c, opts)` for each remaining child and stops on the first error (`doc/man_docs.go:56-58`).
+- After all descendants, it generates the current command’s page with `GenMan(cmd, &headerCopy, f)` (`doc/man_docs.go:79-80`).
+
+Each page’s filename derives from `cmd.CommandPath()`, replacing spaces with the configured separator (default `_`), then appending the man section (default `1`) under `opts.Path` (`doc/man_docs.go:60-72`).

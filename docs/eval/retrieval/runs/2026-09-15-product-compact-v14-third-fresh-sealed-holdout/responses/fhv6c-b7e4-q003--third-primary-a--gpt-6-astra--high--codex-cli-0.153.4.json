@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q003",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "49ba3031a04c537a4e0cd0ae9b41b82d9c3c22f8f799593c534607a9422b930d",
+  "bundle_sha256": "516b9d63affbb414aa2089072f892c88162e3e366183baf77f884e07ec4e5471",
+  "prompt_sha256": "529f942be43d37bfd061ebc46036c18e86d8866ea2a83332bef1f59ed17db01a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`nonCompletableFlag(flag *pflag.Flag) bool` returns whether a flag is hidden or deprecated:\n\n```go\nreturn flag.Hidden || len(flag.Deprecated) \u003e 0\n```\n\nDefined in `bash_completions.go:699–701`. Completion generation checks it and skips matching flags before calling `writeFlag` or `writeShortFlag`, including inherited flags (`bash_completions.go:567–587`).",
+  "responded_at": "2026-09-15T08:28:29Z",
+  "sha256": "33521018aaf5e475db810aa63f4ac82d782cc6c23960b06fcb091bf5cc6db904"
+}

@@ -1,0 +1,9 @@
+Shell scripts dispatch completion by invoking the program’s hidden `__complete` command, defined as `ShellCompRequestCmd` in `completions.go:26-33`. Bash, Zsh, Fish, and PowerShell generators select that command (`bash_completionsV2.go:32`, `zsh_completions.go:88`, `fish_completions.go:31`, `powershell_completions.go:34-35`).
+
+The hidden command’s `Run` handler then calls:
+
+```go
+finalCmd, completions, directive, err := cmd.getCompletions(args)
+```
+
+This is the handoff to completion logic (`completions.go:205-215`). For requests without descriptions, the alternate hidden command `__completeNoDesc` is used, and the handler detects it through `cmd.CalledAs() == ShellCompNoDescRequestCmd`.

@@ -1,0 +1,3 @@
+`ExactValidArgs(n)` returns an error if there are not exactly `n` positional arguments or if any positional argument is absent from `Command.ValidArgs` (`args.go`, lines 125–126).
+
+Its deprecation note recommends `MatchAll(ExactArgs(n), OnlyValidArgs)` (`args.go`, line 128), which is also what its implementation returns (line 130).

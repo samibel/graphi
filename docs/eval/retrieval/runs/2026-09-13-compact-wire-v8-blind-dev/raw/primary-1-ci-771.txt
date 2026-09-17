@@ -1,0 +1,8 @@
+Create a shell-specific completion script that:
+
+1. Invokes your program’s hidden `__complete [command-line]` command (`completions.go:26-33, 194-205`).
+2. Reads completion candidates from stdout, one per line (`completions.go:240-242`).
+3. Treats the final stdout line as `:<directive>` and parses that directive (`completions.go:244-247`).
+4. Ignores stderr, which contains diagnostics (`completions.go:249-251`).
+
+Use `__completeNoDesc` instead if the target shell should receive candidates without descriptions (`completions.go:29-33`). The shell adapter must then translate candidates and directives—such as file-extension filtering indicated by `ShellCompDirectiveFilterFileExt` (`completions.go:65-67`)—into that shell’s native completion mechanism.

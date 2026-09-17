@@ -1,0 +1,1 @@
+INSUFFICIENT The response defines local nonpersistent flags and their shorthand entries, but omits the code classifying persistent, inherited, hidden, and traversal-sensitive flags into the legacy Bash arrays.

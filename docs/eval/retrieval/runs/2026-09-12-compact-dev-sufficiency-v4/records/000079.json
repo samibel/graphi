@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 79,
+  "previous_sha256": "129440a11ed5f339008b9e17ef50a8e4626fffb684702e409103b82e1576ab6b",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "a8aea119788ed93dbfd5ea89faeadaf112b5c0b7c220de55042c96f6a3e37a02",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For the supported shells, implement custom argument completion with `ValidArgsFunction` and custom flag completion with `RegisterFlagCompletionFunc()`: the documentation explicitly says these are portable across Bash, Zsh, Fish, and PowerShell (`site/content/completions/_index.md:477–478`). Generate the completion script for the target shell; those four shells are listed as supported in `site/content/user_guide.md:742–743`. Legacy Bash-script custom completions and `BashCompCustom` are ignored by Zsh (`site/content/completions/_index.md:477`). If you mean adding a new, unsupported shell, the response does not show the adapter implementation needed for that, though it identifies `__complete` as the request command used by completion scripts (`completions.go:28–31`).\n",
+  "sha256": "f84d2cf2d1678f4c8792c22889272428d03daf34738598ad925bd67107bd40b7"
+}

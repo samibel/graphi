@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65f-6c8c-7193-9c13-42b8bc73bc46"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra supports **Bash, Zsh, fish, and PowerShell**, as listed in `site/content/completions/_index.md` lines 3–8 and confirmed in `site/content/user_guide.md` lines 742–743."}}
+{"type":"turn.completed","usage":{"input_tokens":16405,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

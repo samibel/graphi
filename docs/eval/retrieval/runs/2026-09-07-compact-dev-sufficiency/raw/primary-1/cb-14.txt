@@ -1,0 +1,1 @@
+INSUFFICIENT The response describes a hidden `ShellCompRequestCmd` used by completion scripts (`completions.go:27–28`) but does not show its registration, execution handler, or dispatch into completion logic.

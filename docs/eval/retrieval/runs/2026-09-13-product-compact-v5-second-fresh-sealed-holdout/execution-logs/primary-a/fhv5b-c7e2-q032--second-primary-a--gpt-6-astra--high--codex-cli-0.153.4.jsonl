@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5f-30fe-7b41-b6e3-bb9dfdea3b94"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Command.CommandPath()` constructs the displayed path recursively (`command.go:1425–1434`):\n\n- **Root:** returns `c.Annotations[CommandDisplayNameAnnotation]` if that key exists; otherwise returns `c.Name()`.\n- **Descendant:** returns `c.Parent().CommandPath() + \" \" + c.Name()`, adding each descendant’s name separated by a single space.\n\nThe custom root annotation key is `\"cobra_annotation_command_display_name\"` (`command.go:33–36`). Thus a custom root display name propagates into all descendant paths; descendants’ own display-name annotations are bypassed by the parent branch."}}
+{"type":"turn.completed","usage":{"input_tokens":17790,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":133,"reasoning_output_tokens":0}}

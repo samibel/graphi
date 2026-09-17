@@ -75,6 +75,7 @@ type RetrieverRow struct {
 // concrete module. Keeping every field prevents the composition adapter from
 // silently reducing the audit trail before SW-264 consumes it.
 type RetrieverExplain struct {
+	Base           int
 	LexicalRank    int
 	SemanticRank   int
 	RRF            int

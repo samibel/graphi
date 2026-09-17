@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a661-bf31-7023-bdf9-931ce174c414"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ArgAliases` are offered on tab completion **only when no completions are found among subcommands or `ValidArgs`**. The follow-up read states this explicitly in “Aliases for nouns” (`site/content/completions/_index.md:117–236`)."}}
+{"type":"turn.completed","usage":{"input_tokens":18580,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":258,"reasoning_output_tokens":198}}

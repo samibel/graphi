@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-a267-7e53-855f-ad9665443b51"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`nonCompletableFlag` suppresses **hidden flags** and **deprecated flags**. In `bash_completions.go`, lines 699–701, it returns `flag.Hidden || len(flag.Deprecated) > 0`."}}
+{"type":"turn.completed","usage":{"input_tokens":17439,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

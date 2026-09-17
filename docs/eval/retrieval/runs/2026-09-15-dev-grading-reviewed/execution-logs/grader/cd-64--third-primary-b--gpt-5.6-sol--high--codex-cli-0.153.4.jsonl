@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-403b-7232-a7dc-7831f148c896"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response describes error-message prefixes but omits the essential prefix-matching behavior: `hasNameOrAliasPrefix` checks command names and aliases using `strings.HasPrefix` (`command.go:1524–1538`), and `EnablePrefixMatching` enables automatic prefix matching (`cobra.go:52–55`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17789,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":87,"reasoning_output_tokens":16}}

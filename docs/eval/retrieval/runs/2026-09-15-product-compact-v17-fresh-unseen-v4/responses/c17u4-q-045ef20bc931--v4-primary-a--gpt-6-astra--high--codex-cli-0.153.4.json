@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-045ef20bc931",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "74dc21b2234e6d128dfb619d623736cccdf3430b9dcd9a7343927b97f9c09b3d",
+  "bundle_sha256": "21ec9fb39bc07add3e8313f9538f26e98e745329d945de6b9127d93b1e5a147d",
+  "prompt_sha256": "1aade5ce34ea6210bbbb0b20c1bdbe8c256fc57e1c4ceddfd00bd5429d8736ff",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`forceMultiLine` appends one newline (`\"\\n\"`) only when `len(s) \u003e 60` **and** `s` contains no newline: `!strings.Contains(s, \"\\n\")`. The condition is in `doc/util.go:42`, and the append (`s = s + \"\\n\"`) is on line 43. Otherwise, it returns the text unchanged.",
+  "responded_at": "2026-09-15T20:22:36Z",
+  "sha256": "9771f7f0881fa1f8032784945b9217ad6fc4ae7b2469b5aea0983021c565d5e7"
+}

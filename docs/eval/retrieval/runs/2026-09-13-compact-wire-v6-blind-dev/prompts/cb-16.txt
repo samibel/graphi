@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+where is the levenshtein distance computed
+
+----- BEGIN task_context/compact-dev/6 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"where is the levenshtein distance computed\"; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/6","sources":[{"path":"cobra.go","start_line":187,"end_line":222,"text":"// ld compares two strings and returns the levenshtein distance between them.\nfunc ld(s, t string, ignoreCase bool) int {\n\tif ignoreCase {\n\t\ts = strings.ToLower(s)\n\t\tt = strings.ToLower(t)\n\t}\n\td := make([][]int, len(s)+1)\n\tfor i := range d {\n\t\td[i] = make([]int, len(t)+1)\n\t}\n\tfor i := range d {\n\t\td[i][0] = i\n\t}\n\tfor j := range d[0] {\n\t\td[0][j] = j\n\t}\n\tfor j := 1; j \u003c= len(t); j++ {\n\t\tfor i := 1; i \u003c= len(s); i++ {\n\t\t\tif s[i-1] == t[j-1] {\n\t\t\t\td[i][j] = d[i-1][j-1]\n\t\t\t} else {\n\t\t\t\tmin := d[i-1][j]\n\t\t\t\tif d[i][j-1] \u003c min {\n\t\t\t\t\tmin = d[i][j-1]\n\t\t\t\t}\n\t\t\t\tif d[i-1][j-1] \u003c min {\n\t\t\t\t\tmin = d[i-1][j-1]\n\t\t\t\t}\n\t\t\t\td[i][j] = min + 1\n\t\t\t}\n\t\t}\n\n\t}\n\treturn d[len(s)][len(t)]\n}\n"},{"path":"command.go","start_line":836,"end_line":837,"text":"\t\t\tlevenshteinDistance := ld(typedName, cmd.Name(), true)\n\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance"},{"path":"command.go","start_line":248,"end_line":251,"text":"\t// DisableSuggestions disables the suggestions based on Levenshtein distance\n\t// that go along with 'unknown command' messages.\n\tDisableSuggestions bool\n"},{"path":"command.go","start_line":253,"end_line":253,"text":"\t// Must be \u003e 0."},{"path":"command.go","start_line":252,"end_line":252,"text":"\t// SuggestionsMinimumDistance defines minimum levenshtein distance to display suggestions."},{"path":"command.go","start_line":837,"end_line":837,"text":"\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i \u003e= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":389,"end_line":392,"text":"// InOrStdin returns input to stdin\nfunc (c *Command) InOrStdin() io.Reader {\n\treturn c.getIn(os.Stdin)\n}"},{"path":"command.go","start_line":414,"end_line":414,"text":"func (c *Command) getIn(def io.Reader) io.Reader {"},{"path":"doc/util.go","start_line":52,"end_line":52,"text":"func (s byName) Less(i, j int) bool { return s[i].Name() \u003c s[j].Name() }"}],"provenance":{"input_sha256":"e7cd7efe7a992f6a445ec42828d9a8e9abaeda1ab3efebf38507af2c00c3b6e6","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/6 RESPONSE BYTES -----

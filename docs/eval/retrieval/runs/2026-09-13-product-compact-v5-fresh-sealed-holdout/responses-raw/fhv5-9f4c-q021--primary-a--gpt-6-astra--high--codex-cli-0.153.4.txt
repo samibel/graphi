@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only the declaration and initial variable of `genFlagResult` (`doc/yaml_docs.go:149–150`), omitting the logic that determines when `cmdOption.Shorthand` is populated.

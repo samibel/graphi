@@ -1,0 +1,12 @@
+Append a tab (`\t`) and the description to each completion string:
+
+```go
+ValidArgs: []string{
+    "harbor\tAn image registry",
+    "thanos\tLong-term metrics",
+}
+```
+
+This format also works for choices returned by `ValidArgsFunction` and `RegisterFlagCompletionFunc()`.
+
+Evidence: `site/content/completions/_index.md:373–381` explicitly specifies the tab separator, names all three APIs, and shows examples. Descriptions are supported in each shell; Bash requires completion V2 (`:357–358`).

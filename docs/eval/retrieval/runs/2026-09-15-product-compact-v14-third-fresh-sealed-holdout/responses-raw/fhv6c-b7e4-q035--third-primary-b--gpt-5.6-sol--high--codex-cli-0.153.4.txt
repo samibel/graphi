@@ -1,0 +1,6 @@
+`Command.LocalFlags()` applies the command’s global normalization function to the local `FlagSet` before adding flags:
+
+- `command.go:1681-1683`: if `c.globNormFunc != nil`, it calls `c.lflags.SetNormalizeFunc(c.globNormFunc)`.
+- `command.go:362-367`: `SetGlobalNormalizationFunc` stores that function in `c.globNormFunc` after applying it to `Flags()` and `PersistentFlags()`.
+
+Thus, lookups and names through the `LocalFlags` view use the same global normalization function as the command’s other flag sets.

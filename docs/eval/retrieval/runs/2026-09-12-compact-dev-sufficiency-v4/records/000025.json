@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 25,
+  "previous_sha256": "2a3e1e88da5398618663f3fff91283df88e043d4de56456730bfac672e4d516b",
+  "kind": "response",
+  "query_id": "cb-33",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "7546466239c01b4fa5436742acb78b0e71cdec2b3bd40f8e75ee4938f154a2a1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).Flags() *flag.FlagSet` is documented as returning the complete set applying to a command, including local and persistent flags declared there or by parents (`command.go:1641–1643`). Its body lazily creates `c.flags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`, initializes an error buffer if needed, sends flag output to that buffer, and returns `c.flags` (`command.go:1644–1653`). The shown body does not itself merge inherited flags; `InheritedFlags()` calls `mergePersistentFlags()` and is documented as returning parent-inherited flags (`command.go:1695–1703`). `LocalNonPersistentFlags()` represents command-specific flags that do not persist to children (`command.go:1655–1660`).\n",
+  "sha256": "0020c6620cdffbacac2c2b3fdcfc0857ea395e1e0ae9e9a078ada0dd9e3201ea"
+}

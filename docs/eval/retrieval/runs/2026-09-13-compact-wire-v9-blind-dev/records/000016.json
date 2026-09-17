@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 16,
+  "previous_sha256": "7631cc28266e3de12326709c3fd92ae5efde567f4a02e89120fda646e7ac64be",
+  "kind": "response",
+  "query_id": "cb-21",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f75cdc01e8963b30d5428b838ee0c2b5219529281363b8d71b977ae2dfe1a92c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Commands are added via `(*Command).AddCommand(cmds ...*Command)` in `command.go:1303`.\n\nFor each child, it:\n\n- Rejects adding the command to itself, panicking with `\"Command can't be a child of itself\"` (`command.go:1304-1307`).\n- Sets the back-pointer with `cmds[i].parent = c` (`command.go:1308`).\n- Updates cached maximum use/path/name lengths and propagates the parent’s global normalization function (`command.go:1309-1325`).\n- Appends the child with `c.commands = append(c.commands, x)` and marks sorting stale via `c.commandsAreSorted = false` (`command.go:1326-1327`).\n\nThe pointer is exposed by `Parent()`, which returns `c.parent` (`command.go:1842-1845`).",
+  "sha256": "ab0aec47f94274dd3069bb3127f6ec895ff8113bb7ac2e9bf2ce896b4a4a1cdf"
+}

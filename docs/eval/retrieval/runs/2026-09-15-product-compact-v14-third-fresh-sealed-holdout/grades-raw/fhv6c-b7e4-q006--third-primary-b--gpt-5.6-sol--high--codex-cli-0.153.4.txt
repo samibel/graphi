@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper’s non-nil error check, exact expected error string, and fatal mismatch assertion, all supported by args_test.go:77-86 in the preserved transcript.

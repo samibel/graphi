@@ -1,0 +1,1 @@
+PASS: The response accurately states the exact-count and allowed-value validation documented in args.go:125-131 and names the recommended replacement, MatchAll(ExactArgs(n), OnlyValidArgs).

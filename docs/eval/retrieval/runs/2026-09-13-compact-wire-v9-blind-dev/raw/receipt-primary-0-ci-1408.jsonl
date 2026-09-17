@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-026f-78f0-9778-04f7e3e390be"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Define the global flag as a persistent flag on the parent/root command, then access it from the subcommand with:\n\n```go\nf := subCommand.Flag(\"flag-name\")\n```\n\n`Command.Flag` “climbs up the command tree” and, if the flag is not local, calls `persistentFlag` ([command.go:1794–1803]). That method checks the command’s persistent flags and inherited parent flags via `parentsPflags.Lookup(name)` ([command.go:1805–1816]). Thus, only persistent parent flags are inherited; local non-persistent flags do not persist to subcommands ([command.go:1655–1666])."}}
+{"type":"turn.completed","usage":{"input_tokens":16535,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":138,"reasoning_output_tokens":0}}

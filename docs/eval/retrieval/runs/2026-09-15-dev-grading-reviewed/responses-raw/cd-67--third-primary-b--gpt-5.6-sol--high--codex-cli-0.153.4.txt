@@ -1,0 +1,7 @@
+`(*Command).NameAndAliases()` returns the command’s name followed by all aliases, joined with `", "`:
+
+```go
+return strings.Join(append([]string{c.Name()}, c.Aliases...), ", ")
+```
+
+Evidence: `command.go:1540–1543`. The name comes from the first word of `c.Use`, per `(*Command).Name()` in `command.go:1495–1503`.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b65-e05b-7e12-bbb2-8e720818b028"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies rejection when `len(args) > n` and the error reporting the maximum and received counts, all supported by the cited `args.go` lines 82–91 in the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18111,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

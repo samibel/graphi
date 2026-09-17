@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-dbc2-7032-913a-b3c88fa25698"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The follow-up transcript explicitly documents `--no-descriptions` and the exact `source <(helm completion bash --no-descriptions)` example. The cited documentation range supports the instruction, and `completions.go:111-112` supports the additional `DisableDescriptions` claim."}}
+{"type":"turn.completed","usage":{"input_tokens":18600,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":97,"reasoning_output_tokens":32}}

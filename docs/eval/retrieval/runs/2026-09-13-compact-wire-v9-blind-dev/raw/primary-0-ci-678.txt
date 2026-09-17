@@ -1,0 +1,12 @@
+In a test, pass flag arguments to the command with `SetArgs`, then execute it:
+
+```go
+cmd.SetArgs([]string{"--flag-name", "value"})
+err := cmd.Execute()
+```
+
+Evidence:
+
+- `command.go:275-279`: `SetArgs(a []string)` assigns the supplied arguments to `c.args` and is documented as “particularly useful when testing.”
+- `command.go:1075-1081`: execution uses `args := c.args`; only when `c.args == nil` does it fall back to `os.Args[1:]`.
+- `command.go:888-890`: those arguments are passed to `c.ParseFlags(a)`.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-8bce-7a63-8586-f8f4b275d71c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`LICENSE.txt` contains the **Apache License, Version 2.0** (`LICENSE.txt:1–5`). The README confirms: “Cobra is released under the Apache 2.0 license” (`README.md:110–112`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16431,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":117,"reasoning_output_tokens":61}}

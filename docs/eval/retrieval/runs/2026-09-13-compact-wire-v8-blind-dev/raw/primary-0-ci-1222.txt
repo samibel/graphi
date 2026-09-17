@@ -1,0 +1,25 @@
+Write a flag-completion callback with this signature and register it on the command:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("flag-name",
+    func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+        return []string{"choice-a", "choice-b"}, directive
+    },
+)
+```
+
+For fixed choices, use:
+
+```go
+completion := FixedCompletions(
+    []string{"choice-a", "choice-b"},
+    directive,
+)
+err := cmd.RegisterFlagCompletionFunc("flag-name", completion)
+```
+
+Evidence:
+
+- `completions.go:132-146`: `RegisterFlagCompletionFunc` accepts `func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)`. It errors if the flag does not exist or already has a registered function.
+- `completions.go:124-130`: `FixedCompletions` creates a callback that always returns the supplied choices and directive.
+- `powershell_completions.go:310-314`: generate a PowerShell completion script with `cmd.GenPowerShellCompletion(w)`.

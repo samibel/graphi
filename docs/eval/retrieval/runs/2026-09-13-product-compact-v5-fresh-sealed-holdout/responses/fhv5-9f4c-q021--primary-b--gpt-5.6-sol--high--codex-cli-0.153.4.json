@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q021",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "a1eb764960cf5b36df27652736484a969b5c0558153e9d8a43fda045aca360f1",
+  "bundle_sha256": "30515256d856cec091c0420f4f1051e6575ecc449dadd10c9d633afbeb26bbdc",
+  "prompt_sha256": "27d0bb2aed0afd19e2b4d40561d27fbcd6ac7d5f6118e030d8819b3094a381d4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits `genFlagResult`’s implementation after `doc/yaml_docs.go:150`, so the condition that sets `cmdOption.Shorthand` is missing.",
+  "responded_at": "2026-09-13T12:33:04Z",
+  "sha256": "d4d8560845b87076a561776ecd11cc52962d00fea894ce84a08b661b529b4528"
+}

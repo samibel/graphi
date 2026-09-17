@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q057",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "0467fcd5df3692a9c7d0536313ed4c854bc6358a2a847692cb2d0d2b83e529e0",
+  "bundle_sha256": "e97f81c50f678dbf4c21b7967e3f60778e7262e8821506e4ceae9f5b454326f7",
+  "prompt_sha256": "5a6f5778a490abd0c3c92ecca9fd8fee1cf46cc44bccdf96c1a91798761c0eea",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains a command display-name annotation key in `command.go`, but no plugin manifest or plugin display name.",
+  "responded_at": "2026-09-15T08:31:37Z",
+  "sha256": "c89a5f8b5f3e16f364ad05a1b3442a8202dd0bd02e061b97c39e9dac6b9e3ea9"
+}

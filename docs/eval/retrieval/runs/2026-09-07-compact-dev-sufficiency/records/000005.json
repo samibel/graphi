@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 5,
+  "previous_sha256": "9d2b5d742e1fcad8b5ba644a7e6c35ff569e315f0beec31a7bd233a12e7b0abd",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "55e922dff6116720370ee916274f9aaefdae53e0c630f034c9e59b03a6616d8c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` contains flag-group annotations and validation helpers. Lines 25–29 define `requiredAsGroup`, `oneRequired`, and `mutuallyExclusive` with their `cobra_annotation_...` keys. `hasAllFlags` checks that every supplied name exists in a `pflag.FlagSet`, returning false for a missing lookup (`flag_groups.go:111–119`). `validateRequiredFlagGroups` iterates sorted groups, collects unset flags, and skips groups when either none or all of their flags are unset (`flag_groups.go:144–157`); the remainder of that validator is not shown.\n",
+  "sha256": "4f5a0ef08b825078ef17382085ff5ed4b288397019942d72bdce02bf44d43e4b"
+}

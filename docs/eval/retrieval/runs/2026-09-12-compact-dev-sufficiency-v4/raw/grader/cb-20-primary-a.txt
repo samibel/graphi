@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-20:primary-a
+Outcome: pass
+Rationale: Explains parent-flag accumulation, mergePersistentFlags adding own and parent sets, and local-then-parent lookup, directly supported by command.go:1805-1816,1847-1861.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `PersistentFlags()` (`command.go:1725–1727`) but omits value-access methods and flag-parsing timing relative to `init()` or `OnInitialize`, which are necessary to explain when supplied values can be read.

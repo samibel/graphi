@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q028",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "32e45716088fc22064179f49665e5b6b8a3b35dc90c9b74153dd6fc59716a424",
+  "bundle_sha256": "9308d9ce912c03b72693feeefcf4e80f20ad6e359b4817f8bd678663eb936ddc",
+  "prompt_sha256": "0a196a65476a59728b56e5415a5275c5c59c120884bdc4f3eb299f013c933837",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes. In `command.go:478–495`, `UsageString` assigns both `c.outWriter` and `c.errWriter` to the same `bytes.Buffer` (`bb`) before calling `c.Usage()`, then returns `bb.String()`. Thus normal and error writes are appended to one buffer in the order they occur.",
+  "responded_at": "2026-09-15T08:29:59Z",
+  "sha256": "f59ed5f79f572960e4fce38d1da9b14e661e5902bce34fc507c408ef9f57b181"
+}

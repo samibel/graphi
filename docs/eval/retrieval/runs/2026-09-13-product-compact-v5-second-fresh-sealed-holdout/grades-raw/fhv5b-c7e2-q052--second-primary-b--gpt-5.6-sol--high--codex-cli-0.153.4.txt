@@ -1,0 +1,1 @@
+FAIL: The response does not identify `RunE` or explain that its errors are caught by the caller of command execution. Neither essential fact appears in the preserved bundle, which only shows `PersistentPreRun` and flag-error handling.

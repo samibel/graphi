@@ -1,0 +1,1 @@
+Inside a chosen command, call `cmd.CalledAs()`. It returns the command name or alias actually used to invoke that command, or `""` if it has not been called (`command.go:1515-1523`). If you need the selected command object itself, use `ExecuteC` rather than `Execute`; `ExecuteC` returns `*Command`, whereas `Execute` discards it (`command.go:1051-1056`, `command.go:1035-1042`).

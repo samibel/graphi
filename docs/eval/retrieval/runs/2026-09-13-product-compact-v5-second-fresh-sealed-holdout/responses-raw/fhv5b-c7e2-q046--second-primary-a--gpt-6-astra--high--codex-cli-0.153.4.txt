@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains only `command.go` snippets and no README text describing its recommended CLI sentence patterns or distinctions among commands, arguments, and flags.

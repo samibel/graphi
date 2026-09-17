@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `mergePersistentFlags()` and its `updateParentsPflags()` call (`command.go:1848–1851`), but omits parent traversal and the addition of inherited flags needed to explain propagation into child commands.

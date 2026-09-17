@@ -1,0 +1,1 @@
+Active Help is controlled per program by `<PROGRAM>_ACTIVE_HELP`, where the root command name is uppercased and every non-ASCII-alphanumeric character is replaced with `_` (`active_help.go:45-67`). The global `COBRA_ACTIVE_HELP=0` overrides the program-specific setting and always disables Active Help (`active_help.go:45-58`, `active_help.go:29`).

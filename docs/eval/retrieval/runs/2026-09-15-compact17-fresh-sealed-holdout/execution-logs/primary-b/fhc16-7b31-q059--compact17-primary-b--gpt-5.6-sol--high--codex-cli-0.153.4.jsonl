@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a660-e0e2-7811-82b9-9d2594c46efd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. `HasPersistentFlags` calls `c.PersistentFlags().HasFlags()` ([command.go:1755–1759]), and `PersistentFlags()` returns only the flags “specifically set in the current command” ([command.go:1725–1735]). Parent persistent flags are stored separately in `parentsPflags` ([command.go:157–161]) and merged only by `mergePersistentFlags()` ([command.go:1846–1853])."}}
+{"type":"turn.completed","usage":{"input_tokens":16624,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":97,"reasoning_output_tokens":0}}

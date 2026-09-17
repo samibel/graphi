@@ -1,0 +1,1 @@
+PASS: The bundle supports uppercasing the root command’s name, replacing characters outside `A-Z`, `0-9`, and `_` with underscores, and adding `_ACTIVE_HELP`. All cited locations exist and support the explanation; the stated operation order yields the same name.

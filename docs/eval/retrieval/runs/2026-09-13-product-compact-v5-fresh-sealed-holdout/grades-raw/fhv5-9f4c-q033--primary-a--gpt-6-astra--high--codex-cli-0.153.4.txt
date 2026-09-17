@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that warnings print only when parsing succeeds (`err == nil`) and new warning text has accumulated in the buffer, directly supported by the supplied `command.go:1834–1835` span.

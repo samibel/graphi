@@ -1,0 +1,1 @@
+FAIL: The citation `flag_groups.go:158-160` shows sorting but does not support the claim that the error identifies the group and missing flags; that error appears at line 161, outside the cited range.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-5c99-7743-a36a-2091c1a10df9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows flag lookup and parsing methods in `command.go`, but not argument-order handling for a flag placed before a command."}}
+{"type":"turn.completed","usage":{"input_tokens":16649,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":82,"reasoning_output_tokens":46}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q033",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "ce59d659084ce87288b32f001d82a6b5fbf765b4f91428bff99950f6b302204a",
+  "bundle_sha256": "9fc849203a91b7a0f900c387ea2ed5be737124c1b2f395fd93bc73e55c568fbc",
+  "prompt_sha256": "cecfe4907289d9c7316abb6ead3e2760ada0d1825dd16edb991548f5efb548a4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `cobra.go:233–238`, `CheckErr(msg interface{})` checks `if msg != nil`:\n\n- **Nil:** Does nothing.\n- **Non-nil:** Prints `Error:` followed by the value and a newline to standard error using `fmt.Fprintln(os.Stderr, \"Error:\", msg)`, then terminates with exit code 1 using `os.Exit(1)`.",
+  "responded_at": "2026-09-15T18:39:49Z",
+  "sha256": "03300570b141ada792417b57e2bfb38ebc3ec31501100fd85e548d61cf8ff8e7"
+}

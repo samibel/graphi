@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 62,
+  "previous_sha256": "65489a1e4c6af003fc45d50d729b3f9d6f3abae221682ab0dae73b422412f120",
+  "kind": "response",
+  "query_id": "cb-28",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "d3d4efdaea5db1057e7e5438b3101cb6b20d995fea8385b200b654e9524b859c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows group-ID setters and group-list helpers (`command.go:332–345` and `1332–1359`), but omits the `GroupID` field documentation and code that uses it to determine command behavior or presentation.\n",
+  "sha256": "930054aee12bc7d0db89e7841b717e51d7824eaa3a6c30da014d1df3a945e9cf"
+}

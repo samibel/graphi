@@ -1,0 +1,1 @@
+PASS: The answer accurately summarizes GenMan, fillHeader, and GenManTreeOptions from the exact doc/man_docs.go bytes supplied for this path query.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-5ca1-7163-b96b-77ad3c13a637"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes NameAndAliases joining the command name and all aliases with \", \", supported by command.go:1540–1543. Its explanation of Name() is also supported by command.go:1495–1503."}}
+{"type":"turn.completed","usage":{"input_tokens":18062,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

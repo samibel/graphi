@@ -1,0 +1,3 @@
+In `command.go`, `(*Command).SetGlobalNormalizationFunc` applies `n` to both `c.Flags()` and `c.PersistentFlags()` through `SetNormalizeFunc(n)`, then stores it in `c.globNormFunc` (lines 364–367).
+
+It reaches existing children by iterating over `c.commands` and calling `command.SetGlobalNormalizationFunc(n)` on each child, recursively propagating the function through their descendants (lines 369–371).

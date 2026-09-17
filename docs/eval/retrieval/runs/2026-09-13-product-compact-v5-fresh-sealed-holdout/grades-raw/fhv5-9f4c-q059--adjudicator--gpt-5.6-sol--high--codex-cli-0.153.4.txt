@@ -1,0 +1,1 @@
+PASS: The response accurately identifies that RemoveCommand rebuilds the child slice, clears removed children’s parent pointers, and resets and recomputes all three layout-length caches from remaining children, supported by command.go:1361-1393.

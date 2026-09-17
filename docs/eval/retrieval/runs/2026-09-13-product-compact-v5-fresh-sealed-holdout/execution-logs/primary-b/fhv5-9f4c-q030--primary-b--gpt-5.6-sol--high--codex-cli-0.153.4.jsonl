@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-1170-7b23-b4b1-794a7ec41b76"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The default top-level `--version` flag is added when the root command’s `Version` field is set (`site/content/user_guide.md:594`).\n\nIn `Command.InitDefaultVersionFlag`, Cobra checks `c.Flags().ShorthandLookup(\"v\")` (`command.go:1217`):\n\n- If `-v` is unused, it adds `--version` with shorthand `-v` via `BoolP`.\n- If `-v` already exists, it adds only the long `--version` flag via `Bool`, preserving the preexisting `-v` (`command.go:1217-1221`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16540,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":259,"reasoning_output_tokens":124}}

@@ -1,0 +1,3 @@
+The default top-level `--version` flag is added when the root command’s `Version` field is set (`site/content/user_guide.md:594`).
+
+If short `-v` is unused, `InitDefaultVersionFlag` registers `--version` with shorthand `-v`. If `-v` already exists, it registers only `--version`, leaving the existing `-v` intact (`command.go:1217–1221`, `ShorthandLookup("v")`, `BoolP`, and `Bool`).

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows group-management methods and group IDs assigned to help/completion commands, but omits the GroupID field documentation and the behavior that uses command groups.

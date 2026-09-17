@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 78,
+  "previous_sha256": "de1b1b8d05e1fc7f4c9a96460683e1b27a4940028bb5524ac173130fbb380260",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "49be5884752dda545ff8d08ceee4b1418efdfcb8caec8be35b0f15856e7acbdc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the test's argument slice with cmd.SetArgs([]string{\"--boolflag\"}) for an already-defined boolflag. SetArgs stores the supplied slice in c.args (command.go:276-278); the response also shows a boolean flag declaration in TestMergeCommandLineToFlags (command_test.go:2161-2162). The supplied spans do not show the subsequent parsing or execution step.\n",
+  "sha256": "fe7b70a471be6e156bb03c82b56e7294c1bfdfc40729649aebaf2d25ac1537e7"
+}

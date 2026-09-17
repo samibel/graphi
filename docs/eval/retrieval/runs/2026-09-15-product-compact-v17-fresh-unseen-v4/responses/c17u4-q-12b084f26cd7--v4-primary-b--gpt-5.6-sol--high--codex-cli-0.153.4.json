@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-12b084f26cd7",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "249b96a55a2c8e4a1affa2b8d2a28fb3755636fab3272d974e8d3d047fe01c06",
+  "bundle_sha256": "a18eb25c10edc4c7b362a241adca08c8614177c9d89891c911f5f522648fe598",
+  "prompt_sha256": "d6ca59dc1ea8b1220067831a84d0f523e147b1ed29f4e9100e47dad52e135f83",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`getErr(def)` uses the first available error writer up the command hierarchy:\n\n1. Return `c.errWriter` if non-nil.\n2. Otherwise, if `c` has a parent, recursively call `c.parent.getErr(def)`.\n3. If no command defines one, return `def`.\n\nEvidence: `command.go:402–411` (`getErr`) and `command.go:1630–1634` (`HasParent`). `ErrOrStderr` supplies `os.Stderr` as the default via `c.getErr(os.Stderr)` at `command.go:383–386`.",
+  "responded_at": "2026-09-15T20:24:28Z",
+  "sha256": "025f69344d05a96f4d0c28da32bc29d7f7fad7702fac068f65f89c3863115fd9"
+}

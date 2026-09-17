@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 85,
+  "previous_sha256": "405332f2d7424cb34db705a1b6ba1284aecb5b8ffdca307d53d0cad7ab23f809",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a662db5b4cb3e204700ac5708d12cc7fa30335dd6702783c1f7d3886aeb7a932",
+  "outcome": "fail",
+  "rationale": "FAIL: The traversal description is correct, but the exact bundle only shows appending markdownExtension; it does not establish that the extension is '.md'.",
+  "sha256": "9d0c96a0edc13c15be685cb0d8900413cf8b30d4503b5401f88e8bbc4dd0054d"
+}

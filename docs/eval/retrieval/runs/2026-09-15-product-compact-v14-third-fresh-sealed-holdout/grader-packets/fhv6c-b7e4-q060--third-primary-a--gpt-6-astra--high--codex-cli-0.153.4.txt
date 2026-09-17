@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 73c2f9a87882468b42832f252985617131cfa78e1fc4640658f0ebc1c3bb13d6
+FOLLOW-UP READ CONTENT ADDRESS: 50bf6f386507d278a4eb2f3d74c2fc470501edeefab6539c230ebff85470e6da
+QUERY ID: fhv6c-b7e4-q060
+
+QUESTION:
+empty input arguments
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:733-752 anchor="func TestEmptyInputs(" reason=The focused test is the canonical behavior record for blank argument strings surrounding a valid flag.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 2d0a7ea8dbf9; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/user_guide.md","start_line":367,"end_line":382,"text":"## Positional and Custom Arguments\n\nValidation of positional arguments can be specified using the `Args` field of `Command`.\nThe following validators are built in:\n\n- Number of arguments:\n  - `NoArgs` - report an error if there are any positional args.\n  - `ArbitraryArgs` - accept any number of args.\n  - `MinimumNArgs(int)` - report an error if less than N positional args are provided.\n  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args.\n  - `RangeArgs(min, max)` - report an error if the number of args is not between `min` and `max`.\n- Content of the arguments:\n  - `OnlyValidArgs` - report an error if there are any positional args not specified in the `ValidArgs` field of `Command`, which can optionally be set to a list of valid values for positional args.\n\nIf `Args` is undefined or `nil`, it defaults to `ArbitraryArgs`."},{"path":"command.go","start_line":1139,"end_line":1144,"text":"func (c *Command) ValidateArgs(args []string) error {\n\tif c.Args == nil {\n\t\treturn ArbitraryArgs(c, args)\n\t}\n\treturn c.Args(c, args)\n}"},{"path":"args.go","start_line":68,"end_line":71,"text":"// ArbitraryArgs never returns an error.\nfunc ArbitraryArgs(cmd *Command, args []string) error {\n\treturn nil\n}"},{"path":"command.go","start_line":54,"end_line":55,"text":"\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n\t//   ... indicates that you can specify multiple values for the previous argument."},{"path":"args.go","start_line":41,"end_line":47,"text":"// NoArgs returns an error if any args are included.\nfunc NoArgs(cmd *Command, args []string) error {\n\tif len(args) > 0 {\n\t\treturn fmt.Errorf(\"unknown command %q for %q\", args[0], cmd.CommandPath())\n\t}\n\treturn nil\n}"},{"path":"command.go","start_line":1425,"end_line":1434,"text":"// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":930,"end_line":937,"text":"\n\targWoFlags := c.Flags().Args()\n\tif c.DisableFlagParsing {\n\t\targWoFlags = a\n\t}\n\n\tif err := c.ValidateArgs(argWoFlags); err != nil {\n\t\treturn err"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command_test.go","start_line":735,"end_line":735,"text":"func TestEmptyInputs(t *testing.T) {"}],"provenance":{"input_sha256":"12d430cb30ee228194241db15df0fbb92c9ddc35534bfa145d1f111207a3da3d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/user_guide.md:367-421"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/user_guide.md","start_line":367,"end_line":421,"text":"## Positional and Custom Arguments\n\nValidation of positional arguments can be specified using the `Args` field of `Command`.\nThe following validators are built in:\n\n- Number of arguments:\n  - `NoArgs` - report an error if there are any positional args.\n  - `ArbitraryArgs` - accept any number of args.\n  - `MinimumNArgs(int)` - report an error if less than N positional args are provided.\n  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args.\n  - `RangeArgs(min, max)` - report an error if the number of args is not between `min` and `max`.\n- Content of the arguments:\n  - `OnlyValidArgs` - report an error if there are any positional args not specified in the `ValidArgs` field of `Command`, which can optionally be set to a list of valid values for positional args.\n\nIf `Args` is undefined or `nil`, it defaults to `ArbitraryArgs`.\n\nMoreover, `MatchAll(pargs ...PositionalArgs)` enables combining existing checks with arbitrary other checks.\nFor instance, if you want to report an error if there are not exactly N positional args OR if there are any positional\nargs that are not in the `ValidArgs` field of `Command`, you can call `MatchAll` on `ExactArgs` and `OnlyValidArgs`, as\nshown below:\n\n```go\nvar cmd = \u0026cobra.Command{\n  Short: \"hello\",\n  Args: cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),\n  Run: func(cmd *cobra.Command, args []string) {\n    fmt.Println(\"Hello, World!\")\n  },\n}\n```\n\nIt is possible to set any custom validator that satisfies `func(cmd *cobra.Command, args []string) error`.\nFor example:\n\n```go\nvar cmd = \u0026cobra.Command{\n  Short: \"hello\",\n  Args: func(cmd *cobra.Command, args []string) error {\n    // Optionally run one of the validators provided by cobra\n    if err := cobra.MinimumNArgs(1)(cmd, args); err != nil {\n        return err\n    }\n    // Run the custom validation logic\n    if myapp.IsValidColor(args[0]) {\n      return nil\n    }\n    return fmt.Errorf(\"invalid color specified: %s\", args[0])\n  },\n  Run: func(cmd *cobra.Command, args []string) {\n    fmt.Println(\"Hello, World!\")\n  },\n}\n```\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+An empty positional-argument list is accepted by default: `Command.ValidateArgs` calls `ArbitraryArgs` when `Args == nil` (`command.go:1139–1144`), and `ArbitraryArgs` always returns `nil` (`args.go:68–71`).
+
+- To **require input**, set `Args: cobra.MinimumNArgs(1)`. The guide documents this validator and demonstrates it before accessing `args[0]` (`site/content/user_guide.md:367–421`).
+- To **allow only zero arguments**, use `NoArgs`; it rejects only when `len(args) > 0` (`args.go:41–47`). Thus, `[]string{""}` is rejected by `NoArgs`: it contains one argument, despite that argument being an empty string.
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q062",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "063375b0f8c3fc803c7adf38adc0488e0c1da395c22cd6dc549aa477a1a4af0b",
+  "bundle_sha256": "455aa7262e69f9d6f7e6cf6116fd4848ac74e94ccb41dc40691e1d8dd0e6fca7",
+  "prompt_sha256": "43cbe8563f111b60aec25eadf1b9c49764f1a37419e4f22f98cee12467f1ad63",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a Bash alias with Cobra completion, define the alias and register the original command’s generated completion function:\n\n```bash\nalias aliasname=origcommand\ncomplete -o default -F __start_origcommand aliasname\n```\n\nThis is documented in `site/content/completions/_index.md:402-408`.\n\nSeparately, Cobra command aliases are stored in `Command.Aliases`, described as substitutes for the first word in `Use` (`command.go:63`). `Command.HasAlias` checks them using `commandNameMatches` (`command.go:1505-1513`), respecting `EnableCaseInsensitive` (`command.go:1876-1885`).",
+  "responded_at": "2026-09-15T08:31:57Z",
+  "sha256": "83e644c0d078943d864af1b393efa018ebb1e2909ab67e06849e2c691ada83c0"
+}

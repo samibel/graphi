@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q047",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "55fcb8988421a0c1efd2a63ee6c7e2cd74df4e228a1d142a6cd104fd44a28bb1",
+  "bundle_sha256": "6836f92ad4728cdae3dfd946430804c99bd5aaa93fb185fd6c2e133e27a69989",
+  "prompt_sha256": "1f2d45dc42679c0de11c9238d18800e339978d68205e9c212580065632dd2d3a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The README.md excerpt (lines 67–74) describes flags inherited by child commands and command-local flags, but does not identify the underlying flag library.",
+  "responded_at": "2026-09-13T15:27:20Z",
+  "sha256": "42ba32c152bdbe7f68691b5b03c68ceb74781355c8f9b13af214b2cec49098f6"
+}

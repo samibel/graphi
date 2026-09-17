@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 72,
+  "previous_sha256": "a294a4e40b95421ea7f6f03762ae340ac11cfdf7330acfcdc8cd67f7a4761a0f",
+  "kind": "response",
+  "query_id": "ci-1970",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f87411af0beddeba457e25e6e9464fc58573a97f2865916412ab991929c21975",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `cmd.Flags()` for the command's applicable flag set; persistent flags from the command and its parents are merged into it by `mergePersistentFlags` (`command.go:1643`, `command.go:1847-1853`). If you need categories separately, use `cmd.LocalFlags()` for local flags (`command.go:1669-1670`) and `cmd.InheritedFlags()` for parent-derived flags (`command.go:1695-1718`). Iterate a returned `pflag.FlagSet` with `VisitAll`, as the inherited-set implementation itself does (`command.go:1711-1717`).\n",
+  "sha256": "31e089a403dd7fae675041c1d40561c8aa27e9cf07a836dcb4ed98ff7b040a0d"
+}

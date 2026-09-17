@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cc-9ae8-7d31-a38b-0b389de6b404"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states local non-nil input, then the nearest ancestor’s non-nil input, then the supplied default, supported by command.go:414–422. Its additional InOrStdin claim and all citations resolve within the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17543,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

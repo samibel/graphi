@@ -1,0 +1,1 @@
+PASS: The response correctly explains recursive inheritance through `c.Parent().HelpFunc()` and fallback to default help only when no command in the ancestor chain defines a custom function. Its cited lines are present and supporting in the preserved `command.go:450–468` span.

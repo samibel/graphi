@@ -1,0 +1,11 @@
+`FixedCompletions` returns a closure with signature:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```
+
+The closure ignores all three arguments and always returns the captured `choices` slice and `directive` value passed to `FixedCompletions` (`completions.go`, lines 123–130):
+
+```go
+return choices, directive
+```

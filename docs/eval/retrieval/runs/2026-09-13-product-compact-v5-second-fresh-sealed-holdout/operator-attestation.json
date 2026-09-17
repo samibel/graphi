@@ -1,0 +1,97 @@
+{
+  "contract_version": "fresh-holdout-operator-attestation/1",
+  "status": "completed_release_no_attested",
+  "operator": {
+    "id": "codex-independent-second-holdout-operator",
+    "provider": "OpenAI Codex",
+    "model": "GPT-5 session-declared model family",
+    "model_build": "not exposed by provider",
+    "task_path": "/root/holdout_operator",
+    "session_id": "not exposed to operator task",
+    "host_id": "MB-VQYG0FKHQL",
+    "workspace_id": "/private/tmp/graphi-second-holdout-operator"
+  },
+  "independence": {
+    "implemented_candidate": false,
+    "annotated_dataset": false,
+    "participated_in_first_holdout": false,
+    "accessed_first_holdout_content": false,
+    "accessed_prior_holdout_responses_or_answer_keys": false,
+    "root_agent_excluded_from_holdout_content": true,
+    "basis": "Independent second-run operator task. Before freeze it inspected only public code, methodology, scaffold, attestations, and content-free identities; the sealed dataset was handled only as an opaque path and digest."
+  },
+  "curator": {
+    "status": "independent_curator_handoff_complete",
+    "id": "Codex subagent /root/fresh_holdout_curator",
+    "curation_commit": "c71e7e1771d74b60e2a7ba6d84599aac683cef9c",
+    "curation_pre_registration_sha256": "db6115382957739b0dbfcdfa6e6054c39aa26935447c2fd76c2a82c2e0a24c8d",
+    "independence_attestation_sha256": "c773c70d16ad6bb32014b1becc3730104ff3ee81b6962f117f6ccbe20143565a",
+    "sealed_dataset_path": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/sealed-dataset.json",
+    "sealed_dataset_sha256": "331bd256c3097c61b34b3ccbc7716a161a315c76f2a41e22c4a4f88085eb85ae"
+  },
+  "frozen_identities": {
+    "product_candidate_sha": "1430daf27e795c8c3a7dcc230d858935044bc33f",
+    "freeze_base_sha": "595ea58ff030449a68272c285c61d08c29a32856",
+    "capture_candidate_sha": "94de3233d38deb5bff2e372341d9c853e8533b0c",
+    "indexed_repository": "cobra",
+    "indexed_repository_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+    "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+    "tokenizer_vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+    "actor_visible_version": "task_context/2-compact/5",
+    "run_directory": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout"
+  },
+  "execution": {
+    "attested_at_utc": "2026-09-13T15:51:20Z",
+    "candidate_worktree_clean": true,
+    "indexed_worktree_clean": true,
+    "precondition_record_sha256": "e287398747c0b3d263a1ea5a33083ef6aaa424217cc61b18575709d4ca04a17d",
+    "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+    "two_build_reproducibility": "PASS: 64/64 exact MCP bytes, response digests, tokenizer counts, and prompts identical across distinct ready index generations; maximum 1193/1200 cl100k",
+    "isolation_controls": [
+      "Every participant item uses a new codex exec --ephemeral process; no resume or fork",
+      "Every participant item uses --ignore-user-config --ignore-rules -s read-only",
+      "Exactly one allowed input and direct -o output per item",
+      "Confidential --json log must match the exact agent_message-only event allowlist",
+      "Any process, tool-event, validation, or overwrite failure refuses the run without retry"
+    ],
+    "limitations": [
+      "OpenAI exposes no immutable backend model snapshot/build digest, so model behavior is not byte-reproducible.",
+      "Repository-writer malice remains outside the isolation guarantee described by the public threat model."
+    ]
+  },
+  "phase_commits": {
+    "capture_evidence": "956d89ab",
+    "primary_raw": "c1703470",
+    "primary_sealed": "88665b01",
+    "blind_grades_raw": "a799fadf",
+    "blind_grades_sealed": "ef119cf6",
+    "adjudications_raw": "21001a11",
+    "adjudications_sealed": "3b27bc3d",
+    "adjudication_grades_raw": "50929584",
+    "adjudication_grades_sealed": "78697ef3"
+  },
+  "decision": {
+    "decide_invocations": 1,
+    "decide_exit_code": 1,
+    "release": "NO",
+    "n": 64,
+    "k": 56,
+    "pass_count": 42,
+    "primary_disagreement_count": 2,
+    "adjudication_count": 2,
+    "sealed_status_insufficient_count": 0,
+    "insufficient_prefix_count": 39,
+    "insufficient_prefix_by_primary": {
+      "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4": 20,
+      "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4": 19
+    },
+    "outcome_sha256": "4bcfd50c22ba1c4cb5fb75b46994de6c1d236cad386863ebd426efc37df68d47",
+    "end_of_run_hash_comparison_sha256": "3a57ae4c23a763adab3dbbfdbd4378ff0d156fc4b2e4f810dd00535302bdf248",
+    "all_frozen_input_hashes_match": true,
+    "process_failures": 0,
+    "forbidden_tool_events": 0,
+    "retries": 0
+  },
+  "declaration": "The independent second-run operator attests that the frozen inputs and candidate bindings matched; both captures were byte-, digest-, and token-reproducible; every participant process passed the pre-registered event audit; no retry, overwrite, waiver, or disclosure to the root orchestration agent occurred; and the single mechanical decision was RELEASE: NO at 42/64 against k=56. The harness sealed all 128 primary responses with status answered; a separate mechanical text-prefix audit found 39 responses beginning with INSUFFICIENT."
+}

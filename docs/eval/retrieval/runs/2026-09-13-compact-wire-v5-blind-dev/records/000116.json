@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 116,
+  "previous_sha256": "41fae0e7a22d7c0b94e45797f80b5a708fc2d9dde9912a04c86726e299eeb77b",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "c8a54b0e8033c0d479d38507313f28a1e73146e6eca803108b41227fdc7dcaf9",
+  "outcome": "pass",
+  "rationale": "PASS: The answer correctly identifies both environment variables and their precedence from the exact bundled code and comments.\n",
+  "sha256": "840865c09a898a3b12a6edddc4ea66a1e98549326f4d3b17527b92f87dd7ef3c"
+}

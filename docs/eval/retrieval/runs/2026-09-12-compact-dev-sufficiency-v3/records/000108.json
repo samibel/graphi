@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 108,
+  "previous_sha256": "b5246a5d0cdef375574a0571bd4376eb9448a56ace40d9092e67188f5498a532",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "73a4c2dece45cfb7d4f46116abaa74922f3a88e9e14f57b9a2f59292eac2ecc1",
+  "outcome": "pass",
+  "rationale": "The preserved man generator supports recursive child-first traversal, filtering and error propagation; the answer confines Markdown/YAML claims to their visible loops.\n",
+  "sha256": "cc0093c2f3a1f605a1692200bd8cce79b4c00207856e35ac93815003e0117cf6"
+}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `ShellCompRequestCmd = "__complete"` in `completions.go:27–29` and `initCompleteCmd` at lines 193–194, but omits the implementation that transforms and emits results and removes the command when unused.

@@ -1,0 +1,1 @@
+FAIL: The panic citation to cobra.go lines 147–148 does not support the claim: those lines contain a blank line and the switch statement. The unsupported kinds and panic appear at lines 149–150.

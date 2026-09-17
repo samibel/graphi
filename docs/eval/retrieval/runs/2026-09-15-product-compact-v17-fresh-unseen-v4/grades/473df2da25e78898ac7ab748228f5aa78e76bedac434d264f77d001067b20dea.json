@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-3d78a2b50ce4",
+  "response_sha256": "473df2da25e78898ac7ab748228f5aa78e76bedac434d264f77d001067b20dea",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response’s child-target and flag claims are supported by the bundle, but it omits the essential reviewed behavior: invoking root help for the child displays the child’s long description without error. The bundle does not contain that test or its long-description assertion.",
+  "graded_at": "2026-09-15T20:51:08Z",
+  "sha256": "01fbd38ed49b3391e543ccfd28745c9c9ee2891a1b2b8e988d9528c0b36061fa"
+}

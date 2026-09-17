@@ -1,0 +1,3 @@
+No. `HasSubCommands()` simply returns `len(c.commands) > 0` (`command.go:1555–1558`), so hidden or deprecated children still count.
+
+They are excluded from *available* subcommands: `IsAvailableCommand()` returns false when `len(c.Deprecated) != 0 || c.Hidden` (`command.go:1560–1565`), and `HasAvailableSubCommands()` checks children using that method (`command.go:1615–1629`).

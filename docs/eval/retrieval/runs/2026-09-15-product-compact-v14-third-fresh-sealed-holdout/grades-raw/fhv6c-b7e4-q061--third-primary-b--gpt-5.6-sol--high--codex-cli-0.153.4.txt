@@ -1,0 +1,1 @@
+FAIL: The response does not answer whether hidden commands execute. The transcript supports their exclusion from availability listings but lacks the execution logic or focused test needed to establish the essential behavior.

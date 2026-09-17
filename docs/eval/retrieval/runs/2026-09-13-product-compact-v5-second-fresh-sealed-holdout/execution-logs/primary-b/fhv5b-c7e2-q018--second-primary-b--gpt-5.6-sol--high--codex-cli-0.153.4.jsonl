@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-90a7-7520-a333-769509306509"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Filename extensions are attached as a pflag annotation:\n\n```go\nflags.SetAnnotation(name, BashCompFilenameExt, extensions)\n```\n\nHere, `extensions` is the variadic `[]string`, and `BashCompFilenameExt` is `\"cobra_annotation_bash_completion_filename_extensions\"` ([shell_completions.go, lines 65–69]; [bash_completions.go, lines 28–34]). The command method applies this to `c.Flags()` ([shell_completions.go, lines 42–46]); persistent flags use `c.PersistentFlags()` ([shell_completions.go, lines 58–63])."}}
+{"type":"turn.completed","usage":{"input_tokens":16626,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":132,"reasoning_output_tokens":0}}

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does the documentation generator walk the command tree
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s) for \"how does the documentation generator walk the command tree\"; read in order (245/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"command.go","start_line":47,"end_line":52,"text":"// Command is just that, a command for your application.\n// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message."},{"path":"command.go","start_line":56,"end_line":56,"text":"\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"command.go","start_line":47,"end_line":47,"text":"// Command is just that, a command for your application."},{"path":"doc/man_docs.go","start_line":46,"end_line":80,"text":"// GenManTreeFromOpts generates a man page for the command and all descendants.\n// The pages are written to the opts.Path directory.\nfunc GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {\n\theader := opts.Header\n\tif header == nil {\n\t\theader = \u0026GenManHeader{}\n\t}\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenManTreeFromOpts(c, opts); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tsection := \"1\"\n\tif header.Section != \"\" {\n\t\tsection = header.Section\n\t}\n\n\tseparator := \"_\"\n\tif opts.CommandSeparator != \"\" {\n\t\tseparator = opts.CommandSeparator\n\t}\n\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", separator)\n\tfilename := filepath.Join(opts.Path, basename+\".\"+section)\n\tf, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer f.Close()\n\n\theaderCopy := *header\n\treturn GenMan(cmd, \u0026headerCopy, f)\n}"},{"path":"doc/man_docs.go","start_line":38,"end_line":38,"text":"func GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {"},{"path":"doc/man_docs.go","start_line":47,"end_line":47,"text":"// The pages are written to the opts.Path directory."},{"path":"doc/md_docs.go","start_line":125,"end_line":125,"text":"func GenMarkdownTree(cmd *cobra.Command, dir string) error {"},{"path":"doc/md_docs.go","start_line":132,"end_line":132,"text":"// with custom filePrepender and linkHandler."},{"path":"doc/md_docs.go","start_line":133,"end_line":133,"text":"func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {"}],"provenance":{"input_sha256":"28b4693f740e56d8b7106e4e2a4ab9d9250538a122a89fd468b678c3da90bace","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-56c5-7323-80e1-c559f252dc12"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnInitialize` appends all supplied callbacks to the `initializers` slice, preserving their order and retaining callbacks registered by earlier calls (`cobra.go:99–100`, `initializers = append(initializers, y...)`).\n\n`Command.preRun` then invokes each callback sequentially in that order (`command.go:1015–1019`, `for _, x := range initializers { x() }`). The comment documents that they run when each command’s `Execute` method is called (`cobra.go:97–98`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17367,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":112,"reasoning_output_tokens":0}}

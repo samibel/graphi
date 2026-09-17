@@ -1,0 +1,1 @@
+PASS: The response identifies `ShellCompDirective` as an `int` bitmap for shell-completion behavior, supported by `completions.go:41–43`. Its flag list, string formatting, invalid-value handling, and Error/NoSpace descriptions are supported by the cited transcript spans.

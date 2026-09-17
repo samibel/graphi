@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q001",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "224ef6274d03c46c54755799e7347cd1be4a4faffc6de08df4bdf101026abfa8",
+  "bundle_sha256": "1536221d0457d34203a01b78156292245988f9ae38dd59e0c0168a0b7fa4a012",
+  "prompt_sha256": "d65caa4d67f16d2d730d0e17fb0c4313f32435a2a1dabb6441d58656ddf0c3c0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`getCommand` is a test helper in `args_test.go:23–33`. It creates and returns a `*Command` with:\n\n- `Use: \"c\"`\n- `Args: args`\n- `Run: emptyRun`\n- `ValidArgs: []string{\"one\", \"two\", \"three\"}` only when `withValid` is `true`\n\nEvidence: `func getCommand(args PositionalArgs, withValid bool) *Command` and its struct initialization in `args_test.go:23–33`.",
+  "responded_at": "2026-09-15T08:28:31Z",
+  "sha256": "f550d1de0247dab36e9013124777fac2fe3c7d5eae7e1c72665d654fc49f7745"
+}

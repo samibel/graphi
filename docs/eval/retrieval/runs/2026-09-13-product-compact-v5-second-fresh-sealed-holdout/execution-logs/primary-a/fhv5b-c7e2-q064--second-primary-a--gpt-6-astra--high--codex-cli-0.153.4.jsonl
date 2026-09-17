@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b63-4aa8-72f0-8364-6a478ec2d3d4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"On the first call to `(*Command).Flags()`, if `c.flags` is nil, it initializes:\n\n- `c.flags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`.\n- `c.flagErrorBuf` with a new `bytes.Buffer`, if that buffer is nil.\n- The flag set’s output to `c.flagErrorBuf` via `SetOutput`.\n\nIt then returns `c.flags` (`command.go`, lines 1643–1652)."}}
+{"type":"turn.completed","usage":{"input_tokens":17542,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":0}}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 132,
+  "previous_sha256": "c601cc1d96cfa54263c348a82803d4bccbd39bc7eb7bad6c385fedb0794fd6ec",
+  "kind": "grade",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "d278ae998093667b1154a48373232a495c9cdb6a51abd38a9509293198eb4f76",
+  "outcome": "pass",
+  "rationale": "PASS: The caller-facing recommendation, portability claim, hidden protocol command, and Zsh generator are all explicitly supported by the bundle.\n",
+  "sha256": "8156f325a364081a825ec3b091e6f7669cf7f601f6670c9cada9b3816acfa2b5"
+}

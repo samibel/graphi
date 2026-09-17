@@ -1,0 +1,9 @@
+Cobra’s generated completion scripts automatically complete commands and flags; noun and flag-value completion can be customized, with static noun choices supplied through `ValidArgs` (`site/content/completions/_index.md:115–127`).
+
+The default `completion` command is added by `(*Command).InitDefaultCompletionCmd`, unless it is disabled, the command has no subcommands, or the program already defines one (`completions.go:678–685`). Completion descriptions can be disabled with:
+
+```go
+rootCmd.CompletionOptions.DisableDescriptions = true
+```
+
+(`site/content/completions/_index.md:112–120`). The built-in flag is named `no-descriptions` and defaults to `false` (`completions.go:95–102`).

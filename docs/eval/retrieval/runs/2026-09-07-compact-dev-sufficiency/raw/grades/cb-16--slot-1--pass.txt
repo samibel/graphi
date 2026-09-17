@@ -1,0 +1,1 @@
+cobra.go:187-188 explicitly identifies ld and its Levenshtein purpose, satisfying the location question. The supplementary description is fully supported by command.go:835-837, including the true argument, available-command condition and SuggestionsMinimumDistance comparison.

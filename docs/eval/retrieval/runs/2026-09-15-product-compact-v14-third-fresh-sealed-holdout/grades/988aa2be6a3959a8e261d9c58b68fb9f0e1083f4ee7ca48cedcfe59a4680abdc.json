@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q020",
+  "response_sha256": "988aa2be6a3959a8e261d9c58b68fb9f0e1083f4ee7ca48cedcfe59a4680abdc",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response describes the visible declarations but does not identify which hidden completion command the no-description Fish script calls, the essential reviewed behavior. The preserved transcript ends that test at line 38, before its assertion, so this required fact cannot be verified.",
+  "graded_at": "2026-09-15T08:33:33Z",
+  "sha256": "491022a4820eb7a41fc7102cecf768bd778a6e07592efb4b1098f04c97d836a2"
+}

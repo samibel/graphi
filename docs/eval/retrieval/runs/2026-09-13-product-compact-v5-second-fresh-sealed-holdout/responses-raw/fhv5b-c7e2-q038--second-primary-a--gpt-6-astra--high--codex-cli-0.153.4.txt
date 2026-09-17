@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the annotation-handling branches of `writeFlagHandler` in `bash_completions.go`, showing only its loop (lines 459–460) and an isolated append (line 471), so the filename, custom-handler, and subdirectory conversion logic is missing.

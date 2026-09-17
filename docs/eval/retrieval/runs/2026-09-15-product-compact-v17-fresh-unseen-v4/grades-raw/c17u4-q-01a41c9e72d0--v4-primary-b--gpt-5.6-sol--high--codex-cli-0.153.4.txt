@@ -1,0 +1,1 @@
+PASS: The response correctly identifies all accepted argument cases and the root-with-subcommands, nonempty-arguments error condition. Its explanation of suggestion inclusion and omission is supported by findSuggestions, and all citations resolve within the bundle.

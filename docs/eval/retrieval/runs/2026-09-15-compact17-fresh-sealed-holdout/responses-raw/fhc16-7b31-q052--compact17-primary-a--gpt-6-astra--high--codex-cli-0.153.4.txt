@@ -1,0 +1,1 @@
+INSUFFICIENT The response does not document the default for Zsh noun file completion or how to disable it per argument; `site/content/completions/_index.md:452–462` only discusses Zsh setup and disabling completion descriptions.

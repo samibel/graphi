@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+MarkFlagsMutuallyExclusive
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"MarkFlagsMutuallyExclusive\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"flag_groups.go","start_line":64,"end_line":66,"text":"// if the command is invoked with more than one flag from the given set of flags.\nfunc (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"flag_groups.go","start_line":48,"end_line":50,"text":"// if the command is invoked without at least one flag from the given set of flags.\nfunc (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"flag_groups.go","start_line":32,"end_line":34,"text":"// if the command is invoked with a subset (but not all) of the given flags.\nfunc (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"command.go","start_line":1642,"end_line":1645,"text":"// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)"},{"path":"command.go","start_line":1848,"end_line":1852,"text":"// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)"},{"path":"command.go","start_line":50,"end_line":52,"text":"// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message."},{"path":"site/content/user_guide.md","start_line":328,"end_line":329,"text":"Or, for persistent flags:\n```go"},{"path":"flag_groups.go","start_line":28,"end_line":28,"text":"\tmutuallyExclusive = \"cobra_annotation_mutually_exclusive\""}],"provenance":{"input_sha256":"1e456a1ad8fff612c41708d1013057d31ee14e935c5b6e64853b057ce608ccf9","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

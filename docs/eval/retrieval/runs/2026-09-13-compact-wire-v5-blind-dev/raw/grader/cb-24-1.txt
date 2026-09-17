@@ -1,0 +1,1 @@
+FAIL: The answer covers one-required and mutually-exclusive effects but omits required-together enforcement and has no bundled call site establishing when completion invokes the method. It is therefore insufficient against the development key.

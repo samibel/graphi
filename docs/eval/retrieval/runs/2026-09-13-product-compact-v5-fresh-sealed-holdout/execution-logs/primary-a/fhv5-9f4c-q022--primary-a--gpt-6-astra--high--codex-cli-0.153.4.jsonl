@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac2-033f-7f42-a491-afadb9d690ce"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It prints `MousetrapHelpText` when the text is nonempty and `mousetrap.StartedByExplorer()` is true (`command_win.go:31–32`). The default message tells users to open `cmd.exe` and run the tool there. Its documented display duration is 5 seconds, or until Return is pressed if `MousetrapDisplayDuration` is set to 0 (`cobra.go:68–81`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17248,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":204,"reasoning_output_tokens":107}}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 39,
+  "previous_sha256": "44f4392aa5f477ed025389a18aaecfe02ea953b578fe184174c3847fafa27a00",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "4f3f06f713f20101291de83c885d50365da721936c94c6b7c4030c789b517340",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT\n\nThe response shows that a shell adapter must invoke `__complete`, read stdout choices followed by `:\u003cdirective\u003e`, and ignore stderr (`completions.go:26-33, 240-251`), but it omits the argument encoding, completion format, directive values, and shell-specific integration needed to implement another shell.",
+  "sha256": "6a7171571aebc51606bbfa42117d4ba324f9b61afe5ff89de2267858640715e6"
+}

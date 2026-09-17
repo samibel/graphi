@@ -1,0 +1,1 @@
+PASS: The response correctly describes iterating over every supplied map entry and assigning it to the shared `templateFuncs` registry. The code and supporting registry/template-use claims are preserved in the bundle, and citations resolve within its spans.

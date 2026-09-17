@@ -1,0 +1,1 @@
+Yes, but not with the default flag: `command.go:1195` defines `--help` and `-h` as one boolean via `BoolP("help", "h", ...)`, and execution reads only `"help"` (`command.go:894`). To distinguish them, define your own `"help"` flag before execution—`InitDefaultHelpFlag` does nothing if it already exists (`command.go:1186-1189`)—and register `-h` separately.

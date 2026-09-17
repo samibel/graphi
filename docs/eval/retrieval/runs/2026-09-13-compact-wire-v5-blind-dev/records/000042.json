@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 42,
+  "previous_sha256": "1408d8c82101c13d97293321166493e26fac4e7eddaa0b850673b0c5113408bf",
+  "kind": "response",
+  "query_id": "cb-02",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "23c1517342bc39ee3ef61b13a3654123989bcbbf46b45d8ff2b91a77b79d252c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).MarkFlagsMutuallyExclusive(flagNames...)` merges persistent flags, verifies every named flag exists, and annotates each with the space-joined group under `cobra_annotation_mutually_exclusive`. A missing flag or annotation error causes a panic; repeated calls create separate group entries, so a flag can belong to multiple groups (`flag_groups.go:63-78`; annotation constant at `flag_groups.go:25-29`).\n",
+  "sha256": "49cd2f608206b3b61d1c28af0295bcb5c2c3279570876789ee18dfa183afa963"
+}

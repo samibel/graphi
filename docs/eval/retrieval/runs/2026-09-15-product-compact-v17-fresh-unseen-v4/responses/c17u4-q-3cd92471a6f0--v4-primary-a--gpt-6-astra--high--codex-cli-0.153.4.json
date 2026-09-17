@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-3cd92471a6f0",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "3bc1026bed65d74470a4d22f994d43951a84d083a83c82a29b14f8f09b00bccb",
+  "bundle_sha256": "51bed3f7aeea2f45dc11c043612b397a13a390291197dbbbcf03fa336fee9297",
+  "prompt_sha256": "5b88eba8b5fe3c96aef5d4f99ed4666e82228c86b962050e7b439f9cf4d59479",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows help-flag initialization and merging in `command.go`, but omits the help-flag merge test and its assertions needed to identify what it establishes.",
+  "responded_at": "2026-09-15T20:31:02Z",
+  "sha256": "3980e376e6af907eb43aa4fa9123e47e49d74673d94de6385dcb9d3a4bc31fca"
+}

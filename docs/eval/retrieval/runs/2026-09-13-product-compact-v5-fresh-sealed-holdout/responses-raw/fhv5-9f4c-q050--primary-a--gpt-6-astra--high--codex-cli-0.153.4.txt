@@ -1,0 +1,1 @@
+INSUFFICIENT The response names filtering directives but contains no evidence identifying which annotations, helper functions, or directives Fish completion does not support.

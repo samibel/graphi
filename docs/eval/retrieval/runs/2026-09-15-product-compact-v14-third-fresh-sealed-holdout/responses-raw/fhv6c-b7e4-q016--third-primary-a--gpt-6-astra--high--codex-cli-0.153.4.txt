@@ -1,0 +1,8 @@
+`command_test.go` belongs to package `cobra` (line 15). The supplied excerpts show:
+
+- **Execution helpers:** `executeCommand` delegates to `executeCommandC` (lines 32–35). `executeCommandWithContext` and `executeCommandC` configure an output buffer, error output, and arguments before calling `ExecuteContext` or `ExecuteC` (lines 37–55). `executeCommandWithContextC` is also declared (lines 59–62).
+- **Flag reset helper:** `resetCommandLineFlagSet` replaces `pflag.CommandLine` with a new flag set using `os.Args[0]` and `pflag.ExitOnError` (lines 70–72).
+- **Tests:** `TestSingleCommand` configures exactly two arguments (lines 88–92); `TestChildCommand` builds root and child commands (lines 113–117); `TestCommandAlias` defines `echo` aliases `say` and `tell`, plus a `times` subcommand (lines 274–289).
+- **Flag shadowing test:** `TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag` creates parent persistent flags and child local flags, with the child’s `foo` shadowing the parent’s (lines 931–940).
+
+The response is truncated, so this is a partial inventory of the file’s declarations.

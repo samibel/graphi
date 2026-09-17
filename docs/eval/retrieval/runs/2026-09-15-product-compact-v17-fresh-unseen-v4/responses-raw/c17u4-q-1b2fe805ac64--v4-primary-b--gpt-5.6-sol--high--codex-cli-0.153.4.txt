@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains only the first line of `Gt`’s comment at `cobra.go:111`, not its implementation or the lines describing conversions for collections, integers, and numeric strings.

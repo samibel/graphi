@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-7131-79b0-8a35-623d80e3c5ea"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that SetErr(nil) clears the command’s error writer, so ErrOrStderr returns the nearest ancestor’s non-nil error writer or falls back to os.Stderr. All cited ranges exist in the transcript and support this behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":17869,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}

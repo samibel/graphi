@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q009",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "2f25ccd547b0becf5f555bc126c95193ced8297304466329eaf874a7f0cde1e9",
+  "bundle_sha256": "ecb91935b1c6b4222df265f3ec3c45d691f2312940fd1b6ac215896438219be3",
+  "prompt_sha256": "aa80f37ebebfbe3e93824ce9e2c6bd3298f0d10c70f081b7e099dca45bc33cf4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For children passing `cmd.IsAvailableCommand()` (`command.go:835`), `SuggestionsFor` suggests a command through three mechanisms:\n\n1. **Levenshtein distance:** `ld(typedName, cmd.Name(), true) \u003c= c.SuggestionsMinimumDistance` (lines 836–837).\n2. **Case-insensitive prefix:** the lowercased command name starts with the lowercased `typedName` (line 838).\n3. **Explicit suggestion match:** `typedName` matches an entry in `cmd.SuggestFor` using `strings.EqualFold` (lines 842–845).",
+  "responded_at": "2026-09-13T12:31:49Z",
+  "sha256": "179ed86c151f5c8b850858a834cc2cbc24fd48aeb4b49f8ce84ac5db674bf5e7"
+}

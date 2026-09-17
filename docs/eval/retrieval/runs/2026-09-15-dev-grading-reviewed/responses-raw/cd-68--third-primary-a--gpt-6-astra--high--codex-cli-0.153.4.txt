@@ -1,0 +1,11 @@
+`CompErrorln(msg string)` prints a completion error to stderr with a trailing newline.
+
+- It calls `CompError(fmt.Sprintf("%s\n", msg))` (`completions.go:898–901`).
+- `CompError` adds `[Error] ` and calls `CompDebug(msg, true)` (`completions.go:892–896`).
+- `CompDebug` adds `[Debug] `, prints to stderr, and also appends to `BASH_COMP_DEBUG_FILE` if set and successfully opened (`completions.go:860–882`).
+
+Thus, `CompErrorln("oops")` produces:
+```text
+[Debug] [Error] oops
+```
+followed by a newline.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q015",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "6c3d2b24f4200515bba33f161ca08fb75a636b63834fb3cd824555e5b90459e5",
+  "bundle_sha256": "b00839cb9d73c2d4391b3efc24fc8135bf73e703204f26e7f137e1d6278c4820",
+  "prompt_sha256": "3f448fdc685c9a2522b5fb0f9ddad63f64161e72790e37550e34488b1eda3eb9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the candidate-emission logic in `completions.go:getFlagNameCompletions` and the reason for excluding the equals form; line 542 only says “Flag without the =”.",
+  "responded_at": "2026-09-13T12:32:32Z",
+  "sha256": "e5be269c4b6dd473d4227fd88565b70dbde18baad9f3369e927938eec7d449cd"
+}

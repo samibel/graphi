@@ -1,0 +1,1 @@
+In a test, inject command-line flags with `cmd.SetArgs([]string{"--flag", "value"})` before calling `Execute`; `SetArgs` explicitly overrides the default `os.Args[1:]` and is intended for testing (`command.go:274-279`). The command's effective set is available through `Flags()` (`command.go:1641-1653`), with persistent parent flags merged in (`command.go:1847-1853`).

@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer how suppression works. The transcript shows the local-flag membership and `flag.Changed` check at `completions.go:444`, but omits the `TraverseChildren` exception and control flow that skips subcommand completion.

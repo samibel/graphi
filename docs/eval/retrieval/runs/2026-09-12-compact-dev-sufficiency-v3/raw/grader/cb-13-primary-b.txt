@@ -1,0 +1,1 @@
+command.go:750-762 and 832-850 directly support all described suggestion criteria and formatting, agreeing with the development key.

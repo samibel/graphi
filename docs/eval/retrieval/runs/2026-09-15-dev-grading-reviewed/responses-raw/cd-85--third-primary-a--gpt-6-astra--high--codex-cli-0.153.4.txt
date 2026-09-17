@@ -1,0 +1,12 @@
+`LocalFlags()` in `command.go:1668–1693` builds the view as follows:
+
+1. Calls `c.mergePersistentFlags()`.
+2. Creates `c.lflags` only if nil, using the command name, `flag.ContinueOnError`, and `c.flagErrorBuf` for output. It copies `c.Flags().SortFlags` and applies `c.globNormFunc` when present.
+3. Visits both `c.Flags()` and `c.PersistentFlags()` with `addToLocal`, adding a flag only when:
+   ```go
+   c.lflags.Lookup(f.Name) == nil && f != c.parentsPflags.Lookup(f.Name)
+   ```
+   The first condition prevents duplicate names. The pointer comparison excludes the actual parent persistent flag, while allowing a distinct local flag with the same name to shadow it.
+4. Returns `c.lflags`.
+
+Strictly, it **reuses and populates** the cached set; the shown implementation does not clear it before rebuilding the view.

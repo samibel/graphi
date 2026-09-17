@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows shorthand suggestion generation in `completions.go:558–560`, but omits the body of `checkIfFlagCompletion` at `completions.go:592` and any code that resolves a one-letter shorthand to its flag.

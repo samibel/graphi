@@ -1,0 +1,1 @@
+No. In `command.go:1656-1666`, `LocalNonPersistentFlags` gets `persistentFlags := c.PersistentFlags()` and only adds local flags when `persistentFlags.Lookup(f.Name) == nil`. Although `LocalFlags` includes current-command persistent flags (`command.go:1689`), `LocalNonPersistentFlags` explicitly filters them out.

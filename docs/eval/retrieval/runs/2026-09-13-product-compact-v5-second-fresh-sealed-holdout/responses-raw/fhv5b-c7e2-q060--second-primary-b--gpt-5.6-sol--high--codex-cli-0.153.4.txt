@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `commandCalledAs` fields in `command.go:207-212`, but not the method that returns the name or alias before invocation.

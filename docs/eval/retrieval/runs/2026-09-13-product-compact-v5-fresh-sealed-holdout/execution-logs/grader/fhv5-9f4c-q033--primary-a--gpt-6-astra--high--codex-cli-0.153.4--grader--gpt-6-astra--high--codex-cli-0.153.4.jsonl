@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad1-ef47-7943-851a-c0fa2e354ac8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies that warnings print only when parsing succeeds (`err == nil`) and new warning text has accumulated in the buffer, directly supported by the supplied `command.go:1834–1835` span."}}
+{"type":"turn.completed","usage":{"input_tokens":18081,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":80,"reasoning_output_tokens":29}}

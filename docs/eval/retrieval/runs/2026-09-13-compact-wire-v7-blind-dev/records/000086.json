@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 86,
+  "previous_sha256": "47bfbe085e044b3f21ac66fb3e96622cc4d7b2df3c21d2b9d7e013183ddf98f2",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "356ff5c05323c2de90a5a0321b85b4b73a3b94efdbafb3fd9ff3d0daf9f60db5",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `doc/md_docs.go:119-129` states the purpose, signature, hyphen warning, and delegation to `GenMarkdownTreeCustom` with an empty prepender and identity link handler. `doc/md_docs.go:131-158` supports recursive processing of available non-additional-help commands, filename construction from the command path with spaces replaced by underscores, file creation, and generation through `GenMarkdownCustom`. `doc/md_docs.go:30` defines the `.md` extension.\n",
+  "sha256": "51cefeef3d3e57c6f4373feea25ee836f156e555af3642083cd48ee93f10c19b"
+}
