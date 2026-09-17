@@ -46,10 +46,7 @@ func TestDevGradingCapture(t *testing.T) {
 	if err != nil || !strings.EqualFold(head, loaded.Dataset.RepoSHA) {
 		t.Fatalf("checkout is at %q, dataset cites %q: %v", head, loaded.Dataset.RepoSHA, err)
 	}
-	counter, err := LoadPinnedRealPayloadCounter()
-	if err != nil {
-		t.Fatal(err)
-	}
+	counter := loadEmbeddedRealPayloadCounterForTest(t)
 	selector := os.Getenv("GRAPHI_RECOVERY_EMBEDDER")
 	if selector == "" {
 		selector = staticembed.PinnedSelector

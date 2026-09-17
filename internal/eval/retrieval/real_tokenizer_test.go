@@ -10,6 +10,20 @@ import (
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
+// loadEmbeddedRealPayloadCounterForTest keeps hermetic tests independent from
+// an evaluator-wide external artifact override. Tests for the override itself
+// call LoadPinnedRealPayloadCounter directly and retain its fail-closed
+// production semantics.
+func loadEmbeddedRealPayloadCounterForTest(t *testing.T) PayloadCounter {
+	t.Helper()
+	t.Setenv("GRAPHI_EVAL_TOKENIZER_DIR", "")
+	counter, err := LoadPinnedRealPayloadCounter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return counter
+}
+
 func TestPinnedRealPayloadCounter_RecomputesPreservedBytesWithoutMutation(t *testing.T) {
 	dir := filepath.Join("..", "tokenizer", "testdata", "artifact")
 	tok, err := evaltokenizer.Load(dir)

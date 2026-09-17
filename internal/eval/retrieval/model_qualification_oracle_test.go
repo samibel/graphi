@@ -225,10 +225,7 @@ func TestBuildOracleControlsStopsBeforeOverBudgetGrade3Span(t *testing.T) {
 
 func oracleFixture(t *testing.T) OracleInput {
 	t.Helper()
-	counter, err := LoadPinnedRealPayloadCounter()
-	if err != nil {
-		t.Fatal(err)
-	}
+	counter := loadEmbeddedRealPayloadCounterForTest(t)
 	answer := "package p\nfunc Answer() int {\n\treturn 42\n}\n"
 	distractor := "package p\nfunc Needle() {}\n"
 	return OracleInput{

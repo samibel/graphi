@@ -718,10 +718,7 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 	if err := CheckSpanCoverage(repositoryRoot, loaded.Dataset); err != nil {
 		t.Fatal(err)
 	}
-	counter, err := LoadPinnedRealPayloadCounter()
-	if err != nil {
-		t.Fatal(err)
-	}
+	counter := loadEmbeddedRealPayloadCounterForTest(t)
 
 	bundlePath := filepath.Join(moduleRoot, "docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/bundles-after.json")
 	bundleRaw, err := os.ReadFile(bundlePath)

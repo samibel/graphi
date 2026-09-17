@@ -31,10 +31,7 @@ func compactSufficiencyFixture(t *testing.T) (CompactDevSufficiencyRegistration,
 	if err != nil {
 		t.Fatal(err)
 	}
-	real, err := LoadPinnedRealPayloadCounter()
-	if err != nil {
-		t.Fatal(err)
-	}
+	real := loadEmbeddedRealPayloadCounterForTest(t)
 	input := compactTaskContextDevFixtureInput(t, real)
 	members, err := SelectEqualRecallDevPopulation(&ds)
 	if err != nil {
