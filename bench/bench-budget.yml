@@ -274,7 +274,60 @@ version: 1
 # edited. No metric is added, removed, re-severitied or soft-failed; it carries
 # no `severity` key and still gates at `fail` (internal/bench/budget.go:186,191).
 # bench/lang-budget.md is NOT touched — the SW-177/SW-203 refusals stand.
-baseline_version: "2026-09-02-sw264-budget-raise-go1.26.6-linux-amd64-release"
+#
+# 2026-09-17-embedded-model-dev-qualification: binary_size_bytes' baseline is
+# re-pinned from 36,248,410 B to 37,014,355 B and its budget is raised from
+# 37,000,000 B to 37,800,000 B. Only this metric moves. The raise is taken under
+# R3's existing trigger and preserves the R1/R2/R4 refusals.
+#
+# WHY NOW — R3 HAS FIRED. A same-method canonical linux/amd64 GOAMD64=v1 release
+# build of the PR merge-base @ 06d8d95 is 36,996,046 B, only 3,954 B below the
+# old budget. That is 4.5% of the required 88,540 B toolchain-noise buffer and
+# less than the measured 8,854 B go1.26.5 -> go1.26.6 event itself. The branch
+# head @ 2a14902 is 37,014,355 B, so the old gate fails by 14,355 B. Even deleting
+# the branch's entire 18,309 B growth would leave the base below R3's refusal
+# line; the budget had stopped discriminating before this branch crossed it.
+#
+# R1 — ATTRIBUTION. Both binaries were built from clean ordinary clones with
+# internal/release.BuildInModule, CGO_ENABLED=0, GOOS=linux, GOARCH=amd64,
+# GOAMD64=v1, Version=dev and DefaultGrammarSubsetTags. The result reproduces CI
+# exactly at 37,014,355 B. Head minus merge-base is +18,309 B. `go tool nm -size`
+# accounts for +7,633 B of that delta:
+#     engine/embed                                  +2,978 B
+#     engine/agenttools/taskctx/compact             +1,196 B
+#     engine/agenttools/taskctx/compact/v9            +842 B
+#     engine/embed/static                             +819 B
+#     go:func metadata                                +616 B
+#     surfaces/mcp                                    +544 B
+#     type metadata                                   +489 B
+#     runtime                                          +76 B
+#     internal/canary                                  +73 B
+# The remaining 10,676 B is non-symbol linker metadata and section alignment.
+# The linked code is the shipped attestation/query-publication enforcement and
+# the compact retrieval seam needed to keep the optional evaluation profile
+# honest; CodeRank itself remains outside the default dependency graph.
+#
+# R2 — DOES NOT APPLY. `go list -deps` for the exact default build is identical
+# before and after. go.mod, go.sum and internal/release/build.go are byte-unchanged.
+# The subset-grammar symbol inventory is also identical (40 symbols before and
+# after), so there is no new external dependency, newly linked existing package,
+# grammar tag or grammar blob.
+#
+# R4 — RESPECTED. 37,800,000 B remains 2,200,000 B below R4's 40,000,000 B line
+# and 12,200,000 B below the hard <50 MB product ceiling. No ADR change is needed.
+#
+# WHY 37,800,000 AND NOT MORE. It leaves 785,645 B over the new baseline, the
+# same order as the 751,590 B and 748,694 B headrooms established by the prior
+# two decisions. The ratchet regains its previous grip without buying an open-
+# ended allowance.
+#
+# THE NEXT REFUSAL LINE. R1, R2 and R4 remain unchanged. Under R3, another raise
+# is refused until a measured default binary comes within 88,540 B of 37,800,000
+# B, i.e. reaches approximately 37,711,460 B.
+#
+# NOTHING ELSE MOVES. No metric is added, removed, re-severitied or soft-failed;
+# binary_size_bytes still gates at fail. bench/lang-budget.md is not widened.
+baseline_version: "2026-09-17-embedded-model-dev-qualification-go1.26.6-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
@@ -301,8 +354,10 @@ metrics:
     # 0.42x the 88,540 B toolchain-noise event, well under R3's 10x line. See the
     # 2026-09-02-sw264-budget-raise note above for the R1 attribution, the R2/R4
     # checks, and the restated refusal line at ~36,911,000 B.
-    baseline: 36248410
-    budget: 37000000
+    # Re-pinned again 2026-09-17 after the measured merge-base had only 3,954 B
+    # of headroom; see the complete R1-R4 record immediately above.
+    baseline: 37014355
+    budget: 37800000
     unit: bytes
   # EP-022 profile-aware metrics (warn-only until calibrated).
   fast_index_ms:
