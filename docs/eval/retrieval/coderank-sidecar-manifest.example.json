@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "protocol": "graphi-coderank/3",
+  "endpoint": "http://127.0.0.1:8765",
+  "model": {
+    "id": "nomic-ai/CodeRankEmbed",
+    "revision": "REPLACE-WITH-IMMUTABLE-COMMIT-SHA",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "tokenizer": {
+    "id": "nomic-ai/CodeRankEmbed",
+    "revision": "REPLACE-WITH-IMMUTABLE-COMMIT-SHA",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "runtime": {
+    "name": "sentence-transformers",
+    "version": "REPLACE-WITH-EXACT-VERSION",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "dimension": 768,
+  "precision": "float32",
+  "normalization": "l2",
+  "compute": "cpu",
+  "admission": {
+    "max_tokens": 8192,
+    "reserve": 0,
+    "algorithm": "first-n-tokens",
+    "algorithm_version": "1"
+  },
+  "query": {
+    "id": "coderank-code-search-query",
+    "version": "1",
+    "instruction": "Represent this query for searching relevant code: ",
+    "instruction_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

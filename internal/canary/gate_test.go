@@ -2,7 +2,9 @@ package canary
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -114,6 +116,64 @@ func TestGate_DoesNotFlagBareNewRequest(t *testing.T) {
 	}
 	if res.EvidenceDigest == "" {
 		t.Fatal("static gate returned a verdict without an evidence digest")
+	}
+}
+
+// The evaluation-only CodeRank adapter is an explicitly constructed,
+// loopback-by-construction transport, just like the opt-in Ollama adapter. The
+// repository-wide raw-source scan deliberately sees packages outside the
+// default binary graph, so this narrow exception must name only that package;
+// a sibling package must remain subject to the outbound-dial gate.
+func TestOutboundDialAllowlist_CodeRankIsNarrow(t *testing.T) {
+	const coderank = "github.com/samibel/graphi/engine/embed/coderank"
+	if !isAllowlistedPkg(coderank) {
+		t.Fatalf("%s is an audited loopback-only adapter and must be allowlisted", coderank)
+	}
+	if isAllowlistedPkg(coderank + "/remote") {
+		t.Fatal("CodeRank exact-package allowlist entry leaked to a descendant package")
+	}
+	if isAllowlistedPkg("github.com/samibel/graphi/engine/embed/coderank_remote") {
+		t.Fatal("CodeRank allowlist entry leaked to a sibling package")
+	}
+}
+
+func TestOutboundDialScan_CodeRankDescendantIsStillScanned(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "engine", "embed", "coderank", "remote")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "remote.go"), []byte(httpClientDoFixture), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	findings, err := scanOutboundDials(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, finding := range findings {
+		if finding.Kind == "outbound-dial" && finding.Import == "github.com/samibel/graphi/engine/embed/coderank/remote" {
+			return
+		}
+	}
+	t.Fatalf("CodeRank descendant escaped outbound-dial scan: %+v", findings)
+}
+
+func TestDefaultGraphDoesNotContainCodeRank(t *testing.T) {
+	root, err := ResolveModuleDir("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("go", "list", "-deps", "-test=false", "./cmd/graphi")
+	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("go list cmd/graphi: %v", err)
+	}
+	for _, dependency := range strings.Fields(string(out)) {
+		if dependency == outboundDialExactCodeRank || strings.HasPrefix(dependency, outboundDialExactCodeRank+"/") {
+			t.Fatalf("default cmd/graphi graph contains evaluation-only CodeRank package %q", dependency)
+		}
 	}
 }
 

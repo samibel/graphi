@@ -105,6 +105,10 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 		}
 		return Result{}, err
 	}
+	return fromV9(summary, structured), nil
+}
+
+func fromV9(summary string, structured compactv9.CompactTaskContextStructured) Result {
 	sources := make([]Source, 0, len(structured.Sources))
 	for _, source := range structured.Sources {
 		sources = append(sources, Source{Path: source.Path, StartLine: source.Start, EndLine: source.End, Text: source.Text})
@@ -121,5 +125,19 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 			Weights: p.Weights, Model: p.Model, SourceSelection: p.SourceSelection,
 			SourceOrder: p.SourceOrder, SourceBudget: p.Budget, BudgetUnit: p.BudgetUnit,
 		},
-	}}, nil
+	}}
+}
+
+// BuildEvaluationControl applies the exact compact/17 selector to a declared
+// lexical control while preserving lexical_only provenance. Product callers
+// use Build, which remains fail-closed for every non-ready state.
+func BuildEvaluationControl(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int) (Result, error) {
+	summary, structured, err := compactv9.BuildEvaluationControl(ctx, query, legacy, repository, sourceBudget)
+	if err != nil {
+		if errors.Is(err, compactv9.ErrRetrievalNotReady) {
+			return Result{}, ErrRetrievalNotReady
+		}
+		return Result{}, err
+	}
+	return fromV9(summary, structured), nil
 }

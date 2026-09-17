@@ -142,6 +142,10 @@ func taskContextBundleFromCandidateBytes(raw []byte) (contract.Result, error) {
 }
 
 func validatePayloadCostInput(_ string, payload PreservedPayload, counter PayloadCounter) error {
+	return validatePayloadCostInputState("compact-input", payload, counter, "ready")
+}
+
+func validatePayloadCostInputState(_ string, payload PreservedPayload, counter PayloadCounter, retrievalState string) error {
 	if payload.Sequence != 1 || payload.Boundary != PayloadBoundaryCandidate || payload.Operation != PayloadOperationTaskContext || payload.Bytes == nil {
 		return fmt.Errorf("input is not one preserved task_context/2 response")
 	}
@@ -158,7 +162,7 @@ func validatePayloadCostInput(_ string, payload PreservedPayload, counter Payloa
 	if !strings.HasPrefix(bundle.Summary, "task_context/2:") {
 		return fmt.Errorf("input does not attest task_context/2 retrieval")
 	}
-	if !strings.Contains(bundle.Summary, "degradation: ready") {
+	if !strings.Contains(bundle.Summary, "degradation: "+retrievalState) {
 		return ErrRetrievalNotReady
 	}
 	if counter.Count == nil || counter.TokenizerID == "" {
@@ -185,6 +189,17 @@ func exactEvidenceSpan(span string) (int, int, error) {
 // envelope used internally is deterministic and exists only to preserve the
 // V9 input-digest semantics; callers receive the transport-neutral fields.
 func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int) (string, CompactTaskContextStructured, error) {
+	return buildForRetrievalState(ctx, query, legacy, repository, sourceBudget, "ready")
+}
+
+// BuildEvaluationControl runs compact/17 for the preregistered lexical
+// control. Product callers remain on Build and continue to reject non-ready
+// retrieval. The original lexical state remains in the digest and provenance.
+func BuildEvaluationControl(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int) (string, CompactTaskContextStructured, error) {
+	return buildForRetrievalState(ctx, query, legacy, repository, sourceBudget, "lexical_only")
+}
+
+func buildForRetrievalState(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int, retrievalState string) (string, CompactTaskContextStructured, error) {
 	if sourceBudget <= 0 {
 		sourceBudget = 250
 	}
@@ -192,7 +207,7 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 	if err := json.Unmarshal(legacy, &legacyBundle); err != nil {
 		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: decode input: %w", err)
 	}
-	if !strings.Contains(legacyBundle.Summary, "degradation: ready") {
+	if !strings.Contains(legacyBundle.Summary, "degradation: "+retrievalState) {
 		return "", CompactTaskContextStructured{}, ErrRetrievalNotReady
 	}
 	var content bytes.Buffer
@@ -226,9 +241,9 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 	if err != nil {
 		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: source discovery: %w", err)
 	}
-	payload, err := buildCompactTaskContextBound(ctx, query, input, &transcript, repository, snapshot, sourceBudget, counter)
+	payload, err := buildCompactTaskContextBoundState(ctx, query, input, &transcript, repository, snapshot, sourceBudget, counter, retrievalState)
 	if err != nil {
 		return "", CompactTaskContextStructured{}, err
 	}
-	return ParseCompactTaskContext(payload.Bytes)
+	return parseCompactTaskContextState(payload.Bytes, retrievalState)
 }

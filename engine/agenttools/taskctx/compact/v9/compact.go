@@ -119,13 +119,17 @@ func buildCompactTaskContext(query string, input PreservedPayload, grepRead *Gre
 }
 
 func buildCompactTaskContextBound(ctx context.Context, query string, input PreservedPayload, grepRead *GrepReadV2Transcript, repository fs.FS, snapshot *grepReadSnapshot, budget int, real PayloadCounter) (PreservedPayload, error) {
+	return buildCompactTaskContextBoundState(ctx, query, input, grepRead, repository, snapshot, budget, real, "ready")
+}
+
+func buildCompactTaskContextBoundState(ctx context.Context, query string, input PreservedPayload, grepRead *GrepReadV2Transcript, repository fs.FS, snapshot *grepReadSnapshot, budget int, real PayloadCounter, retrievalState string) (PreservedPayload, error) {
 	if strings.TrimSpace(query) == "" {
 		return PreservedPayload{}, fmt.Errorf("compact task_context: empty query")
 	}
 	if budget < 1 || budget > SavingsCandidateBudget {
 		return PreservedPayload{}, fmt.Errorf("compact task_context: source budget %d outside 1..%d", budget, SavingsCandidateBudget)
 	}
-	if err := validatePayloadCostInput("compact-input", input, real); err != nil {
+	if err := validatePayloadCostInputState("compact-input", input, real, retrievalState); err != nil {
 		return PreservedPayload{}, fmt.Errorf("compact task_context: %w", err)
 	}
 	bundle, err := taskContextBundleFromCandidateBytes(input.Bytes)
@@ -145,7 +149,7 @@ func buildCompactTaskContextBound(ctx context.Context, query string, input Prese
 		}
 		inputSHA = SHA256Hex([]byte(input.SHA256 + "\n" + grepRead.DigestSHA256()))
 	}
-	provenance, err := compactTaskContextProvenance(bundle.Summary, inputSHA, budget)
+	provenance, err := compactTaskContextProvenance(bundle.Summary, inputSHA, budget, retrievalState)
 	if err != nil {
 		return PreservedPayload{}, err
 	}
@@ -3291,7 +3295,7 @@ func compactTaskContextWhitespaceTokens(evidence []contract.Evidence) int {
 	return total
 }
 
-func compactTaskContextProvenance(summary, inputSHA string, budget int) (CompactTaskContextProvenance, error) {
+func compactTaskContextProvenance(summary, inputSHA string, budget int, retrievalState string) (CompactTaskContextProvenance, error) {
 	if !isLowerHexDigest(inputSHA, 64) {
 		return CompactTaskContextProvenance{}, fmt.Errorf("compact task_context: invalid input digest")
 	}
@@ -3312,7 +3316,7 @@ func compactTaskContextProvenance(summary, inputSHA string, budget int) (Compact
 		return ""
 	}
 	p := CompactTaskContextProvenance{
-		InputSHA256: inputSHA, Method: fields[0], Retrieval: fields[1], RetrievalState: "ready", Weights: value("weights "),
+		InputSHA256: inputSHA, Method: fields[0], Retrieval: fields[1], RetrievalState: retrievalState, Weights: value("weights "),
 		Model: compactTaskContextModelFingerprint(value("model ")), SourceOrder: "ranked_coherent_regions", Budget: budget,
 		BudgetUnit: "whitespace-fields-v1",
 	}
@@ -3322,7 +3326,7 @@ func compactTaskContextProvenance(summary, inputSHA string, budget int) (Compact
 			break
 		}
 	}
-	if p.Retrieval == "" || p.RetrievalState != "ready" || p.Weights == "" || p.Model == "" || p.SourceSelection == "" {
+	if p.Retrieval == "" || p.RetrievalState != retrievalState || (retrievalState == "ready" && (p.Weights == "" || p.Model == "")) || p.SourceSelection == "" {
 		return CompactTaskContextProvenance{}, fmt.Errorf("compact task_context: incomplete method identity")
 	}
 	return p, nil
@@ -3343,6 +3347,10 @@ func compactTaskContextModelFingerprint(model string) string {
 // fields fail closed: changing the representation requires a new explicit
 // version instead of silently changing the meaning of the compact contract.
 func ParseCompactTaskContext(raw []byte) (string, CompactTaskContextStructured, error) {
+	return parseCompactTaskContextState(raw, "ready")
+}
+
+func parseCompactTaskContextState(raw []byte, retrievalState string) (string, CompactTaskContextStructured, error) {
 	var envelope compactTaskContextEnvelope
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
@@ -3363,7 +3371,10 @@ func ParseCompactTaskContext(raw []byte) (string, CompactTaskContextStructured, 
 		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task_context: invalid structured content identity")
 	}
 	p := structured.Provenance
-	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != "task_context/2" || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != "ready" || p.Weights == "" || !strings.HasPrefix(p.Model, "sha256:") || !isLowerHexDigest(strings.TrimPrefix(p.Model, "sha256:"), 16) || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.Budget < 1 || p.Budget > SavingsCandidateBudget || p.BudgetUnit != "whitespace-fields-v1" {
+	validModel := p.Model == "" && retrievalState == "lexical_only"
+	validModel = validModel || (strings.HasPrefix(p.Model, "sha256:") && isLowerHexDigest(strings.TrimPrefix(p.Model, "sha256:"), 16))
+	validWeights := p.Weights != "" || retrievalState == "lexical_only"
+	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != "task_context/2" || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != retrievalState || !validWeights || !validModel || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.Budget < 1 || p.Budget > SavingsCandidateBudget || p.BudgetUnit != "whitespace-fields-v1" {
 		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task_context: invalid provenance")
 	}
 	seen := make(map[string]bool)

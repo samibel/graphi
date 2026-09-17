@@ -83,6 +83,36 @@ func TestTaskContextV2_PublicMCPPreservesNonReadyFallback(t *testing.T) {
 	}
 }
 
+func TestTaskContextV2_EvaluationLexicalControlUsesCompactWireAndTruthfulState(t *testing.T) {
+	useCheckedInTaskContextTokenizer(t)
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "decoy.go"), []byte("package fixture\n\nfunc decoy() {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	server := NewServerWithClient(compactFallbackClient{}, WithLabs(), WithRepository(client.Repository{Root: root}), WithEvaluationLexicalCompactControl())
+	defer server.Close()
+	request := []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"task_context","arguments":{"task":"missing","version":2,"token_budget":1200}}}` + "\n")
+	var output bytes.Buffer
+	if err := server.Serve(t.Context(), bytes.NewReader(request), &output); err != nil {
+		t.Fatal(err)
+	}
+	var response struct {
+		Result struct {
+			StructuredContent taskcompact.Structured `json:"structuredContent"`
+			IsError           bool                   `json:"isError"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(output.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response.Result.IsError || response.Result.StructuredContent.Version != taskcompact.Version {
+		t.Fatalf("lexical control did not use compact/17 wire: %s", output.String())
+	}
+	if got := response.Result.StructuredContent.Provenance.RetrievalState; got != "lexical_only" {
+		t.Fatalf("lexical control state = %q, want lexical_only", got)
+	}
+}
+
 func TestTaskContextV2_PublicMCPNegativeBudgetDoesNotReactivateSourceReads(t *testing.T) {
 	root := t.TempDir()
 	const sourceOnly = "SHOULD_NOT_BE_DISCOVERED"
