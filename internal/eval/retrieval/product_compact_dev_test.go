@@ -93,7 +93,7 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	for _, query := range loaded.Dataset.Queries {
 		queries[query.ID] = query
 	}
-	counter := loadEmbeddedRealPayloadCounterForTest(t)
+	counter := loadHermeticRealPayloadCounterForTest(t)
 	repository := os.DirFS(repositoryRoot)
 	sourceBudget := taskcompact.DefaultSourceBudget
 	if raw := os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_SOURCE_BUDGET"); raw != "" {

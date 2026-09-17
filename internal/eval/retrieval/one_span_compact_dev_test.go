@@ -67,7 +67,7 @@ func TestOneSpanCompactDev(t *testing.T) {
 	for _, row := range captures.Runs[0] {
 		inputs[row.QueryID] = row.Capture.Payload.Bytes
 	}
-	counter := loadEmbeddedRealPayloadCounterForTest(t)
+	counter := loadHermeticRealPayloadCounterForTest(t)
 	repository := os.DirFS(root)
 	// The source frontier may be swept for a diagnosis; only the default
 	// frontier is held to the frozen serialized ceiling.

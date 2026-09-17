@@ -76,7 +76,7 @@ func TestRecoveryDevCapture(t *testing.T) {
 	if err := CheckSpanCoverage(root, ds.Dataset); err != nil {
 		t.Fatal(err)
 	}
-	counter := loadEmbeddedRealPayloadCounterForTest(t)
+	counter := loadHermeticRealPayloadCounterForTest(t)
 	candidateSHA := os.Getenv("GRAPHI_RECOVERY_CANDIDATE_SHA")
 	if candidateSHA == "" {
 		t.Fatal("GRAPHI_RECOVERY_CANDIDATE_SHA is required; development evidence must bind to a frozen candidate")

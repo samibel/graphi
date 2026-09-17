@@ -214,7 +214,7 @@ func TestGrepReadDevCapture(t *testing.T) {
 	if err := CheckSpanCoverage(root, ds.Dataset); err != nil {
 		t.Fatal(err)
 	}
-	counter := loadEmbeddedRealPayloadCounterForTest(t)
+	counter := loadHermeticRealPayloadCounterForTest(t)
 	type observation struct {
 		QueryID       string              `json:"query_id"`
 		Stratum       string              `json:"stratum"`

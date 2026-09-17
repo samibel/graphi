@@ -53,7 +53,7 @@ func TestQualificationLexicalControlUsesRealCaptureWithoutSemanticGeneration(t *
 	queryService := query.New(idx.store)
 	engine := engineretrieval.New(resolve.Deps{Query: queryService, Search: idx.search}, idx.search, idx.store)
 	pre := QualificationPreregistration{}
-	counter := loadEmbeddedRealPayloadCounterForTest(t)
+	counter := loadHermeticRealPayloadCounterForTest(t)
 	q := Query{ID: "lexical-control", Text: "Answer", Stratum: StratumExactIdentifier, Split: SplitDev,
 		Judgements: []Judgement{{Path: "answer.go", StartLine: 3, EndLine: 3, Grade: GradeMax}}}
 	got, err := captureOneCandidateBundle(t.Context(), CandidateCaptureOptions{
