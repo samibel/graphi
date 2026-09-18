@@ -82,8 +82,14 @@ func validQualificationCaptureFixture(t *testing.T) qualificationCaptureFixture 
 		expectedFingerprint: fp, indexFingerprint: fp, searchFingerprint: fp,
 		modelFingerprint: fp.Canonical(),
 		retrieval: engineretrieval.Result{
-			Rows:        []engineretrieval.Row{{Path: "answer.go", Span: "10-12", Explain: engineretrieval.Explain{SemanticRank: 2, LexicalRank: 5}}},
-			Summary:     engineretrieval.Summary{RetrievalVersion: engineretrieval.Version, Strategy: "semantic_first", ModelFingerprint: fp.Canonical(), IndexFingerprint: fp.Canonical(), Limit: 50},
+			Rows: []engineretrieval.Row{{Path: "answer.go", Span: "10-12", Explain: engineretrieval.Explain{SemanticRank: 2, LexicalRank: 5}}},
+			// What the PRODUCTION engine stamps: a model id in
+			// ModelFingerprint (engine/retrieval/service.go fills it from
+			// st.Requested.ModelID) and the canonical in IndexFingerprint.
+			// This fixture used to put the canonical in both, which is why a
+			// comparison that no production summary could ever satisfy passed
+			// its tests for as long as it did.
+			Summary:     engineretrieval.Summary{RetrievalVersion: engineretrieval.Version, Strategy: "semantic_first", ModelFingerprint: fp.ModelID, IndexFingerprint: fp.Canonical(), Limit: 50},
 			Degradation: engineretrieval.StateReady,
 		},
 		semantic:   []search.SemanticHit{{SourcePath: "other.go", Line: 1}, {SourcePath: "answer.go", Line: 11}},
@@ -129,28 +135,33 @@ func TestQualificationPayloadRetrieverSummaryMustMatchTheLoadedGeneration(t *tes
 	// graph generation the preregistration could not have named.
 	loaded := f.expectedFingerprint
 	loaded.GraphGeneration = "a4babe5c82f1a6e355ac363d1fa7d070"
-	summaryFor := func(canonical string) resolve.RetrieverResult {
+	// productionSummaryFor is what engine/retrieval ACTUALLY stamps for a
+	// ready semantic retrieval: a model id in ModelFingerprint and a canonical
+	// fingerprint in IndexFingerprint (engine/retrieval/service.go). Building
+	// the fixture out of two kinds keeps the test from re-inventing the
+	// species confusion it exists to catch.
+	productionSummaryFor := func(fp embed.Fingerprint) resolve.RetrieverResult {
 		return resolve.RetrieverResult{
 			Degradation: string(engineretrieval.StateReady),
 			Summary: resolve.RetrieverSummary{
 				RetrievalVersion: engineretrieval.Version, Strategy: "semantic_first",
-				ModelFingerprint: canonical, IndexFingerprint: canonical,
+				ModelFingerprint: fp.ModelID, IndexFingerprint: fp.Canonical(),
 			},
 		}
 	}
 
-	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summaryFor(loaded.Canonical())); err != nil {
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, productionSummaryFor(loaded)); err != nil {
 		t.Fatalf("a runtime-bound graph generation was refused: %v", err)
 	}
 
 	// The summary must equal the LOADED generation, not the pin: a summary
 	// still naming the preregistered generation was produced against some
 	// other graph than the one this capture built.
-	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summaryFor(f.expectedFingerprint.Canonical())); err == nil {
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, productionSummaryFor(f.expectedFingerprint)); err == nil {
 		t.Fatal("payload-producing retrieval accepted a fingerprint from a different graph generation")
 	}
 
-	summary := summaryFor(loaded.Canonical())
+	summary := productionSummaryFor(loaded)
 	summary.Summary.IndexFingerprint = "wrong"
 	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summary); err == nil {
 		t.Fatal("payload-producing retrieval accepted a different index fingerprint")
@@ -160,8 +171,109 @@ func TestQualificationPayloadRetrieverSummaryMustMatchTheLoadedGeneration(t *tes
 	// generation is a different embedding space and stays refused.
 	otherSpace := loaded
 	otherSpace.Dim = 99
-	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, otherSpace, summaryFor(otherSpace.Canonical())); err == nil {
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, otherSpace, productionSummaryFor(otherSpace)); err == nil {
 		t.Fatal("a loaded generation from a different embedding space was accepted")
+	}
+}
+
+// The species regression: the two summary fields are NOT the same kind of
+// value, and a check that equates them can never hold on a production
+// retrieval. Before this test, the gate compared both fields against the whole
+// canonical; the harness wires the real engine, which fills ModelFingerprint
+// from st.Requested.ModelID, so every real qualification run aborted with
+// "payload retrieval fingerprints do not equal the loaded generation
+// fingerprint" while the unit tests — which fed a canonical into both fields —
+// stayed green.
+//
+// It pins BOTH directions: the correct pairing is accepted, and swapping the
+// two kinds is refused. Equating the fields again fails the first half;
+// dropping either check fails the second.
+func TestQualificationRetrieverSummaryTakesAModelIDAndACanonicalFingerprint(t *testing.T) {
+	f := validQualificationCaptureFixture(t)
+	loaded := f.expectedFingerprint
+	loaded.GraphGeneration = "a4babe5c82f1a6e355ac363d1fa7d070"
+
+	summaryOf := func(model, index string) resolve.RetrieverResult {
+		return resolve.RetrieverResult{
+			Degradation: string(engineretrieval.StateReady),
+			Summary: resolve.RetrieverSummary{
+				RetrievalVersion: engineretrieval.Version, Strategy: "semantic_first",
+				ModelFingerprint: model, IndexFingerprint: index,
+			},
+		}
+	}
+
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summaryOf(loaded.ModelID, loaded.Canonical())); err != nil {
+		t.Fatalf("the summary a production retrieval actually produces was refused: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name         string
+		model, index string
+		wantMessage  string
+	}{
+		{name: "both fields carry the canonical", model: loaded.Canonical(), index: loaded.Canonical(), wantMessage: "model id"},
+		{name: "both fields carry the model id", model: loaded.ModelID, index: loaded.ModelID, wantMessage: "index fingerprint"},
+		{name: "the two kinds are swapped", model: loaded.Canonical(), index: loaded.ModelID, wantMessage: "index fingerprint"},
+		{name: "a different model id", model: "some-other-model", index: loaded.Canonical(), wantMessage: "model id"},
+		{name: "an empty model id", model: "", index: loaded.Canonical(), wantMessage: "model id"},
+		{name: "an empty index fingerprint", model: loaded.ModelID, index: "", wantMessage: "index fingerprint"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summaryOf(tc.model, tc.index))
+			if err == nil {
+				t.Fatal("a summary of the wrong kind was accepted")
+			}
+			if !strings.Contains(err.Error(), tc.wantMessage) {
+				t.Fatalf("refusal does not name %q: %v", tc.wantMessage, err)
+			}
+			// The refusal has to name BOTH sides: a run that reaches this
+			// gate has already spent its index build.
+			if !strings.Contains(err.Error(), "observed ") || !strings.Contains(err.Error(), "want ") {
+				t.Fatalf("refusal names neither the expected nor the observed value: %v", err)
+			}
+		})
+	}
+}
+
+// The same pairing, one layer up: captureQualificationObservation reads the
+// same two summary fields and must judge them by the same two kinds.
+func TestQualificationCaptureTakesAModelIDAndACanonicalFingerprint(t *testing.T) {
+	loadedModelID := validQualificationCaptureFixture(t).indexFingerprint.ModelID
+	loadedCanonical := validQualificationCaptureFixture(t).indexFingerprint.Canonical()
+
+	if _, err := validQualificationCaptureFixture(t).capture(); err != nil {
+		t.Fatalf("the summary a production retrieval actually produces was refused: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name         string
+		model, index string
+	}{
+		{name: "both fields carry the canonical", model: loadedCanonical, index: loadedCanonical},
+		{name: "both fields carry the model id", model: loadedModelID, index: loadedModelID},
+		{name: "the two kinds are swapped", model: loadedCanonical, index: loadedModelID},
+		{name: "a different model id", model: "some-other-model", index: loadedCanonical},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := validQualificationCaptureFixture(t)
+			f.retrieval.Summary.ModelFingerprint = tc.model
+			f.retrieval.Summary.IndexFingerprint = tc.index
+			if _, err := f.capture(); err == nil {
+				t.Fatal("a summary of the wrong kind was captured")
+			}
+		})
+	}
+
+	// And the recorded observation keeps each value in its own kind, so no
+	// downstream gate has to guess which one it is holding.
+	got, err := validQualificationCaptureFixture(t).capture()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ModelFingerprint != loadedModelID || got.IndexFingerprint != loadedCanonical {
+		t.Fatalf("observation records model=%q index=%q, want model id %q and canonical %q",
+			got.ModelFingerprint, got.IndexFingerprint, loadedModelID, loadedCanonical)
 	}
 }
 

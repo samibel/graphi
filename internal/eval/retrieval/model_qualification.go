@@ -194,9 +194,18 @@ type QualificationObservation struct {
 	UnknownTokens      QualificationIntMetric  `json:"unknown_tokens"`
 	QueryVectorAllZero QualificationBoolMetric `json:"query_vector_all_zero"`
 	RetrievalState     string                  `json:"retrieval_state"`
-	ModelFingerprint   string                  `json:"model_fingerprint"`
-	IndexFingerprint   string                  `json:"index_fingerprint"`
-	Degraded           bool                    `json:"degraded"`
+	// ModelFingerprint is a MODEL ID, not a canonical fingerprint: it records
+	// engine/retrieval's Summary.ModelFingerprint verbatim, which that package
+	// fills from st.Requested.ModelID (engine/retrieval/service.go) — field 0
+	// of the canonical. Every gate reading it must compare it against another
+	// model id; comparing it against a canonical is a condition that can never
+	// hold.
+	ModelFingerprint string `json:"model_fingerprint"`
+	// IndexFingerprint is a CANONICAL fingerprint: the eight length-prefixed
+	// fields embed.Fingerprint.Canonical() emits, recorded from
+	// engine/retrieval's Summary.IndexFingerprint.
+	IndexFingerprint string `json:"index_fingerprint"`
+	Degraded         bool   `json:"degraded"`
 }
 
 // QualificationBuildDigest separates the independently reproducible byte
@@ -284,21 +293,34 @@ func captureQualificationObservation(f qualificationCaptureFacts) (Qualification
 		if err := qualificationFingerprintsAgree(loaded, expected); err != nil {
 			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s loaded generation fingerprint differs from the preregistered fingerprint: %w", f.Query.ID, err)
 		}
-		// The remaining four identities all come from that same build, so they
-		// stay compared byte for byte — against the loaded generation, not
-		// against the pin. This is what proves the query was embedded, the
-		// index was searched and the payload was retrieved under ONE graph
-		// generation; it is exactly the strictness the pin comparison used to
-		// provide, minus the part that could never hold.
+		// The remaining identities all come from that same build, so they stay
+		// compared byte for byte — against the loaded generation, not against
+		// the pin. This is what proves the query was embedded, the index was
+		// searched and the payload was retrieved under ONE graph generation; it
+		// is exactly the strictness the pin comparison used to provide, minus
+		// the part that could never hold.
+		//
+		// Three of them are CANONICAL fingerprints and are compared against the
+		// loaded canonical. The fourth is not: engine/retrieval fills
+		// Summary.ModelFingerprint from st.Requested.ModelID
+		// (engine/retrieval/service.go), so it is a MODEL ID — field 0 of the
+		// canonical — and comparing it against the whole canonical stated a
+		// condition no production retrieval could satisfy. It is compared
+		// against the loaded generation's model id instead, which is the same
+		// claim expressed in the right kind.
 		for _, identity := range []struct{ name, value string }{
 			{name: "search request", value: f.SearchFingerprint.Canonical()},
 			{name: "capture model", value: f.ModelFingerprint},
-			{name: "retrieval model", value: f.Retrieval.Summary.ModelFingerprint},
 			{name: "retrieval index", value: f.Retrieval.Summary.IndexFingerprint},
 		} {
 			if identity.value != loaded {
-				return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s %s fingerprint does not equal the loaded generation fingerprint", f.Query.ID, identity.name)
+				return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s %s fingerprint does not equal the loaded generation fingerprint: observed %s, want %s",
+					f.Query.ID, identity.name, qualificationFingerprintValue(identity.value), qualificationFingerprintValue(loaded))
 			}
+		}
+		if f.Retrieval.Summary.ModelFingerprint != f.IndexFingerprint.ModelID {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s retrieval model id does not equal the loaded generation's model id: observed %s, want %s",
+				f.Query.ID, qualificationFingerprintValue(f.Retrieval.Summary.ModelFingerprint), qualificationFingerprintValue(f.IndexFingerprint.ModelID))
 		}
 		if f.Retrieval.Degradation != engineretrieval.StateReady || f.Retrieval.Summary.Strategy != "semantic_first" {
 			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s retrieval is %s/%s, want ready semantic_first", f.Query.ID, f.Retrieval.Degradation, f.Retrieval.Summary.Strategy)

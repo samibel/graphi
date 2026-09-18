@@ -583,7 +583,9 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 			} else {
 				zero, unknown := false, 0
 				observation.RetrievalState = "ready"
-				observation.ModelFingerprint = pre.Arms[arm].FingerprintCanonical
+				// Two kinds, as engine/retrieval produces them: a model id
+				// and a canonical fingerprint (see QualificationObservation).
+				observation.ModelFingerprint = pre.Arms[arm].EmbedderID
 				observation.IndexFingerprint = pre.Arms[arm].FingerprintCanonical
 				observation.UnknownTokens = QualificationIntMetric{Available: true, Value: &unknown}
 				observation.QueryVectorAllZero = QualificationBoolMetric{Available: true, Value: &zero}

@@ -218,7 +218,9 @@ func TestEvaluateQualificationBindsTheGraphGenerationAtRuntime(t *testing.T) {
 		if in.Observations[i].Arm == ArmLexical {
 			continue
 		}
-		in.Observations[i].ModelFingerprint = withQualificationGraphGeneration(t, in.Observations[i].ModelFingerprint, runGeneration)
+		// Only the index fingerprint is a canonical and therefore the only
+		// observed value that carries a graph generation at all;
+		// ModelFingerprint is a model id (see QualificationObservation).
 		in.Observations[i].IndexFingerprint = withQualificationGraphGeneration(t, in.Observations[i].IndexFingerprint, runGeneration)
 	}
 	resealQualificationBuildEvidence(t, &in)
@@ -260,16 +262,24 @@ func TestEvaluateQualificationRejectsDivergentGraphGenerations(t *testing.T) {
 					if in.Observations[i].Arm != ArmPotion8192 {
 						continue
 					}
-					in.Observations[i].ModelFingerprint = withQualificationGraphGeneration(t, in.Observations[i].ModelFingerprint, "c91cee9e050b4d0042042c9af208f012")
 					in.Observations[i].IndexFingerprint = withQualificationGraphGeneration(t, in.Observations[i].IndexFingerprint, "c91cee9e050b4d0042042c9af208f012")
 				}
 			},
 		},
 		{
-			name: "model and index fingerprint of one observation",
+			// The generation is bound by the FIRST decodable observation, so
+			// a divergence in the very last one must be caught too: the gate
+			// must not be satisfied by whatever happened to bind it.
+			name: "the last observation of the run",
 			apply: func(t *testing.T, in *QualificationInput) {
-				observation := semanticObservation(in, ArmPotion512, 0)
-				observation.ModelFingerprint = withQualificationGraphGeneration(t, observation.ModelFingerprint, "c91cee9e050b4d0042042c9af208f012")
+				for i := len(in.Observations) - 1; i >= 0; i-- {
+					if in.Observations[i].Arm == ArmLexical {
+						continue
+					}
+					in.Observations[i].IndexFingerprint = withQualificationGraphGeneration(t, in.Observations[i].IndexFingerprint, "c91cee9e050b4d0042042c9af208f012")
+					return
+				}
+				t.Fatal("fixture has no semantic observation")
 			},
 		},
 	} {
@@ -295,10 +305,23 @@ func TestEvaluateQualificationRejectsDivergentGraphGenerations(t *testing.T) {
 	}
 }
 
+// bindQualificationCaptureFixture points every runtime identity of a capture
+// fixture at one loaded generation, each in its OWN kind: the search request
+// and capture model are canonical fingerprints, the retrieval summary carries
+// a model id AND a canonical (see QualificationObservation), exactly as
+// engine/retrieval produces them.
+func bindQualificationCaptureFixture(f *qualificationCaptureFixture, loaded embed.Fingerprint) {
+	f.indexFingerprint = loaded
+	f.searchFingerprint = loaded
+	f.modelFingerprint = loaded.Canonical()
+	f.retrieval.Summary.ModelFingerprint = loaded.ModelID
+	f.retrieval.Summary.IndexFingerprint = loaded.Canonical()
+}
+
 // The capture path is where the generation is actually bound. A capture whose
 // index carries a freshly minted generation must be accepted — that is every
-// real run — while the five identities inside one capture must still agree
-// byte for byte with each other.
+// real run — while the identities inside one capture must still agree with the
+// loaded generation, each in its own kind.
 func TestQualificationCaptureBindsTheGraphGenerationAtRuntime(t *testing.T) {
 	const runGeneration = "a4babe5c82f1a6e355ac363d1fa7d070"
 
@@ -307,11 +330,7 @@ func TestQualificationCaptureBindsTheGraphGenerationAtRuntime(t *testing.T) {
 	f := validQualificationCaptureFixture(t)
 	runtime := f.indexFingerprint
 	runtime.GraphGeneration = runGeneration
-	f.indexFingerprint = runtime
-	f.searchFingerprint = runtime
-	f.modelFingerprint = runtime.Canonical()
-	f.retrieval.Summary.ModelFingerprint = runtime.Canonical()
-	f.retrieval.Summary.IndexFingerprint = runtime.Canonical()
+	bindQualificationCaptureFixture(&f, runtime)
 	if _, err := f.capture(); err != nil {
 		t.Fatalf("a capture that bound its own graph generation was refused: %v", err)
 	}
@@ -328,10 +347,11 @@ func TestQualificationCaptureBindsTheGraphGenerationAtRuntime(t *testing.T) {
 			stale.GraphGeneration = "graph-1"
 			f.modelFingerprint = stale.Canonical()
 		}},
-		{name: "retrieval model", stale: func(f *qualificationCaptureFixture) {
-			stale := f.indexFingerprint
-			stale.GraphGeneration = "graph-1"
-			f.retrieval.Summary.ModelFingerprint = stale.Canonical()
+		// The retrieval summary's MODEL field cannot carry a stale generation
+		// at all — it is a model id, which has no eighth field — so what it
+		// can go wrong about is the model identity itself.
+		{name: "retrieval model id", stale: func(f *qualificationCaptureFixture) {
+			f.retrieval.Summary.ModelFingerprint = "some-other-model"
 		}},
 		{name: "retrieval index", stale: func(f *qualificationCaptureFixture) {
 			stale := f.indexFingerprint
@@ -343,11 +363,7 @@ func TestQualificationCaptureBindsTheGraphGenerationAtRuntime(t *testing.T) {
 			mixed := validQualificationCaptureFixture(t)
 			bound := mixed.indexFingerprint
 			bound.GraphGeneration = runGeneration
-			mixed.indexFingerprint = bound
-			mixed.searchFingerprint = bound
-			mixed.modelFingerprint = bound.Canonical()
-			mixed.retrieval.Summary.ModelFingerprint = bound.Canonical()
-			mixed.retrieval.Summary.IndexFingerprint = bound.Canonical()
+			bindQualificationCaptureFixture(&mixed, bound)
 			tc.stale(&mixed)
 			if _, err := mixed.capture(); err == nil {
 				t.Fatalf("a capture mixing two graph generations was accepted (%s)", tc.name)
@@ -361,11 +377,7 @@ func TestQualificationCaptureBindsTheGraphGenerationAtRuntime(t *testing.T) {
 	wrongSpace := other.indexFingerprint
 	wrongSpace.GraphGeneration = runGeneration
 	wrongSpace.Dim = 99
-	other.indexFingerprint = wrongSpace
-	other.searchFingerprint = wrongSpace
-	other.modelFingerprint = wrongSpace.Canonical()
-	other.retrieval.Summary.ModelFingerprint = wrongSpace.Canonical()
-	other.retrieval.Summary.IndexFingerprint = wrongSpace.Canonical()
+	bindQualificationCaptureFixture(&other, wrongSpace)
 	if _, err := other.capture(); err == nil {
 		t.Fatal("a capture against a different embedding space was accepted")
 	}

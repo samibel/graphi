@@ -167,7 +167,13 @@ type qualificationEvidence struct {
 	diagnosticsAvailable bool
 	stateReady           bool
 	fingerprintsOK       bool
-	noDegradation        bool
+	// fingerprintMismatch names the FIRST observation whose identity differed
+	// and how, so the fingerprint_equality gate reports which value was
+	// expected and which was observed instead of a bare false. A qualification
+	// run costs half an hour of compute; a refusal that names neither side is
+	// paid for twice.
+	fingerprintMismatch string
+	noDegradation       bool
 	// graphGenerationConsistent records whether every semantic arm and every
 	// observation of THIS run named one and the same graph generation.
 	//
@@ -182,6 +188,20 @@ type qualificationEvidence struct {
 	graphGenerationConsistent bool
 }
 
+// qualificationFingerprintGateObserved renders the fingerprint_equality gate's
+// observed value. A passing gate reports "true"; a failing one names the first
+// identity that differed and both sides of it, because "false" alone costs the
+// operator another half-hour run to learn what moved.
+func qualificationFingerprintGateObserved(evidence qualificationEvidence) string {
+	if evidence.fingerprintsOK {
+		return "true"
+	}
+	if evidence.fingerprintMismatch == "" {
+		return "false"
+	}
+	return "false (" + evidence.fingerprintMismatch + ")"
+}
+
 // qualificationRunGraphGeneration is the run's bound graph generation plus the
 // observation that bound it, so a later divergence can name BOTH sides.
 type qualificationRunGraphGeneration struct {
@@ -194,31 +214,32 @@ type qualificationRunGraphGeneration struct {
 // first semantic observation that reports a decodable one, and refuses any
 // later observation that names a different one.
 //
+// Only IndexFingerprint is read. ModelFingerprint is a MODEL ID, not a
+// canonical fingerprint (see QualificationObservation), so it carries no eighth
+// field at all; decoding it as a canonical always failed, which silently held
+// graphGenerationConsistent false for every real run and made this gate
+// unpassable rather than strict.
+//
 // A fingerprint that does not decode is NOT a hard error here: that is exactly
 // what the fingerprint_equality gate already reports, and turning a malformed
 // fingerprint into an abort would replace a named failing gate with an opaque
 // refusal. It does clear graphGenerationConsistent, because a run whose
 // fingerprints cannot be read has not shown that its arms share a graph.
 func bindQualificationGraphGeneration(bound *qualificationRunGraphGeneration, observation QualificationObservation, queryID string, evidence *qualificationEvidence) error {
-	for _, candidate := range []struct{ name, canonical string }{
-		{name: "model fingerprint", canonical: observation.ModelFingerprint},
-		{name: "index fingerprint", canonical: observation.IndexFingerprint},
-	} {
-		generation, ok := qualificationGraphGenerationOf(candidate.canonical)
-		if !ok {
-			evidence.graphGenerationConsistent = false
-			continue
-		}
-		source := fmt.Sprintf("arm %s query %s %s", observation.Arm, queryID, candidate.name)
-		if !bound.bound {
-			*bound = qualificationRunGraphGeneration{value: generation, bound: true, source: source}
-			continue
-		}
-		if generation != bound.value {
-			evidence.graphGenerationConsistent = false
-			return fmt.Errorf("embedded-model qualification decision: %s names graph generation %q but %s names %q; every arm and every observation of one run must be measured against exactly one graph generation",
-				source, generation, bound.source, bound.value)
-		}
+	generation, ok := qualificationGraphGenerationOf(observation.IndexFingerprint)
+	if !ok {
+		evidence.graphGenerationConsistent = false
+		return nil
+	}
+	source := fmt.Sprintf("arm %s query %s index fingerprint", observation.Arm, queryID)
+	if !bound.bound {
+		*bound = qualificationRunGraphGeneration{value: generation, bound: true, source: source}
+		return nil
+	}
+	if generation != bound.value {
+		evidence.graphGenerationConsistent = false
+		return fmt.Errorf("embedded-model qualification decision: %s names graph generation %q but %s names %q; every arm and every observation of one run must be measured against exactly one graph generation",
+			source, generation, bound.source, bound.value)
 	}
 	return nil
 }
@@ -263,8 +284,8 @@ func EvaluateQualification(in QualificationInput) (QualificationDecision, error)
 		gate("reindex_budget", operating.FullReindex <= time.Duration(in.Preregistration.Thresholds.MaxReindexSeconds)*time.Second, operating.FullReindex.String(), fmt.Sprintf("1s..%ds", in.Preregistration.Thresholds.MaxReindexSeconds)),
 		gate("cpu_only", true, "true (pinned M3 manifest)", "true"),
 		gate("state_ready", evidence.stateReady, fmt.Sprintf("%t", evidence.stateReady), "every M1-M3 observation ready"),
-		gate("fingerprint_equality", evidence.fingerprintsOK, fmt.Sprintf("%t", evidence.fingerprintsOK), "every M1-M3 model/index fingerprint equals its preregistered fingerprint in every field except the runtime-bound graph generation"),
-		gate("graph_generation_consistency", evidence.graphGenerationConsistent, fmt.Sprintf("%t", evidence.graphGenerationConsistent), "every M1-M3 model/index fingerprint names one and the same runtime-bound graph generation"),
+		gate("fingerprint_equality", evidence.fingerprintsOK, qualificationFingerprintGateObserved(evidence), "every M1-M3 index fingerprint equals its preregistered fingerprint in every field except the runtime-bound graph generation, and every M1-M3 model id equals its preregistered model id"),
+		gate("graph_generation_consistency", evidence.graphGenerationConsistent, fmt.Sprintf("%t", evidence.graphGenerationConsistent), "every M1-M3 index fingerprint names one and the same runtime-bound graph generation"),
 		gate("no_degradation", evidence.noDegradation, fmt.Sprintf("%t", evidence.noDegradation), "every M1-M3 observation has no sidecar degradation"),
 		gate("required_diagnostics_available", evidence.diagnosticsAvailable, fmt.Sprintf("%t", evidence.diagnosticsAvailable), "every M1-M3 observation has required diagnostics"),
 	}
@@ -349,8 +370,32 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 			// build and therefore cannot be preregistered at all — see
 			// model_qualification_fingerprint.go. It is bound at runtime and
 			// checked for internal consistency by run, just below.
-			fingerprintsOK := qualificationFingerprintsAgree(observation.ModelFingerprint, expected) == nil &&
-				qualificationFingerprintsAgree(observation.IndexFingerprint, expected) == nil
+			//
+			// The two observed fields are different KINDS of value and are
+			// checked as such: IndexFingerprint is a canonical fingerprint and
+			// is compared field by field against the pin; ModelFingerprint is
+			// a model id (see QualificationObservation) and is compared
+			// against the pin's model id — field 0 of that same canonical, so
+			// there is still exactly one source of truth. Running the model id
+			// through the canonical decoder, as this did before, made the gate
+			// unpassable for every real run rather than strict.
+			fingerprintsOK := true
+			if err := qualificationFingerprintsAgree(observation.IndexFingerprint, expected); err != nil {
+				fingerprintsOK = false
+				if evidence.fingerprintMismatch == "" {
+					evidence.fingerprintMismatch = fmt.Sprintf("arm %s query %s index fingerprint: %v", observation.Arm, queryID, err)
+				}
+			}
+			expectedModelID, expectedModelIDOK := qualificationModelIDOf(expected)
+			if !expectedModelIDOK || observation.ModelFingerprint != expectedModelID {
+				fingerprintsOK = false
+				if evidence.fingerprintMismatch == "" {
+					evidence.fingerprintMismatch = fmt.Sprintf("arm %s query %s model id: observed %s, preregistered %s",
+						observation.Arm, queryID,
+						qualificationFingerprintValue(observation.ModelFingerprint),
+						qualificationFingerprintValue(expectedModelID))
+				}
+			}
 			if err := bindQualificationGraphGeneration(&graphGeneration, observation, queryID, &evidence); err != nil {
 				return evidence, err
 			}

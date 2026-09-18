@@ -176,6 +176,36 @@ func qualificationGraphGenerationOf(canonical string) (string, bool) {
 	return fields[qualificationGraphGenerationField], true
 }
 
+// qualificationModelIDField is the index of the model identity inside a
+// canonical fingerprint.
+const qualificationModelIDField = 0
+
+// qualificationModelIDOf returns the canonical fingerprint's FIRST field, the
+// model id.
+//
+// It exists because two different KINDS of value travel under the word
+// "fingerprint" in this code base, and comparing one against the other is a
+// condition that can never hold:
+//
+//   - a CANONICAL fingerprint — the eight length-prefixed fields
+//     embed.Fingerprint.Canonical() emits;
+//   - a MODEL ID — embed.Fingerprint.ModelID, i.e. field 0 of that canonical,
+//     which is what engine/retrieval stamps into Summary.ModelFingerprint
+//     (see engine/retrieval/service.go: `model = st.Requested.ModelID`).
+//
+// A gate that wants to check a retrieval summary's model identity against a
+// preregistered or loaded generation must therefore compare it against THIS
+// field, not against the whole canonical. Reporting false rather than an empty
+// string keeps a malformed canonical from silently reading as "the empty model
+// id".
+func qualificationModelIDOf(canonical string) (string, bool) {
+	fields, err := qualificationFingerprintFields(canonical, "observed")
+	if err != nil {
+		return "", false
+	}
+	return fields[qualificationModelIDField], true
+}
+
 // qualificationFingerprintsDifferOutsideGraphGeneration reports whether two
 // canonical fingerprints differ in at least one field OTHER than
 // graph_generation.
