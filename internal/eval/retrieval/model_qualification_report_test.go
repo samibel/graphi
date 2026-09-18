@@ -53,7 +53,7 @@ func TestWriteQualificationReportContainsCompleteReconstructableEvidence(t *test
 	if len(emitted.Derived.ArmTotals) != 4 || emitted.Derived.ArmTotals[1].Passes != 46 || emitted.Derived.ArmTotals[3].Passes != 56 {
 		t.Fatalf("arm totals = %+v, want four arms with M1=46 and M3=56", emitted.Derived.ArmTotals)
 	}
-	if len(emitted.Derived.StratumDeltas) != 6 || len(emitted.Derived.BlindEvidenceManifests) != 7 || len(emitted.Derived.RunValidity) != 10 || len(emitted.Derived.OracleBlindCeilings) != 3 {
+	if len(emitted.Derived.StratumDeltas) != 6 || len(emitted.Derived.BlindEvidenceManifests) != 7 || len(emitted.Derived.RunValidity) != 11 || len(emitted.Derived.OracleBlindCeilings) != 3 {
 		t.Fatalf("derived evidence shape = strata %d manifests %d validity %d oracle %d", len(emitted.Derived.StratumDeltas), len(emitted.Derived.BlindEvidenceManifests), len(emitted.Derived.RunValidity), len(emitted.Derived.OracleBlindCeilings))
 	}
 	for _, manifest := range emitted.Derived.BlindEvidenceManifests {

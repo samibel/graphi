@@ -1,0 +1,491 @@
+{
+  "stratum": "exact_identifier",
+  "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)",
+  "reviewed_at": "2026-09-17",
+  "cobra_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "source_reviewed": "docs/eval/retrieval/drafts/coderank-qualification-candidate-queries.json",
+  "review_method": {
+    "checkout": "The pinned cobra checkout in the session scratchpad was confirmed at a0a6ae020bb3899ff0276067863e50523f897370 with a clean working tree before any span was read.",
+    "span_check": "Every judgement was checked mechanically and then by eye: file exists, 1 <= start_line <= end_line <= number of lines in the file, and the anchor string occurs literally within the cited lines. All 30 judgements of the 7 candidates passed; no span was out of range and no anchor was missing.",
+    "boundary_check": "Each span was read together with the lines above and below it to test the draft's own span_convention (start at the first line of the doc comment, end at the closing brace in column 0). One violation was found and corrected (cq-05 judgement 3).",
+    "reason_check": "Reasons were treated as claims. Checkable factual claims were verified against the checkout - call graphs by grep over the pinned tree. Two were wrong or imprecise and were rewritten (cq-07 judgement 3, cq-02 judgement 1). Interpretive shorthand that points a reader at the right thing was left alone and is named in the verdict notes.",
+    "collision_check": "Every span was compared against internal/eval/retrieval/testdata/datasets/cobra-v2.json and docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json, and every query string against both files' query texts. This is where cq-02's duplicate of cd-70 surfaced; the draft's collision table had only compared spans against cobra-v2.json.",
+    "not_checked": [
+      "Candidates outside stratum exact_identifier - another reviewer's lot.",
+      "family_id derivation and uniqueness: taken from the draft, not recomputed.",
+      "Whether the qualification's conformance rules accept sub-spans, doc-file spans or one-line spans in general. Precedent in cobra-v2.json was used where it exists (one-line span: ci-827; sub-span: ci-43/ci-1111/ci-1289) and is named in the verdict notes.",
+      "Token budgets for large spans. The largest span released here is flag_groups_test.go:22-195 (174 lines)."
+    ]
+  },
+  "queries": [
+    {
+      "id": "cq-01",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "MarkFlagsOneRequired",
+      "family_id": "cobra-family-d46a80dddf4a75de",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier, the shape of cb-01..cb-06: the query is the symbol name and the grade-3 span is its declaration. Chosen because the one-required flag group API is the newest of the three flag-group markers and is not the subject of any cobra-v2 row (cb-02 covers MarkFlagsMutuallyExclusive).",
+      "judgements": [
+        {
+          "path": "flag_groups.go",
+          "start_line": 47,
+          "end_line": 61,
+          "anchor": "func (c *Command) MarkFlagsOneRequired(",
+          "grade": 3,
+          "reason": "The declaration of MarkFlagsOneRequired itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "flag_groups.go",
+          "start_line": 167,
+          "end_line": 186,
+          "anchor": "func validateOneRequiredFlagGroups(",
+          "grade": 2,
+          "reason": "The validator that enforces the oneRequired annotation this marker sets.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "flag_groups.go",
+          "start_line": 25,
+          "end_line": 29,
+          "anchor": "oneRequired       = \"cobra_annotation_one_required\"",
+          "grade": 2,
+          "reason": "The annotation key constant the marker writes.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "flag_groups_test.go",
+          "start_line": 22,
+          "end_line": 195,
+          "anchor": "func TestValidateFlagGroups(",
+          "grade": 1,
+          "reason": "The flag-group table test exercises one-required groups among the others.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)",
+          "review_note": "flag_groups_test.go:22-195 is also cb-02's grade-1 span. Reviewer should decide whether reusing it here is acceptable or whether this judgement should be dropped."
+        }
+      ]
+    },
+    {
+      "id": "cq-02",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "GenBashCompletionV2",
+      "family_id": "cobra-family-8c733ade6fba3574",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. bash_completionsV2.go carries no judgement anywhere in cobra-v2.json, so the whole V2 generator is unseen ground; the V1 GenBashCompletion appears only as a grade-2 distractor in cb-31/cb-35.",
+      "judgements": [
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 392,
+          "end_line": 396,
+          "anchor": "func (c *Command) GenBashCompletionV2(",
+          "grade": 3,
+          "reason": "The declaration of GenBashCompletionV2 itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1) - REJECTED, do not merge"
+        },
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 24,
+          "end_line": 29,
+          "anchor": "func (c *Command) genBashCompletion(",
+          "grade": 2,
+          "reason": "The unexported helper GenBashCompletionV2 delegates to; it buffers what genBashComp writes and copies the buffer to the caller's writer. GenBashCompletionFileV2 reaches it only indirectly, through GenBashCompletionV2.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1) - REJECTED, do not merge",
+          "r1_amendment": {
+            "was": {
+              "reason": "The unexported worker both V2 entry points delegate to."
+            },
+            "why": "Imprecise: genBashCompletion has exactly one direct caller, GenBashCompletionV2 (bash_completionsV2.go:395). GenBashCompletionFileV2 reaches it only transitively, and the actual script generation lives in genBashComp (bash_completionsV2.go:31-379), not here."
+          }
+        },
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 381,
+          "end_line": 390,
+          "anchor": "func (c *Command) GenBashCompletionFileV2(",
+          "grade": 2,
+          "reason": "The file-writing sibling that calls GenBashCompletionV2.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1) - REJECTED, do not merge"
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 421,
+          "end_line": 451,
+          "anchor": "### Bash completion V2",
+          "grade": 1,
+          "reason": "The user-facing documentation section for the V2 bash script.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1) - REJECTED, do not merge"
+        }
+      ],
+      "review_status": "rejected",
+      "r1_review_note": "Rejected as a duplicate, not as bad evidence. All four spans were read at the pinned checkout and are correct. But docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json (id cobra-v3-dev-reviewed, declared usable as a development split, already independently reviewed) carries cd-70: the same query string 'GenBashCompletionV2', the same stratum exact_identifier, the same split dev, and the byte-identical grade-3 span bash_completionsV2.go:392-396 - under a different family_id (cobra-family-83b084be11bacec7 vs this candidate's cobra-family-8c733ade6fba3574). Two identical queries in two families defeats exactly what family_id exists for, and would leak across the split the moment one family is assigned to holdout. The draft's own collision table missed this because it compared spans against cobra-v2.json only, while checking family ids repository-wide. Releasing this needs an owner decision (merge into cd-70's family, or drop one row), not a reviewer sign-off."
+    },
+    {
+      "id": "cq-03",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "AppendActiveHelp",
+      "family_id": "cobra-family-1cba3b2d9f1d9b8d",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. active_help.go has only two grade-3 spans in cobra-v2.json and AppendActiveHelp is the entry point programs actually call; cb-10 uses the file only as an exact_path target.",
+      "judgements": [
+        {
+          "path": "active_help.go",
+          "start_line": 35,
+          "end_line": 44,
+          "anchor": "func AppendActiveHelp(",
+          "grade": 3,
+          "reason": "The declaration of AppendActiveHelp itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "active_help.go",
+          "start_line": 24,
+          "end_line": 31,
+          "anchor": "activeHelpMarker = \"_activeHelp_ \"",
+          "grade": 2,
+          "reason": "The marker constant AppendActiveHelp prefixes onto the message.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "active_help.go",
+          "start_line": 46,
+          "end_line": 57,
+          "anchor": "func GetActiveHelpConfig(",
+          "grade": 2,
+          "reason": "The companion that decides whether the appended messages survive.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 216,
+          "end_line": 221,
+          "anchor": "if strings.HasPrefix(comp, activeHelpMarker) {",
+          "grade": 2,
+          "reason": "Where the __complete command strips the marked entries when ActiveHelp is disabled.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "site/content/active_help.md",
+          "start_line": 24,
+          "end_line": 29,
+          "anchor": "## Adding Active Help messages",
+          "grade": 1,
+          "reason": "The documentation section that names the function.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        }
+      ]
+    },
+    {
+      "id": "cq-04",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "FixedCompletions",
+      "family_id": "cobra-family-f01817b8c8149ed3",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. A small, self-contained public helper in completions.go with no cobra-v2 row of its own; sits next to NoFileCompletions, which gives the stratum its usual grade-2 near-miss.",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 124,
+          "end_line": 130,
+          "anchor": "func FixedCompletions(",
+          "grade": 3,
+          "reason": "The declaration of FixedCompletions itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 118,
+          "end_line": 122,
+          "anchor": "func NoFileCompletions(",
+          "grade": 2,
+          "reason": "The sibling canned completion function declared immediately above.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 502,
+          "end_line": 517,
+          "anchor": "completionFn = finalCmd.ValidArgsFunction",
+          "grade": 1,
+          "reason": "The generic dispatch point where a ValidArgsFunction - including one built by FixedCompletions - is finally invoked. Weakly relevant only: the span is not specific to FixedCompletions.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)",
+          "r1_amendment": {
+            "was": {
+              "grade": 2,
+              "reason": "Where a function of this shape is actually invoked during completion."
+            },
+            "why": "Too generous. completions.go:502-517 is the generic completion dispatch; nothing in the span names FixedCompletions or is specific to it - it would be returned for any completion-function query. The draft grades cq-07's judgement 3 a 1 although that span literally calls the queried symbol, so grade 2 here is also internally inconsistent."
+          }
+        },
+        {
+          "path": "completions.go",
+          "start_line": 54,
+          "end_line": 94,
+          "anchor": "ShellCompDirectiveError ShellCompDirective = 1 << iota",
+          "grade": 1,
+          "reason": "The directive constants a caller passes to FixedCompletions.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        }
+      ]
+    },
+    {
+      "id": "cq-05",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "GenYamlCustom",
+      "family_id": "cobra-family-13c9b9a8e54b13d9",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. doc/yaml_docs.go appears in cobra-v2.json only as cb-31's grade-2 GenYaml span; GenYamlCustom is the function that actually renders a command to YAML.",
+      "judgements": [
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 92,
+          "end_line": 147,
+          "anchor": "func GenYamlCustom(",
+          "grade": 3,
+          "reason": "The declaration of GenYamlCustom itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 87,
+          "end_line": 90,
+          "anchor": "func GenYaml(",
+          "grade": 2,
+          "reason": "The one-line wrapper that calls GenYamlCustom with an identity link handler.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 149,
+          "end_line": 175,
+          "anchor": "func genFlagResult(",
+          "grade": 2,
+          "reason": "The flag renderer GenYamlCustom calls to fill cmdDoc.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 30,
+          "end_line": 46,
+          "anchor": "type cmdOption struct {",
+          "grade": 1,
+          "reason": "The document structs GenYamlCustom populates.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)",
+          "r1_amendment": {
+            "was": {
+              "end_line": 51
+            },
+            "why": "Broken span. cmdOption closes at doc/yaml_docs.go:35 and cmdDoc at :46; lines 48-51 are the first four lines of GenYamlTree's doc comment and the span cut them mid-sentence. That violates the draft's own span_convention (a span ends at the closing brace in column 0) and drags unrelated, truncated text into the evidence. Corrected to end at cmdDoc's closing brace, line 46, which is exactly 'the document structs GenYamlCustom populates'."
+          }
+        }
+      ],
+      "review_note": "The nearby draft docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json already has cd-08 = GenYamlTreeCustom. Different symbol and different span (59-85 vs 92-147), but the reviewer should confirm the two are not treated as one family by whatever collision check the qualification applies."
+    },
+    {
+      "id": "cq-06",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "MatchAll",
+      "family_id": "cobra-family-ee283740ef6a8a2a",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. args.go carries many grade-3 spans in cobra-v2.json but none for MatchAll, the combinator the deprecated ExactValidArgs is now defined in terms of.",
+      "judgements": [
+        {
+          "path": "args.go",
+          "start_line": 113,
+          "end_line": 123,
+          "anchor": "func MatchAll(",
+          "grade": 3,
+          "reason": "The declaration of MatchAll itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "args.go",
+          "start_line": 125,
+          "end_line": 131,
+          "anchor": "func ExactValidArgs(",
+          "grade": 2,
+          "reason": "The deprecated validator that is now just MatchAll(ExactArgs(n), OnlyValidArgs).",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "args.go",
+          "start_line": 22,
+          "end_line": 22,
+          "anchor": "type PositionalArgs func(cmd *Command, args []string) error",
+          "grade": 2,
+          "reason": "The function type MatchAll both takes and returns.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "args_test.go",
+          "start_line": 440,
+          "end_line": 486,
+          "anchor": "func TestMatchAll(",
+          "grade": 1,
+          "reason": "The test for the combinator.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 367,
+          "end_line": 421,
+          "anchor": "## Positional and Custom Arguments",
+          "grade": 1,
+          "reason": "The user-guide section on positional argument validators.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        }
+      ]
+    },
+    {
+      "id": "cq-07",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "LocalNonPersistentFlags",
+      "family_id": "cobra-family-4d385f929c08e0eb",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. The one flag-set accessor on Command that cobra-v2.json never judges (Flags, LocalFlags, InheritedFlags and PersistentFlags all appear in cb-33/cb-20/ci-* rows).",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1655,
+          "end_line": 1666,
+          "anchor": "func (c *Command) LocalNonPersistentFlags(",
+          "grade": 3,
+          "reason": "The declaration of LocalNonPersistentFlags itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1668,
+          "end_line": 1693,
+          "anchor": "func (c *Command) LocalFlags(",
+          "grade": 2,
+          "reason": "The accessor it filters.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1725,
+          "end_line": 1735,
+          "anchor": "func (c *Command) PersistentFlags(",
+          "grade": 2,
+          "reason": "The set it subtracts.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 437,
+          "end_line": 448,
+          "anchor": "localNonPersistentFlags := finalCmd.LocalNonPersistentFlags()",
+          "grade": 1,
+          "reason": "One of its two in-tree callers: the Go completion path uses it to decide whether subcommand names may still be completed. The other caller is bash_completions.go:565, in the V1 bash script generator.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R1)",
+          "r1_amendment": {
+            "was": {
+              "reason": "Its only in-tree caller: completion uses it to decide whether subcommand names may still be completed."
+            },
+            "why": "Factually wrong. 'Its only in-tree caller' is false: bash_completions.go:565 also calls cmd.LocalNonPersistentFlags(), for the same purpose in the V1 bash script generator. Verified by grepping the pinned checkout: the identifier occurs at command.go:1655, command.go:1656, completions.go:442 and bash_completions.go:565."
+          }
+        }
+      ]
+    }
+  ],
+  "verdicts": [
+    {
+      "id": "cq-01",
+      "verdict": "accepted",
+      "note": "MarkFlagsOneRequired. All four spans read at the pinned checkout and correct: flag_groups.go:47-61 is the declaration with its doc comment, :167-186 is validateOneRequiredFlagGroups (no doc comment above it, so the span rightly starts at the func line), :25-29 is the annotation-key const block that MarkFlagsOneRequired writes through SetAnnotation, and flag_groups_test.go:22-195 is the whole table test, which does exercise one-required groups (cases at lines 68-71, 83-86, 98-101, 114-118, 140-147). The draft's own review_note flags that the test span is also cb-02's grade-1 span; I keep it, because cobra-v2.json reuses spans across families as a matter of course. Grade 2 for the const block matches cobra-v2.json's cb-26, which grades the analogous active_help.go const block a 2."
+    },
+    {
+      "id": "cq-02",
+      "verdict": "rejected",
+      "note": "GenBashCompletionV2. Not released: verbatim duplicate of cd-70 in docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json - same query, same stratum, same split, same grade-3 span bash_completionsV2.go:392-396, different family_id. See r1_review_note on the query. The spans themselves are sound (392-396, 24-29, 381-390 all end at a column-0 closing brace; the doc section site/content/completions/_index.md:421-451 runs exactly to the next heading at :452), and judgement 1's reason was corrected for precision, but the duplicate is an owner decision, not something a reviewer may wave through."
+    },
+    {
+      "id": "cq-03",
+      "verdict": "accepted",
+      "note": "AppendActiveHelp. active_help.go:35-44 is the declaration with its seven-line doc comment; :24-31 is the const block holding activeHelpMarker, which the function prefixes; :46-57 is GetActiveHelpConfig; completions.go:216-221 is a coherent sub-span (the whole 'if ActiveHelp disabled' branch inside the hidden __complete command's Run) and is where marked entries are dropped; site/content/active_help.md:24-29 is exactly the '## Adding Active Help messages' section, ending before the next heading at :30, and line 28 names cobra.AppendActiveHelp. I let judgement 2's reason stand although 'decides whether the appended messages survive' is loose - GetActiveHelpConfig reports the configured value and completions.go:216 makes the decision. That is an interpretive shorthand, not a false fact, so it does not meet my amendment bar."
+    },
+    {
+      "id": "cq-04",
+      "verdict": "amended",
+      "note": "FixedCompletions. Declaration (completions.go:124-130), sibling NoFileCompletions (:118-122) and the ShellCompDirective const block (:54-94, opening 'const (' to closing ')') all check out. Amended judgement 2: completions.go:502-517 was graded 2 and is downgraded to 1 - the span is the generic completion dispatch, contains no mention of FixedCompletions, and would be equally returned for any completion query. Keeping it at 2 while cq-07 grades a span that literally calls its queried symbol a 1 would make the grade scale incoherent."
+    },
+    {
+      "id": "cq-05",
+      "verdict": "amended",
+      "note": "GenYamlCustom. doc/yaml_docs.go:92-147 (declaration), :87-90 (GenYaml, which really does pass an identity link handler) and :149-175 (genFlagResult, really called at :113 and :117 to fill the cmdDoc) are correct. Amended judgement 3: the span was 30-51 and ran past both struct bodies - cmdOption closes at :35, cmdDoc at :46 - into lines 48-51, the first four lines of GenYamlTree's doc comment, cut mid-sentence. Corrected to 30-46, which is precisely the two document structs the reason claims. The draft's own review_note about cd-08 (GenYamlTreeCustom) is resolved: different symbol, different span (doc/yaml_docs.go:59-85), different family_id, no duplicate."
+    },
+    {
+      "id": "cq-06",
+      "verdict": "accepted",
+      "note": "MatchAll. args.go:113-123 is the declaration; :125-131 is the deprecated ExactValidArgs, whose body is literally MatchAll(ExactArgs(n), OnlyValidArgs); args.go:22-22 is the PositionalArgs type MatchAll takes and returns - a one-line span, which I checked against precedent before accepting: cobra-v2.json's ci-827 uses the identical single-line span at grade 2. args_test.go:440-486 is TestMatchAll; site/content/user_guide.md:367-421 is exactly the '## Positional and Custom Arguments' section, ending before '## Example' at :422, and line 384 documents MatchAll explicitly. Grade 1 for that doc section is conservative - it explains MatchAll by name and with an example, so a 2 would be defensible - but under-grading does not corrupt the authorisation, so I leave it."
+    },
+    {
+      "id": "cq-07",
+      "verdict": "amended",
+      "note": "LocalNonPersistentFlags. command.go:1655-1666 (declaration), :1668-1693 (LocalFlags, which it iterates) and :1725-1735 (PersistentFlags, whose members it filters out) are correct. Amended judgement 3: the reason claimed completions.go:437-448 is the symbol's 'only in-tree caller'. That is false - bash_completions.go:565 calls it too, in the V1 bash script generator, for the same purpose. Reason corrected; the span, the grade and the functional claim about subcommand completion (confirmed at completions.go:450-454) stand."
+    }
+  ],
+  "summary": {
+    "reviewed": 7,
+    "accepted": 3,
+    "amended": 3,
+    "rejected": 1,
+    "judgements_checked": 30,
+    "not_released": [
+      {
+        "id": "cq-02",
+        "query": "GenBashCompletionV2",
+        "why": "Duplicate of the already-reviewed dev row cd-70 in docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json: identical query string, stratum, split and grade-3 span, but a different family_id. Not a span defect - a dataset-integrity defect that needs an owner decision."
+      }
+    ],
+    "amendments": [
+      "cq-04 judgement 2 (completions.go:502-517): grade 2 -> 1, generic dispatch span with nothing specific to FixedCompletions.",
+      "cq-05 judgement 3 (doc/yaml_docs.go): end_line 51 -> 46, span ran past cmdDoc's closing brace into a truncated doc comment.",
+      "cq-07 judgement 3 (completions.go:437-448): reason corrected, 'only in-tree caller' is false (bash_completions.go:565).",
+      "cq-02 judgement 1 (bash_completionsV2.go:24-29): reason corrected for precision - recorded, but the candidate is rejected regardless."
+    ],
+    "disagreements_with_the_annotator": [
+      "cq-02 was drafted as 'unseen ground'. It is not: cd-70 already covers the identical query with the identical grade-3 span.",
+      "cq-04 judgement 2 was graded too generously.",
+      "cq-05 judgement 3's span violated the draft's own span_convention.",
+      "cq-07 judgement 3 asserted a call-graph fact that the pinned checkout contradicts."
+    ]
+  }
+}

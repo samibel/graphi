@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 	"github.com/samibel/graphi/engine/embed"
+	"github.com/samibel/graphi/engine/embed/static"
 	engineretrieval "github.com/samibel/graphi/engine/retrieval"
 	"github.com/samibel/graphi/engine/search"
 )
@@ -122,22 +123,45 @@ func TestQualificationCaptureRejectsFingerprintOrDegradation(t *testing.T) {
 	}
 }
 
-func TestQualificationPayloadRetrieverSummaryMustMatchExpectedFingerprint(t *testing.T) {
+func TestQualificationPayloadRetrieverSummaryMustMatchTheLoadedGeneration(t *testing.T) {
 	f := validQualificationCaptureFixture(t)
-	want := f.expectedFingerprint.Canonical()
-	summary := resolve.RetrieverResult{
-		Degradation: string(engineretrieval.StateReady),
-		Summary: resolve.RetrieverSummary{
-			RetrievalVersion: engineretrieval.Version, Strategy: "semantic_first",
-			ModelFingerprint: want, IndexFingerprint: want,
-		},
+	// What a real build produces: the preregistered embedding space under a
+	// graph generation the preregistration could not have named.
+	loaded := f.expectedFingerprint
+	loaded.GraphGeneration = "a4babe5c82f1a6e355ac363d1fa7d070"
+	summaryFor := func(canonical string) resolve.RetrieverResult {
+		return resolve.RetrieverResult{
+			Degradation: string(engineretrieval.StateReady),
+			Summary: resolve.RetrieverSummary{
+				RetrievalVersion: engineretrieval.Version, Strategy: "semantic_first",
+				ModelFingerprint: canonical, IndexFingerprint: canonical,
+			},
+		}
 	}
-	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, summary); err != nil {
-		t.Fatal(err)
+
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summaryFor(loaded.Canonical())); err != nil {
+		t.Fatalf("a runtime-bound graph generation was refused: %v", err)
 	}
+
+	// The summary must equal the LOADED generation, not the pin: a summary
+	// still naming the preregistered generation was produced against some
+	// other graph than the one this capture built.
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summaryFor(f.expectedFingerprint.Canonical())); err == nil {
+		t.Fatal("payload-producing retrieval accepted a fingerprint from a different graph generation")
+	}
+
+	summary := summaryFor(loaded.Canonical())
 	summary.Summary.IndexFingerprint = "wrong"
-	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, summary); err == nil {
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, loaded, summary); err == nil {
 		t.Fatal("payload-producing retrieval accepted a different index fingerprint")
+	}
+
+	// A loaded generation that differs from the pin OUTSIDE the graph
+	// generation is a different embedding space and stays refused.
+	otherSpace := loaded
+	otherSpace.Dim = 99
+	if err := validateQualificationRetrieverSummary(ArmCodeRank, f.expectedFingerprint, otherSpace, summaryFor(otherSpace.Canonical())); err == nil {
+		t.Fatal("a loaded generation from a different embedding space was accepted")
 	}
 }
 
@@ -862,18 +886,310 @@ func qualificationBuildDigestFixture() qualificationBuildInputs {
 	}
 }
 
+// TestEmbeddedModelQualificationCapture is the live run, and it deliberately
+// carries no logic of its own: the environment variables only gate it (a real
+// capture needs real pinned artifacts, so CI cannot run it), and the run
+// itself goes through CaptureQualification - the same exported entry point
+// the capture subcommand calls. A test that reached the driver by a private
+// door would be testing something other than what ships.
 func TestEmbeddedModelQualificationCapture(t *testing.T) {
-	required := []string{
-		"GRAPHI_QUALIFICATION_REPO", "GRAPHI_QUALIFICATION_DATASET",
-		"GRAPHI_QUALIFICATION_PREREGISTRATION", "GRAPHI_CODERANK_MANIFEST",
-		"GRAPHI_QUALIFICATION_OUT", "GRAPHI_STATIC_MODEL_DIR",
+	options := CaptureQualificationOptions{
+		RepoRoot:            os.Getenv("GRAPHI_QUALIFICATION_REPO"),
+		DatasetPath:         os.Getenv("GRAPHI_QUALIFICATION_DATASET"),
+		PreregistrationPath: os.Getenv("GRAPHI_QUALIFICATION_PREREGISTRATION"),
+		ManifestPath:        os.Getenv("GRAPHI_CODERANK_MANIFEST"),
+		OutputPath:          os.Getenv("GRAPHI_QUALIFICATION_OUT"),
+		StaticModelDir:      os.Getenv("GRAPHI_STATIC_MODEL_DIR"),
+		CandidateRoot:       os.Getenv("GRAPHI_QUALIFICATION_CANDIDATE_ROOT"),
 	}
-	for _, name := range required {
-		if strings.TrimSpace(os.Getenv(name)) == "" {
-			t.Skipf("live qualification requires every input; %s is unset", name)
+	for _, required := range []struct{ name, value string }{
+		{"GRAPHI_QUALIFICATION_REPO", options.RepoRoot},
+		{"GRAPHI_QUALIFICATION_DATASET", options.DatasetPath},
+		{"GRAPHI_QUALIFICATION_PREREGISTRATION", options.PreregistrationPath},
+		{"GRAPHI_CODERANK_MANIFEST", options.ManifestPath},
+		{"GRAPHI_QUALIFICATION_OUT", options.OutputPath},
+		{"GRAPHI_STATIC_MODEL_DIR", options.StaticModelDir},
+		{"GRAPHI_QUALIFICATION_CANDIDATE_ROOT", options.CandidateRoot},
+	} {
+		if strings.TrimSpace(required.value) == "" {
+			t.Skipf("live qualification requires every input; %s is unset", required.name)
 		}
 	}
-	if err := runEmbeddedModelQualificationCapture(context.Background(), qualificationEnvironmentFromOS()); err != nil {
+	if err := CaptureQualification(context.Background(), options); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// qualificationCaptureInputsFixture writes the dataset, preregistration and
+// manifest a capture needs in order to get PAST those three checks and reach
+// the pinned-artifact pre-flight. It does not attempt to make a real run
+// possible - there is no model, no sidecar and no source commit - only to put
+// the checks under test in reach of a hermetic test.
+func qualificationCaptureInputsFixture(t *testing.T) CaptureQualificationOptions {
+	t.Helper()
+	root := t.TempDir()
+	out := filepath.Join(root, "out")
+	if err := os.Mkdir(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded := qualificationDatasetFixture()
+	datasetPath := filepath.Join(root, "dataset.json")
+	if err := os.WriteFile(datasetPath, loaded.Raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := []byte("pinned coderank manifest bytes\n")
+	manifestPath := filepath.Join(root, "coderank.json")
+	if err := os.WriteFile(manifestPath, manifest, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	pre := qualificationPreregistrationFixture()
+	pre.DatasetSHA256 = loaded.SHA256
+	pin := pre.Arms[ArmCodeRank]
+	pin.ManifestSHA256 = SHA256Hex(manifest)
+	pre.Arms[ArmCodeRank] = pin
+	raw, err := json.Marshal(pre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prePath := filepath.Join(root, "preregistration.json")
+	if err := os.WriteFile(prePath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	return CaptureQualificationOptions{
+		RepoRoot: root, DatasetPath: datasetPath, PreregistrationPath: prePath,
+		ManifestPath: manifestPath, OutputPath: out, CandidateRoot: root,
+	}
+}
+
+// qualificationPotionArtifactDir creates a directory holding one distinct
+// model.safetensors, so two such directories are never the same file.
+func qualificationPotionArtifactDir(t *testing.T, name string) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), name)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, static.FileSafetensors), []byte("artifact "+name), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+// --static-model-dir is an assertion about which Potion artifact the run will
+// read, and until this check existed it could not keep that promise: the arms
+// resolve their artifact through static.ResolveArtifactDir, which never sees
+// the flag. An operator naming one directory while the environment resolved
+// another got a green pre-flight and a run against different bytes.
+//
+// The comparison has to be os.SameFile rather than string equality, so the
+// symlink case below is the point of the test, not decoration: one file
+// reached by two spellings must be accepted.
+func TestCaptureQualificationRefusesAPotionArtifactItWillNotActuallyLoad(t *testing.T) {
+	// Reaching the pinned-artifact pre-flight means the run is already past
+	// the dataset, preregistration and manifest checks; what it fails on
+	// afterwards (no source commit, no sidecar) is not this test's business.
+	// These are the two messages that must NOT appear once the artifact
+	// agrees, and the marker of the old check that must survive.
+	const divergence = "will load a different artifact"
+	const unreadable = "is unreadable"
+	const missingNamedArtifact = "pinned Potion artifact:"
+	// The first step AFTER the artifact pre-flight. An accepted artifact has
+	// to fail here instead, or the subtest would be passing because the run
+	// stopped even earlier and never reached the check under test.
+	const reachedBinding = "pre-capture binding"
+
+	t.Run("accepts the artifact the environment resolves", func(t *testing.T) {
+		artifact := qualificationPotionArtifactDir(t, "potion")
+		t.Setenv(qualificationStaticModelDirEnv, artifact)
+		options := qualificationCaptureInputsFixture(t)
+		options.StaticModelDir = artifact
+		err := CaptureQualification(t.Context(), options)
+		if err == nil {
+			t.Fatal("a capture with no source commit and no sidecar must still fail")
+		}
+		if strings.Contains(err.Error(), divergence) || strings.Contains(err.Error(), unreadable) {
+			t.Fatalf("matching artifact was refused: %v", err)
+		}
+		if !strings.Contains(err.Error(), reachedBinding) {
+			t.Fatalf("capture did not get past the artifact pre-flight: %v", err)
+		}
+	})
+
+	// The same file under two names. A path comparison would refuse this, and
+	// refusing it would be a false alarm: a symlinked model cache is ordinary,
+	// and so is /tmp against /private/tmp on darwin.
+	t.Run("accepts the same artifact reached by another path", func(t *testing.T) {
+		artifact := qualificationPotionArtifactDir(t, "potion")
+		link := filepath.Join(t.TempDir(), "linked-potion")
+		if err := os.Symlink(artifact, link); err != nil {
+			t.Skipf("this filesystem does not support symlinks: %v", err)
+		}
+		t.Setenv(qualificationStaticModelDirEnv, artifact)
+		options := qualificationCaptureInputsFixture(t)
+		options.StaticModelDir = link
+		err := CaptureQualification(t.Context(), options)
+		if err == nil {
+			t.Fatal("a capture with no source commit and no sidecar must still fail")
+		}
+		if strings.Contains(err.Error(), divergence) || strings.Contains(err.Error(), unreadable) {
+			t.Fatalf("the same artifact under a second path was refused: %v", err)
+		}
+		if !strings.Contains(err.Error(), reachedBinding) {
+			t.Fatalf("capture did not get past the artifact pre-flight: %v", err)
+		}
+	})
+
+	// The refusal has to name both directories and say where the second one
+	// came from, or the operator is left wondering why their flag was ignored.
+	t.Run("refuses an artifact the environment resolves elsewhere", func(t *testing.T) {
+		named := qualificationPotionArtifactDir(t, "named")
+		resolved := qualificationPotionArtifactDir(t, "resolved")
+		t.Setenv(qualificationStaticModelDirEnv, resolved)
+		options := qualificationCaptureInputsFixture(t)
+		options.StaticModelDir = named
+		err := CaptureQualification(t.Context(), options)
+		if err == nil || !strings.Contains(err.Error(), divergence) {
+			t.Fatalf("divergent artifact error = %v", err)
+		}
+		for _, want := range []string{named, resolved, qualificationStaticModelDirEnv} {
+			if !strings.Contains(err.Error(), want) {
+				t.Fatalf("refusal does not name %q: %v", want, err)
+			}
+		}
+	})
+
+	t.Run("refuses when the resolved artifact is not readable", func(t *testing.T) {
+		named := qualificationPotionArtifactDir(t, "named")
+		t.Setenv(qualificationStaticModelDirEnv, filepath.Join(t.TempDir(), "not-installed"))
+		options := qualificationCaptureInputsFixture(t)
+		options.StaticModelDir = named
+		err := CaptureQualification(t.Context(), options)
+		if err == nil || !strings.Contains(err.Error(), unreadable) {
+			t.Fatalf("unreadable resolved artifact error = %v", err)
+		}
+		if !strings.Contains(err.Error(), qualificationStaticModelDirEnv) {
+			t.Fatalf("refusal does not name the variable to set: %v", err)
+		}
+	})
+
+	// With the variable unset the arms fall back to the artifact cache, and
+	// the refusal has to say so - "unset" is the actionable half.
+	t.Run("names the cache fallback when the variable is unset", func(t *testing.T) {
+		named := qualificationPotionArtifactDir(t, "named")
+		cache := t.TempDir()
+		t.Setenv(qualificationStaticModelDirEnv, "")
+		t.Setenv("XDG_CACHE_HOME", cache)
+		resolved := filepath.Join(cache, "graphi", "models", static.PinnedModel+"@"+static.PinnedRevision)
+		if err := os.MkdirAll(resolved, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(resolved, static.FileSafetensors), []byte("cached artifact"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		options := qualificationCaptureInputsFixture(t)
+		options.StaticModelDir = named
+		err := CaptureQualification(t.Context(), options)
+		if err == nil || !strings.Contains(err.Error(), divergence) {
+			t.Fatalf("cache-resolved divergence error = %v", err)
+		}
+		if !strings.Contains(err.Error(), "is unset") || !strings.Contains(err.Error(), resolved) {
+			t.Fatalf("refusal does not explain the cache fallback: %v", err)
+		}
+	})
+
+	// The older, clearer message for a missing artifact must survive. Running
+	// SameFile against two absent files would report a resolution problem the
+	// operator does not have.
+	t.Run("an absent named artifact keeps the original refusal", func(t *testing.T) {
+		t.Setenv(qualificationStaticModelDirEnv, qualificationPotionArtifactDir(t, "installed"))
+		options := qualificationCaptureInputsFixture(t)
+		options.StaticModelDir = filepath.Join(t.TempDir(), "not-installed")
+		err := CaptureQualification(t.Context(), options)
+		if err == nil || !strings.Contains(err.Error(), missingNamedArtifact) {
+			t.Fatalf("absent named artifact error = %v", err)
+		}
+		if strings.Contains(err.Error(), divergence) || strings.Contains(err.Error(), unreadable) {
+			t.Fatalf("absent artifact was reported as a resolution mismatch: %v", err)
+		}
+	})
+}
+
+// CaptureQualification refuses long before the first embedding, and these are
+// the refusals an operator actually hits: a blank option, an output directory
+// that does not exist, an output directory that is not empty, and a dataset
+// that cannot be read. None of them needs a pinned model artifact, so they are
+// the part of the exported entry point CI can hold.
+func TestCaptureQualificationRefusesIncompleteInputsBeforeAnyModelWork(t *testing.T) {
+	complete := func(t *testing.T) CaptureQualificationOptions {
+		t.Helper()
+		root := t.TempDir()
+		out := filepath.Join(root, "out")
+		if err := os.Mkdir(out, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		return CaptureQualificationOptions{
+			RepoRoot: root, DatasetPath: filepath.Join(root, "dataset.json"),
+			PreregistrationPath: filepath.Join(root, "preregistration.json"),
+			ManifestPath:        filepath.Join(root, "coderank.json"),
+			OutputPath:          out, StaticModelDir: filepath.Join(root, "model"),
+			CandidateRoot: root,
+		}
+	}
+
+	// Every option is required by name, so the refusal names the field the
+	// operator forgot rather than failing later on an empty path.
+	for _, blank := range []struct {
+		field string
+		clear func(*CaptureQualificationOptions)
+	}{
+		{"repository", func(o *CaptureQualificationOptions) { o.RepoRoot = "" }},
+		{"dataset", func(o *CaptureQualificationOptions) { o.DatasetPath = "" }},
+		{"preregistration", func(o *CaptureQualificationOptions) { o.PreregistrationPath = "" }},
+		{"CodeRank manifest", func(o *CaptureQualificationOptions) { o.ManifestPath = "" }},
+		{"output", func(o *CaptureQualificationOptions) { o.OutputPath = "  " }},
+		{"static model directory", func(o *CaptureQualificationOptions) { o.StaticModelDir = "" }},
+		{"candidate root", func(o *CaptureQualificationOptions) { o.CandidateRoot = "" }},
+	} {
+		t.Run("blank "+blank.field, func(t *testing.T) {
+			options := complete(t)
+			blank.clear(&options)
+			err := CaptureQualification(t.Context(), options)
+			if err == nil || !strings.Contains(err.Error(), blank.field+" is required") {
+				t.Fatalf("blank %s error = %v", blank.field, err)
+			}
+		})
+	}
+
+	t.Run("output directory must already exist", func(t *testing.T) {
+		options := complete(t)
+		options.OutputPath = filepath.Join(options.OutputPath, "missing")
+		err := CaptureQualification(t.Context(), options)
+		if err == nil || !strings.Contains(err.Error(), "read output directory") {
+			t.Fatalf("missing output directory error = %v", err)
+		}
+	})
+
+	t.Run("output directory must be empty", func(t *testing.T) {
+		options := complete(t)
+		if err := os.WriteFile(filepath.Join(options.OutputPath, "captures.json"), []byte("{}"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		err := CaptureQualification(t.Context(), options)
+		if err == nil || !strings.Contains(err.Error(), "is not empty") {
+			t.Fatalf("non-empty output directory error = %v", err)
+		}
+	})
+
+	// The empty-output check runs before the dataset is read, so a run that
+	// gets this far has already proven it will not overwrite evidence.
+	t.Run("dataset must be readable", func(t *testing.T) {
+		options := complete(t)
+		err := CaptureQualification(t.Context(), options)
+		if err == nil || strings.Contains(err.Error(), "is required") {
+			t.Fatalf("unreadable dataset error = %v", err)
+		}
+	})
 }
