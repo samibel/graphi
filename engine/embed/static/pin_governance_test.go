@@ -174,6 +174,13 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2",
 		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3",
 		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4",
+		// The embedded-model development qualification. Unlike the runs above,
+		// which merely CAPTURED evidence under this pin, two of its four arms
+		// ARE this embedder: M1_potion_512 and M2_potion_8192 preregister an
+		// embedder_id, fingerprint_canonical and admission_sha256 derived from
+		// this exact revision. Rotating the pin therefore invalidates the
+		// preregistration itself, not only the captures taken under it.
+		"docs/eval/retrieval/runs/embedded-model-qualification",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)
