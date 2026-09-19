@@ -49,7 +49,6 @@ const (
 const QualificationCompactVersion = taskcompact.Version
 
 const (
-
 	QualificationMinPasses                     = 56
 	QualificationMinPairedGain                 = 9
 	QualificationMinWeakStrataWithPositiveGain = 2
