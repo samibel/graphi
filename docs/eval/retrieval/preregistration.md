@@ -260,7 +260,7 @@ Three classes:
   },
 
   // frozen — QualificationCompactVersion.
-  "compact_version": "compact/17",
+  "compact_version": "task_context/2-compact/17",
   // frozen — QualificationTokenBudget.
   "token_budget": 1200,
   // frozen — QualificationBootstrapSamples.

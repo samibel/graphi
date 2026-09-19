@@ -32,7 +32,7 @@
       "admission_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     }
   },
-  "compact_version": "compact/17",
+  "compact_version": "task_context/2-compact/17",
   "token_budget": 1200,
   "bootstrap_samples": 100000,
   "bootstrap_seed": 1,

@@ -30,9 +30,25 @@ const (
 	// the embedded-model qualification gate.
 	QualificationSchemaVersion = 1
 
-	QualificationCompactVersion   = "compact/17"
 	QualificationTokenBudget      = 1200
 	QualificationBootstrapSamples = 100000
+)
+
+// QualificationCompactVersion is the method version a capture must stamp. It is
+// TAKEN FROM the compact package rather than restated here.
+//
+// A restated copy read "compact/17" while every capture stamped
+// taskcompact.Version, "task_context/2-compact/17". The two were then compared
+// for equality in validateQualificationCaptureProvenance, so finalize refused
+// every real run — and capture never noticed, because the artefact check
+// (model_qualification_artifact.go) does not verify this field. The defect was
+// only reachable once a capture had actually succeeded.
+//
+// Deriving it means the preregistered value and the stamped value cannot drift
+// again: one changes only when the other does.
+const QualificationCompactVersion = taskcompact.Version
+
+const (
 
 	QualificationMinPasses                     = 56
 	QualificationMinPairedGain                 = 9
