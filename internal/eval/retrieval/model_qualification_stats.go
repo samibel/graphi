@@ -174,17 +174,22 @@ type qualificationEvidence struct {
 	// paid for twice.
 	fingerprintMismatch string
 	noDegradation       bool
-	// graphGenerationConsistent records whether every semantic arm and every
-	// observation of THIS run named one and the same graph generation.
+	// graphGenerationConsistent records whether, WITHIN EACH semantic arm, all
+	// 64 observations named one and the same graph generation.
 	//
 	// It is a separate gate from fingerprintsOK because it proves a different
 	// thing. fingerprintsOK proves each arm measured the embedding space that
-	// was preregistered (fields 0-6). graphGenerationConsistent proves all of
-	// them measured the SAME GRAPH — the property that makes the paired
-	// arm-vs-arm comparison meaningful, and the only property the random
-	// eighth field can attest at all. Nothing checked it before; the
+	// was preregistered (fields 0-6). graphGenerationConsistent proves each
+	// arm's 64 queries were measured against ONE index — it would catch a
+	// reindex happening under a running arm, which is the only thing the
+	// random eighth field can attest at all. Nothing checked it before; the
 	// byte-for-byte pin comparison it replaces could not, because it demanded
 	// a value no run can reproduce.
+	//
+	// The scope is the arm, not the run. Every arm builds its own index in its
+	// own work directory, so a run legitimately carries as many generations as
+	// it has semantic arms; comparing across arms would catch nothing and fail
+	// every run.
 	graphGenerationConsistent bool
 }
 
@@ -202,17 +207,24 @@ func qualificationFingerprintGateObserved(evidence qualificationEvidence) string
 	return "false (" + evidence.fingerprintMismatch + ")"
 }
 
-// qualificationRunGraphGeneration is the run's bound graph generation plus the
+// qualificationArmGraphGeneration is one arm's bound graph generation plus the
 // observation that bound it, so a later divergence can name BOTH sides.
-type qualificationRunGraphGeneration struct {
+type qualificationArmGraphGeneration struct {
 	value  string
-	bound  bool
 	source string
 }
 
-// bindQualificationGraphGeneration binds the run's graph generation to the
-// first semantic observation that reports a decodable one, and refuses any
-// later observation that names a different one.
+// bindQualificationArmGraphGeneration binds ONE ARM's graph generation to the
+// first observation of that arm reporting a decodable one, and refuses any
+// later observation OF THE SAME ARM that names a different one.
+//
+// The scope is the arm, and that is the whole point. Each arm builds its own
+// index in its own work directory (captureQualificationBuilds), and
+// index.commit_generation is minted from crypto/rand per build, so different
+// arms have different generations BY CONSTRUCTION — a run-wide binding would
+// fail every real run while catching nothing. Within one arm the claim is both
+// checkable and worth checking: all 64 queries of that arm were measured
+// against the same index, so a reindex happening under a running arm is caught.
 //
 // Only IndexFingerprint is read. ModelFingerprint is a MODEL ID, not a
 // canonical fingerprint (see QualificationObservation), so it carries no eighth
@@ -223,23 +235,24 @@ type qualificationRunGraphGeneration struct {
 // A fingerprint that does not decode is NOT a hard error here: that is exactly
 // what the fingerprint_equality gate already reports, and turning a malformed
 // fingerprint into an abort would replace a named failing gate with an opaque
-// refusal. It does clear graphGenerationConsistent, because a run whose
-// fingerprints cannot be read has not shown that its arms share a graph.
-func bindQualificationGraphGeneration(bound *qualificationRunGraphGeneration, observation QualificationObservation, queryID string, evidence *qualificationEvidence) error {
+// refusal. It does clear graphGenerationConsistent, because an arm whose
+// fingerprints cannot be read has not shown that its queries share an index.
+func bindQualificationArmGraphGeneration(bound map[QualificationArm]qualificationArmGraphGeneration, observation QualificationObservation, queryID string, evidence *qualificationEvidence) error {
 	generation, ok := qualificationGraphGenerationOf(observation.IndexFingerprint)
 	if !ok {
 		evidence.graphGenerationConsistent = false
 		return nil
 	}
-	source := fmt.Sprintf("arm %s query %s index fingerprint", observation.Arm, queryID)
-	if !bound.bound {
-		*bound = qualificationRunGraphGeneration{value: generation, bound: true, source: source}
+	source := fmt.Sprintf("query %s index fingerprint", queryID)
+	previous, already := bound[observation.Arm]
+	if !already {
+		bound[observation.Arm] = qualificationArmGraphGeneration{value: generation, source: source}
 		return nil
 	}
-	if generation != bound.value {
+	if generation != previous.value {
 		evidence.graphGenerationConsistent = false
-		return fmt.Errorf("embedded-model qualification decision: %s names graph generation %q but %s names %q; every arm and every observation of one run must be measured against exactly one graph generation",
-			source, generation, bound.source, bound.value)
+		return fmt.Errorf("embedded-model qualification decision: arm %s %s names graph generation %q but %s names %q; all 64 queries of one arm must be measured against exactly one index",
+			observation.Arm, source, generation, previous.source, previous.value)
 	}
 	return nil
 }
@@ -285,7 +298,7 @@ func EvaluateQualification(in QualificationInput) (QualificationDecision, error)
 		gate("cpu_only", true, "true (pinned M3 manifest)", "true"),
 		gate("state_ready", evidence.stateReady, fmt.Sprintf("%t", evidence.stateReady), "every M1-M3 observation ready"),
 		gate("fingerprint_equality", evidence.fingerprintsOK, qualificationFingerprintGateObserved(evidence), "every M1-M3 index fingerprint equals its preregistered fingerprint in every field except the runtime-bound graph generation, and every M1-M3 model id equals its preregistered model id"),
-		gate("graph_generation_consistency", evidence.graphGenerationConsistent, fmt.Sprintf("%t", evidence.graphGenerationConsistent), "every M1-M3 index fingerprint names one and the same runtime-bound graph generation"),
+		gate("graph_generation_consistency", evidence.graphGenerationConsistent, fmt.Sprintf("%t", evidence.graphGenerationConsistent), "within each of M1-M3, all 64 index fingerprints name one and the same runtime-bound graph generation"),
 		gate("no_degradation", evidence.noDegradation, fmt.Sprintf("%t", evidence.noDegradation), "every M1-M3 observation has no sidecar degradation"),
 		gate("required_diagnostics_available", evidence.diagnosticsAvailable, fmt.Sprintf("%t", evidence.diagnosticsAvailable), "every M1-M3 observation has required diagnostics"),
 	}
@@ -310,10 +323,12 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 		stateReady: true, fingerprintsOK: true, noDegradation: true, diagnosticsAvailable: true,
 		graphGenerationConsistent: true,
 	}
-	// The one graph generation this run is allowed to carry. It is not known
-	// in advance — it is whatever the first semantic observation reports —
-	// and every later observation of every arm must agree with it.
-	var graphGeneration qualificationRunGraphGeneration
+	// The one graph generation each ARM is allowed to carry. None of them is
+	// known in advance — each is whatever that arm's first observation reports
+	// — and every later observation OF THAT ARM must agree with it. Arms are
+	// not compared against each other: each builds its own index, so each has
+	// its own randomly minted generation.
+	graphGenerations := make(map[QualificationArm]qualificationArmGraphGeneration, 3)
 	if err := validateQualificationInputDataset(in); err != nil {
 		return evidence, err
 	}
@@ -369,7 +384,7 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 			// graph_generation, is minted from crypto/rand by every index
 			// build and therefore cannot be preregistered at all — see
 			// model_qualification_fingerprint.go. It is bound at runtime and
-			// checked for internal consistency by run, just below.
+			// checked for internal consistency PER ARM, just below.
 			//
 			// The two observed fields are different KINDS of value and are
 			// checked as such: IndexFingerprint is a canonical fingerprint and
@@ -396,7 +411,7 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 						qualificationFingerprintValue(expectedModelID))
 				}
 			}
-			if err := bindQualificationGraphGeneration(&graphGeneration, observation, queryID, &evidence); err != nil {
+			if err := bindQualificationArmGraphGeneration(graphGenerations, observation, queryID, &evidence); err != nil {
 				return evidence, err
 			}
 			noDegradation := !observation.Degraded
@@ -507,7 +522,7 @@ func validateBuildEvidence(in QualificationInput, arms []QualificationArm, evide
 		if err := validateQualificationBuildDigestSeal(digest); err != nil {
 			return fmt.Errorf("embedded-model qualification decision: arm %s build %d: %w", digest.Arm, digest.Build, err)
 		}
-		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256, digest.QueryDiagnosticsSHA256, digest.ObservationsSHA256} {
+		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256, digest.QueryDiagnosticsSHA256, digest.ObservationsExceptGraphGenerationSHA256} {
 			if !isLowerHexDigest(value, 64) {
 				return fmt.Errorf("embedded-model qualification decision: arm %s has malformed build digest", digest.Arm)
 			}
@@ -526,9 +541,14 @@ func validateBuildEvidence(in QualificationInput, arms []QualificationArm, evide
 		for _, observation := range evidence.observations[arm] {
 			observations = append(observations, observation)
 		}
-		observationsSHA := qualificationObservationsSHA256(observations)
-		if first.ObservationsSHA256 != observationsSHA || second.ObservationsSHA256 != observationsSHA {
-			return fmt.Errorf("embedded-model qualification decision: arm %s observation digest differs from both captured builds", arm)
+		// The digest deliberately excludes the index fingerprint's randomly
+		// minted graph_generation: build 1 and build 2 built their own
+		// indexes and therefore carry different generations, while the
+		// evidence under evaluation is build 1's. Everything else must agree
+		// with BOTH builds byte for byte.
+		observationsSHA := qualificationObservationsExceptGraphGenerationSHA256(observations)
+		if first.ObservationsExceptGraphGenerationSHA256 != observationsSHA || second.ObservationsExceptGraphGenerationSHA256 != observationsSHA {
+			return fmt.Errorf("embedded-model qualification decision: arm %s observation digest (graph generation excluded) differs from both captured builds", arm)
 		}
 		if first.CaptureProvenance.SHA256 == second.CaptureProvenance.SHA256 {
 			return fmt.Errorf("embedded-model qualification decision: arm %s builds do not have distinct capture provenance", arm)

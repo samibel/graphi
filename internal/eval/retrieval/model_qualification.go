@@ -209,9 +209,11 @@ type QualificationObservation struct {
 }
 
 // QualificationBuildDigest separates the independently reproducible byte
-// classes. Staging generation IDs are intentionally absent; no other
-// persisted field is excluded. Oracle payload bytes/digests and their real
-// token counts have independent digests so either can invalidate publication.
+// classes. Staging generation IDs are intentionally absent, and so — in the
+// observations digest alone, and named there — is the index fingerprint's
+// randomly minted graph_generation. No other persisted field is excluded.
+// Oracle payload bytes/digests and their real token counts have independent
+// digests so either can invalidate publication.
 type QualificationBuildDigest struct {
 	Arm                     QualificationArm                     `json:"arm"`
 	Build                   int                                  `json:"build"`
@@ -223,9 +225,16 @@ type QualificationBuildDigest struct {
 	OraclePayloadsSHA256    string                               `json:"oracle_payloads_sha256"`
 	OracleTokenCountsSHA256 string                               `json:"oracle_token_counts_sha256"`
 	QueryDiagnosticsSHA256  string                               `json:"query_diagnostics_sha256"`
-	ObservationsSHA256      string                               `json:"observations_sha256"`
-	Diagnostics             QualificationBuildDiagnostics        `json:"diagnostics"`
-	SHA256                  string                               `json:"sha256"`
+	// ObservationsExceptGraphGenerationSHA256 digests the arm's 64
+	// observations with exactly one value left out: the index fingerprint's
+	// graph_generation field, which every index build mints afresh from
+	// crypto/rand and which therefore differs between the two independent
+	// builds by construction. It is NOT a digest over all observations — see
+	// qualificationObservationsExceptGraphGenerationSHA256 for the full
+	// reasoning. Every other observation byte is covered.
+	ObservationsExceptGraphGenerationSHA256 string                        `json:"observations_except_graph_generation_sha256"`
+	Diagnostics                             QualificationBuildDiagnostics `json:"diagnostics"`
+	SHA256                                  string                        `json:"sha256"`
 }
 
 // QualificationCaptureProvenanceRecord closes the provenance behind one
@@ -563,11 +572,33 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 		Arm: arm, VectorBytesSHA256: SHA256Hex(vectors.Bytes()), PersistedRowsSHA256: SHA256Hex(persisted.Bytes()),
 		BundlesSHA256: SHA256Hex(bundles.Bytes()), TokenCountsSHA256: SHA256Hex(tokens.Bytes()),
 		OraclePayloadsSHA256: oraclePayloadsSHA, OracleTokenCountsSHA256: oracleTokensSHA,
-		QueryDiagnosticsSHA256: SHA256Hex(queryDiagnostics.Bytes()), ObservationsSHA256: qualificationObservationsSHA256(in.Observations),
+		QueryDiagnosticsSHA256:                  SHA256Hex(queryDiagnostics.Bytes()),
+		ObservationsExceptGraphGenerationSHA256: qualificationObservationsExceptGraphGenerationSHA256(in.Observations),
 	}
 }
 
-func qualificationObservationsSHA256(observations []QualificationObservation) string {
+// qualificationObservationsExceptGraphGenerationSHA256 digests the
+// observations with ONE value elided: the canonical index fingerprint's eighth
+// field, graph_generation.
+//
+// It is NOT a digest over all observations, and the name says so. Every other
+// byte of every observation is hashed exactly as recorded, including the whole
+// rest of the index fingerprint.
+//
+// Why that one value is out: index.commit_generation is minted from
+// crypto/rand by mintCommitGeneration (engine/ingest/warmstart.go) on every
+// committed graph mutation, and each (build, arm) of a qualification run
+// builds its own index in its own work directory
+// (captureQualificationBuilds). Two independent builds therefore carry
+// DIFFERENT generations by construction. A digest that hashed it could never
+// be equal across the two builds, so the two-build reproducibility gate would
+// state a condition no run can satisfy — unsatisfiable, not strict.
+//
+// The observations themselves keep their FULL fingerprint, generation
+// included: the evidence stays complete and auditable, and the generation is
+// checked where it can actually carry evidence (per arm, see
+// bindQualificationArmGraphGeneration).
+func qualificationObservationsExceptGraphGenerationSHA256(observations []QualificationObservation) string {
 	canonical := append([]QualificationObservation(nil), observations...)
 	sort.Slice(canonical, func(i, j int) bool {
 		if canonical[i].Arm != canonical[j].Arm {
@@ -575,6 +606,9 @@ func qualificationObservationsSHA256(observations []QualificationObservation) st
 		}
 		return canonical[i].QueryID < canonical[j].QueryID
 	})
+	for i := range canonical {
+		canonical[i].IndexFingerprint = qualificationFingerprintWithGraphGenerationElided(canonical[i].IndexFingerprint)
+	}
 	raw, _ := json.Marshal(canonical)
 	return SHA256Hex(raw)
 }
@@ -608,7 +642,7 @@ func compareQualificationBuildDigests(first, second QualificationBuildDigest) er
 		{"oracle payloads", first.OraclePayloadsSHA256, second.OraclePayloadsSHA256},
 		{"oracle token counts", first.OracleTokenCountsSHA256, second.OracleTokenCountsSHA256},
 		{"query diagnostics", first.QueryDiagnosticsSHA256, second.QueryDiagnosticsSHA256},
-		{"observations", first.ObservationsSHA256, second.ObservationsSHA256},
+		{"observations (graph generation excluded)", first.ObservationsExceptGraphGenerationSHA256, second.ObservationsExceptGraphGenerationSHA256},
 	} {
 		if digest.first != digest.second {
 			return fmt.Errorf("embedded-model qualification reproducibility: arm %s %s digest differs across independent builds", first.Arm, digest.name)

@@ -391,7 +391,7 @@ func qualificationRunValidity(evidence qualificationEvidence) []GateResult {
 		gate("oracle_controls_complete", true, "64 complete control triplets", "64"),
 		gate("state_ready", evidence.stateReady, fmt.Sprintf("%t", evidence.stateReady), "every M1-M3 observation ready"),
 		gate("fingerprint_equality", evidence.fingerprintsOK, qualificationFingerprintGateObserved(evidence), "every M1-M3 index fingerprint matches its preregistered pin outside the runtime-bound graph generation, and every M1-M3 model id matches its preregistered model id"),
-		gate("graph_generation_consistency", evidence.graphGenerationConsistent, fmt.Sprintf("%t", evidence.graphGenerationConsistent), "every M1-M3 index fingerprint names one and the same runtime-bound graph generation"),
+		gate("graph_generation_consistency", evidence.graphGenerationConsistent, fmt.Sprintf("%t", evidence.graphGenerationConsistent), "within each of M1-M3, all 64 index fingerprints name one and the same runtime-bound graph generation"),
 		gate("no_degradation", evidence.noDegradation, fmt.Sprintf("%t", evidence.noDegradation), "every M1-M3 observation has no sidecar degradation"),
 		gate("required_diagnostics_available", evidence.diagnosticsAvailable, fmt.Sprintf("%t", evidence.diagnosticsAvailable), "every M1-M3 observation carries required diagnostics"),
 	}

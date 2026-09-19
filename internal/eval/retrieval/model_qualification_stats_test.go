@@ -646,7 +646,7 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 				armObservations = append(armObservations, observation)
 			}
 		}
-		input.BuildDigests[i].ObservationsSHA256 = qualificationObservationsSHA256(armObservations)
+		input.BuildDigests[i].ObservationsExceptGraphGenerationSHA256 = qualificationObservationsExceptGraphGenerationSHA256(armObservations)
 		if input.BuildDigests[i].Arm == ArmCodeRank {
 			input.BuildDigests[i].OraclePayloadsSHA256 = oraclePayloadSHA
 			input.BuildDigests[i].OracleTokenCountsSHA256 = oracleTokenSHA
@@ -1044,7 +1044,7 @@ func resealQualificationBuildEvidence(t *testing.T, in *QualificationInput) {
 				observations = append(observations, observation)
 			}
 		}
-		in.BuildDigests[i].ObservationsSHA256 = qualificationObservationsSHA256(observations)
+		in.BuildDigests[i].ObservationsExceptGraphGenerationSHA256 = qualificationObservationsExceptGraphGenerationSHA256(observations)
 		sealed, err := sealQualificationBuildDigest(in.BuildDigests[i])
 		if err != nil {
 			t.Fatal(err)

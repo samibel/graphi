@@ -40,12 +40,21 @@ package retrieval
 // corpus or the candidate can be inferred from it.
 //
 // What DOES carry evidence about the graph generation is its INTERNAL
-// consistency: every arm and every observation of ONE qualification run must
-// name the SAME generation, because a differing generation means some arm was
-// measured against a different graph than the others — which would make the
-// paired comparison between arms meaningless. That property is checked in
+// consistency WITHIN ONE ARM: all 64 observations of one arm must name the
+// SAME generation, because every query of an arm is supposed to have been
+// measured against the one index that arm built. A generation that changes
+// mid-arm means the index was rebuilt under the measurement, and the 64
+// results are then not one measurement at all. That property is checked in
 // validateQualificationEvidence (see graphGenerationConsistent); before this
 // change it was checked nowhere at all.
+//
+// The comparison stops at the arm boundary, and must: each arm builds its OWN
+// index in its OWN work directory (captureQualificationBuilds), so different
+// arms carry different generations BY CONSTRUCTION. A cross-arm comparison
+// would therefore catch nothing real and would fail every run.
+//
+// For the same reason the two-build reproducibility digest cannot hash a
+// generation: see qualificationObservationsExceptGraphGenerationSHA256.
 //
 // The preregistration therefore carries QualificationGraphGenerationPlaceholder
 // in field 7. It is a documented constant, not an observation, and no gate ever
@@ -53,6 +62,7 @@ package retrieval
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -174,6 +184,46 @@ func qualificationGraphGenerationOf(canonical string) (string, bool) {
 		return "", false
 	}
 	return fields[qualificationGraphGenerationField], true
+}
+
+// qualificationDigestElidedGraphGeneration is what replaces field 7 before a
+// canonical fingerprint is fed to a reproducibility digest. It is a fixed,
+// self-describing token rather than "": a reader who dumps the hashed bytes
+// should see WHY the value is not there, and an empty field 7 is a value a
+// real fingerprint can genuinely carry.
+const qualificationDigestElidedGraphGeneration = "excluded-from-reproducibility-digest"
+
+// qualificationEncodeFingerprintFields is the inverse of
+// decodeQualificationFingerprint and mirrors embed.encodeCanonical (which is
+// unexported): each field becomes `<len>:<value>`, joined with "\n".
+func qualificationEncodeFingerprintFields(fields []string) string {
+	var b strings.Builder
+	for i, field := range fields {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteString(strconv.Itoa(len(field)))
+		b.WriteByte(':')
+		b.WriteString(field)
+	}
+	return b.String()
+}
+
+// qualificationFingerprintWithGraphGenerationElided returns canonical with
+// field 7 replaced by qualificationDigestElidedGraphGeneration, leaving fields
+// 0-6 byte-for-byte untouched.
+//
+// A value that does not decode as a complete eight-field canonical is returned
+// VERBATIM. That is deliberate: the lexical M0 control records an empty index
+// fingerprint, and a malformed one is evidence in its own right — neither may
+// be silently normalised into some other value by a digest helper.
+func qualificationFingerprintWithGraphGenerationElided(canonical string) string {
+	fields, ok := decodeQualificationFingerprint(canonical)
+	if !ok || len(fields) != qualificationFingerprintFieldCount {
+		return canonical
+	}
+	fields[qualificationGraphGenerationField] = qualificationDigestElidedGraphGeneration
+	return qualificationEncodeFingerprintFields(fields)
 }
 
 // qualificationModelIDField is the index of the model identity inside a

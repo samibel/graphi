@@ -208,100 +208,142 @@ func TestQualificationArmsRejectPotionPinsThatDifferOnlyInTheGraphGeneration(t *
 	}
 }
 
-// The end-to-end property: a run whose observations carry a graph generation
-// NOTHING preregistered still promotes, as long as every arm and every
-// observation carries the SAME one.
-func TestEvaluateQualificationBindsTheGraphGenerationAtRuntime(t *testing.T) {
-	in := passingQualificationInput(t)
-	const runGeneration = "a4babe5c82f1a6e355ac363d1fa7d070"
+// qualificationArmGenerations are three distinct generations, one per semantic
+// arm — which is what a real run produces: every arm builds its own index in
+// its own work directory, and index.commit_generation is minted from
+// crypto/rand per build.
+var qualificationArmGenerations = map[QualificationArm]string{
+	ArmPotion512:  "a4babe5c82f1a6e355ac363d1fa7d070",
+	ArmPotion8192: "c91cee9e050b4d0042042c9af208f012",
+	ArmCodeRank:   "7f0a1b2c3d4e5f60718293a4b5c6d7e8",
+}
+
+// bindQualificationArmGenerations gives every semantic arm its OWN runtime
+// generation, uniformly across that arm's 64 observations.
+func bindQualificationArmGenerations(t *testing.T, in *QualificationInput) {
+	t.Helper()
 	for i := range in.Observations {
-		if in.Observations[i].Arm == ArmLexical {
+		generation, semantic := qualificationArmGenerations[in.Observations[i].Arm]
+		if !semantic {
 			continue
 		}
 		// Only the index fingerprint is a canonical and therefore the only
 		// observed value that carries a graph generation at all;
 		// ModelFingerprint is a model id (see QualificationObservation).
-		in.Observations[i].IndexFingerprint = withQualificationGraphGeneration(t, in.Observations[i].IndexFingerprint, runGeneration)
+		in.Observations[i].IndexFingerprint = withQualificationGraphGeneration(t, in.Observations[i].IndexFingerprint, generation)
 	}
+}
+
+// The end-to-end property: a run whose observations carry generations NOTHING
+// preregistered still promotes — including the real case where each arm minted
+// its OWN generation, because each arm built its own index.
+func TestEvaluateQualificationBindsTheGraphGenerationPerArmAtRuntime(t *testing.T) {
+	in := passingQualificationInput(t)
+	bindQualificationArmGenerations(t, &in)
 	resealQualificationBuildEvidence(t, &in)
 
 	got, err := EvaluateQualification(in)
 	if err != nil {
-		t.Fatalf("a run that minted its own graph generation was refused: %v", err)
+		t.Fatalf("a run whose arms minted their own graph generations was refused: %v", err)
 	}
 	if !gatePassed(t, got, "fingerprint_equality") {
 		t.Fatal("fingerprint_equality failed on a fingerprint that differs from the pin only in the runtime-bound generation")
 	}
 	if !gatePassed(t, got, "graph_generation_consistency") {
-		t.Fatal("graph_generation_consistency failed on a run carrying exactly one generation")
+		t.Fatal("graph_generation_consistency failed on a run whose every arm is internally uniform")
 	}
 	if !got.Promote {
 		t.Fatalf("a valid run did not promote: %+v", got.Gates)
 	}
 }
 
-// ... and a run whose arms disagree about the generation is refused outright:
-// its arms were measured against different graphs, so the paired comparison
-// between them means nothing.
-func TestEvaluateQualificationRejectsDivergentGraphGenerations(t *testing.T) {
+// ... and a generation that changes WITHIN one arm is refused outright: that
+// arm's 64 queries were then not measured against one index, so they are not
+// one measurement. The refusal must name the arm and both generations.
+func TestEvaluateQualificationRejectsGraphGenerationsThatChangeWithinOneArm(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
+		arm   QualificationArm
 		apply func(*testing.T, *QualificationInput)
 	}{
 		{
 			name: "one observation of one arm",
+			arm:  ArmCodeRank,
 			apply: func(t *testing.T, in *QualificationInput) {
 				observation := semanticObservation(in, ArmCodeRank, 3)
-				observation.IndexFingerprint = withQualificationGraphGeneration(t, observation.IndexFingerprint, "c91cee9e050b4d0042042c9af208f012")
+				observation.IndexFingerprint = withQualificationGraphGeneration(t, observation.IndexFingerprint, "deadbeefdeadbeefdeadbeefdeadbeef")
 			},
 		},
 		{
-			name: "a whole arm",
+			// The generation is bound by the arm's FIRST decodable
+			// observation, so a divergence in that arm's LAST one must be
+			// caught too: the gate must not be satisfied by whatever happened
+			// to bind it.
+			name: "the last observation of one arm",
+			arm:  ArmPotion8192,
 			apply: func(t *testing.T, in *QualificationInput) {
-				for i := range in.Observations {
-					if in.Observations[i].Arm != ArmPotion8192 {
-						continue
-					}
-					in.Observations[i].IndexFingerprint = withQualificationGraphGeneration(t, in.Observations[i].IndexFingerprint, "c91cee9e050b4d0042042c9af208f012")
-				}
-			},
-		},
-		{
-			// The generation is bound by the FIRST decodable observation, so
-			// a divergence in the very last one must be caught too: the gate
-			// must not be satisfied by whatever happened to bind it.
-			name: "the last observation of the run",
-			apply: func(t *testing.T, in *QualificationInput) {
-				for i := len(in.Observations) - 1; i >= 0; i-- {
-					if in.Observations[i].Arm == ArmLexical {
-						continue
-					}
-					in.Observations[i].IndexFingerprint = withQualificationGraphGeneration(t, in.Observations[i].IndexFingerprint, "c91cee9e050b4d0042042c9af208f012")
-					return
-				}
-				t.Fatal("fixture has no semantic observation")
+				observation := semanticObservation(in, ArmPotion8192, 63)
+				observation.IndexFingerprint = withQualificationGraphGeneration(t, observation.IndexFingerprint, "deadbeefdeadbeefdeadbeefdeadbeef")
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			in := passingQualificationInput(t)
+			// Start from the realistic state — one generation per arm — so
+			// the ONLY thing under test is the change within one arm.
+			bindQualificationArmGenerations(t, &in)
 			tc.apply(t, &in)
 			resealQualificationBuildEvidence(t, &in)
 
 			evidence, err := validateQualificationEvidence(in)
 			if err == nil {
-				t.Fatal("divergent graph generations were accepted")
+				t.Fatal("a graph generation that changed within one arm was accepted")
 			}
-			if !strings.Contains(err.Error(), "graph generation") {
-				t.Fatalf("refusal does not name the graph generation: %v", err)
+			for _, want := range []string{
+				"graph generation",
+				fmt.Sprintf("arm %s", tc.arm),
+				"deadbeefdeadbeefdeadbeefdeadbeef",
+				qualificationArmGenerations[tc.arm],
+			} {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("refusal does not name %q: %v", want, err)
+				}
 			}
 			if evidence.graphGenerationConsistent {
-				t.Fatal("the graph_generation_consistency gate stayed true on divergent generations")
+				t.Fatal("the graph_generation_consistency gate stayed true on a generation that changed mid-arm")
 			}
 			if _, err := EvaluateQualification(in); err == nil {
-				t.Fatal("EvaluateQualification promoted a run whose arms name different graph generations")
+				t.Fatal("EvaluateQualification promoted a run whose arm names two graph generations")
 			}
 		})
+	}
+}
+
+// The complement of the test above, stated on its own so it cannot be lost in
+// a refactor: two DIFFERENT generations in two different arms are not a
+// finding. Every arm builds its own index, so cross-arm difference is the
+// expected state and a gate that flagged it would fail every real run.
+func TestValidateQualificationEvidenceAcceptsOneGenerationPerArm(t *testing.T) {
+	in := passingQualificationInput(t)
+	bindQualificationArmGenerations(t, &in)
+	resealQualificationBuildEvidence(t, &in)
+
+	seen := make(map[string]bool, len(qualificationArmGenerations))
+	for _, observation := range in.Observations {
+		if generation, ok := qualificationGraphGenerationOf(observation.IndexFingerprint); ok {
+			seen[generation] = true
+		}
+	}
+	if len(seen) != len(qualificationArmGenerations) {
+		t.Fatalf("fixture does not carry one distinct generation per semantic arm: %v", seen)
+	}
+
+	evidence, err := validateQualificationEvidence(in)
+	if err != nil {
+		t.Fatalf("arms carrying their own graph generations were refused: %v", err)
+	}
+	if !evidence.graphGenerationConsistent {
+		t.Fatal("one generation per arm was reported as inconsistent")
 	}
 }
 

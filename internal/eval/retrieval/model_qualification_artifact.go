@@ -91,8 +91,8 @@ func validateQualificationCaptureArtifact(artifact QualificationCaptureArtifact)
 	if len(artifact.Observations) != 64 || len(artifact.Bundles) != 64 {
 		return fmt.Errorf("embedded-model qualification capture artifact: got %d observations and %d bundles, want 64 each", len(artifact.Observations), len(artifact.Bundles))
 	}
-	if qualificationObservationsSHA256(artifact.Observations) != artifact.Digest.ObservationsSHA256 {
-		return fmt.Errorf("embedded-model qualification capture artifact: observation digest differs")
+	if qualificationObservationsExceptGraphGenerationSHA256(artifact.Observations) != artifact.Digest.ObservationsExceptGraphGenerationSHA256 {
+		return fmt.Errorf("embedded-model qualification capture artifact: observation digest (graph generation excluded) differs")
 	}
 	observations := make(map[string]QualificationObservation, 64)
 	for _, observation := range artifact.Observations {

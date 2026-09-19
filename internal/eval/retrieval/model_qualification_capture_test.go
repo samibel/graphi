@@ -885,7 +885,7 @@ func TestQualificationBuildDigestBindsCanonicalObservationsAndSealsItself(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first.ObservationsSHA256 != permuted.ObservationsSHA256 || first.SHA256 != permuted.SHA256 {
+	if first.ObservationsExceptGraphGenerationSHA256 != permuted.ObservationsExceptGraphGenerationSHA256 || first.SHA256 != permuted.SHA256 {
 		t.Fatalf("observation order changed canonical digest: first=%+v permuted=%+v", first, permuted)
 	}
 	base.Observations[0].CompleteGrade3Span = true
@@ -893,13 +893,110 @@ func TestQualificationBuildDigestBindsCanonicalObservationsAndSealsItself(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first.ObservationsSHA256 == changed.ObservationsSHA256 || compareQualificationBuildDigests(first, changed) == nil {
+	if first.ObservationsExceptGraphGenerationSHA256 == changed.ObservationsExceptGraphGenerationSHA256 || compareQualificationBuildDigests(first, changed) == nil {
 		t.Fatal("decision-relevant observation substitution did not invalidate the build digest")
 	}
 	tampered := first
 	tampered.BundlesSHA256 = strings.Repeat("9", 64)
 	if validateQualificationBuildDigestSeal(tampered) == nil {
 		t.Fatal("reseal-free build digest tamper was accepted")
+	}
+}
+
+// qualificationObservationWithFingerprint is one observation that differs from
+// the next only in the canonical index fingerprint it carries.
+func qualificationObservationWithFingerprint(canonical string) []QualificationObservation {
+	return []QualificationObservation{{
+		Arm: ArmCodeRank, QueryID: "q-1", Stratum: StratumExactPath, BundleTokens: 2,
+		BundleSHA256: strings.Repeat("c", 64), PayloadSHA256: strings.Repeat("d", 64),
+		RetrievalState: "ready", ModelFingerprint: qualificationFingerprintFixture().ModelID,
+		IndexFingerprint: canonical,
+	}}
+}
+
+// The two-build reproducibility digest must not hash the one value that is
+// random by construction. Each (build, arm) builds its own index in its own
+// work directory, and index.commit_generation is minted from crypto/rand per
+// build (mintCommitGeneration, engine/ingest/warmstart.go), so two builds of
+// one arm NEVER carry the same generation: a digest that covered it would
+// state a condition no run can satisfy. Every other byte must still move it.
+func TestQualificationObservationDigestExcludesOnlyTheGraphGeneration(t *testing.T) {
+	base := qualificationFingerprintFixture().Canonical()
+	buildOne := qualificationObservationWithFingerprint(withQualificationGraphGeneration(t, base, "a4babe5c82f1a6e355ac363d1fa7d070"))
+	buildTwo := qualificationObservationWithFingerprint(withQualificationGraphGeneration(t, base, "c91cee9e050b4d0042042c9af208f012"))
+	if buildOne[0].IndexFingerprint == buildTwo[0].IndexFingerprint {
+		t.Fatal("fixture builds do not differ in their graph generation at all")
+	}
+	reproducible := qualificationObservationsExceptGraphGenerationSHA256(buildOne)
+	if reproducible != qualificationObservationsExceptGraphGenerationSHA256(buildTwo) {
+		t.Fatal("two independent builds of one arm cannot agree: the reproducibility digest hashes the randomly minted graph generation")
+	}
+
+	// The evidence keeps its complete fingerprint; only the digest elides.
+	if _, ok := qualificationGraphGenerationOf(buildOne[0].IndexFingerprint); !ok {
+		t.Fatal("digesting stripped the observation's own fingerprint")
+	}
+	if generation, _ := qualificationGraphGenerationOf(buildOne[0].IndexFingerprint); generation != "a4babe5c82f1a6e355ac363d1fa7d070" {
+		t.Fatalf("digesting rewrote the observation's graph generation to %q", generation)
+	}
+
+	for _, tc := range []struct {
+		name   string
+		mutate func(*testing.T, *QualificationObservation)
+	}{
+		{"fingerprint model_id", func(t *testing.T, o *QualificationObservation) {
+			o.IndexFingerprint = withQualificationFingerprintField(t, o.IndexFingerprint, 0, "static:other-model")
+		}},
+		{"fingerprint tokenizer_sha256", func(t *testing.T, o *QualificationObservation) {
+			o.IndexFingerprint = withQualificationFingerprintField(t, o.IndexFingerprint, 3, strings.Repeat("e", 64))
+		}},
+		{"fingerprint dim", func(t *testing.T, o *QualificationObservation) {
+			o.IndexFingerprint = withQualificationFingerprintField(t, o.IndexFingerprint, 4, "8192")
+		}},
+		{"fingerprint chunker_config", func(t *testing.T, o *QualificationObservation) {
+			o.IndexFingerprint = withQualificationFingerprintField(t, o.IndexFingerprint, 6, "other-durable-profile")
+		}},
+		{"model id", func(t *testing.T, o *QualificationObservation) { o.ModelFingerprint = "static:other-model" }},
+		{"query id", func(t *testing.T, o *QualificationObservation) { o.QueryID = "q-2" }},
+		{"bundle tokens", func(t *testing.T, o *QualificationObservation) { o.BundleTokens = 3 }},
+		{"bundle digest", func(t *testing.T, o *QualificationObservation) { o.BundleSHA256 = strings.Repeat("f", 64) }},
+		{"complete grade 3 span", func(t *testing.T, o *QualificationObservation) { o.CompleteGrade3Span = true }},
+		{"retrieval state", func(t *testing.T, o *QualificationObservation) { o.RetrievalState = "lexical_only" }},
+		{"degraded", func(t *testing.T, o *QualificationObservation) { o.Degraded = true }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			changed := qualificationObservationWithFingerprint(buildOne[0].IndexFingerprint)
+			tc.mutate(t, &changed[0])
+			if qualificationObservationsExceptGraphGenerationSHA256(changed) == reproducible {
+				t.Fatalf("a changed %s did not move the reproducibility digest", tc.name)
+			}
+		})
+	}
+}
+
+// The same property where it actually failed a real run: the whole build
+// digest of two independent builds of one arm must compare equal when the ONLY
+// difference between them is the randomly minted graph generation.
+func TestQualificationBuildComparisonAcceptsIndependentGraphGenerations(t *testing.T) {
+	base := qualificationFingerprintFixture().Canonical()
+	inputs := qualificationBuildDigestFixture()
+
+	inputs.Observations = qualificationObservationWithFingerprint(withQualificationGraphGeneration(t, base, "a4babe5c82f1a6e355ac363d1fa7d070"))
+	first := buildQualificationDigest(ArmCodeRank, inputs)
+	inputs.Observations = qualificationObservationWithFingerprint(withQualificationGraphGeneration(t, base, "c91cee9e050b4d0042042c9af208f012"))
+	second := buildQualificationDigest(ArmCodeRank, inputs)
+
+	if err := compareQualificationBuildDigests(first, second); err != nil {
+		t.Fatalf("two builds differing only in their minted graph generation were called irreproducible: %v", err)
+	}
+
+	// ... while a real observation difference still fails the comparison, so
+	// the exclusion did not weaken the gate.
+	inputs.Observations = qualificationObservationWithFingerprint(withQualificationFingerprintField(t,
+		withQualificationGraphGeneration(t, base, "c91cee9e050b4d0042042c9af208f012"), 4, "8192"))
+	third := buildQualificationDigest(ArmCodeRank, inputs)
+	if compareQualificationBuildDigests(first, third) == nil {
+		t.Fatal("two builds measuring different embedding spaces were accepted as reproducible")
 	}
 }
 
