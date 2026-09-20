@@ -1,0 +1,21 @@
+# Usage
+
+The evidence covers "Usage" from two angles: the README's Usage section (user-facing documentation about `cobra-cli`) and the Go API machinery that produces and prints usage output for a `Command` (in `command.go`).
+
+## 1. README Usage section (README.md:89-101, plus follow-up README.md:81-94)
+
+The README's `# Usage` section says: "`cobra-cli` is a command line program to generate cobra applications and command files. It will bootstrap your application scaffolding to rapidly develop a Cobra-based application. It is the easiest way to incorporate Cobra into your application." The section ends mid-sentence with "It can be installed by running:" — the actual install command under Usage is not included in the retrieved span (the response is marked `"truncated":true`).
+
+The follow-up read (README.md:81-94) supplies the preceding `# Installing` section: install the library with `go get -u github.com/spf13/cobra@latest`, then include Cobra in your application with `import "github.com/spf13/cobra"`.
+
+## 2. Command usage machinery (command.go)
+
+- **`Usage()`** (command.go:442-448): "Usage puts out the usage for the command. Used when a user provides invalid input. Can be defined by user by overriding UsageFunc." Its body is simply `return c.UsageFunc()(c)`.
+
+- **`UsageFunc()`** (command.go:423-441): returns the function set by `SetUsageFunc` for this command or a parent, or a default usage function. Resolution order: if `c.usageFunc != nil`, return it; else if `c.HasParent()`, return `c.Parent().UsageFunc()` (inherited from the parent chain); otherwise return a default closure that calls `c.mergePersistentFlags()` and then renders `c.UsageTemplate()` via `tmpl(c.OutOrStderr(), c.UsageTemplate(), c)`, printing any error with `c.PrintErrln(err)`.
+
+- **`UsageString()`** (command.go:477-495): "UsageString returns usage string." It temporarily redirects `c.outWriter` and `c.errWriter` to a `bytes.Buffer` (`bb`), calls `CheckErr(c.Usage())`, restores the original writers, and returns `bb.String()` — i.e., it captures the usage output as a string instead of printing it.
+
+- **`Use` field of the `Command` struct** (command.go:49-57): "`Use` is the one-line usage message." The recommended syntax documented on the struct: `[ ]` identifies an optional argument (arguments not enclosed in brackets are required); `...` indicates multiple values for the previous argument; `|` indicates mutually exclusive information (you can use the argument to the left or the right of the separator, but not both in a single use of the command). The struct comment also notes you define "the usage and description as part of your command definition to ensure usability."
+
+In short: usage in Cobra is declared per command via the `Use` one-line field, rendered by a template through `UsageFunc()` (overridable via `SetUsageFunc`, inherited from parents), printed by `Usage()` on invalid input, and capturable as a string via `UsageString()`. Separately, the README's Usage section describes `cobra-cli` as the scaffolding generator for Cobra applications.

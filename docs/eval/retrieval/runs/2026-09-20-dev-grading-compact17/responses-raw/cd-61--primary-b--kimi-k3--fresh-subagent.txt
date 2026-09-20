@@ -1,0 +1,24 @@
+"Directive" in this codebase refers to ShellCompDirective, the bitmask type that tells the shell how to behave after completions have been produced.
+
+Definition (completions.go:40-43):
+  "// ShellCompDirective is a bit map representing the different behaviors the shell
+   // can be instructed to have once completions have been provided.
+   type ShellCompDirective int"
+
+Constants (completions.go:54-56): the values are bit flags declared with iota —
+  "const (
+   \t// ShellCompDirectiveError indicates an error occurred and completions should be ignored.
+   \tShellCompDirectiveError ShellCompDirective = 1 << iota"
+The (d ShellCompDirective) string() method (completions.go:161-175) enumerates at least four values, tested bitwise (e.g. "if d&ShellCompDirectiveError != 0"): ShellCompDirectiveError, ShellCompDirectiveNoSpace, ShellCompDirectiveNoFileComp, ShellCompDirectiveFilterFileExt — the snippet is cut off there, and the other spans additionally reference ShellCompDirectiveFilterDirs and ShellCompDirectiveDefault, so the full set is larger.
+
+Usage: getCompletions (completions.go:266-385) has signature
+  "func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error)"
+and returns a directive alongside the completion list:
+- ShellCompDirectiveDefault — when the real command cannot be found ("Unable to find a command for arguments: %v"), when flag parsing fails ("Error while parsing flags from args %v"), or when a flag-completion error is propagated.
+- ShellCompDirectiveNoFileComp — when the --help or --version flag is present ("If they are present, there should be no further completions": return finalCmd, []string{}, ShellCompDirectiveNoFileComp, nil).
+- ShellCompDirectiveFilterFileExt — when completing a flag value whose flag has the BashCompFilenameExt annotation with a non-empty extension list ("File completion filtered by extensions": return finalCmd, validExts, ShellCompDirectiveFilterFileExt, nil).
+- ShellCompDirectiveFilterDirs — when the flag has the BashCompSubdirsInDir annotation, either with the single subdirectory ("Directory completion from within a directory": return finalCmd, subDir, ShellCompDirectiveFilterDirs, nil) or plain ("Directory completion": return finalCmd, []string{}, ShellCompDirectiveFilterDirs, nil).
+
+The directive is then handed to the generated shell script: bash_completionsV2.go:55-56 shows the generated function "__%[1]s_get_completion_results()" whose comment says it "fills the 'out' and 'directive' vars" — i.e., the completion results and the directive travel together to the shell.
+
+Because it is a bitmap (type int, values from 1 << iota, combined/tested with &), multiple directive behaviors can be OR-ed together in one value, which is what the string() method decodes into names like "ShellCompDirectiveError", "ShellCompDirectiveNoSpace", etc.

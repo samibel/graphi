@@ -1,0 +1,27 @@
+"Post-run" in this codebase refers to the Cobra command hooks that run after a command's main Run function: PostRun and PersistentPostRun (plus their error-returning variants PostRunE and PersistentPostRunE).
+
+What the evidence shows:
+
+1. Declaration as fields on the Command struct (command.go:121-143 in the task_context response, and again in the follow-up read command.go:47-166):
+   - `PostRun func(cmd *Command, args []string)` — "// PostRun: run after the Run command."
+   - `PostRunE func(cmd *Command, args []string) error` — "// PostRunE: PostRun but returns an error."
+   - `PersistentPostRun func(cmd *Command, args []string)` — "// PersistentPostRun: children of this command will inherit and execute after PostRun."
+   - `PersistentPostRunE func(cmd *Command, args []string) error` — "// PersistentPostRunE: PersistentPostRun but returns an error."
+
+2. Execution order (follow-up read of command.go:47-166, comment on the Command struct):
+   "// The *Run functions are executed in the following order:
+       * PersistentPreRun()
+       * PreRun()
+       * Run()
+       * PostRun()
+       * PersistentPostRun()
+   // All functions get the same args, the arguments after the command name."
+   The same comment states: "The *PreRun and *PostRun functions will only be executed if the Run function of the current command has been declared." So post-run hooks are conditional on the command having a Run (or RunE) function.
+
+3. User-facing documentation (site/content/user_guide.md:605-611, section "## PreRun and PostRun Hooks"): "The `PersistentPostRun` and `PostRun` will be executed after `Run`. The `Persistent*Run` functions will be inherited by children if they do not declare their own. The `*PreRun` and `*PostRun` functions will only be executed if the `Run` function of the current command has been declared."
+
+4. Internal plumbing: there is a method `func (c *Command) postRun() {` at command.go:1020 (only the signature/opening line is shown, so its body is not visible in the responses), which appears to be the internal helper that dispatches the post-run hooks.
+
+5. Hook-traversal behavior (cobra.go:64-65): "// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents. // By default this is disabled, which means only the first run hook to be found is executed." So by default only the nearest PersistentPostRun up the parent chain runs; setting EnableTraverseRunHooks makes persistent post-run hooks from all parents execute.
+
+In short: post-run hooks (PostRun/PostRunE, then PersistentPostRun/PersistentPostRunE) execute after Run in the order PersistentPreRun -> PreRun -> Run -> PostRun -> PersistentPostRun, only fire when the command declares a Run function, receive the same args as Run, and the persistent variants are inherited by child commands (with traversal of all parents gated by EnableTraverseRunHooks).

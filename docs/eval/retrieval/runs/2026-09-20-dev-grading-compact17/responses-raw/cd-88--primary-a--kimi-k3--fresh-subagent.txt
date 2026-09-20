@@ -1,0 +1,11 @@
+Legacy Bash completion turns ValidArgs and ValidArgsFunction into required-noun state inside the generated bash script via the function `writeRequiredNouns(buf io.StringWriter, cmd *Command)` in `bash_completions.go` (lines 617-630), which is invoked from the script-generation flow at `bash_completions.go:679-680` immediately after `writeRequiredFlag(buf, cmd)`.
+
+Concretely, `writeRequiredNouns` does three things:
+
+1. It initializes the noun state by emitting the bash line `    must_have_one_noun=()\n` (via `WriteStringAndCheck`).
+
+2. It turns `cmd.ValidArgs` into entries of that array: it calls `sort.Strings(cmd.ValidArgs)` (sorting the slice in place), then loops over each value. Because "Descriptions are not supported by bash completion," each value is first stripped of any tab-separated description with `value = strings.Split(value, "\t")[0]`, and then appended to the array as `    must_have_one_noun+=(%q)\n` with the value quoted via `fmt.Sprintf`.
+
+3. It turns a non-nil `cmd.ValidArgsFunction` into a boolean marker: `if cmd.ValidArgsFunction != nil { WriteStringAndCheck(buf, "    has_completion_function=1\n") }`, i.e. the presence of the Go callback is represented in the generated bash as the variable `has_completion_function` set to 1.
+
+So the required-noun state in the legacy script consists of the `must_have_one_noun` bash array (populated from `ValidArgs`, sorted and description-stripped) plus the `has_completion_function=1` flag (set when `ValidArgsFunction` is non-nil). Context from `command.go:84` confirms `ValidArgsFunction` is "an optional function that provides valid non-flag arguments for shell completion," and the follow-up doc (`site/content/completions/bash.md:5-93`) explains this legacy generated-script mechanism is Bash-only and distinct from the newer `ValidArgsFunction`-based completion path, though the two can coexist as long as they are not used on the same command.

@@ -1,0 +1,17 @@
+Subcommand-name completion is suppressed by an explicit guard in the Go completion logic that fires when a changed flag belongs to the command's local non-persistent flag set.
+
+The key evidence:
+
+1. The guard condition — completions.go, line 444:
+   `if localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed {`
+   This is the single line shown from what is evidently a loop over flags during completion. It tests two things at once: (a) the flag's name resolves in a `localNonPersistentFlags` FlagSet via `Lookup`, and (b) the flag has actually been `Changed`, i.e. the user has set it on the command line. When both hold, the enclosing block (whose body is not included in the response — the response is marked `"truncated":true`) is what suppresses subcommand-name completion.
+
+2. How the `localNonPersistentFlags` set is built — command.go, lines 1654-1666, `func (c *Command) LocalNonPersistentFlags() *flag.FlagSet`:
+   - Its doc comment states: "LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands."
+   - It builds the set by taking `persistentFlags := c.PersistentFlags()`, creating a fresh `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`, then visiting every local flag (`c.LocalFlags().VisitAll`) and adding only those flags for which `persistentFlags.Lookup(f.Name) == nil` — i.e. local flags that are not persistent.
+
+So the mechanism is: completion computes the command's local non-persistent flags (local flags minus persistent ones), and for each flag present/changed on the command line it checks membership in that set; a hit on a changed flag triggers the branch at completions.go:444 that suppresses completion of subcommand names — the rationale being that a local non-persistent flag does not apply to subcommands, so offering subcommand names after one is used would be misleading.
+
+Corroborating context in the response: bash_completions.go line 421 shows the generated bash script tracks this same concept (`local local_nonpersistent_flags=()` alongside `local flags_with_completion=()`), indicating the suppression is mirrored on the shell-script side, and command.go lines 1687-1691 show how `c.lflags` is populated from both `c.Flags()` and `c.PersistentFlags()` via an `addToLocal` visitor, which underlies the `LocalFlags()` set used above.
+
+Caveat: the exact statement inside the `if` body at completions.go:444 (e.g. whether it sets a directive, returns early, or filters the candidate list) is not part of the response bytes, so the precise form of the suppression cannot be quoted — only its trigger condition and the construction of the flag set it consults.

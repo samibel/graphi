@@ -1,0 +1,20 @@
+AllChildCommandsHaveGroup is a method on *Command defined in command.go at lines 1335-1344. Its doc comment states: "AllChildCommandsHaveGroup returns if all subcommands are assigned to a group". The full body is:
+
+func (c *Command) AllChildCommandsHaveGroup() bool {
+	for _, sub := range c.commands {
+		if (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == "" {
+			return false
+		}
+	}
+	return true
+}
+
+Behavior: it iterates over the receiver's c.commands slice and returns false as soon as it finds a subcommand that (a) is an available command (per IsAvailableCommand) or is the command's own helpCommand, and (b) has an empty GroupID. Otherwise it returns true. In other words, every available child command (plus the help command) must have a non-empty GroupID for the method to return true; deprecated/hidden commands and non-help commands that are neither runnable nor have available subcommands are excluded from the check because IsAvailableCommand filters them out.
+
+Supporting evidence in the same response:
+
+- IsAvailableCommand (command.go:1559-1576) defines "available" as: not Deprecated (len(c.Deprecated) != 0) and not Hidden; not the parent's helpCommand (c.HasParent() && c.Parent().helpCommand == c); and either Runnable() or HasAvailableSubCommands(). This is the predicate that decides which subcommands must have a group.
+- The Group type (command.go:40-45) is the structure used to manage command groups: type Group struct { ID string; Title string } — GroupID on a subcommand refers to such a group's ID.
+- ContainsGroup (command.go:1345-1354), immediately following AllChildCommandsHaveGroup, is a related helper that reports whether a given groupID exists in c.commandgroups: "ContainsGroup return if groupID exists in the list of command groups."
+
+The response does not show callers of AllChildCommandsHaveGroup or where GroupID is declared/assigned on Command, so its usage sites are not covered by the provided evidence.

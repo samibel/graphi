@@ -1,0 +1,31 @@
+LocalFlags (command.go, lines 1654-1723) builds the command's local flag view as follows:
+
+1. It first calls `c.mergePersistentFlags()` so that persistent flags have been merged into `c.Flags()` before the local view is computed.
+
+2. It lazily initializes the cached `c.lflags` FlagSet only if it is nil:
+   - `c.lflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)`
+   - creating `c.flagErrorBuf = new(bytes.Buffer)` if needed and routing output via `c.lflags.SetOutput(c.flagErrorBuf)`.
+   (So the view is not cleared and rebuilt from scratch on every call; flags are added into the existing set, skipping ones already present.)
+
+3. It syncs settings onto the local set: `c.lflags.SortFlags = c.Flags().SortFlags`, and if `c.globNormFunc != nil` it calls `c.lflags.SetNormalizeFunc(c.globNormFunc)`.
+
+4. The core filtering is the `addToLocal` closure, whose comment reads "// Add the flag if it is not a parent PFlag, or it shadows a parent PFlag":
+   ```go
+   addToLocal := func(f *flag.Flag) {
+       if c.lflags.Lookup(f.Name) == nil && f != c.parentsPflags.Lookup(f.Name) {
+           c.lflags.AddFlag(f)
+       }
+   }
+   ```
+   Two conditions must hold for a flag to be added:
+   - Not already in the local set: `c.lflags.Lookup(f.Name) == nil`.
+   - Not an unshadowed parent flag: `f != c.parentsPflags.Lookup(f.Name)`. This is a pointer-identity comparison against the parents' persistent-flag set (`c.parentsPflags`). If the flag object found in the parents' set under the same name is the identical pointer, the flag is merely inherited (unshadowed) and is excluded. If the current command defined its own flag with the same name, it is a different pointer, so the shadowing local flag is admitted.
+
+5. It then iterates both of the command's own flag sources with that closure:
+   ```go
+   c.Flags().VisitAll(addToLocal)
+   c.PersistentFlags().VisitAll(addToLocal)
+   ```
+   and finally `return c.lflags`.
+
+Supporting evidence elsewhere in the response: the struct fields are documented at command.go lines 154-158 ("pflags contains persistent flags. ... lflags contains local flags. ... iflags contains inherited flags."), and the sibling function InheritedFlags (same span) performs the complementary pass over `c.parentsPflags`, adding only flags absent from both `c.iflags` and the `local` set obtained from `c.LocalFlags()`, which confirms that LocalFlags is the side that keeps shadowing local flags while dropping unshadowed parent persistent flags.

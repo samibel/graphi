@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-c563-74d3-8236-397d633f5382"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When the command runs, Cobra checks whether `c.Deprecated` is non-empty and prints this warning through `c.Printf`:\n\n```go\nif len(c.Deprecated) > 0 {\n    c.Printf(\"Command %q is deprecated, %s\\n\", c.Name(), c.Deprecated)\n}\n```\n\nThus the warning is `Command \"<name>\" is deprecated, <deprecation message>`, followed by a newline (`command.go:879-881`)."}}
+{"type":"turn.completed","usage":{"input_tokens":15663,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":97,"reasoning_output_tokens":0}}

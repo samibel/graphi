@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+when does Cobra append [flags] to a command's use line
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"6 ranked source span(s); query 6ff6cdc96746; read in order (271/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1435,"end_line":1451,"text":"\n// UseLine puts out the full usage for a given command (including parents).\nfunc (c *Command) UseLine() string {\n\tvar useline string\n\tif c.HasParent() {\n\t\tuseline = c.parent.CommandPath() + \" \" + c.Use\n\t} else {\n\t\tuseline = c.Use\n\t}\n\tif c.DisableFlagsInUseLine {\n\t\treturn useline\n\t}\n\tif c.HasAvailableFlags() && !strings.Contains(useline, \"[flags]\") {\n\t\tuseline += \" [flags]\"\n\t}\n\treturn useline\n}"},{"path":"command.go","start_line":1846,"end_line":1853,"text":"\n// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"},{"path":"command.go","start_line":1724,"end_line":1735,"text":"\n// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.pflags.SetOutput(c.flagErrorBuf)\n\t}\n\treturn c.pflags\n}"},{"path":"README.md","start_line":68,"end_line":80,"text":"## Flags\n\nA flag is a way to modify the behavior of a command. Cobra supports\nfully POSIX-compliant flags as well as the Go [flag package](https://golang.org/pkg/flag/).\nA Cobra command can define flags that persist through to children commands\nand flags that are only available to that command.\n\nIn the example above, 'port' is the flag.\n\nFlag functionality is provided by the [pflag\nlibrary](https://github.com/spf13/pflag), a fork of the flag standard library\nwhich maintains the same interface while adding POSIX compliance.\n"},{"path":"doc/man_docs.go","start_line":186,"end_line":200,"text":"\nfunc manPrintOptions(buf io.StringWriter, command *cobra.Command) {\n\tflags := command.NonInheritedFlags()\n\tif flags.HasAvailableFlags() {\n\t\tcobra.WriteStringAndCheck(buf, \"# OPTIONS\\n\")\n\t\tmanPrintFlags(buf, flags)\n\t\tcobra.WriteStringAndCheck(buf, \"\\n\")\n\t}\n\tflags = command.InheritedFlags()\n\tif flags.HasAvailableFlags() {\n\t\tcobra.WriteStringAndCheck(buf, \"# OPTIONS INHERITED FROM PARENT COMMANDS\\n\")\n\t\tmanPrintFlags(buf, flags)\n\t\tcobra.WriteStringAndCheck(buf, \"\\n\")\n\t}\n}"},{"path":"cobra.go","start_line":239,"end_line":244,"text":"\n// WriteStringAndCheck writes a string into a buffer, and checks if the error is not nil.\nfunc WriteStringAndCheck(b io.StringWriter, s string) {\n\t_, err := b.WriteString(s)\n\tCheckErr(err)\n}"}],"provenance":{"input_sha256":"7a9aac0c0b242147a7710a5f5b4793c56c97e3af434503114cff3692e0aff5b4","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

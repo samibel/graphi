@@ -1,0 +1,31 @@
+NoFileCompletions tells the shell not to offer file names by returning the ShellCompDirectiveNoFileComp directive alongside an empty (nil) completion list.
+
+Evidence from the response:
+
+1. completions.go lines 117-122 define the function itself:
+
+   // NoFileCompletions can be used to disable file completion for commands that should
+   // not trigger file completions.
+   func NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+       return nil, ShellCompDirectiveNoFileComp
+   }
+
+   So it is a completion function of the standard signature (cmd, args, toComplete) -> ([]string, ShellCompDirective) that always returns nil candidates plus the directive ShellCompDirectiveNoFileComp.
+
+2. completions.go lines 62-70 document what that directive means:
+
+   // ShellCompDirectiveNoFileComp indicates that the shell should not provide
+   // file completion even when no completion is provided.
+   ShellCompDirectiveNoFileComp
+
+   The key phrase is "even when no completion is provided": normally, when a completion function returns no candidates, the shell falls back to its default behavior of completing file names. Returning this directive suppresses that fallback, so the shell offers nothing rather than file names.
+
+3. bash_completions.go lines 388-401 show how the directive reaches the shell: the generated bash completion script template is rendered with the directive constants interpolated into it —
+
+   `, name, ShellCompNoDescRequestCmd,
+       ShellCompDirectiveError, ShellCompDirectiveNoSpace, ShellCompDirectiveNoFileComp,
+       ShellCompDirectiveFilterFileExt, ShellCompDirectiveFilterDirs, activeHelpEnvVar(name)))`
+
+   i.e., the numeric value of ShellCompDirectiveNoFileComp is baked into the generated shell script, whose handler functions (__%[1]s_handle_command / __%[1]s_handle_noun / __%[1]s_handle_word) interpret the directive bit returned by the program's hidden completion command and disable the shell's default filename completion accordingly.
+
+In short: NoFileCompletions is a ready-made completion function that signals "no file completion" purely through the ShellCompDirectiveNoFileComp return value; the generated shell completion script reads that directive and turns off the shell's default file-name fallback.

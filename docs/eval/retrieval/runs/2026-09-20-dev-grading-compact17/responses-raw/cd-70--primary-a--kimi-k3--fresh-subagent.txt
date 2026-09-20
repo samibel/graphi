@@ -1,0 +1,17 @@
+GenBashCompletionV2 is a method on *Command that generates a Bash completion file version 2 and writes it to a caller-supplied writer.
+
+Definition (bash_completionsV2.go, lines 391-396):
+
+    // GenBashCompletionV2 generates Bash completion file version 2
+    // and writes it to the passed writer.
+    func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error {
+        return c.genBashCompletion(w, includeDesc)
+    }
+
+Key facts from the response:
+
+- Signature: `func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error`. It takes an `io.Writer` destination and an `includeDesc bool` flag and returns an `error`.
+- It is a thin public wrapper: its entire body delegates to the unexported method `c.genBashCompletion(w, includeDesc)` (bash_completionsV2.go, lines 391-396).
+- The delegate `genBashCompletion` (bash_completionsV2.go, lines 23-29) renders into a `bytes.Buffer` via `genBashComp(buf, c.Name(), includeDesc)` and then copies the buffer to the writer with `buf.WriteTo(w)`, returning the write error.
+- A related convenience method, `GenBashCompletionFileV2(filename string, includeDesc bool)` (bash_completionsV2.go, lines 380-390), creates a file with `os.Create`, defers `outFile.Close()`, and calls `c.GenBashCompletionV2(outFile, includeDesc)` — i.e., GenBashCompletionV2 is the writer-based core of the file-based variant.
+- The generated script it produces begins with a header like `# bash completion V2 for <name> -*- shell-script -*-` plus helper shell functions `__<name>_debug`, `__<name>_init_completion`, and `__<name>_get_completion_results` (bash_completionsV2.go, lines 37-59). The `includeDesc` parameter is threaded through to `genBashComp` and presumably controls whether descriptions are included, though the response does not show the flag's exact downstream effect.

@@ -1,0 +1,23 @@
+Cobra considers a command to have an available subcommand for help output when at least one of its direct sub commands is "available" — i.e., non-deprecated, non-hidden, not the auto-generated help command, and itself runnable or having available sub commands of its own.
+
+Evidence from command.go in the response:
+
+1. `HasAvailableSubCommands()` (command.go lines 1599-1629) is the function that gates the 'available commands' section of the usage/help default template. Its comment says it "determines if a command has available sub commands that need to be shown in the usage/help default template under 'available commands'." Its body loops over `c.commands` and returns true "on the first found available (non deprecated/help/hidden) sub command":
+
+   for _, sub := range c.commands {
+       if sub.IsAvailableCommand() {
+           return true
+       }
+   }
+   return false
+
+   So: a command has an available subcommand iff any entry in its `commands` slice satisfies `IsAvailableCommand()`.
+
+2. `IsAvailableCommand()` (command.go lines 1559-1576) defines per-subcommand availability. A sub command is NOT available if:
+   - `len(c.Deprecated) != 0 || c.Hidden` (it is deprecated or hidden), or
+   - `c.HasParent() && c.Parent().helpCommand == c` (it is the parent's auto-generated help command).
+   Otherwise it IS available if `c.Runnable() || c.HasAvailableSubCommands()` — i.e., it can be run itself, or it recursively has available sub commands of its own. If neither, it is not available.
+
+3. For contrast, the 'additional help topics' section uses a separate check, `HasHelpSubCommands()` (same span), which returns true on the first sub command where `sub.IsAdditionalHelpTopicCommand()` is true, so help-topic commands are handled separately from the 'available commands' list.
+
+In short: for help/usage output, Cobra shows an "available commands" section (and considers the command to have available subcommands) exactly when at least one child command is not deprecated, not hidden, not the help command, and is either runnable or itself has an available subcommand.

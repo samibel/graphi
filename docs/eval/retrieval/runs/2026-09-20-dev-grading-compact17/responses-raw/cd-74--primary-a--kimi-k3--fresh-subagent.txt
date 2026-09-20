@@ -1,0 +1,14 @@
+Structure and declarations of bash_completionsV2.go, based solely on the three ranked spans in the response (the response is marked "truncated":true, and lines 86-379 are not included, so this cannot be a complete declaration list):
+
+1. Package clause
+   - Line 15: `package cobra` — the file belongs to the cobra package.
+
+2. Span lines 23-85 — two function declarations:
+   - `func (c *Command) genBashCompletion(w io.Writer, includeDesc bool) error` (starts line 23): writes the completion script into a `bytes.Buffer` via `genBashComp(buf, c.Name(), includeDesc)` and flushes it to `w` with `buf.WriteTo(w)`.
+   - `func genBashComp(buf io.StringWriter, name string, includeDesc bool)` (starts around line 30): picks `ShellCompRequestCmd` or `ShellCompNoDescRequestCmd` depending on `includeDesc`, then uses `WriteStringAndCheck(buf, fmt.Sprintf(...))` to emit the bash V2 completion script template. The visible template portion defines shell functions `__<name>_debug`, `__<name>_init_completion` (a minimal `_init_completion` for macOS bash3), and `__<name>_get_completion_results`, which builds `requestComp` from `${words[0]}`, appends an extra empty parameter when the last param is complete, strips the flag part after `=` from `cur`, and runs the request via `out=$(eval "${requestComp}" 2>/dev/null)`. This span is cut off mid-function at line 85, so the rest of `genBashComp` (and everything between lines 86 and 379) is not shown.
+
+3. Span lines 380-396 — two exported wrapper declarations with doc comments:
+   - `// GenBashCompletionFileV2 generates Bash completion version 2.` — `func (c *Command) GenBashCompletionFileV2(filename string, includeDesc bool) error` (line 381): creates the file with `os.Create`, defers `outFile.Close()`, and calls `c.GenBashCompletionV2(outFile, includeDesc)`.
+   - `// GenBashCompletionV2 generates Bash completion file version 2 and writes it to the passed writer.` — `func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error` (line 392): delegates to `c.genBashCompletion(w, includeDesc)`.
+
+What is missing: the file's import block (only implied by uses of `io`, `bytes`, `fmt`, `os`), any declarations between lines 86 and 379 (the bulk of `genBashComp` and possibly other declarations), and anything before line 15 or after line 396. Referenced identifiers `ShellCompRequestCmd`, `ShellCompNoDescRequestCmd`, and `WriteStringAndCheck` are used but declared elsewhere (not in the shown spans).

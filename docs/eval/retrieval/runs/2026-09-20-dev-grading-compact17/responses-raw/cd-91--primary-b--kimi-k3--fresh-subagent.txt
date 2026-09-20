@@ -1,0 +1,22 @@
+Group is a struct type defined in command.go (lines 40-45) that manages groups for commands. Its definition, per the returned source span, is:
+
+    // Group Structure to manage groups for commands
+    type Group struct {
+        ID    string
+        Title string
+    }
+
+It has exactly two exported fields: ID (string) and Title (string).
+
+How Group relates to the rest of the code in the response:
+
+- Command grouping field: command.go line 73 (span 73-108) shows the Command struct carries a `GroupID string` field, documented as "The group id under which this subcommand is grouped in the 'help' output of its parent." So a Group's ID is referenced by subcommands via GroupID to control help-output grouping.
+
+- Accessor and mutator methods on *Command (all in command.go):
+  - `Groups() []*Group` (lines 1330-1334): "Groups returns a slice of child command groups." — returns `c.commandgroups`.
+  - `ContainsGroup(groupID string) bool` (lines 1345-1354): "ContainsGroup return if groupID exists in the list of command groups." — iterates `c.commandgroups` comparing `x.ID == groupID`.
+  - `AddGroup(groups ...*Group)` (lines 1355-1359): "AddGroup adds one or more command groups to this parent command." — appends to `c.commandgroups`.
+
+Note: the response is marked `"truncated":true`, and the Command struct span (73-108) is cut off mid-field (ends at "Version defines the version ... and the command does not"), so no statement about fields or methods beyond these spans can be made. In particular, the `commandgroups` field declaration itself on the Command struct is not shown — only its use in Groups/ContainsGroup/AddGroup.
+
+Evidence cited: command.go:40-45 (Group struct), command.go:73 (GroupID field comment), command.go:1330-1334 (Groups), command.go:1345-1354 (ContainsGroup), command.go:1355-1359 (AddGroup).

@@ -1,0 +1,22 @@
+QUESTION: how does completion resolve a one-letter flag shorthand to its flag
+
+ANSWER:
+
+Based on the response, completion does not perform a reverse lookup from a one-letter shorthand to its flag; instead it generates shorthand candidates by prefix-matching each flag's shorthand against what the user has typed, and it resolves flags by long name only.
+
+1. Shorthand candidate generation (the core mechanism)
+   In completions.go, lines 533-565, `getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string` handles the shorthand case after the long-name case:
+   - It first skips flags that should not be completed at all: `if nonCompletableFlag(flag) { return []string{} }`.
+   - For the shorthand, it builds the candidate string by prepending a single dash: `flagName = "-" + flag.Shorthand`.
+   - It then emits that candidate only if the flag actually has a shorthand and the typed text is a prefix of it: `if len(flag.Shorthand) > 0 && strings.HasPrefix(flagName, toComplete) { completions = append(completions, fmt.Sprintf("%s\t%s", flagName, flag.Usage)) }`.
+   So a one-letter shorthand like "-v" is "resolved" purely by string prefix matching: every flag's `"-" + flag.Shorthand` is tested with `strings.HasPrefix(flagName, toComplete)`, and matching flags are suggested as `"<flagName>\t<usage>"` completion entries. There is no map or index from the letter to the flag in the shown code.
+
+2. Which flags are excluded
+   In bash_completions.go, lines 698-701, `nonCompletableFlag(flag *pflag.Flag) bool` returns `flag.Hidden || len(flag.Deprecated) > 0`, so hidden and deprecated flags never produce shorthand (or long-name) completions.
+
+3. Flag resolution elsewhere is by name, not shorthand
+   Where completion does need to resolve a flag identifier to a `*pflag.Flag` — e.g. to find a registered per-flag completion function — it uses the long name:
+   - completions.go, lines 147-157: `func (c *Command) GetFlagCompletionFunc(flagName string) (...)` does `flag := c.Flag(flagName)` and returns `nil, false` if the flag is not found.
+   - command.go, lines 1793-1803: `func (c *Command) Flag(name string) (flag *flag.Flag)` resolves the name via `c.Flags().Lookup(name)` and, failing that, climbs the command tree with `c.persistentFlag(name)`. Both are name-based lookups; no shorthand-aware lookup (e.g. a pflag `ShorthandLookup`) appears anywhere in the response.
+
+GAP: The response shows how a one-letter shorthand is matched for suggesting completions (prefix match on `"-" + flag.Shorthand` guarded by `len(flag.Shorthand) > 0`), but it contains no code that resolves an already-typed shorthand (e.g. "-n") back to its `*pflag.Flag` — such a reverse shorthand lookup, if it exists, is not present in these source spans.

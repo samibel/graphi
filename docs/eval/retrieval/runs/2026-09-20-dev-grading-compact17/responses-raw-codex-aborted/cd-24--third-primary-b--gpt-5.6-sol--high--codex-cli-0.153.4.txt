@@ -1,0 +1,6 @@
+`execute` returns `flag.ErrHelp` before running the command in two cases:
+
+- The parsed Boolean `help` flag is true (`command.go:897-907`).
+- The command is not runnable (`command.go:925-927`), meaning both `c.Run` and `c.RunE` are nil (`Command.Runnable`, `command.go:1549-1553`).
+
+This occurs before the eventual `c.RunE(...)` or `c.Run(...)` invocation shown near the end of the follow-up span.

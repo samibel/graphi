@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+CompErrorln
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 277e179f86c3; read in order (315/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":897,"end_line":901,"text":"\n// CompErrorln prints the specified completion message to stderr with a newline at the end.\nfunc CompErrorln(msg string) {\n\tCompError(fmt.Sprintf(\"%s\\n\", msg))\n}"},{"path":"completions.go","start_line":891,"end_line":896,"text":"\n// CompError prints the specified completion message to stderr.\nfunc CompError(msg string) {\n\tmsg = fmt.Sprintf(\"[Error] %s\", msg)\n\tCompDebug(msg, true)\n}"},{"path":"completions.go","start_line":859,"end_line":882,"text":"\n// CompDebug prints the specified string to the same file as where the\n// completion script prints its logs.\n// Note that completion printouts should never be on stdout as they would\n// be wrongly interpreted as actual completion choices by the completion script.\nfunc CompDebug(msg string, printToStdErr bool) {\n\tmsg = fmt.Sprintf(\"[Debug] %s\", msg)\n\n\t// Such logs are only printed when the user has set the environment\n\t// variable BASH_COMP_DEBUG_FILE to the path of some file to be used.\n\tif path := os.Getenv(\"BASH_COMP_DEBUG_FILE\"); path != \"\" {\n\t\tf, err := os.OpenFile(path,\n\t\t\tos.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)\n\t\tif err == nil {\n\t\t\tdefer f.Close()\n\t\t\tWriteStringAndCheck(f, msg)\n\t\t}\n\t}\n\n\tif printToStdErr {\n\t\t// Must print to stderr for this not to be read by the completion script.\n\t\tfmt.Fprint(os.Stderr, msg)\n\t}\n}"},{"path":"completions.go","start_line":208,"end_line":226,"text":"\t\t\t\tCompErrorln(err.Error())\n\t\t\t\t// Keep going for multiple reasons:\n\t\t\t\t// 1- There could be some valid completions even though there was an error\n\t\t\t\t// 2- Even without completions, we need to print the directive\n\t\t\t}\n\n\t\t\tnoDescriptions := (cmd.CalledAs() == ShellCompNoDescRequestCmd)\n\t\t\tfor _, comp := range completions {\n\t\t\t\tif GetActiveHelpConfig(finalCmd) == activeHelpGlobalDisable {\n\t\t\t\t\t// Remove all activeHelp entries in this case\n\t\t\t\t\tif strings.HasPrefix(comp, activeHelpMarker) {\n\t\t\t\t\t\tcontinue\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif noDescriptions {\n\t\t\t\t\t// Remove any description that may be included following a tab character.\n\t\t\t\t\tcomp = strings.Split(comp, \"\\t\")[0]\n\t\t\t\t}\n"},{"path":"completions.go","start_line":883,"end_line":890,"text":"\n// CompDebugln prints the specified string with a newline at the end\n// to the same file as where the completion script prints its logs.\n// Such logs are only printed when the user has set the environment\n// variable BASH_COMP_DEBUG_FILE to the path of some file to be used.\nfunc CompDebugln(msg string, printToStdErr bool) {\n\tCompDebug(fmt.Sprintf(\"%s\\n\", msg), printToStdErr)\n}"}],"provenance":{"input_sha256":"e684ec71c618dbfe409ff70e5637673391d6eb29a2b28099e8bc9d87993193a5","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

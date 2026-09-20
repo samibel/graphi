@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-cc07-7ea0-a17c-d5d61c170b22"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`execute` returns `flag.ErrHelp` before running the command in two cases:\n\n- The parsed Boolean `help` flag is true (`command.go:897-907`).\n- The command is not runnable (`command.go:925-927`), meaning both `c.Run` and `c.RunE` are nil (`Command.Runnable`, `command.go:1549-1553`).\n\nThis occurs before the eventual `c.RunE(...)` or `c.Run(...)` invocation shown near the end of the follow-up span."}}
+{"type":"turn.completed","usage":{"input_tokens":16507,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":113,"reasoning_output_tokens":0}}

@@ -1,0 +1,14 @@
+"prefix" in this repository (the Cobra CLI library) covers two distinct mechanisms, both evidenced in the response:
+
+1. Error message prefix
+- `func (c *Command) ErrPrefix() string` (command.go:610-621): returns `c.errPrefix` if non-empty; otherwise, if the command has a parent, it delegates recursively with `c.parent.ErrPrefix()`; the ultimate fallback is the literal string `"Error:"`.
+- `func (c *Command) SetErrPrefix(s string)` (command.go:356-360): sets the custom prefix by assigning `c.errPrefix = s`; its doc comment says "Application can use it to set custom prefix."
+- The backing field is declared in the Command struct (command.go:186-190): `// errPrefix is the error message prefix defined by user.` / `errPrefix string`.
+- Usage: on error, the framework prints `c.PrintErrln(c.ErrPrefix(), err.Error())` followed by `c.PrintErrf("Run '%v --help' for usage.\n", c.CommandPath())` (command.go:1098-1099).
+- Documentation (site/content/user_guide.md:599-604, "## Error Message Prefix"): "Cobra prints an error message when receiving a non-nil error value. The default error message is `Error: <error contents>`. The Prefix, `Error:` can be customized using the `cmd.SetErrPrefix(s string)` function."
+
+2. Command name/alias prefix matching
+- `func (c *Command) hasNameOrAliasPrefix(prefix string) bool` (command.go:1523-1538): returns true if `strings.HasPrefix(c.Name(), prefix)` or if any alias in `c.Aliases` starts with the prefix; on a match it records the matched name in `c.commandCalledAs.name`.
+- The feature is gated by a package-level flag (cobra.go:52-55): `var EnablePrefixMatching = defaultPrefixMatching`, whose comment warns "Automatic prefix matching can be a dangerous thing to automatically enable in CLI tools. Set this to true to enable it."
+
+In short: "prefix" refers to (a) the customizable error-message prefix (`Error:` by default, via errPrefix/ErrPrefix/SetErrPrefix, inherited from parents) and (b) opt-in prefix matching of command names and aliases (hasNameOrAliasPrefix, enabled via EnablePrefixMatching).

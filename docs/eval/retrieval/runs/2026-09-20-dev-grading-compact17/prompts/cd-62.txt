@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+template
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 5cde0f1298f4; read in order (232/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":178,"end_line":185,"text":"\n// tmpl executes the given template text on data, writing the result to w.\nfunc tmpl(w io.Writer, text string, data interface{}) error {\n\tt := template.New(\"top\")\n\tt.Funcs(templateFuncs)\n\ttemplate.Must(t.Parse(text))\n\treturn t.Execute(w, data)\n}"},{"path":"cobra.go","start_line":82,"end_line":95,"text":"\n// AddTemplateFunc adds a template function that's available to Usage and Help\n// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {\n\ttemplateFuncs[name] = tmplFunc\n}\n\n// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"},{"path":"command.go","start_line":351,"end_line":355,"text":"\n// SetVersionTemplate sets version template to be used. Application can use it to set custom template.\nfunc (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":597,"end_line":609,"text":"\n// VersionTemplate return version template for the command.\nfunc (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.VersionTemplate()\n\t}\n\treturn `{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n`\n}"},{"path":"cobra.go","start_line":31,"end_line":40,"text":"\nvar templateFuncs = template.FuncMap{\n\t\"trim\":                    strings.TrimSpace,\n\t\"trimRightSpace\":          trimRightSpace,\n\t\"trimTrailingWhitespaces\": trimRightSpace,\n\t\"appendIfNotPresent\":      appendIfNotPresent,\n\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}"},{"path":"command.go","start_line":168,"end_line":170,"text":"\t// usageTemplate is usage template defined by user.\n\tusageTemplate string\n\t// flagErrorFunc is func defined by user and it's called when the parsing of"},{"path":"command.go","start_line":584,"end_line":593,"text":"// HelpTemplate return help template for the command.\nfunc (c *Command) HelpTemplate() string {\n\tif c.helpTemplate != \"\" {\n\t\treturn c.helpTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.HelpTemplate()\n\t}\n\treturn `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}"}],"provenance":{"input_sha256":"3763ca207158070f50077f79e65b207fae21561e69c61f77e367400ae597de1d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

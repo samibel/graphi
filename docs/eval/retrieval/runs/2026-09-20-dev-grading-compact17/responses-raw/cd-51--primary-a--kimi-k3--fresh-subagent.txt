@@ -1,0 +1,22 @@
+To attach a description to your own completion choices, append the description text after each completion candidate, separated by a tab character (`\t`). This technique applies to completions returned by `ValidArgs`, `ValidArgsFunction`, and `RegisterFlagCompletionFunc()`.
+
+Evidence: the response's first ranked source span, `site/content/completions/_index.md` lines 355-395 ("### Descriptions for completions"), states: "Cobra allows you to add descriptions to your own completions. Simply add the description text after each completion, following a `\t` separator. This technique applies to completions returned by `ValidArgs`, `ValidArgsFunction` and `RegisterFlagCompletionFunc()`."
+
+Concrete examples from that span:
+
+```go
+ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"harbor\tAn image registry", "thanos\tLong-term metrics"}, cobra.ShellCompDirectiveNoFileComp
+}
+```
+
+or, for static valid args:
+
+```go
+ValidArgs: []string{"bash\tCompletions for bash", "zsh\tCompletions for zsh"}
+```
+
+Additional caveats from the same span:
+- Descriptions are supported for each shell, but for bash they are only available in the completion V2 version ("for bash, it is only available in the [completion V2 version](#bash-completion-v2)").
+- For commands and flags, Cobra provides descriptions automatically based on usage information; the manual `\t` technique is for your own custom completion candidates.
+- Users can disable descriptions by passing `--no-descriptions` to the default `completion` command (e.g., `source <(helm completion bash --no-descriptions)`).

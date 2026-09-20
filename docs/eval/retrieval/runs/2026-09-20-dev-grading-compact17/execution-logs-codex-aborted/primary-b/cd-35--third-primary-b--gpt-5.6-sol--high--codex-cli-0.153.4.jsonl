@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf38-09ed-7392-a959-f332d44c1540"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Command.Flag(name)` searches in this order:\n\n1. The command’s flags via `c.Flags().Lookup(name)`.\n2. If absent, `c.persistentFlag(name)` checks the command’s own persistent flags with `c.PersistentFlags().Lookup(name)`.\n3. If still absent, it calls `c.updateParentsPflags()` and searches `c.parentsPflags.Lookup(name)`.\n\n`parentsPflags` is documented as containing “all persistent flags of cmd’s parents,” so the parent-chain traversal is consolidated into that flag set ([command.go:1793–1816], with the field definition at [command.go:157–161])."}}
+{"type":"turn.completed","usage":{"input_tokens":15617,"cached_input_tokens":13312,"cache_write_input_tokens":0,"output_tokens":136,"reasoning_output_tokens":0}}

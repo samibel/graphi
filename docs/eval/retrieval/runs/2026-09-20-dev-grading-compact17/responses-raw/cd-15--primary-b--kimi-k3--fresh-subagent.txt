@@ -1,0 +1,45 @@
+completions.go — structure and declarations, per the 4 ranked source spans in the task_context/2 response (query b6295b3acc39; response marked truncated:true, 323/325 source tokens, so lines outside the cited spans — 16–24, 53, 66–94, and everything after 116 — are not shown and cannot be described).
+
+Package
+- The file belongs to package cobra (completions.go, line 15: "package cobra").
+
+Top-level declarations, in the order the spans present them:
+
+1. Hidden-command name constants (lines 25–33, within the span lines 25–52)
+   A const block declares the hidden command names used by the shell completion scripts:
+   - ShellCompRequestCmd = "__complete" — "the name of the hidden command that is used to request completion results from the program."
+   - ShellCompNoDescRequestCmd = "__completeNoDesc" — the same but requesting completion results without their descriptions.
+
+2. Flag-completion registry and its lock (span lines 25–52)
+   - var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){} — a global map of flag completion functions; its comment warns to use flagCompletionMutex before reading/writing.
+   - var flagCompletionMutex = &sync.RWMutex{} — "lock for reading and writing from flagCompletionFunctions".
+
+3. ShellCompDirective type (span lines 25–52)
+   - type ShellCompDirective int — "a bit map representing the different behaviors the shell can be instructed to have once completions have been provided."
+
+4. flagCompError type and method (span lines 25–52)
+   - type flagCompError struct { subCommand string; flagName string }
+   - func (e *flagCompError) Error() string — returns "Subcommand '<subCommand>' does not support flag '<flagName>'" (string concatenation in the shown body).
+
+5. ShellCompDirective constants (lines 54–65)
+   A const block using iota bit shifting ("ShellCompDirectiveError ShellCompDirective = 1 << iota") declares:
+   - ShellCompDirectiveError — "indicates an error occurred and completions should be ignored."
+   - ShellCompDirectiveNoSpace — "the shell should not add a space after the completion even if there is a single completion provided."
+   - ShellCompDirectiveNoFileComp — "the shell should not provide file completion even when no completion is provided."
+   The shown span text ends at line 65 right after ShellCompDirectiveNoFileComp without a closing parenthesis, so the block may contain further directives not included in this response.
+
+6. Completion-command constants (lines 95–103, within the span lines 95–116)
+   A const block "for the completion command":
+   - compCmdName = "completion"
+   - compCmdNoDescFlagName = "no-descriptions"
+   - compCmdNoDescFlagDesc = "disable completion descriptions"
+   - compCmdNoDescFlagDefault = false
+
+7. CompletionOptions struct (lines 105–116)
+   type CompletionOptions struct — "the options to control shell completion" — with four bool fields:
+   - DisableDefaultCmd — "prevents Cobra from creating a default 'completion' command"
+   - DisableNoDescFlag — "prevents Cobra from creating the '--no-descriptions' flag for shells that support completion descriptions"
+   - DisableDescriptions — "turns off all completion descriptions for shells that support them"
+   - HiddenDefaultCmd — "makes the default 'completion' command hidden"
+
+Summary of shape: completions.go is a package-cobra source file whose shown declarations are entirely package-level constants, variables, and types (plus one error method on flagCompError): the hidden __complete/__completeNoDesc command names, the flagCompletionFunctions registry guarded by flagCompletionMutex, the ShellCompDirective bitmask type with its Error/NoSpace/NoFileComp values, the flagCompError type with its Error() method, the completion-command name/flag constants, and the CompletionOptions struct. No functions beyond (e *flagCompError) Error() appear in the returned spans; any additional declarations in the unshown regions (lines 16–24, 53, 66–94, 117 onward) are not covered by this response, which is flagged truncated:true.

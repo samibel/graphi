@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-f13b-7391-bb46-d135194ab48c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra uses `helpOrVersionFlagPresent(cmd)` in `completions.go:522–532`. It looks up `\"version\"` and then `\"help\"` in `cmd.Flags()`. For either flag, it returns `true` only if:\n\n- The flag exists (`!= nil`).\n- Its `FlagSetByCobraAnnotation` annotation is nonempty.\n- Its `Changed` field is `true`.\n\nOtherwise, it returns `false`. Thus, existence alone is insufficient: the flag must be marked as Cobra-provided and changed. The default help initializer sets that annotation when creating the flag (`command.go:1195–1196`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16582,"cached_input_tokens":14080,"cache_write_input_tokens":0,"output_tokens":136,"reasoning_output_tokens":0}}

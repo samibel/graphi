@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do I limit a flag's completions to directory names
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query d175f492d041; read in order (254/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/completions/_index.md","start_line":334,"end_line":354,"text":"### Limit flag completions to directory names\n\nTo limit completions of flag values to directory names you can either use the `MarkFlagDirname()` functions or a combination of `RegisterFlagCompletionFunc()` and `ShellCompDirectiveFilterDirs`, like so:\n```go\nflagName := \"output\"\ncmd.MarkFlagDirname(flagName)\n```\nor\n```go\nflagName := \"output\"\ncmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\treturn nil, cobra.ShellCompDirectiveFilterDirs\n})\n```\nTo limit completions of flag values to directory names *within another directory* you can use a combination of `RegisterFlagCompletionFunc()` and `ShellCompDirectiveFilterDirs` like so:\n```go\nflagName := \"output\"\ncmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\treturn []string{\"themes\"}, cobra.ShellCompDirectiveFilterDirs\n})\n```"},{"path":"site/content/completions/_index.md","start_line":117,"end_line":123,"text":"# Customizing completions\n\nThe generated completion scripts will automatically handle completing commands and flags.  However, you can make your completions much more powerful by providing information to complete your program's nouns and flag values.\n\n## Completion of nouns\n\n### Static completion of nouns"},{"path":"shell_completions.go","start_line":93,"end_line":98,"text":"\n// MarkFlagDirname instructs the various shell completion implementations to\n// limit completions for the named flag to directory names.\nfunc MarkFlagDirname(flags *pflag.FlagSet, name string) error {\n\treturn flags.SetAnnotation(name, BashCompSubdirsInDir, []string{})\n}"},{"path":"shell_completions.go","start_line":80,"end_line":85,"text":"\n// MarkFlagDirname instructs the various shell completion implementations to\n// limit completions for the named flag to directory names.\nfunc (c *Command) MarkFlagDirname(name string) error {\n\treturn MarkFlagDirname(c.Flags(), name)\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"}],"provenance":{"input_sha256":"7f3b6eee0ac0f3a54f336ed5e4dbfc0d8681a0486864220a63e89befa53ec01a","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

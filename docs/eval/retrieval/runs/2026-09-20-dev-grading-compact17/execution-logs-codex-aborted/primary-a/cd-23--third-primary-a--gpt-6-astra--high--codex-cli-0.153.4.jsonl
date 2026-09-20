@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-ab62-7012-8315-1240bb40e1aa"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra checks whether `c.Deprecated` is nonempty and prints a warning using `c.Printf`:\n\n```go\nif len(c.Deprecated) > 0 {\n    c.Printf(\"Command %q is deprecated, %s\\n\", c.Name(), c.Deprecated)\n}\n```\n\nThe warning includes the quoted command name and the deprecation message, followed by a newline: `Command \"name\" is deprecated, <message>`.\n\nEvidence: `command.go`, lines 879–881."}}
+{"type":"turn.completed","usage":{"input_tokens":16522,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":0}}

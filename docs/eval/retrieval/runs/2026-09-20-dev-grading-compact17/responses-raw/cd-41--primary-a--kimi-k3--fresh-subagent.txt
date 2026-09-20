@@ -1,0 +1,25 @@
+getCompletions decides via a single if/else near its end (completions.go, in the 474-520 span):
+
+    // Find the completion function for the flag or command
+    var completionFn func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+    if flag != nil && flagCompletion {
+        flagCompletionMutex.RLock()
+        completionFn = flagCompletionFunctions[flag]
+        flagCompletionMutex.RUnlock()
+    } else {
+        completionFn = finalCmd.ValidArgsFunction
+    }
+    if completionFn != nil {
+        comps, directive = completionFn(finalCmd, finalArgs, toComplete)
+        completions = append(completions, comps...)
+    }
+
+So the flag completion function is chosen only when BOTH conditions hold:
+
+1. flag != nil — earlier, getCompletions called `flag, finalArgs, toComplete, flagErr := checkIfFlagCompletion(finalCmd, finalArgs, toComplete)` (completions.go:266-385 span; checkIfFlagCompletion itself is shown at completions.go:591-594, which first checks `finalCmd.DisableFlagParsing`: "We only do flag completion if we are allowed to parse flags"). A non-nil flag means the word being completed was identified as a flag *value*.
+
+2. flagCompletion == true — this boolean starts as `flagCompletion := true` and is disabled by an arg-count heuristic: the code does `_ = finalCmd.ParseFlags(append(finalArgs, "--"))`, records `newArgCount := finalCmd.Flags().NArg()`, then parses the real args and takes `realArgCount := finalCmd.Flags().NArg()`. If `newArgCount > realArgCount` — i.e. `--` was already set on a previous arg, or interspersed parsing is off so the appended `--` got counted as an arg — it sets `flagCompletion = false` ("don't do flag completion"). This flagCompletion boolean also gates a flagCompError from checkIfFlagCompletion: the error is ignored only in the case `!flagCompletion`.
+
+When `flag != nil && flagCompletion` is true, the function is looked up in the global map `flagCompletionFunctions` (declared at completions.go:34-36: "Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it"), keyed by `*pflag.Flag`, read under `flagCompletionMutex.RLock()`. In every other case (no flag value being completed, or flag completion disabled by the `--`/interspersed heuristic), it falls back to `completionFn = finalCmd.ValidArgsFunction`. Whichever function is selected, it is invoked only if non-nil, as `completionFn(finalCmd, finalArgs, toComplete)`.
+
+One precedence note from the earlier span: even when `flag != nil && flagCompletion`, flag *annotations* are checked first and return early — `flag.Annotations[BashCompFilenameExt]` with a non-empty list returns `ShellCompDirectiveFilterFileExt`, and `flag.Annotations[BashCompSubdirsInDir]` returns `ShellCompDirectiveFilterDirs` — so the registered flag completion function is reached only when no such annotation applies (a filename-ext annotation with an empty extension list is deliberately ignored "in case the program also registered a completion function for this flag"). Also, before either custom function runs, matches from ValidArgs (and, if none, ArgAliases) may already have populated `completions`, and if ValidArgs was specified at all, the function returns early with the comment "Only one of ValidArgs or ValidArgsFunction can be used for a single command"; otherwise "the logic continue[s] so as to add any ValidArgsFunction completions, even if we already found sub-commands."

@@ -1,0 +1,8 @@
+`hasSeeAlso(cmd *cobra.Command) bool` determines whether documentation should include “See Also” information (`doc/util.go:23–26`).
+
+It returns `true` if:
+
+- The command has a parent (`doc/util.go:27–28`); `HasParent()` checks `c.parent != nil` (`command.go:1631–1634`).
+- Any child satisfies `IsAvailableCommand()` and is not an `IsAdditionalHelpTopicCommand()` (`doc/util.go:30–34`).
+
+Otherwise, it returns `false` (`doc/util.go:36`). The parent check is unconditional; the child filters apply only when no parent exists.

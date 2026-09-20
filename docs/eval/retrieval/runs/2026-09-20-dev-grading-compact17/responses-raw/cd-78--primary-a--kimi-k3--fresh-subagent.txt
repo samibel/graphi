@@ -1,0 +1,23 @@
+Cobra guards against a nil receiver: it returns an error instead of panicking.
+
+Evidence: in command.go, lines 874-877, the very first statement of the internal
+execution entry point `func (c *Command) execute(a []string) (err error)` is a
+nil check:
+
+    if c == nil {
+        return fmt.Errorf("Called Execute() on a nil Command")
+    }
+
+So if execution is attempted on a nil *Command, `execute` short-circuits
+immediately and returns the error "Called Execute() on a nil Command"; none of
+the subsequent logic (deprecation notice, InitDefaultHelpFlag /
+InitDefaultVersionFlag, ParseFlags, help/version handling, run hooks, RunE/Run)
+is reached.
+
+Caveat from the provided spans: the public entry points shown
+(command.go:1026-1049 — ExecuteContext, Execute, ExecuteContextC) delegate
+(`Execute` calls `c.ExecuteC()` and returns its error), but the body of
+`ExecuteC` itself is not included in the responses, so the exact propagation
+path from `Execute`/`ExecuteC` into `execute`'s nil guard is not directly
+visible. What is directly visible is that the nil-receiver case is handled
+gracefully with a descriptive error at the top of `execute` (command.go:874-877).

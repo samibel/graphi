@@ -1,0 +1,44 @@
+getCompletions makes the choice with a single boolean condition at the point where it selects the completion function (completions.go, within the lines 474-520 span):
+
+    // Find the completion function for the flag or command
+    var completionFn func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+    if flag != nil && flagCompletion {
+        flagCompletionMutex.RLock()
+        completionFn = flagCompletionFunctions[flag]
+        flagCompletionMutex.RUnlock()
+    } else {
+        completionFn = finalCmd.ValidArgsFunction
+    }
+    if completionFn != nil {
+        // Go custom completion defined for this flag or command.
+        comps, directive = completionFn(finalCmd, finalArgs, toComplete)
+        completions = append(completions, comps...)
+    }
+
+So the rule is: if a flag-value completion is in progress (flag != nil) AND flag completion is still allowed (flagCompletion == true), the per-flag registered function is looked up in the global map flagCompletionFunctions (keyed by *pflag.Flag, guarded by flagCompletionMutex; map declared at completions.go:34-36). Otherwise it falls back to the command's finalCmd.ValidArgsFunction. Whichever function is chosen, if non-nil, it is called as completionFn(finalCmd, finalArgs, toComplete) and its results plus directive are appended to the completions.
+
+How the two inputs to that condition are produced (completions.go:266-385 follow-up read):
+
+1. `flag` comes from checkIfFlagCompletion: `flag, finalArgs, toComplete, flagErr := checkIfFlagCompletion(finalCmd, finalArgs, toComplete)`. That helper (completions.go:591-594) starts with `if finalCmd.DisableFlagParsing { // We only do flag completion if we are allowed to parse flags`, i.e. it detects whether the last (incomplete) argument is actually a flag value awaiting completion, and returns the corresponding *pflag.Flag. It is called before flag parsing so the flag-name argument can be removed from finalArgs and toComplete can be reset to the flag's partial value.
+
+2. `flagCompletion` is a local bool initialized to true and then possibly cleared by an argument-counting trick that detects whether interspersed parsing is off or `--` was already seen:
+
+    flagCompletion := true
+    _ = finalCmd.ParseFlags(append(finalArgs, "--"))
+    newArgCount := finalCmd.Flags().NArg()
+    if err = finalCmd.ParseFlags(finalArgs); err != nil { ... }
+    realArgCount := finalCmd.Flags().NArg()
+    if newArgCount > realArgCount {
+        // don't do flag completion (see above)
+        flagCompletion = false
+    }
+
+   So if adding an extra "--" would be counted as an argument (because `--` was already set or interspersed is false and a positional arg already exists), flagCompletion is set to false, which forces the else branch (ValidArgsFunction) even if checkIfFlagCompletion returned a flag. Related error handling: a flagCompError from checkIfFlagCompletion is ignored precisely when `!flagCompletion` (`if _, ok := flagErr.(*flagCompError); !(ok && !flagCompletion) { return ..., flagErr }`).
+
+Additional ordering facts around the decision:
+
+- Before reaching the function selection, when `flag != nil && flagCompletion`, flag annotations are honored first and can short-circuit the whole thing: BashCompFilenameExt returns (validExts, ShellCompDirectiveFilterFileExt), and BashCompSubdirsInDir returns (subDir or empty, ShellCompDirectiveFilterDirs). So an annotated flag never reaches the completionFn lookup.
+- Earlier in the function, if the command has ValidArgs (fixed list), matching prefixes are collected and the function returns early with the comment "Only one of ValidArgs or ValidArgsFunction can be used for a single command" — i.e. ValidArgs takes precedence over ValidArgsFunction, and ArgAliases are consulted only if neither commands nor ValidArgs produced completions.
+- The comment just above the selection ("Let the logic continue so as to add any ValidArgsFunction completions, even if we already found sub-commands") shows the ValidArgsFunction branch is also reached for commands that have subcommands but still specify a ValidArgsFunction.
+
+In short: the decision is `flag != nil && flagCompletion` -> flagCompletionFunctions[flag]; else -> finalCmd.ValidArgsFunction, with flagCompletion computed by the NArg comparison around an appended "--", and flag supplied by checkIfFlagCompletion (which itself only operates when flag parsing is not disabled).

@@ -1,0 +1,9 @@
+ANSWER: Based on the response, completion falls back in the order: sub-command names, then the command's `ValidArgs` list, and finally `ArgAliases`.
+
+The load-bearing evidence is the doc span at site/content/completions/_index.md, lines 123-166 ("### Static completion of nouns" / "#### Aliases for nouns"):
+
+1. ValidArgs as the fallback after sub-commands: the docs explain that setting `ValidArgs` on a sub-command (e.g. `kubectl get`) supplies the completion choices for positional nouns, so `kubectl get [tab][tab]` lists `node pod replicationcontroller service` (the example `cmd := &cobra.Command{ ..., ValidArgs: validArgs }`). The API surface is corroborated by command.go lines 82-84: "// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions / ValidArgs []string".
+
+2. ArgAliases as the last-resort fallback: the docs state explicitly, at the end of the "Aliases for nouns" section: "The aliases are shown to the user on tab completion only if no completions were found within sub-commands or `ValidArgs`." This sentence defines the precedence chain: sub-command names are tried first, then `ValidArgs`, and `ArgAliases` (e.g. "pods", "nodes", "svc", "rc") are only offered when neither of the first two produced any completion.
+
+Caveat: the response contains only the documentation of this fallback behavior plus field/declaration snippets (command.go ValidArgs field; args.go OnlyValidArgs lines 50-52, which is about validation rather than completion; cobra.go stringInSlice). It does not include the actual completion implementation code (e.g. a getCompletions function) that enforces this ordering, so the mechanism described above rests on the documented behavior in site/content/completions/_index.md.

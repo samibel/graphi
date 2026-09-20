@@ -1,0 +1,17 @@
+`GetFlagCompletionFunc` retrieves a command flag’s registered shell-completion function.
+
+In [`completions.go:149`](completions.go:149), its signature is:
+
+```go
+func (c *Command) GetFlagCompletionFunc(flagName string) (
+    func(*Command, []string, string) ([]string, ShellCompDirective),
+    bool,
+)
+```
+
+Behavior:
+
+- It resolves the flag with `c.Flag(flagName)` (`completions.go:150`). `Command.Flag` checks local flags first, then persistent flags up the command tree (`command.go:1794-1801`).
+- If the flag does not exist, it returns `nil, false` (`completions.go:151-153`).
+- It takes a read lock on `flagCompletionMutex` and looks up the flag in the global `flagCompletionFunctions` map (`completions.go:155-159`).
+- It returns the completion function and whether one was registered. The map is keyed by `*pflag.Flag` (`completions.go:34-36`).

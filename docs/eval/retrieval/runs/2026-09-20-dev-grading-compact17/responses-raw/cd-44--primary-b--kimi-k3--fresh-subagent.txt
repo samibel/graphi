@@ -1,0 +1,11 @@
+The response shows the gate that suppresses subcommand-name completion, built from two pieces:
+
+1. The set of "local non-persistent" flags is computed by `LocalNonPersistentFlags()` in `command.go` (lines 1654-1666). Its doc comment says: "LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands." The implementation visits every flag in `c.LocalFlags()` and adds it to a fresh FlagSet only if `persistentFlags.Lookup(f.Name) == nil` — i.e., it keeps exactly the local flags that are not also registered as persistent.
+
+2. The suppression check itself is in `completions.go` line 444, a single shown line inside the completion logic:
+   `if localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed {`
+   While walking the flags already parsed on the command line, the completer looks each flag up in that `localNonPersistentFlags` set and tests `flag.Changed` (the flag was actually set by the user). Because such a flag does not carry over to subcommands (per the `LocalNonPersistentFlags` doc), its presence means the command line can no longer be completed with a subcommand name, so the branch guarded by this condition is what suppresses subcommand-name completion.
+
+A shell-side mirror of the same idea appears in the generated bash script: `bash_completions.go` lines 421-422 declare `local local_nonpersistent_flags=()` and `local flags_with_completion=()`, i.e., the generated script also materializes the local-nonpersistent flag list to drive the same behavior at completion time.
+
+Caveat on evidence: only the condition line (completions.go:444) is shown; the body of that if-block (the exact statements that remove/skip subcommand candidates) is truncated out of the response, so the precise statements performing the suppression inside the branch are not visible — but the gating condition and the definition of the flag set it consults are fully present.

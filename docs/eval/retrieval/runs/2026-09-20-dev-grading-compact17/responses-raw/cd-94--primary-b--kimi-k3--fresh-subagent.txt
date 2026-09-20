@@ -1,0 +1,19 @@
+Use the "Custom" variants of the ReST generators, which accept a `linkHandler func(string, string) string` callback that controls how links to commands are rendered.
+
+According to `site/content/docgen/rest.md` (lines 72-114), both `GenReST` and `GenReSTTree` have alternate versions with callbacks:
+
+- `GenReSTTreeCustom(cmd *Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error`
+- `GenReSTCustom(cmd *Command, out *bytes.Buffer, linkHandler func(string, string) string) error`
+
+The response also confirms the tree variant exists in code: `doc/rest_docs.go` line 145 shows `func GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error {`.
+
+The `linkHandler` receives a command name and a reference and returns the link markup. Per `site/content/docgen/rest.md`, "The `linkHandler` can be used to customize the rendered links to the commands, given a command name and reference. This is useful while converting rst to html or while generating documentation with tools like Sphinx where `:ref:` is used." The documented example:
+
+```go
+// Sphinx cross-referencing format
+linkHandler := func(name, ref string) string {
+    return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
+}
+```
+
+If you do nothing, a default handler is used (`doc/rest_docs.go` lines 50-52: `// defaultLinkHandler for default ReST hyperlink markup`, `func defaultLinkHandler(name, ref string) string {`).

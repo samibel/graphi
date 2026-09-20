@@ -1,0 +1,15 @@
+Call `SetErrPrefix(s string)` on your command to replace the default `Error:` prefix with your own string.
+
+Evidence from the response:
+
+- The user guide states it directly (site/content/user_guide.md, lines 599-604, under "## Error Message Prefix"): "Cobra prints an error message when receiving a non-nil error value. The default error message is `Error: <error contents>`. The Prefix, `Error:` can be customized using the `cmd.SetErrPrefix(s string)` function."
+
+- The setter itself (command.go, lines 356-360): "// SetErrPrefix sets error message prefix to be used. Application can use it to set custom prefix. func (c *Command) SetErrPrefix(s string) { c.errPrefix = s }". It stores the string in the command's `errPrefix` field (command.go, lines 189-192: "// errPrefix is the error message prefix defined by user.").
+
+- How the prefix is resolved at print time (command.go, lines 610-621, `ErrPrefix()`): if the command's own `errPrefix` is non-empty it is used; otherwise, if the command has a parent, the parent's `ErrPrefix()` is returned (so a prefix set on a parent command is inherited by its children); otherwise the hard-coded default `"Error:"` is returned.
+
+- Where it is used when an error is printed (command.go, lines 1097-1104): unless `SilenceErrors` is set, Cobra calls `c.PrintErrln(c.ErrPrefix(), err.Error())`, i.e. your custom prefix followed by the error contents.
+
+So, for example, `rootCmd.SetErrPrefix("Failure:")` makes printed errors start with `Failure:` instead of `Error:`, and that setting propagates to subcommands unless they set their own prefix.
+
+One caveat visible in the response: the helper `CheckErr` in cobra.go (lines 231-238) prints a hard-coded `"Error:"` prefix via `fmt.Fprintln(os.Stderr, "Error:", msg)` and exits; it does not consult `ErrPrefix()`, so `SetErrPrefix` does not affect output produced through `CheckErr`.

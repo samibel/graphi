@@ -1,0 +1,18 @@
+In this repository, `Group` is a struct type defined in `command.go` (lines 40-45) whose purpose, per its doc comment, is "Structure to manage groups for commands":
+
+    type Group struct {
+        ID    string
+        Title string
+    }
+
+It is the unit used to organize subcommands under a parent command, and the response shows the full small API around it (all in `command.go`):
+
+- Command-side grouping field: within the `Command` struct (snippet at lines 73-108), a field `GroupID string` is documented as "The group id under which this subcommand is grouped in the 'help' output of its parent." So a subcommand names its group by ID, and the grouping affects the parent's help output.
+
+- `Groups()` (lines 1330-1334): "Groups returns a slice of child command groups." — `func (c *Command) Groups() []*Group { return c.commandgroups }`, exposing the parent's registered groups.
+
+- `AddGroup` (lines 1355-1359): "AddGroup adds one or more command groups to this parent command." — `func (c *Command) AddGroup(groups ...*Group) { c.commandgroups = append(c.commandgroups, groups...) }`.
+
+- `ContainsGroup` (lines 1345-1354): "ContainsGroup return if groupID exists in the list of command groups." — iterates `c.commandgroups` comparing `x.ID == groupID` and returns a bool.
+
+In short: `Group` is a lightweight ID/Title record; parent commands hold a `commandgroups` slice of `*Group` populated via `AddGroup`, queryable via `Groups` and `ContainsGroup`, and each subcommand references one through its `Command.GroupID` field to control where it appears in the parent's help output. (The response was flagged `truncated: true`, but these five spans cover the type definition and all of its accessors shown.)

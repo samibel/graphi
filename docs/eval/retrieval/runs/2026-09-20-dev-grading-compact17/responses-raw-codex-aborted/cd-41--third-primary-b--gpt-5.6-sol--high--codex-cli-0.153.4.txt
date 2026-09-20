@@ -1,0 +1,16 @@
+In `completions.go`, `getCompletions` chooses the flag completion function only when both:
+
+- `flag != nil`, as determined by `checkIfFlagCompletion(...)` around lines 306–310, and
+- `flagCompletion` remains `true`. It is set to `false` when parsing shows flag completion is invalid because of non-interspersed arguments or a prior `--` (`newArgCount > realArgCount`, lines 312–327).
+
+The final selection is explicit around lines 502–509:
+
+```go
+if flag != nil && flagCompletion {
+    completionFn = flagCompletionFunctions[flag]
+} else {
+    completionFn = finalCmd.ValidArgsFunction
+}
+```
+
+The flag function is read under `flagCompletionMutex`; otherwise `finalCmd.ValidArgsFunction` is used. Whichever function is selected is invoked only if non-nil, with `(finalCmd, finalArgs, toComplete)`, and its results are appended to `completions`.

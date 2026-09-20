@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+cobra.go
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"2 ranked source span(s); query 0b229ef5ab86; read in order (206/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":18,"end_line":18,"text":"package cobra"},{"path":"cobra.go","start_line":31,"end_line":75,"text":"\nvar templateFuncs = template.FuncMap{\n\t\"trim\":                    strings.TrimSpace,\n\t\"trimRightSpace\":          trimRightSpace,\n\t\"trimTrailingWhitespaces\": trimRightSpace,\n\t\"appendIfNotPresent\":      appendIfNotPresent,\n\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}\n\nvar initializers []func()\nvar finalizers []func()\n\nconst (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false\n)\n\n// EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing\n// to automatically enable in CLI tools.\n// Set this to true to enable it.\nvar EnablePrefixMatching = defaultPrefixMatching\n\n// EnableCommandSorting controls sorting of the slice of commands, which is turned on by default.\n// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting\n\n// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive\n\n// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.\n// By default this is disabled, which means only the first run hook to be found is executed.\nvar EnableTraverseRunHooks = defaultTraverseRunHooks\n\n// MousetrapHelpText enables an information splash screen on Windows\n// if the CLI is started from explorer.exe.\n// To disable the mousetrap, just set this variable to blank string (\"\").\n// Works only on Microsoft Windows.\nvar MousetrapHelpText = `This is a command line tool.\n\nYou need to open cmd.exe and run it from there.\n`"}],"provenance":{"input_sha256":"b4abd438e3fa489f279c6bb6484661ccbb650eac87f7446238992de390310290","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

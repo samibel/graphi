@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do I customize the Error: prefix of printed errors
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 97eb6cc6a98a; read in order (256/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/user_guide.md","start_line":599,"end_line":604,"text":"## Error Message Prefix\n\nCobra prints an error message when receiving a non-nil error value.\nThe default error message is `Error: <error contents>`.\nThe Prefix, `Error:` can be customized using the `cmd.SetErrPrefix(s string)` function.\n"},{"path":"command.go","start_line":356,"end_line":360,"text":"\n// SetErrPrefix sets error message prefix to be used. Application can use it to set custom prefix.\nfunc (c *Command) SetErrPrefix(s string) {\n\tc.errPrefix = s\n}"},{"path":"command.go","start_line":610,"end_line":621,"text":"\n// ErrPrefix return error message prefix for the command\nfunc (c *Command) ErrPrefix() string {\n\tif c.errPrefix != \"\" {\n\t\treturn c.errPrefix\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.ErrPrefix()\n\t}\n\treturn \"Error:\"\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"completions.go","start_line":891,"end_line":896,"text":"\n// CompError prints the specified completion message to stderr.\nfunc CompError(msg string) {\n\tmsg = fmt.Sprintf(\"[Error] %s\", msg)\n\tCompDebug(msg, true)\n}"},{"path":"cobra.go","start_line":231,"end_line":238,"text":"\n// CheckErr prints the msg with the prefix 'Error:' and exits with error code 1. If the msg is nil, it does nothing.\nfunc CheckErr(msg interface{}) {\n\tif msg != nil {\n\t\tfmt.Fprintln(os.Stderr, \"Error:\", msg)\n\t\tos.Exit(1)\n\t}\n}"},{"path":"command.go","start_line":1097,"end_line":1104,"text":"\t\tif !c.SilenceErrors {\n\t\t\tc.PrintErrln(c.ErrPrefix(), err.Error())\n\t\t\tc.PrintErrf(\"Run '%v --help' for usage.\\n\", c.CommandPath())\n\t\t}\n\t\treturn c, err\n\t}\n\n\tcmd.commandCalledAs.called = true"},{"path":"command.go","start_line":189,"end_line":192,"text":"\t// errPrefix is the error message prefix defined by user.\n\terrPrefix string\n\n\t// inReader is a reader defined by the user that replaces stdin"},{"path":"doc/md_docs.go","start_line":32,"end_line":49,"text":"func printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error {\n\tflags := cmd.NonInheritedFlags()\n\tflags.SetOutput(buf)\n\tif flags.HasAvailableFlags() {\n\t\tbuf.WriteString(\"### Options\\n\\n```\\n\")\n\t\tflags.PrintDefaults()\n\t\tbuf.WriteString(\"```\\n\\n\")\n\t}\n\n\tparentFlags := cmd.InheritedFlags()\n\tparentFlags.SetOutput(buf)\n\tif parentFlags.HasAvailableFlags() {\n\t\tbuf.WriteString(\"### Options inherited from parent commands\\n\\n```\\n\")\n\t\tparentFlags.PrintDefaults()\n\t\tbuf.WriteString(\"```\\n\\n\")\n\t}\n\treturn nil\n}"}],"provenance":{"input_sha256":"80017778261844ae046de54f8edcf1a779d5b7c8dc217d34b562d749fc8c048d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

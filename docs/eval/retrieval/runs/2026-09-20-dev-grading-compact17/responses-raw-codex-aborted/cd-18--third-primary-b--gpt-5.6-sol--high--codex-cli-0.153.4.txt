@@ -1,0 +1,11 @@
+`doc/rest_docs.go` is in package `doc` (`doc/rest_docs.go:15`) and declares ReStructuredText documentation helpers:
+
+- `printOptionsReST(*bytes.Buffer, *cobra.Command, string) error` writes local and inherited flag sections using `PrintDefaults` (`:29-50`).
+- `defaultLinkHandler(name, ref string) string` formats links as `` `name <ref.rst>`_ `` (`:53-56`).
+- `GenReST(*cobra.Command, io.Writer) error` delegates to `GenReSTCustom` with the default link handler (`:58-61`).
+- `GenReSTCustom(...) error` initializes Cobra help, derives the command path and fallback description, converts spaces to underscores for a reference, and begins writing the page (`:63-77`).
+- `GenReSTTree(...) error` recursively generates pages using an empty file prepender and the default link handler (`:131-142`).
+- `GenReSTTreeCustom(...) error` traverses available, non-help-topic subcommands recursively (`:144-154`).
+- `indentString(s, p string) string` is a byte-oriented indentation helper adapted from `kr/text` (`:171-181`).
+
+The response is truncated, so the complete bodies of `GenReSTCustom`, `GenReSTTreeCustom`, and `indentString`, plus any declarations in omitted line ranges, are not visible.

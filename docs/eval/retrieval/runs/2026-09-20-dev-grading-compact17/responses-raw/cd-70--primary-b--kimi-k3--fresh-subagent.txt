@@ -1,0 +1,24 @@
+GenBashCompletionV2 is an exported method on *Command that generates a Bash completion file version 2 and writes it to the passed writer.
+
+Definition (bash_completionsV2.go, lines 391-396):
+
+    // GenBashCompletionV2 generates Bash completion file version 2
+    // and writes it to the passed writer.
+    func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error {
+        return c.genBashCompletion(w, includeDesc)
+    }
+
+It is a thin public wrapper: it takes an io.Writer and an includeDesc bool (which controls whether descriptions are included in the generated script) and delegates all work to the unexported method genBashCompletion (bash_completionsV2.go, lines 23-29):
+
+    func (c *Command) genBashCompletion(w io.Writer, includeDesc bool) error {
+        buf := new(bytes.Buffer)
+        genBashComp(buf, c.Name(), includeDesc)
+        _, err := buf.WriteTo(w)
+        return err
+    }
+
+genBashCompletion renders the completion script into a bytes.Buffer via genBashComp(buf, c.Name(), includeDesc) and then writes the buffer to the caller's writer, returning any write error. The generated output is a "# bash completion V2 for <name>" shell script whose template begins at bash_completionsV2.go lines 37-59, defining shell functions such as __<name>_debug, __<name>_init_completion (a minimal fallback for Macs with bash3 lacking the bash-completion package's _init_completion), and __<name>_get_completion_results, which calls the program itself to obtain completion results and the directive.
+
+A related sibling, GenBashCompletionFileV2 (bash_completionsV2.go, lines 380-390), creates a file with os.Create(filename), defers outFile.Close(), and then calls c.GenBashCompletionV2(outFile, includeDesc) — so GenBashCompletionV2 is the writer-based core used by the file-based convenience variant.
+
+Note: the response also includes a struct-fields snippet from command.go (lines 97-115) covering BashCompletionFunction, Deprecated, Annotations, Version, and the *Run functions comment; it documents Command fields related to completion generally but does not mention GenBashCompletionV2 directly.

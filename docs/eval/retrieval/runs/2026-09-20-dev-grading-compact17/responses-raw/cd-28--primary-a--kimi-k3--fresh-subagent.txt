@@ -1,0 +1,10 @@
+Cobra's pre-run stage runs every function registered through OnInitialize, one after another.
+
+Concretely, per the response:
+
+- OnInitialize itself (cobra.go, lines 96-101) just collects the functions: "func OnInitialize(y ...func()) { initializers = append(initializers, y...) }", with the doc comment "// OnInitialize sets the passed functions to be run when each command's Execute method is called."
+- The functions accumulate in a package-level slice: cobra.go, lines 41-42, "var initializers []func()".
+- The pre-run stage is the Command.preRun method (command.go, lines 1014-1019), which does exactly one thing with them — it iterates the slice and invokes each registered function in order: "func (c *Command) preRun() { for _, x := range initializers { x() } }".
+- This preRun() call happens at the very start of the command's internal execute path: command.go, lines 927-936 shows "c.preRun()" (followed by "defer c.postRun()") occurring before flag args are computed ("argWoFlags := c.Flags().Args()") and before argument validation ("c.ValidateArgs(argWoFlags)"). The overall chain begins at Execute, which calls ExecuteC (command.go, lines 1035-1041).
+
+So: during execution of a command, before argument handling and before the documented PersistentPreRun/PreRun/Run hook sequence (listed in command.go lines 114-119 and site/content/user_guide.md lines 605-607), the pre-run stage unconditionally calls each OnInitialize-registered function, with no filtering by command — every registered initializer runs on every command execution.

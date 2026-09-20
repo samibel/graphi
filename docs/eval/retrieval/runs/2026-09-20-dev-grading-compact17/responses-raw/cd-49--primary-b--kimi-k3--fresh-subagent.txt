@@ -1,0 +1,15 @@
+Add `--no-descriptions` to the program's default `completion` command when you generate/source the completion script.
+
+Evidence: site/content/completions/_index.md, lines 355-395, states verbatim: "If you don't want to show descriptions in the completions, you can add `--no-descriptions` to the default `completion` command to disable them", with the example:
+
+    $ source <(helm completion bash --no-descriptions)
+    $ helm completion [tab][tab]
+    bash        fish        powershell  zsh
+
+compared to sourcing without the flag, where each candidate is shown with its description (e.g. `bash        (generate autocompletion script for bash)`).
+
+So, concretely, regenerate and re-source the script with the flag, e.g. `source <(<yourProgram> completion bash --no-descriptions)` (substitute your shell: bash, zsh, fish, powershell).
+
+Two extra notes from the same response:
+- For bash, descriptions only exist in the completion V2 version at all ("for bash, it is only available in the [completion V2 version]", same span), so the flag matters there only when using V2.
+- For PowerShell there is also a programmatic route: powershell_completions.go, line 305, shows `// GenPowerShellCompletionFile generates powershell completion file without descriptions.`, i.e. a file-generation variant that omits descriptions.

@@ -1,0 +1,15 @@
+Parent is a method on *Command defined in command.go at lines 1841-1845. Its full definition, per the first ranked source span, is:
+
+    // Parent returns a commands parent command.
+    func (c *Command) Parent() *Command {
+        return c.parent
+    }
+
+So Parent() simply returns the receiver's parent field (a *Command), i.e., the parent command of this command in the command tree.
+
+Supporting context from the other ranked spans in the response:
+
+- VisitParents (command.go, lines 851-858) uses Parent to walk up the ancestry chain recursively: "if c.HasParent() { fn(c.Parent()); c.Parent().VisitParents(fn) }".
+- Root (command.go, lines 859-866) uses Parent to find the root command: "if c.HasParent() { return c.Parent().Root() } return c".
+- The Command struct fields shown at command.go lines 73-107 (GroupID, Long, Example, ValidArgs, ValidArgsFunction, Args, ArgAliases, BashCompletionFunction, Deprecated, Annotations) document fields that relate a command to its parent's help/grouping behavior (e.g., GroupID groups the subcommand in the 'help' output of its parent).
+- Flags (command.go, lines 1640-1653) notes that the complete FlagSet includes persistent flags "declared here and by all parents", reinforcing the parent-chain model that Parent() exposes.

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+AllChildCommandsHaveGroup
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 40c1e90990e3; read in order (322/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1335,"end_line":1344,"text":"\n// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"},{"path":"command.go","start_line":105,"end_line":128,"text":"\t// group commands or set special options.\n\tAnnotations map[string]string\n\n\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the\n\t// command does not define one.\n\tVersion string\n\n\t// The *Run functions are executed in the following order:\n\t//   * PersistentPreRun()\n\t//   * PreRun()\n\t//   * Run()\n\t//   * PostRun()\n\t//   * PersistentPostRun()\n\t// All functions get the same args, the arguments after the command name.\n\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current\n\t// command has been declared.\n\t//\n\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)\n\t// PersistentPreRunE: PersistentPreRun but returns an error.\n\tPersistentPreRunE func(cmd *Command, args []string) error\n\t// PreRun: children of this command will not inherit."},{"path":"command.go","start_line":40,"end_line":45,"text":"\n// Group Structure to manage groups for commands\ntype Group struct {\n\tID    string\n\tTitle string\n}"},{"path":"command.go","start_line":1559,"end_line":1576,"text":"\n// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"command.go","start_line":1345,"end_line":1354,"text":"\n// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"}],"provenance":{"input_sha256":"d5495c4f6d563321e4eab4159077f64c949ad2320460e8dde2d444d6b5d1a7bf","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

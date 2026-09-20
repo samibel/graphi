@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does Cobra report how many parsed arguments appeared before a -- separator
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 46aac3cc77be; read in order (268/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":".github/labeler.yml","start_line":1,"end_line":11,"text":"# changes to documentation generation\n\"area/docs-generation\": doc/**/*\n\n# changes to the core cobra command\n\"area/cobra-command\":\n- any: ['./cobra.go', './cobra_test.go', './*command*.go']\n\n# changes made to command flags/args\n\"area/flags\": ./args*.go\n\n# changes to Github workflows"},{"path":"site/content/user_guide.md","start_line":373,"end_line":377,"text":"  - `NoArgs` - report an error if there are any positional args.\n  - `ArbitraryArgs` - accept any number of args.\n  - `MinimumNArgs(int)` - report an error if less than N positional args are provided.\n  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args."},{"path":"command.go","start_line":1014,"end_line":1019,"text":"\nfunc (c *Command) preRun() {\n\tfor _, x := range initializers {\n\t\tx()\n\t}\n}"},{"path":"cobra.go","start_line":44,"end_line":50,"text":"\nconst (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false\n)"},{"path":"site/content/user_guide.md","start_line":30,"end_line":36,"text":"## Using the Cobra Generator\n\nCobra-CLI is its own program that will create your application and add any commands you want.\nIt's the easiest way to incorporate Cobra into your application.\n\nFor complete details on using the Cobra generator, please refer to [The Cobra-CLI Generator README](https://github.com/spf13/cobra-cli/blob/main/README.md)\n"},{"path":"site/content/user_guide.md","start_line":55,"end_line":61,"text":"  Run: func(cmd *cobra.Command, args []string) {\n    // Do Stuff Here\n  },\n}\n\nfunc Execute() {\n  if err := rootCmd.Execute(); err != nil {"},{"path":"command.go","start_line":148,"end_line":151,"text":"\t// args is actual args parsed from flags.\n\targs []string\n\t// flagErrorBuf contains all error messages from pflag.\n\tflagErrorBuf *bytes.Buffer"},{"path":"command.go","start_line":888,"end_line":893,"text":"\terr = c.ParseFlags(a)\n\tif err != nil {\n\t\treturn c.FlagErrorFunc()(c, err)\n\t}\n\n\t// If help is called, regardless of other flags, return we want help."},{"path":"command.go","start_line":868,"end_line":872,"text":"// ArgsLenAtDash will return the length of c.Flags().Args at the moment\n// when a -- was found during args parsing.\nfunc (c *Command) ArgsLenAtDash() int {\n\treturn c.Flags().ArgsLenAtDash()\n}"}],"provenance":{"input_sha256":"ed3a63477980ea4024b3fe899ece6867b2db45c9004017119fedaa146e6841e1","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

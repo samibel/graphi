@@ -1,0 +1,17 @@
+MarkPersistentFlagRequired is a method on *Command defined in shell_completions.go (lines 27-33):
+
+    // MarkPersistentFlagRequired instructs the various shell completion implementations to
+    // prioritize the named persistent flag when performing completion,
+    // and causes your command to report an error if invoked without the flag.
+    func (c *Command) MarkPersistentFlagRequired(name string) error {
+        return MarkFlagRequired(c.PersistentFlags(), name)
+    }
+
+What it is and does, per the evidence in the response:
+
+- Signature: `func (c *Command) MarkPersistentFlagRequired(name string) error` — it takes the name of a persistent flag and returns an error (shell_completions.go:31-33).
+- Purpose (from its doc comment, shell_completions.go:28-30): it tells the shell completion implementations to prioritize the named persistent flag during completion, and it makes the command report an error when invoked without that flag.
+- Implementation: it is a thin wrapper that delegates to the package-level function `MarkFlagRequired(flags *pflag.FlagSet, name string) error`, passing the command's persistent flag set, `c.PersistentFlags()` (shell_completions.go:32).
+- The delegated-to function (shell_completions.go:34-40) implements the behavior by setting an annotation on the flag: `return flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{"true"})` — i.e., it marks the flag with the `BashCompOneRequiredFlag` annotation set to "true".
+- The flag set it operates on comes from `PersistentFlags()` (command.go:1724-1735), which lazily creates and returns the command's persistent `*flag.FlagSet` (`c.pflags`, created with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)` and whose output is set to `c.flagErrorBuf`). The `pflags` field itself is documented in the Command struct (command.go:154-155) as "pflags contains persistent flags."
+- A sibling method exists for non-persistent flags: `func (c *Command) MarkFlagRequired(name string) error` (shell_completions.go:20-26), which does the same thing against `c.Flags()` instead of `c.PersistentFlags()`.

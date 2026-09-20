@@ -1,0 +1,15 @@
+NoFileCompletions does not talk to the shell itself; it is a completion function whose return value carries the instruction.
+
+Evidence from the response:
+
+1. In `completions.go` (lines 117-122), `NoFileCompletions` is defined as:
+   `func NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) { return nil, ShellCompDirectiveNoFileComp }`
+   Its doc comment says it "can be used to disable file completion for commands that should not trigger file completions." So the mechanism is: a command registers this function as its completion callback, and when invoked it returns no candidates (nil) plus the directive value `ShellCompDirectiveNoFileComp`.
+
+2. In `completions.go` (lines 62-70), that directive is documented: "ShellCompDirectiveNoFileComp indicates that the shell should not provide file completion even when no completion is provided." So the directive is the signal that suppresses the shell's default fallback of offering file names when a completion function yields no candidates.
+
+3. In `bash_completions.go` (lines 388-401), the generated shell-script template is formatted with the directive constants themselves: `..., name, ShellCompNoDescRequestCmd, ShellCompDirectiveError, ShellCompDirectiveNoSpace, ShellCompDirectiveNoFileComp, ShellCompDirectiveFilterFileExt, ShellCompDirectiveFilterDirs, activeHelpEnvVar(name)`. This shows the numeric values of the directives, including ShellCompDirectiveNoFileComp, are baked into the generated completion script, so the script running in the shell can test the directive returned by the program (via the hidden `ShellCompNoDescRequestCmd` completion request) and, when it sees ShellCompDirectiveNoFileComp, refrain from falling back to file-name completion.
+
+In short: NoFileCompletions returns `nil, ShellCompDirectiveNoFileComp`; that directive constant (whose value is interpolated into the generated shell completion scripts, as shown in the bash template) instructs the shell-side completion logic not to offer file names even though no completions were provided.
+
+(Note: the response shows the bash-side wiring via the script template but does not include the exact shell-script line that tests the directive, e.g. for zsh or powershell; the zsh/powershell spans shown cover only file-generation entry points, not directive handling.)

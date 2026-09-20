@@ -1,0 +1,11 @@
+`DebugFlags` walks depth-first, starting at the receiver with `debugflags(c)`. It processes each command before recursively visiting its children in `x.commands` order (`command.go:1456–1492`).
+
+For each command, it prints its name if it has flags, then labels flags as follows:
+
+- **`[LP]`**: a flag visited in `x.flags` when `x.HasPersistentFlags()` is true and `x.persistentFlag(f.Name) != nil`.
+- **`[L]`**: any other flag visited in `x.flags`.
+- **`[P]`**: a flag visited in `x.pflags` whose name is absent from `x.flags`, or when `x.HasFlags()` is false. This avoids printing flags already covered by the first pass (`command.go:1464–1483`).
+
+Each flag line includes shorthand, name, default value, and current value. It also prints `x.flagErrorBuf` before descending into children (`command.go:1485–1489`). All output uses the original receiver’s `c.Println`.
+
+The labels reflect these membership checks: `[L]` does not necessarily mean “declared locally,” since `HasFlags` explicitly covers local flags plus persistent flags from the entire structure (`command.go:1751–1754`).

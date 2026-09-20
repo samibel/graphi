@@ -1,0 +1,9 @@
+`completions.go` belongs to package `cobra` and contains shell-completion declarations in the supplied excerpts:
+
+- **Hidden request commands:** `ShellCompRequestCmd = "__complete"` and `ShellCompNoDescRequestCmd = "__completeNoDesc"` request completions with or without descriptions (`completions.go:25–33`).
+- **Flag completion registry:** `flagCompletionFunctions` maps `*pflag.Flag` to callbacks returning `([]string, ShellCompDirective)`. Access is protected by `flagCompletionMutex`, a `sync.RWMutex` (`completions.go:35–39`).
+- **Completion directives:** `ShellCompDirective` is an integer bitmap. Shown flags are `ShellCompDirectiveError`, `ShellCompDirectiveNoSpace`, and `ShellCompDirectiveNoFileComp` (`completions.go:41–43,54–65`).
+- **Flag error:** `flagCompError` stores `subCommand` and `flagName`; its `Error()` method reports that the subcommand does not support the flag (`completions.go:45–52`).
+- **Command configuration:** Constants define the `completion` command and its `no-descriptions` flag, defaulting to `false`. `CompletionOptions` contains four booleans: `DisableDefaultCmd`, `DisableNoDescFlag`, `DisableDescriptions`, and `HiddenDefaultCmd` (`completions.go:95–116`).
+
+The response is marked `truncated: true`, so these excerpts do not establish the file’s complete structure.

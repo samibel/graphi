@@ -1,0 +1,17 @@
+Usage
+
+This codebase is the spf13 Cobra library, and "Usage" appears in it at two levels: end-user usage of the library/CLI, and the programmatic usage-message machinery on the Command type.
+
+1. Library / CLI usage (README.md)
+
+- To use the library, install it with `go get -u github.com/spf13/cobra@latest` and then `import "github.com/spf13/cobra"` in your application (follow-up read, README.md:81-94: "Using Cobra is easy. First, use `go get` to install the latest version of the library ... Next, include Cobra in your application: `import "github.com/spf13/cobra"`").
+- The README's "# Usage" section (README.md:89-101) documents `cobra-cli`: "`cobra-cli` is a command line program to generate cobra applications and command files. It will bootstrap your application scaffolding to rapidly develop a Cobra-based application. It is the easiest way to incorporate Cobra into your application." The section then says "It can be installed by running:" — the install command itself is cut off at the end of the span (README.md:101).
+
+2. Usage-message machinery (command.go)
+
+- `Command.Use` field (command.go:49-57): "Use is the one-line usage message." The recommended syntax is documented inline: "[ ] identifies an optional argument. Arguments that are not enclosed in brackets are required. ... indicates that you can specify multiple values for the previous argument. | indicates mutually exclusive information. You can use the argument to the left of the separator or the argument to the right of the separator. You cannot use both arguments in a single use of the command."
+- `func (c *Command) Usage() error` (command.go:442-448): "Usage puts out the usage for the command. Used when a user provides invalid input. Can be defined by user by overriding UsageFunc." Its body is simply `return c.UsageFunc()(c)`.
+- `func (c *Command) UsageFunc() (f func(*Command) error)` (command.go:423-441): returns the function set by `SetUsageFunc` for this command if `c.usageFunc != nil`; otherwise, if the command `HasParent()`, it delegates to `c.Parent().UsageFunc()`; otherwise it returns a default usage function that calls `c.mergePersistentFlags()` and renders `c.UsageTemplate()` via `tmpl(c.OutOrStderr(), c.UsageTemplate(), c)`, printing the error with `c.PrintErrln(err)` if rendering fails.
+- `func (c *Command) UsageString() string` (command.go:477-495): "UsageString returns usage string." It temporarily redirects `c.outWriter` and `c.errWriter` into a `bytes.Buffer`, calls `CheckErr(c.Usage())`, restores the original writers, and returns `bb.String()`.
+
+So in practice: a user defines the one-line usage in the `Use` field following the `[ ]` / `...` / `|` conventions; when the user provides invalid input, Cobra calls `Command.Usage()`, which invokes the (possibly inherited or user-overridden) `UsageFunc` that renders `UsageTemplate` to the command's error output; and `UsageString()` captures that same rendered usage into a returned string.

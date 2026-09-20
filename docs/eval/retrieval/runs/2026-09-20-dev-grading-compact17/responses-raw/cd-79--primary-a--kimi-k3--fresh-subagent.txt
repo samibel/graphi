@@ -1,0 +1,15 @@
+Cobra reports the number of parsed arguments that appeared before a `--` separator through the `(*Command).ArgsLenAtDash()` method.
+
+Evidence — `command.go`, lines 868–872:
+
+    // ArgsLenAtDash will return the length of c.Flags().Args at the moment
+    // when a -- was found during args parsing.
+    func (c *Command) ArgsLenAtDash() int {
+    	return c.Flags().ArgsLenAtDash()
+    }
+
+So the mechanism is:
+
+- The method is `ArgsLenAtDash() int` on `*Command` (defined in `command.go`).
+- Its documented contract is: it returns the length of `c.Flags().Args` at the moment a `--` was encountered during argument parsing — i.e., how many parsed args appeared before the `--` separator.
+- The implementation does not track this itself; it delegates to the underlying flag set, returning `c.Flags().ArgsLenAtDash()` (the pflag `FlagSet` method), which is where the count captured when `--` was parsed actually lives.

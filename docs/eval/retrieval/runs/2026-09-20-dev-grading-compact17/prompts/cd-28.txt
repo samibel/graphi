@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+what does Cobra's pre-run stage do with functions registered through OnInitialize
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 0fed5f511675; read in order (298/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":96,"end_line":101,"text":"\n// OnInitialize sets the passed functions to be run when each command's\n// Execute method is called.\nfunc OnInitialize(y ...func()) {\n\tinitializers = append(initializers, y...)\n}"},{"path":"command.go","start_line":1014,"end_line":1019,"text":"\nfunc (c *Command) preRun() {\n\tfor _, x := range initializers {\n\t\tx()\n\t}\n}"},{"path":"site/content/user_guide.md","start_line":605,"end_line":607,"text":"## PreRun and PostRun Hooks\n\nIt is possible to run functions before or after the main `Run` function of your command. The `PersistentPreRun` and `PreRun` functions will be executed before `Run`. `PersistentPostRun` and `PostRun` will be executed after `Run`.  The `Persistent*Run` functions will be inherited by children if they do not declare their own.  The `*PreRun` and `*PostRun` functions will only be executed if the `Run` function of the current command has been declared.  These functions are run in the following order:"},{"path":"site/content/user_guide.md","start_line":141,"end_line":159,"text":"### Create your main.go\n\nWith the root command you need to have your main function execute it.\nExecute should be run on the root for clarity, though it can be called on any command.\n\nIn a Cobra app, typically the main.go file is very bare. It serves one purpose: to initialize Cobra.\n\n```go\npackage main\n\nimport (\n  \"{pathToYourApp}/cmd\"\n)\n\nfunc main() {\n  cmd.Execute()\n}\n```\n"},{"path":"site/content/user_guide.md","start_line":55,"end_line":61,"text":"  Run: func(cmd *cobra.Command, args []string) {\n    // Do Stuff Here\n  },\n}\n\nfunc Execute() {\n  if err := rootCmd.Execute(); err != nil {"},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"},{"path":"command.go","start_line":114,"end_line":119,"text":"\t// The *Run functions are executed in the following order:\n\t//   * PersistentPreRun()\n\t//   * PreRun()\n\t//   * Run()\n\t//   * PostRun()\n\t//   * PersistentPostRun()"},{"path":"command.go","start_line":927,"end_line":936,"text":"\tc.preRun()\n\n\tdefer c.postRun()\n\n\targWoFlags := c.Flags().Args()\n\tif c.DisableFlagParsing {\n\t\targWoFlags = a\n\t}\n\n\tif err := c.ValidateArgs(argWoFlags); err != nil {"},{"path":"command.go","start_line":1035,"end_line":1041,"text":"// Execute uses the args (os.Args[1:] by default)\n// and run through the command tree finding appropriate matches\n// for commands and then corresponding flags.\nfunc (c *Command) Execute() error {\n\t_, err := c.ExecuteC()\n\treturn err\n}"}],"provenance":{"input_sha256":"5783896bd9af59129549bc4e2e674d1041a9987d8751c846501384ab34549f47","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

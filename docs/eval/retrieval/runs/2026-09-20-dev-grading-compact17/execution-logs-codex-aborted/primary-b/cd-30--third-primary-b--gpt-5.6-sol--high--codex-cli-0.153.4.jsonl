@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-f041-7b50-9e20-b4892e5782f0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra identifies required flags by checking each `pflag.Flag` for the annotation keyed by `BashCompOneRequiredFlag` (`\"cobra_annotation_bash_completion_one_required_flag\"`), which `MarkFlagRequired` sets to `[]string{\"true\"}` (`shell_completions.go:20-40`, `bash_completions.go:27-34`).\n\nDuring completion, `completeRequireFlags` visits both inherited and non-inherited flags. If that annotation is present and `flag.Changed` is false, it offers the flag using `getFlagNameCompletions(flag, toComplete)` (`completions.go:566-590`)."}}
+{"type":"turn.completed","usage":{"input_tokens":15672,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":138,"reasoning_output_tokens":0}}

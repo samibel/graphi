@@ -1,0 +1,26 @@
+{
+  "query_id": "cd-73",
+  "request_bytes": "eyJpZCI6MSwianNvbnJwYyI6IjIuMCIsIm1ldGhvZCI6InRvb2xzL2NhbGwiLCJwYXJhbXMiOnsiYXJndW1lbnRzIjp7InRhc2siOiJjb21tYW5kX25vdHdpbi5nbyIsInRva2VuX2J1ZGdldCI6MTIwMCwidmVyc2lvbiI6Mn0sIm5hbWUiOiJ0YXNrX2NvbnRleHQifX0K",
+  "payload": {
+    "sequence": 1,
+    "boundary": "mcp_jsonrpc_response_bytes",
+    "operation": "task_context/2",
+    "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsInJlc3VsdCI6eyJjb250ZW50IjpbeyJ0eXBlIjoidGV4dCIsInRleHQiOiIxIHJhbmtlZCBzb3VyY2Ugc3BhbihzKTsgcXVlcnkgYzBhNDhiOTQ3NmVkOyByZWFkIGluIG9yZGVyICgxMC8zMjUgc291cmNlIHRva2Vucyk7IHJlcXVlc3Q6IGRlc2NyaWJlIHRoaXMgZmlsZSdzIHN0cnVjdHVyZSBhbmQgZGVjbGFyYXRpb25zIn1dLCJzdHJ1Y3R1cmVkQ29udGVudCI6eyJ2ZXJzaW9uIjoidGFza19jb250ZXh0LzItY29tcGFjdC8xNyIsInNvdXJjZXMiOlt7InBhdGgiOiJjb21tYW5kX25vdHdpbi5nbyIsInN0YXJ0X2xpbmUiOjE1LCJlbmRfbGluZSI6MjAsInRleHQiOiIvL2dvOmJ1aWxkICF3aW5kb3dzXG4vLyArYnVpbGQgIXdpbmRvd3NcblxucGFja2FnZSBjb2JyYVxuXG52YXIgcHJlRXhlY0hvb2tGbiBmdW5jKCpDb21tYW5kKSJ9XSwicHJvdmVuYW5jZSI6eyJpbnB1dF9zaGEyNTYiOiIyOGJlOTJiYjhjMDg0YjlkMWM4YTlmZjRmN2RkZDllYmQyOGRjNGE2MTVjZTgzYzUyNmY5NTgyMzdiZjBjNzJhIiwibWV0aG9kIjoidGFza19jb250ZXh0LzIiLCJyZXRyaWV2YWwiOiJyZXRyaWV2YWwvNyIsInJldHJpZXZhbF9zdGF0ZSI6InJlYWR5Iiwid2VpZ2h0cyI6ImI2Y2NiNjM1IiwibW9kZWwiOiJzaGEyNTY6ODU5NzgwMzRhYmQyYWI4OSIsInNvdXJjZV9zZWxlY3Rpb24iOiJjb250ZXh0LWRlZmluaXRpb25zLzMiLCJzb3VyY2Vfb3JkZXIiOiJyYW5rZWRfY29oZXJlbnRfcmVnaW9ucyIsInNvdXJjZV9idWRnZXQiOjMyNSwic291cmNlX2J1ZGdldF91bml0Ijoid2hpdGVzcGFjZS1maWVsZHMtdjEifSwidHJ1bmNhdGVkIjp0cnVlfSwiaXNFcnJvciI6ZmFsc2V9fQo=",
+    "sha256": "e78492d0f76728d68030dc33b7e53a704e15cc2956a9ec417d63892f374e0565",
+    "byte_count": 857,
+    "token_counts": [
+      {
+        "tokenizer_id": "whitespace-fields-v1",
+        "tokens": 25
+      },
+      {
+        "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+        "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+        "tokens": 260
+      }
+    ]
+  },
+  "retrieval_strategy": "semantic_first",
+  "retrieval_state": "ready",
+  "bundle_summary": "1 ranked source span(s); query c0a48b9476ed; read in order (10/325 source tokens); request: describe this file's structure and declarations"
+}

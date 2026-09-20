@@ -1,0 +1,14 @@
+Cobra considers a command to have an available subcommand for help output when at least one of its registered subcommands passes the IsAvailableCommand() check.
+
+Evidence from command.go in the response:
+
+1. HasAvailableSubCommands() (command.go, lines ~1611-1629) is the function used to decide whether the "Available Commands" section appears in the default usage/help template. Its doc comment says it "determines if a command has available sub commands that need to be shown in the usage/help default template under 'available commands'." It loops over c.commands and returns true on the first sub for which sub.IsAvailableCommand() is true; otherwise it returns false ("the command either has no sub commands, or no available (non deprecated/help/hidden) sub commands").
+
+2. IsAvailableCommand() (command.go, lines ~1561-1576) defines what "available" means for each subcommand. A subcommand is available when ALL of the following hold:
+   - it is not deprecated and not hidden: `if len(c.Deprecated) != 0 || c.Hidden { return false }`
+   - it is not the parent's auto-generated help command: `if c.HasParent() && c.Parent().helpCommand == c { return false }`
+   - it is either runnable itself or recursively has available subcommands of its own: `if c.Runnable() || c.HasAvailableSubCommands() { return true }`
+
+So, concretely: a command has an available subcommand for help output the moment any of its children is a non-deprecated, non-hidden, non-help-command command that is runnable (or that itself has such an available subcommand).
+
+Note the response also shows a parallel concept for the "additional help topics" section: HasHelpSubCommands() (lines ~1601-1610) returns true if any sub satisfies IsAdditionalHelpTopicCommand(). Per the partial comment at lines 1580-1583, an additional-help-topic command is one that is NOT runnable/hidden/deprecated and has no runnable/hidden/deprecated subcommands — i.e. exactly the commands excluded from IsAvailableCommand, shown separately rather than under "Available Commands".

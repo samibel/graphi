@@ -1,0 +1,23 @@
+The go.mod file declares the module `github.com/spf13/cobra`, targets Go 1.15, and requires four dependencies:
+
+- github.com/cpuguy83/go-md2man/v2 v2.0.3
+- github.com/inconshreveable/mousetrap v1.1.0
+- github.com/spf13/pflag v1.0.5
+- gopkg.in/yaml.v3 v3.0.1
+
+Evidence: the response's first ranked source span is `go.mod` lines 1-10, quoted in full:
+
+```
+module github.com/spf13/cobra
+
+go 1.15
+
+require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.3
+	github.com/inconshreveable/mousetrap v1.1.0
+	github.com/spf13/pflag v1.0.5
+	gopkg.in/yaml.v3 v3.0.1
+)
+```
+
+The require block closes with `)` on line 10 and the span ends there, so this appears to be the complete go.mod content: there are no replace, exclude, or retract directives and no separate indirect-require block within the returned lines.

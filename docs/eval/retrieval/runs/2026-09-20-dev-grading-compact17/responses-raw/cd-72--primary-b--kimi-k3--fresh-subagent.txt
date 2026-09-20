@@ -1,0 +1,29 @@
+AddGroup is a method on *Command defined in command.go at lines 1355-1359:
+
+    // AddGroup adds one or more command groups to this parent command.
+    func (c *Command) AddGroup(groups ...*Group) {
+        c.commandgroups = append(c.commandgroups, groups...)
+    }
+
+What it does and its signature:
+- Receiver: `c *Command` — it is called on a parent command.
+- Parameters: variadic `groups ...*Group`, so it accepts one or more pointers to Group values in a single call.
+- Behavior: it appends the passed groups to the command's internal `commandgroups` slice (`c.commandgroups = append(c.commandgroups, groups...)`). It returns nothing.
+- Its doc comment states: "AddGroup adds one or more command groups to this parent command." (command.go:1355).
+
+The element type, Group, is defined in command.go at lines 40-45:
+
+    // Group Structure to manage groups for commands
+    type Group struct {
+        ID    string
+        Title string
+    }
+
+So each group added via AddGroup carries an ID and a Title, both strings.
+
+Surrounding evidence in the same file shows how AddGroup fits into the group API:
+- Groups() (command.go:1330-1334) returns the slice of child command groups: `func (c *Command) Groups() []*Group { return c.commandgroups }` — i.e., it reads back what AddGroup appended.
+- ContainsGroup(groupID string) bool (command.go:1345-1354) iterates `c.commandgroups` and returns true if any group's `ID` equals the given groupID — i.e., it checks membership in the collection AddGroup populates.
+- The Command struct (command.go:60-97) includes a `GroupID string` field documented as "The group id under which this subcommand is grouped in the 'help' output of its parent," indicating that groups added to a parent via AddGroup are used to organize that parent's subcommands in help output.
+
+In short: AddGroup is the variadic mutator that registers *Group values (each with an ID and Title) on a parent *Command by appending them to its unexported `commandgroups` slice; companion methods Groups() and ContainsGroup() read and query that same slice, and subcommands reference a group through their GroupID field for help-output grouping.

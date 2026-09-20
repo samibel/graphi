@@ -1,0 +1,13 @@
+The file `bash_completionsV2.go` is part of `package cobra` (line 15) and declares four functions related to generating Bash completion V2 scripts, as shown by the three ranked source spans in the response:
+
+1. `func (c *Command) genBashCompletion(w io.Writer, includeDesc bool) error` (lines 23-29) — an unexported method on `*Command` that renders the completion script into a `bytes.Buffer` via `genBashComp(buf, c.Name(), includeDesc)` and then writes the buffer to `w` (`buf.WriteTo(w)`), returning the error.
+
+2. `func genBashComp(buf io.StringWriter, name string, includeDesc bool)` (lines 30 onward, span ends at line 85) — an unexported package-level function that selects the completion request command (`compCmd := ShellCompRequestCmd`, or `ShellCompNoDescRequestCmd` when `includeDesc` is false) and writes the bash V2 script header into `buf` with `WriteStringAndCheck(buf, fmt.Sprintf(...))`. The visible portion of the embedded script defines shell functions `__<name>_debug`, `__<name>_init_completion` (a minimal `_init_completion` for Macs with bash3), and the beginning of `__<name>_get_completion_results`, which builds a `requestComp` command using `${words[0]}` and the chosen `compCmd`, handles trailing-space and `-*=*` flag cases, and runs the request via `eval`.
+
+3. `func (c *Command) GenBashCompletionFileV2(filename string, includeDesc bool) error` (lines 381-389, documented "GenBashCompletionFileV2 generates Bash completion version 2.") — an exported method that creates the file with `os.Create`, defers `outFile.Close()`, and delegates to `c.GenBashCompletionV2(outFile, includeDesc)`.
+
+4. `func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error` (lines 391-396, documented "GenBashCompletionV2 generates Bash completion file version 2 and writes it to the passed writer.") — an exported method that simply returns `c.genBashCompletion(w, includeDesc)`.
+
+No imports, types, constants, or variables are shown in the response; identifiers referenced but declared elsewhere include `ShellCompRequestCmd`, `ShellCompNoDescRequestCmd`, and `WriteStringAndCheck`.
+
+Caveat: the response is marked `"truncated":true` and the span covering `genBashComp` stops at line 85 while the next span starts at line 380, so the remainder of the embedded bash script (lines ~86-379) and any declarations in that gap are not present in the response and cannot be described.

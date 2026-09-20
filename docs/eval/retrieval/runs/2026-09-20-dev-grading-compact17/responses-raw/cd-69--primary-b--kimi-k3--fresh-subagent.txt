@@ -1,0 +1,26 @@
+MarkPersistentFlagRequired is a method on *Command defined in shell_completions.go (lines 27-33):
+
+    // MarkPersistentFlagRequired instructs the various shell completion implementations to
+    // prioritize the named persistent flag when performing completion,
+    // and causes your command to report an error if invoked without the flag.
+    func (c *Command) MarkPersistentFlagRequired(name string) error {
+        return MarkFlagRequired(c.PersistentFlags(), name)
+    }
+
+What it does, per the cited evidence:
+
+1. Behavior (from its doc comment, shell_completions.go:27-30): it marks a named persistent flag as required. This has two effects: the shell completion implementations prioritize that flag during completion, and the command reports an error if it is invoked without the flag.
+
+2. Mechanism: the method body is a one-line delegation to the package-level function MarkFlagRequired, passing the command's persistent flag set: MarkFlagRequired(c.PersistentFlags(), name).
+
+3. The underlying package-level function (shell_completions.go:34-40) is:
+    func MarkFlagRequired(flags *pflag.FlagSet, name string) error {
+        return flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{"true"})
+    }
+   So "required" is implemented purely as a flag annotation: it sets the annotation keyed by the BashCompOneRequiredFlag constant to the value "true" on the named flag in the given FlagSet, and returns whatever error SetAnnotation returns (e.g., if the flag does not exist).
+
+4. The persistent flag set it operates on comes from (*Command).PersistentFlags() (command.go:1724-1735), which lazily allocates c.pflags (a *flag.FlagSet created with flag.NewFlagSet(c.Name(), flag.ContinueOnError), with output redirected to c.flagErrorBuf) on first call and returns it. The pflags field itself is declared in the Command struct (command.go:154-155) as "pflags contains persistent flags."
+
+The response also shows the parallel non-persistent variant, the method (c *Command) MarkFlagRequired(name string) error at shell_completions.go:20-26, which does the same thing against c.Flags() (local flags) instead of c.PersistentFlags().
+
+Note: the response does not include the definition of the BashCompOneRequiredFlag constant itself, nor the code that enforces the annotation at command execution time, so the exact error-reporting path cannot be detailed beyond what the doc comment states.

@@ -1,0 +1,13 @@
+Completion options in this repository (Cobra) are controlled by the `CompletionOptions` struct, defined in `completions.go` (lines 103-116). It has four boolean fields:
+
+- `DisableDefaultCmd` — prevents Cobra from creating a default 'completion' command
+- `DisableNoDescFlag` — prevents Cobra from creating the '--no-descriptions' flag for shells that support completion descriptions
+- `DisableDescriptions` — turns off all completion descriptions for shells that support them
+- `HiddenDefaultCmd` — makes the default 'completion' command hidden
+
+Per the docs (`site/content/completions/_index.md`, lines 94-95), these options configure the default `completion` command, and "to configure such options you must set the `CompletionOptions` field on the *root* command."
+
+Beyond the struct itself, the response also shows related completion facilities documented in `site/content/completions/_index.md`:
+
+- Static noun completion via the `ValidArgs` field (lines 117-125), and its dynamic counterpart `ValidArgsFunction` ("an optional function that provides valid non-flag arguments for shell completion... a dynamic version of using ValidArgs", `command.go` lines 84-85).
+- Shell-specific script generation: zsh (`GenZshCompletionNoDesc()` / `GenZshCompletionFileNoDesc()` to disable descriptions, lines 452-462), bash completion V2 (line 421), and PowerShell (`command.GenPowerShellCompletion()`, `command.GenPowerShellCompletionFile()`, and the `...WithDesc()` variants, line 519). Cobra generates completions for multiple shells (lines 1-3).

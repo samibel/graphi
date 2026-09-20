@@ -1,0 +1,3 @@
+Subcommand names and `ValidArgs` provide the primary completion choices. `ValidArgs` is the command’s list of valid non-flag arguments (`command.go:82–83`); the example attaches it to `get` to complete nouns such as `pod` and `node` (`site/content/completions/_index.md:123–150`).
+
+`ArgAliases` is the fallback: aliases appear **only when neither subcommands nor `ValidArgs` produced completions** (`site/content/completions/_index.md:152–166`). The response does not establish a separate ordering between subcommand names and `ValidArgs`.

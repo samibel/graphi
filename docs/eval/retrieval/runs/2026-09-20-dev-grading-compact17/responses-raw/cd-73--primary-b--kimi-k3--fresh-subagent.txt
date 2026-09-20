@@ -1,0 +1,12 @@
+Based on the single ranked source span in the response (command_notwin.go, lines 15-20), the file has the following structure and declarations:
+
+1. Build constraints: The file begins with two equivalent build-tag lines restricting it to non-Windows platforms:
+   - `//go:build !windows`
+   - `// +build !windows`
+
+2. Package clause: It belongs to `package cobra`.
+
+3. Declarations: Exactly one package-level declaration is visible:
+   - `var preExecHookFn func(*Command)` — a package-scope variable named `preExecHookFn` whose type is a function taking a `*Command` and returning nothing. This is a hook slot, presumably invoked before command execution on non-Windows builds.
+
+Caveat: the response is marked `"truncated":true` and reports only "10/325 source tokens" were read, with the span covering lines 15-20 of the file. So while the visible span shows a complete, coherent unit (build tags + package clause + the single `preExecHookFn` variable declaration), the response does not show the entire file, and lines before 15 or after 20 (if any) are not evidenced here. No functions, methods, types, or imports are shown in the returned span.

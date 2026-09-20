@@ -1,0 +1,16 @@
+When Cobra executes a nil *Command receiver, it does not panic inside the core execution path — it returns a plain error instead.
+
+Evidence: in command.go, lines 874-877, the unexported `execute(a []string)` method begins with an explicit nil guard:
+
+    func (c *Command) execute(a []string) (err error) {
+        if c == nil {
+            return fmt.Errorf("Called Execute() on a nil Command")
+        }
+
+So a nil receiver short-circuits at the very top of `execute` with the error value `fmt.Errorf("Called Execute() on a nil Command")`, before any deprecation printing, flag initialization, parsing, or run hooks are touched.
+
+How this relates to the public entry points shown (command.go, lines 1026-1049):
+- `Execute()` (line ~1036) just calls `c.ExecuteC()` and returns its error. In Go, calling a pointer-receiver method on a nil pointer is legal as long as the method does not dereference the receiver, and `Execute`/`ExecuteC` on a nil `c` would eventually funnel into `execute`, which handles nil as above. (The body of `ExecuteC` itself is not included in the provided responses, so the exact path from `ExecuteC` to `execute` is not directly evidenced, but the nil guard in `execute` is the documented safety net for this case.)
+- Caveat visible in the shown code: `ExecuteContext(ctx)` (line ~1031) and `ExecuteContextC(ctx)` (line ~1044) both do `c.ctx = ctx` *before* calling `c.Execute()`/`c.ExecuteC()`. That assignment dereferences the receiver, so on a nil Command those two entry points would panic with a nil pointer dereference before the nil guard in `execute` is ever reached. Only the plain `Execute()` path is protected by the guard.
+
+In short: executing a nil Command through the plain execute path returns the error "Called Execute() on a nil Command"; through the ExecuteContext/ExecuteContextC entry points it would panic earlier on the `c.ctx = ctx` assignment.

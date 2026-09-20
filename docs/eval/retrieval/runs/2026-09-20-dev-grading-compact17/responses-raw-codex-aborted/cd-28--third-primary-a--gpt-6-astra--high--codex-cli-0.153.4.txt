@@ -1,0 +1,1 @@
+Cobra’s pre-run stage calls every function registered through `OnInitialize`, in registration order. `OnInitialize` appends functions to `initializers` (`cobra.go:99–100`), and `(*Command).preRun` iterates that slice and invokes each with `x()` (`command.go:1015–1018`). This happens before argument validation (`command.go:927–936`).

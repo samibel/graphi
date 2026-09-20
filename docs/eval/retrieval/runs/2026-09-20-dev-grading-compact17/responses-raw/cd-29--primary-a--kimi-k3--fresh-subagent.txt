@@ -1,0 +1,20 @@
+Based on the response, completion does not perform a reverse shorthand-letter-to-flag lookup; instead it generates the shorthand form per flag and prefix-matches it against the typed text.
+
+Mechanism, from `getFlagNameCompletions` (completions.go, lines 533-565):
+
+1. Flags that should not be completed are filtered out first: `if nonCompletableFlag(flag) { return []string{} }`, where `nonCompletableFlag` (bash_completions.go, lines 698-701) returns true when `flag.Hidden || len(flag.Deprecated) > 0`.
+
+2. The long form is tried first: `flagName := "--" + flag.Name`, and if `strings.HasPrefix(flagName, toComplete)` it is offered as `"--name\t<usage>"`. The commented-out block in the same function explains the `=` form is deliberately never suggested, and notes "Since boolean flags and shortname flags don't show the = form, let's go that route and never show it."
+
+3. The shorthand resolution itself: the function then rebinds `flagName = "-" + flag.Shorthand` and emits it only when the flag actually has a shorthand and it matches what the user typed:
+
+```go
+flagName = "-" + flag.Shorthand
+if len(flag.Shorthand) > 0 && strings.HasPrefix(flagName, toComplete) {
+    completions = append(completions, fmt.Sprintf("%s\t%s", flagName, flag.Usage))
+}
+```
+
+So a one-letter shorthand "resolves" by construction, not by lookup: each candidate flag contributes its own `pflag.Flag.Shorthand` letter, the code prepends a single dash, and the entry is offered only if the user's `toComplete` is a prefix of that "-x" form. The completion string carries the usage text as the description (`"%s\t%s"`, flagName, flag.Usage). Flags with no shorthand (`len(flag.Shorthand) == 0`) are skipped.
+
+What is not shown in the response: the loop that feeds individual flags into `getFlagNameCompletions` (the snippet comments in completions.go line 302 only say "finalCmd itself to handle the completion of *all* flags"), and any reverse shorthand-to-flag map (e.g. a ShorthandLookup). The only flag-by-name resolution shown is `Command.Flag(name)` (command.go, lines 1793-1803), which climbs the command tree via `c.Flags().Lookup(name)` and falls back to `c.persistentFlag(name)`, and `GetFlagCompletionFunc` (completions.go, lines 147-157), which uses `c.Flag(flagName)` — but both resolve by the flag's long name, not its one-letter shorthand.

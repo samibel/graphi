@@ -1,0 +1,21 @@
+VisitParents is a recursive method on *Command, defined in command.go lines 851-866:
+
+```go
+// VisitParents visits all parents of the command and invokes fn on each parent.
+func (c *Command) VisitParents(fn func(*Command)) {
+	if c.HasParent() {
+		fn(c.Parent())
+		c.Parent().VisitParents(fn)
+	}
+}
+```
+
+How it traverses and invokes the callback:
+
+1. Guard check: it calls c.HasParent() (command.go lines 1630-1634), which returns c.parent != nil. If the current command has no parent (i.e., it is the root), the method does nothing and the recursion stops.
+2. Callback on the immediate parent: if a parent exists, it first invokes fn(c.Parent()), where Parent() (command.go lines 1841-1845) simply returns the c.parent field. So the callback fires on the direct parent before anything else.
+3. Recurse upward: it then calls c.Parent().VisitParents(fn), moving one level closer to the root and repeating the same steps.
+
+Net effect: the walk proceeds from the receiver command upward toward the root, invoking fn once per ancestor in bottom-up order — immediate parent first, then grandparent, and so on, ending with the root command. fn is never invoked on the starting command itself, and traversal terminates when a command with no parent is reached (HasParent() false).
+
+A real usage example appears in doc/man_docs.go lines 221-225, where man-page generation walks up the tree with `cmd.VisitParents(func(c *cobra.Command) {...})` after computing the parent command path via `cmd.Parent().CommandPath()`.

@@ -1,0 +1,33 @@
+Based on the task_context/2 response (which was truncated — only 206 of a 325-token source budget was returned, in 2 ranked spans), the visible structure and declarations of cobra.go are:
+
+Package declaration
+- Line 18: `package cobra` — the file belongs to package cobra.
+
+Declarations (lines 31-75)
+1. `var templateFuncs = template.FuncMap{...}` — a template.FuncMap registering helpers under string keys:
+   - "trim": strings.TrimSpace
+   - "trimRightSpace": trimRightSpace
+   - "trimTrailingWhitespaces": trimRightSpace
+   - "appendIfNotPresent": appendIfNotPresent
+   - "rpad": rpad
+   - "gt": Gt
+   - "eq": Eq
+   (The values trimRightSpace, appendIfNotPresent, rpad, Gt and Eq are functions defined elsewhere; they are referenced here but not declared in the returned spans.)
+
+2. `var initializers []func()` and `var finalizers []func()` — two package-level slices of no-arg functions.
+
+3. A const block of four boolean defaults:
+   - defaultPrefixMatching   = false
+   - defaultCommandSorting   = true
+   - defaultCaseInsensitive  = false
+   - defaultTraverseRunHooks = false
+
+4. Four exported package-level toggle variables, each initialized from the corresponding default constant and documented with a comment:
+   - `var EnablePrefixMatching = defaultPrefixMatching` — enables automatic prefix matching (dangerous in CLI tools; set true to enable).
+   - `var EnableCommandSorting = defaultCommandSorting` — controls sorting of the command slice; on by default, set false to disable.
+   - `var EnableCaseInsensitive = defaultCaseInsensitive` — allows case-insensitive command names (case sensitive by default).
+   - `var EnableTraverseRunHooks = defaultTraverseRunHooks` — executes persistent pre-/post-run hooks from all parents; disabled by default, so only the first run hook found is executed.
+
+5. `var MousetrapHelpText` — a string variable (Windows-only) holding the splash text shown if the CLI is started from explorer.exe: "This is a command line tool.\n\nYou need to open cmd.exe and run it from there.\n". Setting it to "" disables the mousetrap.
+
+Caveat: the response is marked "truncated":true and only spans lines 18 and 31-75 of cobra.go, so any imports (lines before 18 presumably include them, since strings and template are used) and any declarations after line 75 are not shown and cannot be described from this evidence.

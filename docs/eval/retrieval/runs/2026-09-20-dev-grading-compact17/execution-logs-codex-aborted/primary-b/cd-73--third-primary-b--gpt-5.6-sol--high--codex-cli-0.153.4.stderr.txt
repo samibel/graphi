@@ -1,0 +1,1 @@
+2026-09-20T14:29:41.902543Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 403 Forbidden, url: wss://chatgpt.com/backend-api/codex/responses

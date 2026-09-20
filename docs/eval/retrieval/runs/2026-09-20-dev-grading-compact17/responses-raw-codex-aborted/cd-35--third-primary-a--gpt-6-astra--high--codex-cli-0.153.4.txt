@@ -1,0 +1,7 @@
+Call `c.Flag(name)` (`command.go:1794–1802`). It searches in this order:
+
+1. The command’s flags: `c.Flags().Lookup(name)`.
+2. If absent, its persistent flags through `c.persistentFlag(name)`, which calls `c.PersistentFlags().Lookup(name)` when `c.HasPersistentFlags()` is true.
+3. If still absent, it calls `c.updateParentsPflags()` and searches `c.parentsPflags.Lookup(name)` (`command.go:1805–1816`).
+
+`parentsPflags` is documented as containing “all persistent flags of cmd's parents” (`command.go:160–161`). Thus, ancestor lookup uses the collected parent persistent flags. The response does not show `updateParentsPflags()`’s implementation, so the exact traversal and precedence among ancestors aren’t visible.

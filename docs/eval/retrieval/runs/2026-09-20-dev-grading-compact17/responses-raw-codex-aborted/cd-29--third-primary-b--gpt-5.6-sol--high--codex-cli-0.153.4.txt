@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows shorthand suggestions built from `flag.Shorthand` in `completions.go:559-562`, but not the code that maps a one-letter shorthand back to its `pflag.Flag`.

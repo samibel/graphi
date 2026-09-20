@@ -1,0 +1,15 @@
+The query "template" returned 7 ranked source spans from two files (cobra.go and command.go) covering the repository's text/template machinery for generating usage, help, and version output. What the response shows:
+
+1. Template execution engine — cobra.go lines 178-185: `func tmpl(w io.Writer, text string, data interface{}) error` executes template text on data, writing the result to w. It creates `template.New("top")`, registers `t.Funcs(templateFuncs)`, parses the text with `template.Must(t.Parse(text))`, and returns `t.Execute(w, data)`.
+
+2. Built-in function map — cobra.go lines 31-40: `var templateFuncs = template.FuncMap{...}` registers seven functions available inside templates: "trim" (strings.TrimSpace), "trimRightSpace" (trimRightSpace), "trimTrailingWhitespaces" (trimRightSpace), "appendIfNotPresent" (appendIfNotPresent), "rpad" (rpad), "gt" (Gt), "eq" (Eq).
+
+3. Extension API — cobra.go lines 82-95: `func AddTemplateFunc(name string, tmplFunc interface{})` adds a single template function ("available to Usage and Help template generation") by setting `templateFuncs[name] = tmplFunc`; `func AddTemplateFuncs(tmplFuncs template.FuncMap)` adds multiple by looping `for k, v := range tmplFuncs { templateFuncs[k] = v }`.
+
+4. Version template — command.go lines 351-355: `func (c *Command) SetVersionTemplate(s string)` sets `c.versionTemplate = s` ("Application can use it to set custom template"). command.go lines 597-609: `func (c *Command) VersionTemplate() string` returns `c.versionTemplate` if non-empty, otherwise walks up via `c.HasParent()` / `c.parent.VersionTemplate()`, and falls back to the default `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}\n`.
+
+5. Help template — command.go lines 584-593: `func (c *Command) HelpTemplate() string` returns `c.helpTemplate` if non-empty, otherwise the parent's, otherwise a default beginning `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}` — the span is cut off there (the response is marked "truncated":true, "read in order (232/325 source tokens)"), so the rest of the default help template is not visible.
+
+6. Usage template storage — command.go lines 168-170: the Command struct has a field `usageTemplate string` commented "usage template is usage template defined by user" (the getter/setter for it is not included in the spans).
+
+In short: templates in this codebase are Go text/templates executed by `tmpl` in cobra.go, customized through per-command `versionTemplate`/`helpTemplate`/`usageTemplate` fields with parent fallback, and extended through the global `templateFuncs` map via AddTemplateFunc/AddTemplateFuncs.

@@ -1,0 +1,13 @@
+When a command runs, cobra checks whether the command's `Deprecated` field is non-empty and, if so, prints a warning line naming the command plus the deprecation message.
+
+The evidence is in `command.go`, lines 879–883 of the response:
+
+```go
+if len(c.Deprecated) > 0 {
+    c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)
+}
+```
+
+So the mechanism is: if `len(c.Deprecated) > 0`, it calls `c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)`, emitting `Command "<name>" is deprecated, <deprecation message>` followed by a newline. The snippet shows this check happens in the command-run flow immediately before the comment "initialize help and version flag at the last point possible to allow for user...", i.e. it fires each time the deprecated command is executed.
+
+A related span (`command.go` lines 1615–1618, `HasAvailableSubCommands`) shows deprecation is also used elsewhere to hide deprecated commands from the "available commands" help listing ("return true on the first found available (non deprecated/help/hidden)"), but the run-time warning itself is the `Printf` above.

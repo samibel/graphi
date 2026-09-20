@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+command_notwin.go
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"1 ranked source span(s); query c0a48b9476ed; read in order (10/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command_notwin.go","start_line":15,"end_line":20,"text":"//go:build !windows\n// +build !windows\n\npackage cobra\n\nvar preExecHookFn func(*Command)"}],"provenance":{"input_sha256":"28be92bb8c084b9d1c8a9ff4f7ddd9ebd28dc4a615ce83c526f958237bf0c72a","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

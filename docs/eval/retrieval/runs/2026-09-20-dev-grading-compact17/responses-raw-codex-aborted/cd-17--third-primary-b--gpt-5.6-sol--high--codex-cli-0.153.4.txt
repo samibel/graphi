@@ -1,0 +1,9 @@
+`doc/yaml_docs.go` belongs to package `doc` (line 15) and defines YAML documentation generation for Cobra commands.
+
+- `cmdOption` (lines 30–35): command-option data with `Name`, `Shorthand`, `DefaultValue`, and `Usage`, including YAML tags such as `default_value` and `omitempty`.
+- `cmdDoc` (lines 37–46): document data containing command metadata, options, inherited options, examples, and related commands (`SeeAlso`).
+- `GenYamlTree` (lines 53–57): generates YAML files for a command tree using default callbacks.
+- `GenYamlTreeCustom` (lines 60–72): recursively processes available subcommands, skips help topics, derives filenames from `cmd.CommandPath()` by replacing spaces with underscores, and creates `.yaml` files.
+- `GenYaml` (lines 87–89): writes YAML for one command using the default link handler.
+- `GenYamlCustom` (lines 92–103): initializes Cobra help facilities and populates a `cmdDoc` from the command, including its path, short synopsis, and long description.
+- `genFlagResult` (lines 149–162): converts a `pflag.FlagSet` into `[]cmdOption`, collecting each non-deprecated shorthand, default value, and multiline-normalized usage.

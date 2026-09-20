@@ -1,0 +1,18 @@
+Structure and declarations of doc/yaml_docs.go, per the four ranked spans in the task_context/2 response (truncated: true; spans cover lines 15, 29-72, 86-103, 148-162):
+
+Package
+- `package doc` (line 15).
+
+Types (span lines 29-72)
+- `type cmdOption struct` — fields: `Name string`, `Shorthand string `yaml:",omitempty"``, `DefaultValue string `yaml:"default_value,omitempty"``, `Usage string `yaml:",omitempty"``.
+- `type cmdDoc struct` — fields: `Name string`, `Synopsis string `yaml:",omitempty"``, `Description string `yaml:",omitempty"``, `Usage string `yaml:",omitempty"``, `Options []cmdOption `yaml:",omitempty"``, `InheritedOptions []cmdOption `yaml:"inherited_options,omitempty"``, `Example string `yaml:",omitempty"``, `SeeAlso []string `yaml:"see_also,omitempty"``.
+
+Functions
+- `func GenYamlTree(cmd *cobra.Command, dir string) error` (in span 29-72). Its doc comment says it "creates yaml structured ref files for this command and all descendants in the directory given" and warns it may not work correctly if command names contain `-` (undefined which help output lands in `cmd-sub-third.1`). Body defines `identity := func(s string) string { return s }` and `emptyStr := func(s string) string { return "" }`, then delegates: `return GenYamlTreeCustom(cmd, dir, emptyStr, identity)`.
+- `func GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error` (same span). Recurses over `cmd.Commands()`, skipping commands where `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, propagating errors from recursive calls. Then computes `basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + ".yaml"`, `filename := filepath.Join(dir, basename)`, and begins `f, err := os.Create(filename)` — the span ends there, so the rest of the body (including use of filePrepender/linkHandler) is not shown.
+- `func GenYaml(cmd *cobra.Command, w io.Writer) error` (span 86-103). Comment: "GenYaml creates yaml output." Body: `return GenYamlCustom(cmd, w, func(s string) string { return s })`.
+- `func GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error` (same span). Comment: "GenYamlCustom creates custom yaml output." Calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, then builds a `cmdDoc`: `yamlDoc.Name = cmd.CommandPath()`, `yamlDoc.Synopsis = forceMultiLine(cmd.Short)`, `yamlDoc.Description = forceMultiLine(cmd.Long)`, followed by `if cmd.Runnable() {` — span cuts off mid-function.
+- `func genFlagResult(flags *pflag.FlagSet) []cmdOption` (span 148-162). Iterates with `flags.VisitAll(func(flag *pflag.Flag) { ... })`; a comment explains the guard: when a shorthand is deprecated with an empty message `flag.ShorthandDeprecated` is empty, so `len(flag.ShorthandDeprecated) > 0` can't be used alone. The condition kept is `!(len(flag.ShorthandDeprecated) > 0) && len(flag.Shorthand) > 0`, and matching flags produce `cmdOption{flag.Name, flag.Shorthand, flag.DefValue, forceMultiLine(flag.Usage)}` — span cuts off before the literal closes.
+
+Caveats
+- The response is truncated (`"truncated":true`, 323/325 source tokens): the import block, the definition of the helper `forceMultiLine`, and the interiors/tails of GenYamlTreeCustom, GenYamlCustom, and genFlagResult are not included, so identifiers like `os`, `strings`, `filepath`, `io`, `cobra`, and `pflag` are evidenced only by usage, not by import lines.

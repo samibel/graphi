@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-d8ee-75f2-9817-ab7d9a81a3e3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s pre-run stage iterates over the global `initializers` slice and invokes every registered function in registration order (`command.go:1014–1019`, `cobra.go:41–42`). `OnInitialize` registers them by appending the supplied functions to that slice (`cobra.go:96–101`). The pre-run stage is called during command execution before argument validation (`command.go:927–936`)."}}
+{"type":"turn.completed","usage":{"input_tokens":15523,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":0}}

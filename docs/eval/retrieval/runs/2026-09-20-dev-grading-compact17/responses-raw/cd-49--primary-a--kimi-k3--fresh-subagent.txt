@@ -1,0 +1,17 @@
+Pass `--no-descriptions` to the program's default `completion` command when you generate (or re-generate) the completion script, then source the result.
+
+Evidence: `site/content/completions/_index.md`, lines 355-395 (the "### Descriptions for completions" section) states: "If you don't want to show descriptions in the completions, you can add `--no-descriptions` to the default `completion` command to disable them." The doc's own before/after example (using helm) shows the effect:
+
+```bash
+$ source <(helm completion bash --no-descriptions)
+$ helm completion [tab][tab]
+bash        fish        powershell  zsh
+```
+
+whereas the same completion generated without the flag shows `bash (generate autocompletion script for bash)  fish (generate autocompletion script for fish) ...`.
+
+So, concretely, for your program replace e.g. `source <(yourprogram completion bash)` with `source <(yourprogram completion bash --no-descriptions)` (and analogously for zsh/fish/powershell script generation).
+
+Supporting context from the same span:
+- The descriptions themselves come from Cobra automatically (derived from command/flag usage info), or from `\t`-separated text authors add in `ValidArgs`, `ValidArgsFunction`, or `RegisterFlagCompletionFunc()` — so if you are the program author, you can also simply omit the `\t description` text from your custom completions.
+- For bash specifically, descriptions only exist in the completion V2 version ("for bash, it is only available in the [completion V2 version](#bash-completion-v2)"), so with bash completion V1 there are no descriptions to turn off in the first place.

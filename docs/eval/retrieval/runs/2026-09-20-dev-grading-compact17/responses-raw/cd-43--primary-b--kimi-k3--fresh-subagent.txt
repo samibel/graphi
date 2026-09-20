@@ -1,0 +1,24 @@
+DebugFlags (command.go, lines 1452-1503) walks the command tree with a recursive closure and labels each flag with a bracketed tag showing whether it is local, persistent, or both.
+
+Tree walk:
+- `DebugFlags` prints "DebugFlags called on" plus `c.Name()`, then defines a recursive closure `var debugflags func(*Command)` and kicks it off with `debugflags(c)` (the receiver itself).
+- For each visited command `x`, it first prints `x.Name()` if `x.HasFlags() || x.HasPersistentFlags()`.
+- It then prints `x.flagErrorBuf`.
+- Recursion is depth-first over children: `if x.HasSubCommands() { for _, y := range x.commands { debugflags(y) } }` — so each command is fully processed (name, flags, error buffer) before descending into its subcommands in slice order.
+
+Local-flag labeling (`[L]` vs `[LP]`):
+- If `x.HasFlags()`, it iterates the local flag set with `x.flags.VisitAll(func(f *flag.Flag) { ... })`.
+- For each flag it checks `if x.HasPersistentFlags() && x.persistentFlag(f.Name) != nil`. If the command also has a persistent flag of the same name, the line is tagged `[LP]` (local plus persistent):
+  `c.Println("  -"+f.Shorthand+",", "--"+f.Name, "["+f.DefValue+"]", "", f.Value, "  [LP]")`
+- Otherwise the local flag is tagged `[L]`:
+  `c.Println("  -"+f.Shorthand+",", "--"+f.Name, "["+f.DefValue+"]", "", f.Value, "  [L]")`
+
+Persistent-flag labeling (`[P]`, with shadowing suppressed):
+- If `x.HasPersistentFlags()`, it iterates `x.pflags.VisitAll(...)`.
+- A persistent flag is only printed if it is not shadowed by a same-named local flag: when `x.HasFlags()` is true it requires `x.flags.Lookup(f.Name) == nil`; if the command has no local flags at all, every persistent flag is printed.
+- Each printed persistent flag is tagged `[P]`:
+  `c.Println("  -"+f.Shorthand+",", "--"+f.Name, "["+f.DefValue+"]", "", f.Value, "  [P]")`
+
+So the three labels are: `[L]` = local-only flag, `[LP]` = local flag that is also declared persistent on the same command, `[P]` = persistent flag (omitted when shadowed by a local flag of the same name). Each flag line has the form `  -<shorthand>, --<name> [<default>]  <current value>  [<label>]`.
+
+Supporting context from the response: `HasFlags` (command.go lines 1750-1754) "checks if the command contains any flags (local plus persistent from the entire structure)" via `c.Flags().HasFlags()`, which explains why the name-print condition uses `HasFlags() || HasPersistentFlags()`. The comment on DebugFlags itself states it is "used to determine which flags have been assigned to which commands and which persist."

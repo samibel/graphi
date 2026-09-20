@@ -1,0 +1,18 @@
+GetFlagCompletionFunc is a method on *Command defined in completions.go (lines 147-160). Its doc comment states: "GetFlagCompletionFunc returns the completion function for the given flag of the command, if available."
+
+Signature:
+  func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool)
+
+It takes a flag name and returns two values: the registered completion function for that flag (of type func(*Command, []string, string) ([]string, ShellCompDirective)) and a boolean reporting whether such a function exists.
+
+How it works, per the source span in completions.go:147-160:
+1. It resolves the flag by name via c.Flag(flagName); if flag == nil it returns nil, false.
+2. It then takes a read lock on the package-level mutex (flagCompletionMutex.RLock(), with defer flagCompletionMutex.RUnlock()).
+3. It looks up the flag pointer in the global map flagCompletionFunctions and returns completionFunc, exists.
+
+Supporting evidence in the response:
+- completions.go:34-36 defines the backing store: "var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}", documented as the "Global map of flag completion functions" requiring use of flagCompletionMutex for reads and writes.
+- completions.go:37-39 defines "var flagCompletionMutex = &sync.RWMutex{}", the lock for reading and writing flagCompletionFunctions — which is why GetFlagCompletionFunc uses RLock/RUnlock.
+- command.go:1793-1803 defines the c.Flag(name) helper the method relies on: "Flag climbs up the command tree looking for matching flag." It first tries c.Flags().Lookup(name) and falls back to c.persistentFlag(name), returning the resolved *flag.Flag or nil. This explains the nil check: GetFlagCompletionFunc returns (nil, false) when the named flag is not found anywhere up the command tree.
+
+The response also includes a tangential span (command.go:84-109) showing the related ValidArgsFunction field ("an optional function that provides valid non-flag arguments for shell completion... Only one of ValidArgs and ValidArgsFunction can be used for a command"), which shares the same completion-func signature type but applies to positional arguments rather than flags.

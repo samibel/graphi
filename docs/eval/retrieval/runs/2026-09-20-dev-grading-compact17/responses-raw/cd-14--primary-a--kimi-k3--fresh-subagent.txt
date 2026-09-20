@@ -1,0 +1,35 @@
+QUESTION: cobra.go (per the embedded task_context/2 request: "describe this file's structure and declarations")
+
+The response contains 2 ranked source spans from cobra.go (the response metadata states "2 ranked source span(s)", 206/325 source tokens, and "truncated": true, so parts of the file are not shown).
+
+Structure and declarations visible in the response:
+
+1. Package clause (cobra.go:18):
+   - `package cobra` — the file belongs to package cobra.
+
+2. Declarations block (cobra.go:31-75), in source order:
+   - `var templateFuncs = template.FuncMap{...}` — a template.FuncMap literal registering seven template helper functions:
+     - "trim" -> strings.TrimSpace
+     - "trimRightSpace" -> trimRightSpace
+     - "trimTrailingWhitespaces" -> trimRightSpace
+     - "appendIfNotPresent" -> appendIfNotPresent
+     - "rpad" -> rpad
+     - "gt" -> Gt
+     - "eq" -> Eq
+   - `var initializers []func()` — a package-level slice of no-arg functions.
+   - `var finalizers []func()` — a second package-level slice of no-arg functions.
+   - A `const (...)` block with four untyped boolean defaults:
+     - defaultPrefixMatching = false
+     - defaultCommandSorting = true
+     - defaultCaseInsensitive = false
+     - defaultTraverseRunHooks = false
+   - Four exported package-level toggle variables, each initialized from its corresponding default constant and documented with comments:
+     - `var EnablePrefixMatching = defaultPrefixMatching` — enables automatic prefix matching (off by default; comment warns it "can be a dangerous thing" for CLI tools).
+     - `var EnableCommandSorting = defaultCommandSorting` — controls sorting of the command slice (on by default; set false to disable).
+     - `var EnableCaseInsensitive = defaultCaseInsensitive` — allows case-insensitive command names (case-sensitive by default).
+     - `var EnableTraverseRunHooks = defaultTraverseRunHooks` — executes persistent pre-/post-run hooks from all parents (disabled by default, i.e. only the first found run hook executes).
+   - `var MousetrapHelpText = ` followed by a raw string literal ("This is a command line tool.\n\nYou need to open cmd.exe and run it from there.\n") — enables a Windows mousetrap splash screen when the CLI is started from explorer.exe; comment says to set it to "" to disable and that it works only on Microsoft Windows.
+
+Evidence cited: path "cobra.go" spans start_line 18/end_line 18 (`package cobra`) and start_line 31/end_line 75 (the var/const block quoted above).
+
+Caveats: the file's lines 1-17, 19-30, and anything after line 75 are not present in the response, and the response is flagged truncated, so imports, any license header, and any further declarations (e.g., function bodies such as trimRightSpace, appendIfNotPresent, rpad, Gt, Eq, or init logic) cannot be described from this response alone. Based on what is shown, cobra.go is the package's configuration/globals file: it declares the template function map, the initializers/finalizers registries, and the exported behavioral toggles with their default constants.

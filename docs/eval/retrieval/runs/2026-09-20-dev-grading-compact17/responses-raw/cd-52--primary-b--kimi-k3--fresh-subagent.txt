@@ -1,0 +1,38 @@
+Use `MatchAll`. Pass the validators you want to combine as variadic arguments and assign the result to the `Args` field of your `Command`.
+
+Evidence from `args.go` (lines 112-131):
+
+```go
+// MatchAll allows combining several PositionalArgs to work in concert.
+func MatchAll(pargs ...PositionalArgs) PositionalArgs {
+	return func(cmd *Command, args []string) error {
+		for _, parg := range pargs {
+			if err := parg(cmd, args); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+```
+
+So `MatchAll` itself returns a `PositionalArgs` validator (the type is `func(cmd *Command, args []string) error`, per `args.go` lines 21-22), which runs each supplied validator in order and returns the first error encountered, or nil if all pass.
+
+Concrete example from `site/content/user_guide.md` (lines 384-397):
+
+```go
+var cmd = &cobra.Command{
+  Short: "hello",
+  Args: cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),
+  Run: func(cmd *cobra.Command, args []string) {
+    fmt.Println("Hello, World!")
+  },
+}
+```
+
+This reports an error if there are not exactly 2 positional args OR if any arg is not in the command's `ValidArgs` field. You can combine any of the built-in validators (`NoArgs`, `ArbitraryArgs`, `MinimumNArgs(int)`, `MaximumNArgs(int)`, `ExactArgs(int)`, `RangeArgs(min, max)`, `OnlyValidArgs`) with each other or with custom checks this way.
+
+Two supporting notes from the responses:
+
+- The older `ExactValidArgs(n)` is now just a deprecated shorthand: its body is `return MatchAll(ExactArgs(n), OnlyValidArgs)` and its doc comment says "Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead" (`args.go` lines 123-131).
+- If you need logic `MatchAll` cannot express, you can write a custom validator satisfying `func(cmd *cobra.Command, args []string) error` and invoke built-ins inside it, e.g. `if err := cobra.MinimumNArgs(1)(cmd, args); err != nil { return err }` followed by your own checks (user_guide.md follow-up read, lines 405-421).

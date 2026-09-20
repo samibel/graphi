@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does checkIfFlagCompletion split a current --flag=value or shorthand=value token before completing its value
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"3 ranked source span(s); query 1490e6ec1462; read in order (279/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":591,"end_line":628,"text":"\nfunc checkIfFlagCompletion(finalCmd *Command, args []string, lastArg string) (*pflag.Flag, []string, string, error) {\n\tif finalCmd.DisableFlagParsing {\n\t\t// We only do flag completion if we are allowed to parse flags\n\t\t// This is important for commands which have requested to do their own flag completion.\n\t\treturn nil, args, lastArg, nil\n\t}\n\n\tvar flagName string\n\ttrimmedArgs := args\n\tflagWithEqual := false\n\torgLastArg := lastArg\n\n\t// When doing completion of a flag name, as soon as an argument starts with\n\t// a '-' we know it is a flag.  We cannot use isFlagArg() here as that function\n\t// requires the flag name to be complete\n\tif len(lastArg) > 0 && lastArg[0] == '-' {\n\t\tif index := strings.Index(lastArg, \"=\"); index >= 0 {\n\t\t\t// Flag with an =\n\t\t\tif strings.HasPrefix(lastArg[:index], \"--\") {\n\t\t\t\t// Flag has full name\n\t\t\t\tflagName = lastArg[2:index]\n\t\t\t} else {\n\t\t\t\t// Flag is shorthand\n\t\t\t\t// We have to get the last shorthand flag name\n\t\t\t\t// e.g. `-asd` => d to provide the correct completion\n\t\t\t\t// https://github.com/spf13/cobra/issues/1257\n\t\t\t\tflagName = lastArg[index-1 : index]\n\t\t\t}\n\t\t\tlastArg = lastArg[index+1:]\n\t\t\tflagWithEqual = true\n\t\t} else {\n\t\t\t// Normal flag completion\n\t\t\treturn nil, args, lastArg, nil\n\t\t}\n\t}\n\n\tif len(flagName) == 0 {"},{"path":"completions.go","start_line":147,"end_line":160,"text":"\n// GetFlagCompletionFunc returns the completion function for the given flag of the command, if available.\nfunc (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {\n\tflag := c.Flag(flagName)\n\tif flag == nil {\n\t\treturn nil, false\n\t}\n\n\tflagCompletionMutex.RLock()\n\tdefer flagCompletionMutex.RUnlock()\n\n\tcompletionFunc, exists := flagCompletionFunctions[flag]\n\treturn completionFunc, exists\n}"},{"path":"command.go","start_line":1793,"end_line":1803,"text":"\n// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"}],"provenance":{"input_sha256":"bbb7aa3c203f81844da36532874a1de0835cf5d11cf1286c1d1b234dc40e9902","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

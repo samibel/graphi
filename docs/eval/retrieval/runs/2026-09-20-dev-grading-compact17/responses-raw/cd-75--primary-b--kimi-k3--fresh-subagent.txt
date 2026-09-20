@@ -1,0 +1,16 @@
+The response includes the top of go.mod (source span path "go.mod", start_line 1, end_line 10). Its full provided text is:
+
+    module github.com/spf13/cobra
+
+    go 1.15
+
+    require (
+        github.com/cpuguy83/go-md2man/v2 v2.0.3
+        github.com/inconshreveable/mousetrap v1.1.0
+        github.com/spf13/pflag v1.0.5
+        gopkg.in/yaml.v3 v3.0.1
+    )
+
+So, concretely: the module is declared as github.com/spf13/cobra, the Go version directive is "go 1.15", and the require block lists exactly four direct dependencies with these pinned versions: github.com/cpuguy83/go-md2man/v2 v2.0.3, github.com/inconshreveable/mousetrap v1.1.0, github.com/spf13/pflag v1.0.5, and gopkg.in/yaml.v3 v3.0.1.
+
+Note: only lines 1-10 of go.mod are present in the response, so anything beyond that range (e.g., additional require blocks, replace or exclude directives) is not covered by this evidence.

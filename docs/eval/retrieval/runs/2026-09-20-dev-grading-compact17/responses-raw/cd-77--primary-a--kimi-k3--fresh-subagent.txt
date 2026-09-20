@@ -1,0 +1,15 @@
+The response includes the complete Makefile (Makefile, lines 1-35). It defines:
+
+- Variables: `BIN="./bin"` and `SRC=$(shell find . -name "*.go")` (lines 1-2).
+- A guard that warns if `golangci-lint` is not on `PATH`, suggesting installation via `curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh` (lines 4-6).
+- `.PHONY: fmt lint test install_deps clean` (line 8).
+- Targets:
+  - `default: all` and `all: fmt test` (lines 10-11) — the default build checks formatting and runs tests.
+  - `fmt` — prints "checking formatting" and fails if `gofmt -l $(SRC)` reports any files, showing the diff (`gofmt -d`) and exiting 1 (lines 13-15).
+  - `lint` — runs `golangci-lint run -v` (lines 17-19).
+  - `test: install_deps` — runs `go test -v ./...` (lines 21-23).
+  - `richtest: install_deps` — runs tests via `richgo test -v ./...` (kyoh86/richgo) (lines 25-27).
+  - `install_deps` — runs `go get -v ./...` to download dependencies (lines 29-31).
+  - `clean` — removes `$(BIN)` (`rm -rf ./bin`) (lines 33-35).
+
+Note: although `lint` is declared .PHONY, the `all` target depends only on `fmt` and `test`, so lint is not part of the default flow. The remaining spans in the response (powershell_completions.go, bash_completions.go, fish_completions.go, zsh_completions.go, command.go) concern shell-completion generation functions and are unrelated to the Makefile.

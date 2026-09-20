@@ -1,0 +1,15 @@
+DebugFlags (command.go:1452-1503) walks the command tree with a recursive closure and labels each flag [L], [P], or [LP].
+
+Walking the tree:
+1. It prints "DebugFlags called on" plus c.Name(), declares `var debugflags func(*Command)`, defines it as a closure, and kicks it off with `debugflags(c)` — so traversal starts at the receiver command.
+2. The closure processes one command `x` at a time in pre-order: if `x.HasFlags() || x.HasPersistentFlags()` it prints the command's name (`c.Println(x.Name())`); then it handles the flag sets (below); then it prints `x.flagErrorBuf`.
+3. Recursion happens last: `if x.HasSubCommands() { for _, y := range x.commands { debugflags(y) } }` — a depth-first descent over `x.commands`, so each command's own flags are printed before its subcommands are visited.
+
+Labeling local versus persistent flags:
+- Local flags: if `x.HasFlags()`, it iterates `x.flags.VisitAll`. For each flag `f`, it checks `x.HasPersistentFlags() && x.persistentFlag(f.Name) != nil`:
+  - If a persistent flag with the same name also exists on x, the flag is printed with the label `[LP]` (declared both locally and persistently on this command).
+  - Otherwise it is printed with the label `[L]` (local only).
+  Each line is printed as `c.Println("  -"+f.Shorthand+",", "--"+f.Name, "["+f.DefValue+"]", "", f.Value, "  [LP]")` (or `[L]`).
+- Persistent flags: if `x.HasPersistentFlags()`, it iterates `x.pflags.VisitAll`. A persistent flag is printed with `[P]` only if it was not already covered as `[LP]`: when `x.HasFlags()` is true it checks `x.flags.Lookup(f.Name) == nil` and prints only if there is no same-named local flag; when x has no local flags at all it prints unconditionally. The print format is the same, ending in `"  [P]"`.
+
+Supporting evidence from the response: `HasFlags` (command.go:1750-1754) is defined as `return c.Flags().HasFlags()` with the comment "checks if the command contains any flags (local plus persistent from the entire structure)", and the span at command.go:1685-1691 shows how local flags are gathered while shadowing parent persistent flags (`if c.lflags.Lookup(f.Name) == nil && f != c.parentsPflags.Lookup(f.Name)`), which is consistent with the [LP]/lookup-based shadowing logic inside DebugFlags.

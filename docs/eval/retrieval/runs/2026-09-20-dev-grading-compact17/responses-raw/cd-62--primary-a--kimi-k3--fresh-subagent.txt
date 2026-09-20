@@ -1,0 +1,15 @@
+The response (query "template") contains 7 ranked source spans from cobra.go and command.go showing this Go repository's template machinery for help/usage/version output:
+
+1. Template execution engine — cobra.go:178-185: `tmpl(w io.Writer, text string, data interface{}) error` "executes the given template text on data, writing the result to w". It builds `template.New("top")`, registers `t.Funcs(templateFuncs)`, parses with `template.Must(t.Parse(text))` (panics on parse error), and returns `t.Execute(w, data)`.
+
+2. Custom function registration — cobra.go:82-95: `AddTemplateFunc(name string, tmplFunc interface{})` and `AddTemplateFuncs(tmplFuncs template.FuncMap)` add template functions "available to Usage and Help template generation" by writing into the package-level `templateFuncs` map.
+
+3. Built-in function map — cobra.go:31-40: `var templateFuncs = template.FuncMap{...}` provides `trim` (strings.TrimSpace), `trimRightSpace` and `trimTrailingWhitespaces` (both trimRightSpace), `appendIfNotPresent`, `rpad`, `gt` (Gt), and `eq` (Eq).
+
+4. Version template — command.go:351-355: `SetVersionTemplate(s string)` sets a custom version template via `c.versionTemplate = s`. command.go:597-609: `VersionTemplate() string` returns `c.versionTemplate` if non-empty, otherwise inherits from `c.parent.VersionTemplate()` when `c.HasParent()`, otherwise the default `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}\n`.
+
+5. Help template — command.go:584-593: `HelpTemplate() string` returns `c.helpTemplate` if set, otherwise inherits from the parent, otherwise a default beginning `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}` (the span is cut off mid-literal; the response is marked `"truncated":true`).
+
+6. Usage template — command.go:168-170 only shows a struct-field comment: `usageTemplate string` is the "usage template defined by user"; no accessor or default for the usage template is present in the response.
+
+Overall pattern: templates are text/template strings stored per-Command (`versionTemplate`, `helpTemplate`, `usageTemplate`), resolved with parent-inheritance fallbacks, executed through the shared `tmpl` helper, and extensible via the `templateFuncs` FuncMap.

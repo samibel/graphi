@@ -1,0 +1,13 @@
+`doc/rest_docs.go` belongs to package `doc` (line 15) and contains reStructuredText documentation generators for Cobra commands.
+
+Visible declarations:
+
+- `printOptionsReST`: writes available local and inherited flag defaults into separate ReST option sections (lines 29–49).
+- `defaultLinkHandler`: formats links as `` `name <ref.rst>`_ `` (lines 51–54).
+- `GenReST`: delegates to `GenReSTCustom` using the default link handler (lines 56–59).
+- `GenReSTCustom`: initializes help commands and flags, creates an output buffer, falls back from the long description to the short description, and begins writing a command anchor and title (lines 61–77).
+- `GenReSTTree`: delegates to `GenReSTTreeCustom` with an empty file prepender and the default link handler (lines 132–140).
+- `GenReSTTreeCustom`: recursively processes subcommands, skipping unavailable commands and additional help topics, and propagates errors (lines 142–154).
+- `indentString`: begins a byte-based indentation helper that inserts a prefix at the start of nonempty lines (lines 172–181).
+
+The response is truncated, so imports and the remaining function bodies are not shown.

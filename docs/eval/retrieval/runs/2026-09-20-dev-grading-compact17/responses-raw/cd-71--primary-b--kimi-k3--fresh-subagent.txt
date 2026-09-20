@@ -1,0 +1,9 @@
+SetIn is a method on *Command defined in command.go (lines 299-304):
+
+// SetIn sets the source for input data
+// If newIn is nil, os.Stdin is used.
+func (c *Command) SetIn(newIn io.Reader) {
+	c.inReader = newIn
+}
+
+According to its doc comment, SetIn sets the source for input data, and if newIn is nil, os.Stdin is used. The shown body simply assigns newIn to the command's inReader field (the nil-to-os.Stdin fallback mentioned in the comment is not visible in the returned span). The response also includes a sibling setter, SetArgs (command.go lines 273-278), which sets the command's arguments, but nothing else about SetIn's callers or the inReader field's use.

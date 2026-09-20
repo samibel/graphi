@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf38-0a74-7a91-9b7d-29fb790bd12a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Subcommand names and `ValidArgs` provide the primary completion choices. `ValidArgs` is the command’s list of valid non-flag arguments (`command.go:82–83`); the example attaches it to `get` to complete nouns such as `pod` and `node` (`site/content/completions/_index.md:123–150`).\n\n`ArgAliases` is the fallback: aliases appear **only when neither subcommands nor `ValidArgs` produced completions** (`site/content/completions/_index.md:152–166`). The response does not establish a separate ordering between subcommand names and `ValidArgs`."}}
+{"type":"turn.completed","usage":{"input_tokens":16511,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":220,"reasoning_output_tokens":85}}

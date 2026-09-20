@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-c805-7060-86b4-2148bbee5b43"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).execute` explicitly returns `flag.ErrHelp` instead of running the command when:\n\n- The boolean `help` flag is true, after successful flag parsing (`command.go:888–905`).\n- The command is not runnable (`command.go:923–925`): both `Run` and `RunE` are nil, per `Runnable()` (`command.go:1549–1553`). This check comes after version handling, so a defined version with the `version` flag set returns from that handling first.\n\nBoth checks occur before execution hooks, argument validation, and `Run`/`RunE`. Flag-parsing errors return through `FlagErrorFunc()` before either check (`command.go:888–891`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17578,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":153,"reasoning_output_tokens":0}}

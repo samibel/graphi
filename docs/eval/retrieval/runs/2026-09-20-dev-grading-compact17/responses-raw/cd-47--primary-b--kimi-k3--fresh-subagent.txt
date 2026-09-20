@@ -1,0 +1,17 @@
+Set the global variable `EnableTraverseRunHooks` to `true`.
+
+Evidence:
+
+1. `cobra.go`, lines 63-66:
+   ```
+   // EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.
+   // By default this is disabled, which means only the first run hook to be found is executed.
+   var EnableTraverseRunHooks = defaultTraverseRunHooks
+   ```
+   This declares a package-level variable whose doc comment states that enabling it executes persistent pre-run and post-run hooks from all parents, while the default (disabled) means only the first hook found is executed.
+
+2. `site/content/user_guide.md`, lines 686-692:
+   "By default, only the first persistent hook found in the command chain is executed. That is why in the above output, the `rootCmd PersistentPostRun` was not called for a child command. Set `EnableTraverseRunHooks` global variable to `true` if you want to execute all parents' persistent hooks."
+   The user guide explicitly instructs setting `EnableTraverseRunHooks` to `true` to run all parents' persistent hooks.
+
+3. Supporting context from `command.go`, lines 944-945 (a comment describing the traversal behavior): "Execute all persistent pre-runs from the root parent till this command. Execute all persistent post-runs from this command till the root parent." This confirms the traversal semantics that the flag enables.

@@ -1,0 +1,10 @@
+`GenYamlTreeCustom` generates YAML reference files for a command and its eligible descendants.
+
+In `doc/yaml_docs.go:58–85`, it:
+
+- Recursively processes subcommands first, skipping those failing `IsAvailableCommand()` or matching `IsAdditionalHelpTopicCommand()`.
+- Creates a file in `dir`, named from `cmd.CommandPath()` with spaces replaced by underscores and `.yaml` appended.
+- Writes `filePrepender(filename)` before calling `GenYamlCustom(cmd, f, linkHandler)`.
+- Returns the first recursion, creation, or writing/generation error; otherwise returns `nil`. File closing is deferred.
+
+`IsAvailableCommand` excludes deprecated, hidden, and designated help commands, and requires a runnable command or available subcommands (`command.go:1559–1576`).

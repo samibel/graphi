@@ -1,0 +1,10 @@
+`doc/yaml_docs.go` belongs to package `doc` (line 15) and defines structures and functions for generating YAML command documentation.
+
+- **`cmdOption`** holds `Name`, `Shorthand`, `DefaultValue`, and `Usage`. YAML tags omit empty optional fields and rename `DefaultValue` to `default_value` (lines 30–35).
+- **`cmdDoc`** holds command name, synopsis, description, usage, options, inherited options, example, and related links (`SeeAlso`). Its YAML tags include `inherited_options` and `see_also` (lines 37–46).
+- **`GenYamlTree`** delegates to `GenYamlTreeCustom` with an empty file prepender and an identity link handler (lines 53–57).
+- **`GenYamlTreeCustom`** recursively processes available child commands, skips additional help topics, propagates recursive errors, and creates a `.yaml` file whose basename replaces spaces in the command path with underscores (lines 60–72).
+- **`GenYaml`** delegates to `GenYamlCustom` with an identity link handler. **`GenYamlCustom`** initializes default help, constructs a `cmdDoc`, and populates its name, synopsis, and description (lines 88–103).
+- **`genFlagResult`** accepts a `*pflag.FlagSet` and returns `[]cmdOption`. The visible portion visits flags and constructs an option using the flag’s name, shorthand, default value, and formatted usage when the shorthand is nonempty and its deprecation message is empty (lines 149–162).
+
+The response is truncated, so it does not establish the complete function bodies or full declaration inventory.

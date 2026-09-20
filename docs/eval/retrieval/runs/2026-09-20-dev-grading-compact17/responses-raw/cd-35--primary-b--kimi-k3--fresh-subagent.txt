@@ -1,0 +1,15 @@
+A command finds a flag by climbing the parent chain through the `Flag(name)` method in command.go (lines 1793-1816), whose doc comment says "Flag climbs up the command tree looking for matching flag."
+
+The lookup proceeds in ordered steps:
+
+1. Own flags first: `flag = c.Flags().Lookup(name)` — the command's own FlagSet is searched for the name.
+
+2. If that returns nil, it falls back to `flag = c.persistentFlag(name)`. The `persistentFlag` helper (commented "Recursively find matching persistent flag") does:
+   - If `c.HasPersistentFlags()`, look up the name in the command's own persistent set: `flag = c.PersistentFlags().Lookup(name)`.
+   - If still nil, it calls `c.updateParentsPflags()` and then looks up the name in `c.parentsPflags`: `flag = c.parentsPflags.Lookup(name)`.
+
+The parent-chain storage for this climb is the struct field documented at command.go lines 157-161: `parentsPflags *flag.FlagSet` — "parentsPflags is all persistent flags of cmd's parents." So the "climb" is realized by aggregating all ancestors' persistent flags into `c.parentsPflags` (populated by `updateParentsPflags()`) rather than by an explicit loop in this snippet.
+
+Supporting pieces for chain traversal elsewhere in the response: `Parent()` at command.go lines 1841-1845 returns `c.parent`, and `Root()` at command.go lines 860-866 shows the recursive climbing idiom (`if c.HasParent() { return c.Parent().Root() }`), illustrating how the code walks up via the `parent` pointer.
+
+Caveat: the body of `updateParentsPflags()` is not included in the response, so the exact mechanics of how it walks each parent (e.g., recursion vs. iteration over `c.parent`) cannot be described from this evidence alone — only that it fills `c.parentsPflags` with all parents' persistent flags before the final `Lookup`.

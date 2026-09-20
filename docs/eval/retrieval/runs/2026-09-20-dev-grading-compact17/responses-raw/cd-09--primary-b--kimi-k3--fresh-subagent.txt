@@ -1,0 +1,18 @@
+GetFlagCompletionFunc is a method on *Command defined in completions.go (lines 147-160). Per its doc comment, it "returns the completion function for the given flag of the command, if available."
+
+Signature:
+
+    func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool)
+
+Behavior, from the body at completions.go:147-160:
+
+1. It resolves the flag by name with `flag := c.Flag(flagName)`. The helper `(*Command).Flag` (command.go:1793-1803) "climbs up the command tree looking for matching flag": it first tries `c.Flags().Lookup(name)` and, if that returns nil, falls back to `c.persistentFlag(name)`.
+2. If the flag is nil, it returns `nil, false`.
+3. Otherwise it takes a read lock (`flagCompletionMutex.RLock()`, with a deferred `RUnlock()`) and looks the flag up in the package-level map `flagCompletionFunctions`, returning `completionFunc, exists`.
+
+Supporting declarations in the response:
+
+- completions.go:34-36: `var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}` — "Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it." The map is keyed by *pflag.Flag, and its value type matches the function type returned by GetFlagCompletionFunc (parameters cmd, args, toComplete; returns completion candidates plus a ShellCompDirective).
+- completions.go:37-39: `var flagCompletionMutex = &sync.RWMutex{}` — "lock for reading and writing from flagCompletionFunctions", which is the RWMutex the method read-locks.
+
+The response also includes an excerpt of the Command struct fields (command.go:84-109: ValidArgsFunction, Args, ArgAliases, BashCompletionFunction, Deprecated, Annotations, Version), which provides surrounding context but is not directly part of GetFlagCompletionFunc.

@@ -1,0 +1,13 @@
+Cobra identifies required flags through a pflag annotation, then filters that set during completion.
+
+1. Marking: A flag becomes "required" by annotation. In shell_completions.go (lines 20-40), `MarkFlagRequired(name)` / `MarkPersistentFlagRequired(name)` delegate to `MarkFlagRequired(flags, name)`, which is implemented as:
+   `return flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{"true"})`
+   The annotation key is the constant `BashCompOneRequiredFlag = "cobra_annotation_bash_completion_one_required_flag"` (bash_completions.go, lines 27-34).
+
+2. Completion-time lookup: In completions.go (lines 566-590), `completeRequireFlags(finalCmd, toComplete)` walks every flag of the final command and offers the annotated ones:
+   - It visits all flags via `finalCmd.InheritedFlags().VisitAll(...)` and `finalCmd.NonInheritedFlags().VisitAll(...)` (the comment notes it deliberately avoids `finalCmd.Flags()` because `ParseFlags()` — not `Flags()` — is what merges inherited and non-inherited flags, and `ParsedFlags()` may not have run when `DisableFlagParsing` is set).
+   - For each flag, the closure `doCompleteRequiredFlags` checks `if _, present := flag.Annotations[BashCompOneRequiredFlag]; present` — i.e., a flag is treated as required iff it carries the `cobra_annotation_bash_completion_one_required_flag` annotation.
+   - It then additionally requires `!flag.Changed`: a required flag that has already been set on the command line is not suggested again ("If the flag is not already present, we suggest it as a completion").
+   - Qualifying flags are turned into completion candidates with `getFlagNameCompletions(flag, toComplete)` and returned.
+
+So, in short: required flags are those carrying the `BashCompOneRequiredFlag` annotation (set via `MarkFlagRequired`/`MarkPersistentFlagRequired`), and during completion Cobra enumerates the command's inherited and non-inherited flags, offering each annotated flag whose `Changed` field is still false.

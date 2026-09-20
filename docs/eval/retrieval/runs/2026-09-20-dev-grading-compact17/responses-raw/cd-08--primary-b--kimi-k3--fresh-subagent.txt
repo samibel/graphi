@@ -1,0 +1,20 @@
+GenYamlTreeCustom is an exported Go function in doc/yaml_docs.go (lines 58-85) that recursively generates one YAML documentation file per command in a cobra command tree.
+
+Signature:
+  func GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error
+
+Its doc comment says: "// GenYamlTreeCustom creates yaml structured ref files."
+
+What it does, per the source in the response:
+
+1. Recursion over subcommands: it iterates `for _, c := range cmd.Commands()` and skips any subcommand where `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, then calls itself recursively: `GenYamlTreeCustom(c, dir, filePrepender, linkHandler)`, returning immediately on error. (The supporting definition of `IsAvailableCommand` is included at command.go lines 1559-1576: a command is unavailable if it has a non-empty `Deprecated` string or is `Hidden`, or if it is the parent's help command; otherwise it is available if it is runnable or has available subcommands.)
+
+2. Filename construction: `basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + ".yaml"`, then `filename := filepath.Join(dir, basename)` — so each command's full command path, with spaces replaced by underscores, becomes a `.yaml` file in `dir`.
+
+3. File writing: it creates the file with `os.Create(filename)` (returning the error on failure, with `defer f.Close()`), writes `filePrepender(filename)` to the top of the file via `io.WriteString(f, ...)`, and then writes the command's YAML body by calling `GenYamlCustom(cmd, f, linkHandler)`, propagating any error.
+
+Related helpers shown in the same response:
+- GenYamlCustom (doc/yaml_docs.go lines 91-123, shown partially) builds the per-command YAML document: it calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, fills a `cmdDoc` struct with `Name` (from `cmd.CommandPath()`), `Synopsis` (forceMultiLine of `cmd.Short`), `Description` (forceMultiLine of `cmd.Long`), `Usage` (from `cmd.UseLine()` when the command is runnable), `Example`, `Options` (from `cmd.NonInheritedFlags()` via `genFlagResult`) and `InheritedOptions` (from `cmd.InheritedFlags()`), and starts handling "see also" links using the `linkHandler`. The span is truncated mid-function (the response's `truncated` flag is true), so the remainder of GenYamlCustom is not visible.
+- GenYaml (doc/yaml_docs.go lines 86-90) is the non-custom convenience wrapper: `func GenYaml(cmd *cobra.Command, w io.Writer) error { return GenYamlCustom(cmd, w, func(s string) string { return s }) }` — i.e. GenYamlCustom with an identity link handler.
+
+In short: GenYamlTreeCustom walks a cobra command tree depth-first, and for each available, non-help-topic command writes a `<command_path_with_underscores>.yaml` file into `dir`, prefixed by the caller-supplied `filePrepender` content and followed by the command's YAML doc produced by GenYamlCustom with the caller-supplied `linkHandler`.

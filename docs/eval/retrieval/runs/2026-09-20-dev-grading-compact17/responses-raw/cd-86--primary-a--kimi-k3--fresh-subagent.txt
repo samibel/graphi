@@ -1,0 +1,21 @@
+VisitParents is a recursive upward walk over the parent chain, defined in command.go (lines 851-857):
+
+    // VisitParents visits all parents of the command and invokes fn on each parent.
+    func (c *Command) VisitParents(fn func(*Command)) {
+        if c.HasParent() {
+            fn(c.Parent())
+            c.Parent().VisitParents(fn)
+        }
+    }
+
+How it traverses and invokes the callback:
+
+1. Base check: on the receiver command c, it first calls c.HasParent() (command.go lines 1630-1634: `return c.parent != nil`). If the command has no parent (i.e., it is the root), the function does nothing and the walk stops — so the callback is never invoked on the root itself, only on ancestors of the starting command.
+
+2. Callback on the immediate parent: if a parent exists, it invokes `fn(c.Parent())` — Parent() (command.go lines 1841-1845) simply returns the `c.parent` field. So fn is called on the nearest parent first.
+
+3. Recursion toward the root: it then calls `c.Parent().VisitParents(fn)`, repeating the same check-then-callback-then-recurse sequence on the parent. Each step moves one level closer to the root, invoking fn on each ancestor in turn.
+
+Net effect: fn is invoked once per ancestor, in order from the immediate parent up to (but not including) the root, i.e., bottom-up pre-order along the parent chain, terminating when a command with `parent == nil` is reached. This mirrors the sibling method Root() (command.go lines 859-866), which recurses `c.Parent().Root()` until `HasParent()` is false and returns that topmost command.
+
+A concrete call site appears in doc/man_docs.go (lines 221-225): after computing `parentPath := cmd.Parent().CommandPath()`, it calls `cmd.VisitParents(func(c *cobra.Command) { ... })` to build "see also" entries for each parent of a documented command.

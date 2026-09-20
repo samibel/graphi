@@ -1,0 +1,30 @@
+Root
+
+`Root` is a method on `*Command` defined in `command.go` at lines 859-866. Its full source, as returned in the response, is:
+
+    // Root finds root command.
+    func (c *Command) Root() *Command {
+        if c.HasParent() {
+            return c.Parent().Root()
+        }
+        return c
+    }
+
+Behavior: it returns the root (topmost) command of the command tree. If the receiver has a parent, it delegates recursively to `c.Parent().Root()`; otherwise it returns the receiver itself (`c`), which by definition has no parent and therefore is the root.
+
+Supporting evidence in the response:
+
+- The recursion's base-case predicate is backed by `HasParent` in `command.go` at lines 1630-1634:
+
+      // HasParent determines if the command is a child command.
+      func (c *Command) HasParent() bool {
+          return c.parent != nil
+      }
+
+  So a command "has a parent" exactly when its unexported `parent` field is non-nil; `Root` climbs until it reaches a command whose `parent` field is nil.
+
+- The receiver/return type `*Command` refers to the struct whose definition begins in `command.go` at lines 46-73: "Command is just that, a command for your application. E.g. 'go run ...' - 'run' is the command.", with fields such as `Use string`, `Aliases []string`, `SuggestFor []string`, and `Short string` shown in that span (the `parent` field itself is not shown in the returned spans, only implied by `HasParent`'s body).
+
+- The remaining two spans (`command_test.go` lines 32-35, `executeCommand`, and lines 74-78, `checkStringContains`) are test helpers that take a `root *Command` as a parameter but do not exercise or further define `Root` itself.
+
+Note: `Root` calls `c.Parent()`, but the body of `Parent()` is not included in the response; its behavior is only inferable from its use here (it presumably returns `c.parent`). The response is marked `"truncated":true`, but all evidence needed to describe `Root` itself is present.

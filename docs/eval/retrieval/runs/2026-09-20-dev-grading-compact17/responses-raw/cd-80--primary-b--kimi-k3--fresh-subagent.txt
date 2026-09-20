@@ -1,0 +1,9 @@
+Cobra appends " [flags]" to a command's use line inside the UseLine() method (command.go, lines 1435-1451), and only when all of the following hold:
+
+1. The command's DisableFlagsInUseLine field is not set. If c.DisableFlagsInUseLine is true, UseLine returns the use line immediately ("if c.DisableFlagsInUseLine { return useline }") without ever appending the suffix.
+
+2. The command has available flags: "if c.HasAvailableFlags() && !strings.Contains(useline, "[flags]")". HasAvailableFlags() must be true — the README.md excerpt (lines 68-80) confirms Cobra supports persistent and local flags via pflag, and mergePersistentFlags() (command.go, lines 1846-1853) shows persistent flags from parents are merged into c.Flags(), so inherited flags count toward availability.
+
+3. The use line does not already contain the literal string "[flags]" ("!strings.Contains(useline, "[flags]")"), so it is never appended twice.
+
+When both conditions in (2) hold, the suffix is appended: useline += " [flags]". Note the use line itself is built first as either c.parent.CommandPath() + " " + c.Use (when the command has a parent) or just c.Use, and the [flags] suffix is appended to that whole string.

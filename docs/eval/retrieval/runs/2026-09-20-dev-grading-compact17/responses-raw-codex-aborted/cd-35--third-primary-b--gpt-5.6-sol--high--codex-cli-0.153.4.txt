@@ -1,0 +1,7 @@
+`Command.Flag(name)` searches in this order:
+
+1. The command’s flags via `c.Flags().Lookup(name)`.
+2. If absent, `c.persistentFlag(name)` checks the command’s own persistent flags with `c.PersistentFlags().Lookup(name)`.
+3. If still absent, it calls `c.updateParentsPflags()` and searches `c.parentsPflags.Lookup(name)`.
+
+`parentsPflags` is documented as containing “all persistent flags of cmd’s parents,” so the parent-chain traversal is consolidated into that flag set ([command.go:1793–1816], with the field definition at [command.go:157–161]).

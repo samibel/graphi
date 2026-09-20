@@ -1,0 +1,8 @@
+`completions.go` is in package `cobra` (`completions.go:15`) and defines core shell-completion declarations:
+
+- Hidden completion command names: `ShellCompRequestCmd` (`"__complete"`) and `ShellCompNoDescRequestCmd` (`"__completeNoDesc"`) (`completions.go:25-33`).
+- A global `flagCompletionFunctions` map keyed by `*pflag.Flag`, protected by `flagCompletionMutex` (`completions.go:36-40`).
+- The `ShellCompDirective int` bitmask type and directive constants including `Error`, `NoSpace`, and `NoFileComp` (`completions.go:42-44`, `completions.go:54-65`).
+- A private `flagCompError` containing `subCommand` and `flagName`, with an `Error()` method that formats an unsupported-flag message (`completions.go:46-52`).
+- Constants configuring the default `completion` command and its `no-descriptions` flag (`completions.go:95-101`).
+- `CompletionOptions`, with booleans controlling creation/visibility of the default command, availability of the no-descriptions flag, and completion descriptions globally (`completions.go:103-116`).

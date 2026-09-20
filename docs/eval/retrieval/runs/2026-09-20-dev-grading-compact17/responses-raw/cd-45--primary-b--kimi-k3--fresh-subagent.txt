@@ -1,0 +1,28 @@
+To limit a flag's completions to directory names, you have two options, as documented in site/content/completions/_index.md (lines 334-354, section "Limit flag completions to directory names"):
+
+Option 1: use the `MarkFlagDirname()` function:
+
+```go
+flagName := "output"
+cmd.MarkFlagDirname(flagName)
+```
+
+Option 2: use a combination of `RegisterFlagCompletionFunc()` and `ShellCompDirectiveFilterDirs`:
+
+```go
+flagName := "output"
+cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return nil, cobra.ShellCompDirectiveFilterDirs
+})
+```
+
+If you want to limit completions to directory names *within another directory*, use `RegisterFlagCompletionFunc()` with `ShellCompDirectiveFilterDirs` and return that directory name, e.g.:
+
+```go
+flagName := "output"
+cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"themes"}, cobra.ShellCompDirectiveFilterDirs
+})
+```
+
+Supporting evidence from the source code: in shell_completions.go (lines 80-98), `func (c *Command) MarkFlagDirname(name string) error` simply delegates to the package-level `MarkFlagDirname(flags *pflag.FlagSet, name string)`, which is documented as "instructs the various shell completion implementations to limit completions for the named flag to directory names" and works by setting the `BashCompSubdirsInDir` annotation on the flag via `flags.SetAnnotation(name, BashCompSubdirsInDir, []string{})`.

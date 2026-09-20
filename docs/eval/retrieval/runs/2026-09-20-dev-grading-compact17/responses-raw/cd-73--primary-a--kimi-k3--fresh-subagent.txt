@@ -1,0 +1,12 @@
+Based on the single returned source span for command_notwin.go (lines 15-20), the file's structure and declarations are:
+
+1. Build constraints: two equivalent build tags restricting the file to non-Windows platforms:
+   - `//go:build !windows`
+   - `// +build !windows`
+
+2. Package clause: `package cobra` — the file belongs to the cobra package.
+
+3. Declarations: exactly one package-level variable declaration is shown:
+   - `var preExecHookFn func(*Command)` — a variable named preExecHookFn of function type `func(*Command)`, i.e. a hook taking a *Command argument and returning nothing.
+
+No functions, types, constants, imports, or other declarations appear in the returned span. Caveat: the response reports only "1 ranked source span(s)" covering lines 15-20 with `"truncated":true` (10/325 source tokens read), so while the span reads as a complete small file (build tags, package clause, one var), I cannot rule out additional content in the file beyond this span.

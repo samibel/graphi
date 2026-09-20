@@ -174,6 +174,10 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/` —
   the valid candidate-bound holdout's exact bundle and follow-up token counts
   are bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-20-dev-grading-compact17/` — the
+  development grading of the reviewed split at compact/17 with the holdout
+  pipeline; its captured response and follow-up read token counts use this
+  tokenizer.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains

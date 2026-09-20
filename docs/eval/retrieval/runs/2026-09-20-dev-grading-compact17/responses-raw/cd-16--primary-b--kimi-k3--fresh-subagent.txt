@@ -1,0 +1,23 @@
+doc/md_docs.go is a file in package `doc` (declared at doc/md_docs.go:15, "package doc"). It implements markdown documentation generation for cobra commands. The response provides 3 ranked source spans (truncated: true; lines 16-28, 83-117, and 151+ are not shown), covering the following structure and declarations:
+
+Declarations visible in the response:
+
+1. Constant (doc/md_docs.go:30):
+   - `const markdownExtension = ".md"` — file extension used when naming generated markdown files (consumed in GenMarkdownTreeCustom at line ~143: `strings.ReplaceAll(cmd.CommandPath(), " ", "_") + markdownExtension`).
+
+2. Function `printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error` (doc/md_docs.go:32-48):
+   - Writes an "### Options" fenced block from `cmd.NonInheritedFlags()` via `flags.PrintDefaults()` when `flags.HasAvailableFlags()`, then an "### Options inherited from parent commands" block from `cmd.InheritedFlags()` the same way; returns nil. (The `name` parameter is present in the signature but is not used in the shown body.)
+
+3. Function `GenMarkdown(cmd *cobra.Command, w io.Writer) error` (doc/md_docs.go:50-53):
+   - Documented "// GenMarkdown creates markdown output." Delegates to `GenMarkdownCustom(cmd, w, func(s string) string { return s })` with an identity link handler.
+
+4. Function `GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error` (doc/md_docs.go:55-82, body continues past the shown span):
+   - Documented "// GenMarkdownCustom creates custom markdown output." Calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, builds output in a `bytes.Buffer`: writes "## " + `cmd.CommandPath()`, `cmd.Short`, a "### Synopsis" section from `cmd.Long` when non-empty, a fenced use-line block from `cmd.UseLine()` when `cmd.Runnable()`, an "### Examples" fenced block from `cmd.Example` when non-empty, then calls `printOptions(buf, cmd, name)` and returns its error if non-nil. The remainder of the function (presumably where the buffer is written to `w` and the linkHandler is applied) is not included in the response.
+
+5. Function `GenMarkdownTree(cmd *cobra.Command, dir string) error` (doc/md_docs.go:122-126):
+   - Doc comment (lines 118-121): generates a markdown page for this command and all descendants into `dir`; header may be nil; warns it "may not work correctly if your command names have `-` in them" (undefined which help output lands in `cmd-sub-third.1` when `cmd` has subcommands `sub` and `sub-third` and `sub` has a `third`). Delegates to `GenMarkdownTreeCustom(cmd, dir, emptyStr, identity)` with `emptyStr := func(s string) string { return "" }` as filePrepender and an identity linkHandler.
+
+6. Function `GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error` (doc/md_docs.go:128-150, body continues past the shown span):
+   - Doc comment: same as GenMarkdownTree but with custom filePrepender and linkHandler. Recursively walks `cmd.Commands()`, skipping commands for which `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, then computes `basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + markdownExtension`, joins it with `filepath.Join(dir, basename)`, creates the file with `os.Create(filename)`, returns the error if any, and defers `f.Close()`. The remainder of the function (writing the page content to `f`) is not included in the response.
+
+Imports and any package-level doc comment (lines 16-28) are not shown; the evident usage of `bytes`, `fmt`, `io`, `os`, `path/filepath`, `strings`, and `github.com/spf13/cobra` implies corresponding imports. Any declarations at lines 83-117 and after line 150 are not present in the response.

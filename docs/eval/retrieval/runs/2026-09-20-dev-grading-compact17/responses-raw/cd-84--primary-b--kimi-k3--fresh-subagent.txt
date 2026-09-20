@@ -1,0 +1,15 @@
+checkIfFlagCompletion (completions.go, lines 591-628) splits the token only when the last argument starts with '-' and contains an '='. The steps, per the source span:
+
+1. Guard: it only proceeds if `len(lastArg) > 0 && lastArg[0] == '-'` — the token must begin with a dash (the comment notes isFlagArg() cannot be used because the flag name may be incomplete).
+
+2. Locate the split point: `index := strings.Index(lastArg, "=")` finds the FIRST '=' in the token. If there is no '=' (`index < 0`), it takes the "Normal flag completion" branch and returns `nil, args, lastArg, nil` immediately — no splitting happens.
+
+3. Extract the flag name from the part before '=':
+   - Long flag: if `strings.HasPrefix(lastArg[:index], "--")`, the name is everything between the leading `--` and the '=' — `flagName = lastArg[2:index]` (e.g. `--flag=value` => `flag`).
+   - Shorthand: otherwise the token is treated as a shorthand cluster and only the LAST character before the '=' is taken — `flagName = lastArg[index-1 : index]`. The comment explains why: "We have to get the last shorthand flag name, e.g. `-asd` => d to provide the correct completion" (referencing https://github.com/spf13/cobra/issues/1257). So `-d=value` or `-asd=value` yields flagName `d`.
+
+4. Extract the value to complete: `lastArg = lastArg[index+1:]` — lastArg is replaced with everything after the first '=', i.e. the (possibly empty / partially typed) value prefix that will be completed.
+
+5. Record the mode: `flagWithEqual = true` is set so downstream logic knows the value came from an `=` form rather than a separate argument.
+
+Note the original lastArg is preserved beforehand in `orgLastArg := lastArg`, and if flag parsing is disabled (`finalCmd.DisableFlagParsing`) the function returns early without any splitting. (The returned span is truncated at `if len(flagName) == 0 {`, so what happens after the split — e.g. how the value is actually completed — is not visible in this response.)

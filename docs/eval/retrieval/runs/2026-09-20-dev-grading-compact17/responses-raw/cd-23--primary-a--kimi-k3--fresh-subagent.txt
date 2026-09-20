@@ -1,0 +1,15 @@
+When a deprecated command runs, cobra checks the command's `Deprecated` string field and, if it is non-empty, prints a warning message to the command's output before continuing with execution.
+
+The evidence is in command.go, lines 879-883:
+
+    if len(c.Deprecated) > 0 {
+        c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)
+    }
+
+    // initialize help and version flag at the last point possible to allow for user
+
+Concretely:
+- The check is `len(c.Deprecated) > 0` — a command is considered deprecated when its `Deprecated` field (a string on the *Command struct) is set to a non-empty value.
+- The warning is emitted with `c.Printf(...)`, i.e. written through the command's configured output.
+- The warning format is `Command %q is deprecated, %s\n`, filled with `c.Name()` (the command's name) and `c.Deprecated` (the deprecation message, e.g. what to use instead).
+- The snippet's trailing comment ("// initialize help and version flag at the last point possible...") shows this warning happens inside the command's run/execute path, immediately before help and version flag initialization — so the warning fires as the command runs, not just when help is displayed.

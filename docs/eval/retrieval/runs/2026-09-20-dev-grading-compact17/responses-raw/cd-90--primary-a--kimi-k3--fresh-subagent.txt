@@ -1,0 +1,15 @@
+To disable Cobra's automatic command suggestions, set the `DisableSuggestions` field on your command:
+
+```go
+command.DisableSuggestions = true
+```
+
+Evidence from the response:
+
+1. `site/content/user_guide.md` (lines 694-734), section "Suggestions when \"unknown command\" happens", states directly: "If you need to disable suggestions or tweak the string distance in your command, use: `command.DisableSuggestions = true`".
+
+2. This is confirmed by the implementation in `command.go` (lines 749-765): the method `func (c *Command) findSuggestions(arg string) string` begins with `if c.DisableSuggestions { return "" }`, so setting the flag causes the "Did you mean this?" block to be suppressed entirely.
+
+3. The field itself is declared in `command.go` (line 248) with the comment: `// DisableSuggestions disables the suggestions based on Levenshtein distance`.
+
+As an alternative to fully disabling suggestions, the same guide section notes you can instead raise the matching strictness with `command.SuggestionsMinimumDistance = 1` (the default is 2, ignoring case), which reduces which suggestions are shown rather than turning them off.

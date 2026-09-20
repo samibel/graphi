@@ -1,0 +1,8 @@
+The provided spans show `cobra.go` declaring package-level configuration in package `cobra` (`cobra.go:18`):
+
+- **Template helpers:** `templateFuncs` maps template names to functions, including `trim`, `trimRightSpace`, `trimTrailingWhitespaces`, `appendIfNotPresent`, `rpad`, `gt`, and `eq` (`cobra.go:32–40`).
+- **Lifecycle callbacks:** `initializers` and `finalizers` are slices of `func()` (`cobra.go:42–43`).
+- **Configuration defaults and exported switches:** Prefix matching defaults to `false`, command sorting to `true`, case-insensitive command names to `false`, and traversal of parent run hooks to `false`. The corresponding variables are `EnablePrefixMatching`, `EnableCommandSorting`, `EnableCaseInsensitive`, and `EnableTraverseRunHooks` (`cobra.go:45–66`).
+- **Windows help text:** `MousetrapHelpText` contains a message telling users to open `cmd.exe` and run the tool there. Its comment says setting it to an empty string disables the splash screen (`cobra.go:68–75`).
+
+The response is marked `truncated: true`, so these spans do not establish the file’s complete structure.

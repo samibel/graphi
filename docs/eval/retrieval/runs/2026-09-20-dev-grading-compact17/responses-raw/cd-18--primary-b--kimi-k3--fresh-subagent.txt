@@ -1,0 +1,17 @@
+The file doc/rest_docs.go is part of package `doc` (doc/rest_docs.go:15, `package doc`) and implements generation of reStructuredText documentation for cobra commands. The response returns 4 ranked spans (with gaps: lines 1-14, 16-28, 78-130, 155-170, and 182+ are not shown; `truncated:true`), covering these declarations:
+
+1. `func printOptionsReST(buf *bytes.Buffer, cmd *cobra.Command, name string) error` (doc/rest_docs.go:29-45) — an unexported helper that writes an "Options" section (underlined with `~~~~~~~`) for `cmd.NonInheritedFlags()` and an "Options inherited from parent commands" section for `cmd.InheritedFlags()`, each followed by `::` and `PrintDefaults()` output, when the flag sets have available flags.
+
+2. `func defaultLinkHandler(name, ref string) string` (doc/rest_docs.go:47-49) — commented "for default ReST hyperlink markup"; returns ``fmt.Sprintf("`%s <%s.rst>`_", name, ref)``.
+
+3. `func GenReST(cmd *cobra.Command, w io.Writer) error` (doc/rest_docs.go:51-54) — commented "GenReST creates reStructured Text output"; delegates to `GenReSTCustom(cmd, w, defaultLinkHandler)`.
+
+4. `func GenReSTCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string, string) string) error` (doc/rest_docs.go:56-77, body truncated at line 77) — commented "GenReSTCustom creates custom reStructured Text output"; calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, builds a buffer using `cmd.CommandPath()` as `name`, falls back from `cmd.Long` to `cmd.Short` when Long is empty, computes `ref := strings.ReplaceAll(name, " ", "_")`, and writes a ReST anchor (`.. _<ref>:`) followed by the command name as a heading.
+
+5. `func GenReSTTree(cmd *cobra.Command, dir string) error` (doc/rest_docs.go:132-138) — doc comment says it generates a ReST page for the command and all descendants in `dir`, warning it may not work correctly with `-` in command names (undefined which help output lands in files like `cmd-sub-third.1`); delegates to `GenReSTTreeCustom` with an `emptyStr` filePrepender and `defaultLinkHandler`.
+
+6. `func GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error` (doc/rest_docs.go:140-154, body truncated) — doc comment says it is "the same as GenReSTTree, but with custom filePrepender and linkHandler"; recursively iterates `cmd.Commands()`, skipping commands where `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, and recursing into each remaining subcommand.
+
+7. `func indentString(s, p string) string` (doc/rest_docs.go:172-181, body truncated) — comment notes it is "adapted from: https://github.com/kr/text/blob/main/indent.go"; iterates bytes of `s`, prepending prefix `p` at the beginning of each line (tracked by a `bol` flag) when the byte is not `'\n'`.
+
+Structure overall: a package clause plus a set of top-level function declarations only — no type, const, or var declarations appear in the returned spans. The exported API surface visible is `GenReST`, `GenReSTCustom`, `GenReSTTree`, `GenReSTTreeCustom`; the helpers `printOptionsReST`, `defaultLinkHandler`, and `indentString` are unexported. The file depends on `bytes`, `fmt`, `io`, `strings`, and `github.com/spf13/cobra` (per the signatures shown), though the import block itself (before line 15) was not included in the response.

@@ -1,0 +1,3 @@
+Cobra identifies required flags by checking each `pflag.Flag` for the annotation keyed by `BashCompOneRequiredFlag` (`"cobra_annotation_bash_completion_one_required_flag"`), which `MarkFlagRequired` sets to `[]string{"true"}` (`shell_completions.go:20-40`, `bash_completions.go:27-34`).
+
+During completion, `completeRequireFlags` visits both inherited and non-inherited flags. If that annotation is present and `flag.Changed` is false, it offers the flag using `getFlagNameCompletions(flag, toComplete)` (`completions.go:566-590`).

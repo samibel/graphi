@@ -1,0 +1,17 @@
+`getCompletions` uses this condition to choose the callback:
+
+```go
+if flag != nil && flagCompletion {
+    completionFn = flagCompletionFunctions[flag]
+} else {
+    completionFn = finalCmd.ValidArgsFunction
+}
+```
+
+—`completions.go:503–509`.
+
+- `flag` comes from `checkIfFlagCompletion(...)`, which checks for flag **value** completion before parsing flags.
+- `flagCompletion` starts as `true`. It becomes `false` when parsing with an extra `"--"` increases the argument count; the comments explain this detects an earlier `--`, or disabled interspersed flags with an existing positional argument (`completions.go:308–331`).
+- If the flag branch is selected but no callback is registered, there is **no fallback** to `ValidArgsFunction`. The selected callback runs only if non-nil, receiving `(finalCmd, finalArgs, toComplete)` (`completions.go:510–516`).
+
+This selection applies only if execution reaches it; earlier completion handling can return first.

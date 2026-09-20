@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0bf37-f1c7-7083-8764-6184e3803477"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"During completion, Cobra calls `helpOrVersionFlagPresent(cmd)` and checks each flag in the command’s complete flag set:\n\n- `cmd.Flags().Lookup(\"version\")` or `Lookup(\"help\")` must find the flag.\n- Its `Annotations[FlagSetByCobraAnnotation]` must be non-empty, proving Cobra created it.\n- Its `Changed` field must be `true`, indicating the user supplied it.\n\nThis logic appears in `completions.go:521–532`. Cobra marks its default help flag with that annotation in `command.go:1182–1198`; `cmd.Flags()` includes local and inherited persistent flags (`command.go:1640–1653`)."}}
+{"type":"turn.completed","usage":{"input_tokens":15719,"cached_input_tokens":13312,"cache_write_input_tokens":0,"output_tokens":145,"reasoning_output_tokens":0}}

@@ -1,0 +1,5 @@
+Cobra identifies required flags by an annotation, then offers those that have not already been supplied:
+
+- `MarkFlagRequired` sets `BashCompOneRequiredFlag` to `[]string{"true"}`; `MarkPersistentFlagRequired` applies the same helper to persistent flags (`shell_completions.go:20–40`).
+- `completeRequireFlags` visits both `finalCmd.InheritedFlags()` and `finalCmd.NonInheritedFlags()`. It checks whether the annotation key exists and whether `!flag.Changed`, then appends `getFlagNameCompletions(flag, toComplete)` (`completions.go:566–590`). The check tests annotation presence, not its value.
+- It visits those two flag sets explicitly because `Flags()` may not have inherited flags merged when flag parsing is disabled, as the comment explains (`completions.go:579–582`).

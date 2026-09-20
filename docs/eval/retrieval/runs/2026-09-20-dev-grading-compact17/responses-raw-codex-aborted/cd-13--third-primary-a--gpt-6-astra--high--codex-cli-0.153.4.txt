@@ -1,0 +1,11 @@
+`active_help.go` belongs to package `cobra` and provides ActiveHelp completion messages and environment-based configuration (`active_help.go:15`).
+
+The supplied declarations are:
+
+- **Constants** (lines 24–31): `activeHelpMarker = "_activeHelp_ "`, `activeHelpEnvVarSuffix = "_ACTIVE_HELP"`, `activeHelpGlobalEnvVar = "COBRA_ACTIVE_HELP"`, and `activeHelpGlobalDisable = "0"`.
+- **Validation regexp** (line 33): `activeHelpEnvVarPrefixSubstRegexp` matches characters outside `[A-Z0-9_]`.
+- **`AppendActiveHelp(compArray []string, activeHelpStr string) []string`** (lines 42–44): prefixes a help string with the marker and appends it to the completion slice.
+- **`GetActiveHelpConfig(cmd *Command) string`** (lines 51–57): returns `"0"` when `COBRA_ACTIVE_HELP` is `"0"`; otherwise reads the program-specific environment variable derived from `cmd.Root().Name()`.
+- **`activeHelpEnvVar(name string) string`** (lines 62–67): appends `_ACTIVE_HELP`, uppercases the result, and replaces disallowed characters with `_`.
+
+The response is truncated and does not show the imports.

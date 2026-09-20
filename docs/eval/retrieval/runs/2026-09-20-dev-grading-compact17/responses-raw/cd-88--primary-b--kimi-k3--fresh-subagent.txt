@@ -1,0 +1,13 @@
+Legacy Bash completion turns ValidArgs and ValidArgsFunction into required-noun state at script-generation time, inside writeRequiredNouns (bash_completions.go:617-630). That function writes Bash variable declarations directly into the generated completion script:
+
+1. It always initializes an empty Bash array by emitting the literal line "    must_have_one_noun=()\n".
+
+2. For cmd.ValidArgs, it first sorts the slice in place (sort.Strings(cmd.ValidArgs)), then for each value it strips any description following a tab character — value = strings.Split(value, "\t")[0] — with the code comment noting "Descriptions are not supported by bash completion". Each cleaned value is then appended to the array as a quoted element: fmt.Sprintf("    must_have_one_noun+=(%q)\n", value). So every ValidArgs entry becomes one element of the must_have_one_noun Bash array.
+
+3. For cmd.ValidArgsFunction, it does not emit the function itself; it emits the mere presence flag: if cmd.ValidArgsFunction != nil, it writes "    has_completion_function=1\n" (command.go:84 documents ValidArgsFunction as "an optional function that provides valid non-flag arguments for shell completion").
+
+This emission happens as part of the per-command generation sequence: bash_completions.go:679-680 shows writeRequiredFlag(buf, cmd) immediately followed by writeRequiredNouns(buf, cmd), so the required-noun state (must_have_one_noun array plus has_completion_function=1 flag) is written right after the required-flag state for each command in the legacy script.
+
+Context from the docs (site/content/completions/bash.md:5-93) frames this as the "Bash legacy dynamic completions" mechanism, which is Bash-only, can coexist with ValidArgsFunction/RegisterFlagCompletionFunc as long as both solutions are not used for the same command, and is distinct from the V2 script (Cobra's default `completion` command uses bash completion V2; see also bash_completionsV2.go:24, genBashCompletion, which is not part of this path).
+
+Boundary of the evidence: the provided spans show only the generation side — how ValidArgs becomes the must_have_one_noun array entries and ValidArgsFunction's non-nil presence becomes has_completion_function=1. How the generated Bash script later consumes must_have_one_noun and has_completion_function at completion time is not contained in the responses.

@@ -1,0 +1,7 @@
+During completion, Cobra calls `helpOrVersionFlagPresent(cmd)` and checks each flag in the command’s complete flag set:
+
+- `cmd.Flags().Lookup("version")` or `Lookup("help")` must find the flag.
+- Its `Annotations[FlagSetByCobraAnnotation]` must be non-empty, proving Cobra created it.
+- Its `Changed` field must be `true`, indicating the user supplied it.
+
+This logic appears in `completions.go:521–532`. Cobra marks its default help flag with that annotation in `command.go:1182–1198`; `cmd.Flags()` includes local and inherited persistent flags (`command.go:1640–1653`).

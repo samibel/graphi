@@ -1,0 +1,24 @@
+active_help.go — structure and declarations (as evidenced by the task_context/2 response)
+
+The response contains 2 ranked source spans from active_help.go, covering the package clause and one large declaration block (lines 23-67). The response is marked "truncated":true and notes only 289 of a 325 source-token budget was used, so the file's import block and any declarations after line 67 are not shown; what follows is everything the response does show.
+
+1. Package clause (line 15):
+   - `package cobra` — the file belongs to package cobra.
+
+2. Declarations (lines 23-67):
+
+   a. Const block:
+      - `activeHelpMarker = "_activeHelp_ "` — string prefix marking ActiveHelp entries.
+      - `activeHelpEnvVarSuffix = "_ACTIVE_HELP"` — suffix for per-program env var names; the comment states these values "should not be changed: programs will be using them explicitly in their user documentation, and users will be using them explicitly."
+      - `activeHelpGlobalEnvVar = "COBRA_ACTIVE_HELP"` — global override env var name.
+      - `activeHelpGlobalDisable = "0"` — value that disables ActiveHelp globally.
+
+   b. Package-level variable:
+      - `var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)` — compiled regexp matching characters that are not uppercase ASCII letters, digits, or underscore; used to sanitize env var names.
+
+   c. Functions:
+      - `AppendActiveHelp(compArray []string, activeHelpStr string) []string` — exported. Appends `activeHelpMarker + activeHelpStr` (via fmt.Sprintf("%s%s", ...)) to the given completions array and returns it. Its doc comment says such strings are processed by the completion script and shown to the user as ActiveHelp, that the array parameter should be the one containing completions, and that it can be called multiple times before/after completions are added, with each new ActiveHelp line shown below previous ones.
+      - `GetActiveHelpConfig(cmd *Command) string` — exported. Reads os.Getenv(activeHelpGlobalEnvVar) ("COBRA_ACTIVE_HELP"); if that value is not "0" (activeHelpGlobalDisable), it instead returns os.Getenv(activeHelpEnvVar(cmd.Root().Name())), i.e. the per-program <PROGRAM>_ACTIVE_HELP variable. The doc comment specifies <PROGRAM> is the root command name upper-cased with non-ASCII-alphanumeric characters replaced by `_`, and that the function always returns "0" if COBRA_ACTIVE_HELP is set to "0".
+      - `activeHelpEnvVar(name string) string` — unexported helper. Builds the env var name as strings.ToUpper(fmt.Sprintf("%s%s", name, activeHelpEnvVarSuffix)) then replaces every match of activeHelpEnvVarPrefixSubstRegexp with "_", producing <PROGRAM>_ACTIVE_HELP. Its comment warns "This format should not be changed: users will be using it explicitly."
+
+Dependencies visible from the code body: the file uses fmt.Sprintf, os.Getenv, regexp.MustCompile, and strings.ToUpper, and refers to the type `Command` (with method Root().Name()) defined elsewhere in package cobra — but the import list itself is not included in the response (lines 1-14 and 16-22 are absent), so imports cannot be enumerated from this evidence.

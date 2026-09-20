@@ -1,0 +1,15 @@
+Set the `HiddenDefaultCmd` field of `CompletionOptions` on your root command:
+
+```go
+rootCmd.CompletionOptions.HiddenDefaultCmd = true
+```
+
+This keeps the default `completion` command functional (it still exists and generates shell completions) but marks it as hidden, so it does not show up in help output or command listings.
+
+Evidence:
+
+1. The docs span at `site/content/completions/_index.md` (lines 92-116) says: "To configure such options you must set the `CompletionOptions` field on the *root* command" and explicitly: "To tell Cobra to mark the default `completion` command as *hidden*: `rootCmd.CompletionOptions.HiddenDefaultCmd = true`".
+
+2. The `CompletionOptions` struct in `completions.go` (lines 103-116) confirms the field: `// HiddenDefaultCmd makes the default 'completion' command hidden` followed by `HiddenDefaultCmd bool`.
+
+Note the contrast with the alternative in the same doc span: `rootCmd.CompletionOptions.DisableDefaultCmd = true` would remove the default command entirely — `completions.go` (lines 678-684) shows `InitDefaultCompletionCmd` returns early "if ... the feature has been explicitly disabled by the program" via `c.CompletionOptions.DisableDefaultCmd`. Since you want to keep the command but hide it, use `HiddenDefaultCmd`, not `DisableDefaultCmd`. Also, `command.go` (lines 1068-1071) shows Cobra calls `c.InitDefaultCompletionCmd()` "at the last point to allow for user overriding", so setting the option on the root command before execution takes effect.

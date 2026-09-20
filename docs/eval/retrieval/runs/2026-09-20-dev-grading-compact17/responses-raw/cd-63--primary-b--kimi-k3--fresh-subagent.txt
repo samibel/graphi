@@ -1,0 +1,20 @@
+Aliases in this codebase (the Cobra command library) are alternative names for a command, implemented as a field on the Command struct plus supporting methods and completion handling.
+
+1. Definition. `command.go` (lines 63-65, also in the follow-up read of command.go:47-166) declares the field on the `Command` struct:
+
+   // Aliases is an array of aliases that can be used instead of the first word in Use.
+   Aliases []string
+
+   So an alias substitutes for the command's primary name (the first word of the `Use string` field) when the user invokes the command.
+
+2. Matching logic. Two methods in `command.go` operate on the field:
+   - `HasAlias` (command.go:1504-1513): "HasAlias determines if a given string is an alias of the command." It loops over `c.Aliases` and returns true when `commandNameMatches(a, s)` succeeds.
+   - `hasNameOrAliasPrefix` (command.go:1523-1538): "returns true if the Name or any of aliases start with prefix". It first checks `strings.HasPrefix(c.Name(), prefix)` (setting `c.commandCalledAs.name = c.Name()`), then loops over `c.Aliases` and, on a prefix match, records `c.commandCalledAs.name = alias` — i.e. it tracks which alias the command was actually invoked under.
+
+3. Related but distinct concepts (evidence distinguishes them):
+   - `SuggestFor []string` (command.go:67-69): "an array of command names for which this command will be suggested - similar to aliases but only suggests" — suggestions only, not invocable aliases.
+   - `ArgAliases []string` (follow-up read, command.go:47-166): "ArgAliases is List of aliases for ValidArgs. These are not suggested to the user in the shell completion, but accepted if entered manually." These alias positional-argument nouns, not command names. The docs (site/content/completions/_index.md:151-157) show the usage: `argAliases = []string { "pods", "nodes", "services", "svc", "replicationcontrollers", "rc" }`, defined alongside `ValidArgs`.
+
+4. Shell-completion handling. `bash_completions.go:647-653` (`writeArgAliases`) emits `noun_aliases=()` and appends each sorted `cmd.ArgAliases` value as `noun_aliases+=(%q)`; `bash_completions.go:674-676` also writes an (empty) `command_aliases=()` array into the generated bash script. Separately, the docs (site/content/completions/_index.md:402-408) note that real bash aliases of the program itself also get completion support: `alias aliasname=origcommand` plus `complete -o default -F __start_origcommand aliasname`.
+
+In short: `Aliases` is a `[]string` on `Command` holding alternative invocable names for the command's first word of `Use`; exact matching is done by `HasAlias` and prefix matching/dispatch-recording by `hasNameOrAliasPrefix`, and the concept is kept separate from `SuggestFor` (suggestions only) and `ArgAliases` (aliases for positional-arg nouns, surfaced in bash completion as `noun_aliases`).

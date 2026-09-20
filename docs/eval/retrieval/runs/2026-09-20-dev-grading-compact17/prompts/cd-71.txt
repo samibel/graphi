@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+SetIn
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 3662690d1007; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":299,"end_line":304,"text":"\n// SetIn sets the source for input data\n// If newIn is nil, os.Stdin is used.\nfunc (c *Command) SetIn(newIn io.Reader) {\n\tc.inReader = newIn\n}"},{"path":"command.go","start_line":164,"end_line":187,"text":"\tglobNormFunc func(f *flag.FlagSet, name string) flag.NormalizedName\n\n\t// usageFunc is usage func defined by user.\n\tusageFunc func(*Command) error\n\t// usageTemplate is usage template defined by user.\n\tusageTemplate string\n\t// flagErrorFunc is func defined by user and it's called when the parsing of\n\t// flags returns an error.\n\tflagErrorFunc func(*Command, error) error\n\t// helpTemplate is help template defined by user.\n\thelpTemplate string\n\t// helpFunc is help func defined by user.\n\thelpFunc func(*Command, []string)\n\t// helpCommand is command with usage 'help'. If it's not defined by user,\n\t// cobra uses default help command.\n\thelpCommand *Command\n\t// helpCommandGroupID is the group id for the helpCommand\n\thelpCommandGroupID string\n\n\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n\n\t// versionTemplate is the version template defined by user.\n\tversionTemplate string"},{"path":"completions.go","start_line":161,"end_line":176,"text":"\n// Returns a string listing the different directive enabled in the specified parameter\nfunc (d ShellCompDirective) string() string {\n\tvar directives []string\n\tif d&ShellCompDirectiveError != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveError\")\n\t}\n\tif d&ShellCompDirectiveNoSpace != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoSpace\")\n\t}\n\tif d&ShellCompDirectiveNoFileComp != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoFileComp\")\n\t}\n\tif d&ShellCompDirectiveFilterFileExt != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterFileExt\")\n\t}"},{"path":"command.go","start_line":273,"end_line":278,"text":"\n// SetArgs sets arguments for the command. It is set to os.Args[1:] by default, if desired, can be overridden\n// particularly useful when testing.\nfunc (c *Command) SetArgs(a []string) {\n\tc.args = a\n}"},{"path":"flag_groups.go","start_line":190,"end_line":207,"text":"\tfor _, flagList := range keys {\n\t\tflagnameAndStatus := data[flagList]\n\t\tvar set []string\n\t\tfor flagname, isSet := range flagnameAndStatus {\n\t\t\tif isSet {\n\t\t\t\tset = append(set, flagname)\n\t\t\t}\n\t\t}\n\t\tif len(set) == 0 || len(set) == 1 {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Sort values, so they can be tested/scripted against consistently.\n\t\tsort.Strings(set)\n\t\treturn fmt.Errorf(\"if any flags in the group [%v] are set none of the others can be; %v were all set\", flagList, set)\n\t}\n\treturn nil\n}"}],"provenance":{"input_sha256":"7745d6345ef2164a9d020abf4d8c15d4770add0b488b4676a025d6e037336a39","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

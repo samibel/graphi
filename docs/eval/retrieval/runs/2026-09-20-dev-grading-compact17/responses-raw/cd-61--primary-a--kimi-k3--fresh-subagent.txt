@@ -1,0 +1,20 @@
+"directive" in this codebase refers to `ShellCompDirective`, a bitmask type that tells the shell how to behave after completions have been produced.
+
+Evidence:
+
+1. Definition (completions.go:40-43): "ShellCompDirective is a bit map representing the different behaviors the shell can be instructed to have once completions have been provided." — `type ShellCompDirective int`.
+
+2. Constants (completions.go:54-56): the values are declared in a `const` block using bit shifts, starting with `ShellCompDirectiveError ShellCompDirective = 1 << iota`, documented as "indicates an error occurred and completions should be ignored."
+
+3. The `string()` method (completions.go:161-175) enumerates the individual bits by name: `ShellCompDirectiveError`, `ShellCompDirectiveNoSpace`, `ShellCompDirectiveNoFileComp`, and `ShellCompDirectiveFilterFileExt` (each tested with `d&ShellCompDirective... != 0`, confirming it is a bit mask).
+
+4. Usage in completion logic (completions.go:266-385, `func (c *Command) getCompletions(...)`): a directive is returned alongside the completion list as the third return value (`*Command, []string, ShellCompDirective, error`). Concrete values returned include:
+   - `ShellCompDirectiveNoFileComp` when `--help` or `--version` is present (no further completions, and no file completion),
+   - `ShellCompDirectiveFilterFileExt` when a flag carries the `BashCompFilenameExt` annotation (file completion filtered by extensions),
+   - `ShellCompDirectiveFilterDirs` when a flag carries the `BashCompSubdirsInDir` annotation (directory completion),
+   - `ShellCompDirectiveDefault` on error paths (e.g., "Unable to find a command for arguments", flag parse errors).
+   Near the end of the shown span the code declares `var completions []string` and `var directive ShellCompDirective`, then enforces flag groups before flag-name completion.
+
+5. Shell-side consumption (bash_completionsV2.go:55-56): the generated bash function `__%[1]s_get_completion_results()` "fills the 'out' and 'directive' vars" — i.e., the directive computed in Go is passed to the shell script so the shell can apply the instructed behavior (suppress file completion, filter by extension/dirs, no space, error, etc.).
+
+In short: the directive is the `ShellCompDirective` bitmask returned by `getCompletions` in completions.go, communicated to the shell (e.g., the bash V2 completion script) to control post-completion shell behavior such as disabling file completion, filtering file extensions or directories, suppressing the trailing space, or signaling an error.

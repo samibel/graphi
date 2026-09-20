@@ -1,0 +1,16 @@
+Cobra reports the number of parsed arguments that appeared before a `--` separator through the `ArgsLenAtDash()` method on `*Command`.
+
+Evidence from the response (command.go, lines 868-872):
+
+    // ArgsLenAtDash will return the length of c.Flags().Args at the moment
+    // when a -- was found during args parsing.
+    func (c *Command) ArgsLenAtDash() int {
+        return c.Flags().ArgsLenAtDash()
+    }
+
+So the mechanism is:
+
+- `(*Command).ArgsLenAtDash()` returns an `int`: the length of the flag set's argument list as it was at the moment a `--` was encountered during argument parsing — i.e., how many parsed arguments came before the `--` separator.
+- The Command method is a thin delegate: it calls `c.Flags().ArgsLenAtDash()`, meaning the actual bookkeeping of where the `--` was found is done by the underlying pflag `FlagSet`, and Cobra simply forwards that value.
+
+Related context in the bundle: command.go lines 148-149 show the Command struct holds `args []string` described as "actual args parsed from flags", and command.go lines 888-893 show `c.ParseFlags(a)` being invoked during execution (which is when the pflag parser would record the `--` position), but the direct answer to the question is the `ArgsLenAtDash()` method quoted above.

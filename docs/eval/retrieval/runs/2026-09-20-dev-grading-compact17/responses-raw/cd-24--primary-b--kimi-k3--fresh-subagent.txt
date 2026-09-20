@@ -1,0 +1,19 @@
+Executing a command returns flag.ErrHelp instead of running it in exactly two situations, both inside (*Command).execute in command.go (follow-up read of command.go:874-993), and both occur after flag parsing but before any run logic (preRun, ValidateArgs, persistent pre-runs, PreRunE/PreRun, RunE/Run):
+
+1. The help flag is set. After c.ParseFlags(a) succeeds, execute reads the boolean "help" flag with `helpVal, err := c.Flags().GetBool("help")` and then:
+
+	if helpVal {
+		return flag.ErrHelp
+	}
+
+   The code comment states the intent: "If help is called, regardless of other flags, return we want help." So passing -h/--help short-circuits execution regardless of any other flags. (The default help flag is always declared via c.InitDefaultHelpFlag() earlier in execute, which is why the GetBool error branch is marked "should be impossible to get here".)
+
+2. The command is not runnable. After the help check (and after the version-flag handling, which only applies when c.Version != ""), execute does:
+
+	if !c.Runnable() {
+		return flag.ErrHelp
+	}
+
+   Runnable() (command.go:1549-1553) is defined as `return c.Run != nil || c.RunE != nil`, so a command with neither Run nor RunE set returns flag.ErrHelp instead of running. The same comment covers this case: "Also say we need help if the command isn't runnable."
+
+Note on a related path: if c.ParseFlags(a) itself returns an error, execute returns `c.FlagErrorFunc()(c, err)` (command.go:496-511 shows FlagErrorFunc defaults to a function returning the original error), so any parse-time error — rather than an explicit flag.ErrHelp return in this function — is whatever FlagErrorFunc yields. The two direct `return flag.ErrHelp` statements above are the only explicit ones in the shown execute body.

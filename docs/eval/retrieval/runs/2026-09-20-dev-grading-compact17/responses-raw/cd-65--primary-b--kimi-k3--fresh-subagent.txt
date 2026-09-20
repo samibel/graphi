@@ -1,0 +1,28 @@
+AllChildCommandsHaveGroup
+
+Definition (command.go, lines 1335-1344):
+
+    // AllChildCommandsHaveGroup returns if all subcommands are assigned to a group
+    func (c *Command) AllChildCommandsHaveGroup() bool {
+        for _, sub := range c.commands {
+            if (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == "" {
+                return false
+            }
+        }
+        return true
+    }
+
+What it is and does:
+
+- It is a method on *Command with signature `func (c *Command) AllChildCommandsHaveGroup() bool` (command.go:1336). Per its doc comment, it "returns if all subcommands are assigned to a group" (command.go:1335).
+- It iterates over the receiver's registered subcommands (`c.commands`) and returns `false` as soon as it finds a subcommand that (a) is an available command OR is the command's help command (`sub == c.helpCommand`), and (b) has an empty `GroupID` (`sub.GroupID == ""`). If no such subcommand exists, it returns `true` (command.go:1337-1343).
+- In other words: every subcommand that would show up in help/usage output (available commands plus the help command) must have a non-empty GroupID; deprecated, hidden, or otherwise unavailable subcommands (other than the help command) are exempt from the grouping requirement.
+
+Supporting evidence from the same response:
+
+- `IsAvailableCommand` (command.go:1559-1576) defines "available": a command is unavailable if it has a non-empty `Deprecated` string or is `Hidden`, or if it is its parent's help command; otherwise it is available if it is `Runnable()` or `HasAvailableSubCommands()`. This explains which subcommands the group check applies to.
+- The `Group` type (command.go:40-45) is `type Group struct { ID string; Title string }`, i.e. groups carry an ID and a title; subcommands reference a group via their `GroupID` field compared in the loop.
+- The neighboring `ContainsGroup` method (command.go:1345-1354) shows the companion concept: groups are stored on the command in `c.commandgroups` and looked up by `x.ID == groupID`, confirming that `GroupID` values are meant to correspond to registered `Group.ID`s.
+- The Command struct excerpt (command.go:105-128) shows unrelated fields (Annotations, Version, PersistentPreRun, etc.) and is not directly relevant to this function.
+
+Note: the response is marked `"truncated":true`, but the full body of AllChildCommandsHaveGroup itself is present (command.go:1335-1344), so the question is answerable from the provided spans.

@@ -1,0 +1,19 @@
+Cobra appends " [flags]" to a command's use line inside (*Command).UseLine() (command.go, lines 1435-1451) when all of the following hold:
+
+1. The command's DisableFlagsInUseLine field is false — if it is true, UseLine returns the use line as-is before any flag logic: `if c.DisableFlagsInUseLine { return useline }`.
+2. The command has available flags: `c.HasAvailableFlags()`.
+3. The use line does not already contain the literal "[flags]": `!strings.Contains(useline, "[flags]")` — so an author-written "[flags]" in the Use string is not duplicated.
+
+The exact snippet:
+
+```go
+if c.DisableFlagsInUseLine {
+    return useline
+}
+if c.HasAvailableFlags() && !strings.Contains(useline, "[flags]") {
+    useline += " [flags]"
+}
+return useline
+```
+
+Context: the use line being augmented is first built as `c.parent.CommandPath() + " " + c.Use` when the command has a parent, otherwise just `c.Use` (command.go, lines 1438-1442). The response does not include the body of HasAvailableFlags(), so the precise definition of "available flags" cannot be stated, but the README span (README.md, lines 68-80) confirms flags are POSIX-style options provided via the pflag library.

@@ -1,0 +1,15 @@
+checkIfFlagCompletion splits a `--flag=value` or `shorthand=value` token as follows (completions.go, lines 591-628, function `checkIfFlagCompletion`):
+
+1. Gate: the splitting only happens if the current token looks like a flag, i.e. `len(lastArg) > 0 && lastArg[0] == '-'`. The code comments that `isFlagArg()` cannot be used here because the flag name may be incomplete.
+
+2. Locate the `=`: it calls `strings.Index(lastArg, "=")`. If no `=` is present (`index < 0`), it takes the "Normal flag completion" branch and returns `nil, args, lastArg, nil` without splitting.
+
+3. If an `=` is found, it determines the flag name from the part before the `=`:
+   - Long flag: if `strings.HasPrefix(lastArg[:index], "--")`, the flag has its full name, so `flagName = lastArg[2:index]` — the token text between the leading `--` and the `=`.
+   - Shorthand: otherwise, `flagName = lastArg[index-1 : index]` — only the single character immediately before the `=`. The comment explains this handles grouped shorthands, e.g. `-asd` yields `d`, referencing https://github.com/spf13/cobra/issues/1257.
+
+4. Value extraction: `lastArg = lastArg[index+1:]` — everything after the `=` becomes the new `lastArg`, i.e. the partial value to be completed.
+
+5. It records the split by setting `flagWithEqual = true` (the original token is preserved earlier in `orgLastArg := lastArg`).
+
+So in short: the token is split at the first `=`; the flag name is everything between `--` and `=` for long flags, or the single character right before `=` for shorthands, and the remainder after `=` becomes the value fragment to complete, with `flagWithEqual` set to true.

@@ -1,0 +1,9 @@
+Completion falls back in a fixed priority order: sub-command names first, then `ValidArgs`, and `ArgAliases` only as a last resort.
+
+The explicit evidence is in the documentation span `site/content/completions/_index.md` (lines 123-166), "Aliases for nouns" section, which states verbatim: "The aliases are shown to the user on tab completion only if no completions were found within sub-commands or `ValidArgs`." That sentence establishes the three-tier fallback chain:
+
+1. Sub-command names are tried first. If any sub-command matches the word being completed, those completions are offered and neither `ValidArgs` nor `ArgAliases` are consulted.
+2. If no sub-command completions are found, completion falls back to the command's static `ValidArgs` list. The same doc span ("Static completion of nouns") shows `ValidArgs` being set on the sub-command itself (the `kubectl get` example, with `ValidArgs: validArgs` producing `node pod replicationcontroller service` on `kubectl get [tab][tab]`). The field's role is confirmed by `command.go` lines 82-84: "ValidArgs is list of all valid non-flag arguments that are accepted in shell completions".
+3. Only when neither sub-commands nor `ValidArgs` yield any completion does completion fall back to `ArgAliases` — the alias list defined alongside `ValidArgs` in the doc example (`argAliases = []string{ "pods", "nodes", "services", "svc", ... }` with `ValidArgs: validArgs, ArgAliases: argAliases`).
+
+Caveat: the response contains the documented behavior and the field definitions, but not the Go code in the completion engine that implements this ordering, so the answer rests on the documented guarantee in `site/content/completions/_index.md` lines 123-166 rather than on implementation code.

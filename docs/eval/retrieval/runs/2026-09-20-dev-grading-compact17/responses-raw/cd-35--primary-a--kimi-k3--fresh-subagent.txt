@@ -1,0 +1,13 @@
+A command finds a flag by climbing the parent chain through `Command.Flag(name)` in command.go (lines 1793-1816), whose doc comment reads "// Flag climbs up the command tree looking for matching flag."
+
+The lookup proceeds in ordered stages:
+
+1. Own flag set first. `Flag` starts with `flag = c.Flags().Lookup(name)` (command.go:1795), checking the command's own complete flag set.
+
+2. Own persistent flags. If that returns nil, it delegates to the helper `c.persistentFlag(name)` (command.go:1798), which is commented "// Recursively find matching persistent flag." That helper first checks the command's own persistent flags: `if c.HasPersistentFlags() { flag = c.PersistentFlags().Lookup(name) }` (command.go:1805-1807).
+
+3. Parents' persistent flags. If still nil, the helper climbs to the parents: `c.updateParentsPflags(); flag = c.parentsPflags.Lookup(name)` (command.go:1810-1812). The `parentsPflags` field is documented on the Command struct as "all persistent flags of cmd's parents" (command.go:160-161), so the climb works by aggregating every ancestor's persistent flags into one set and looking the name up there. The chain link itself is the `parent` field, exposed by `Parent()` which "returns a commands parent command" via `return c.parent` (command.go:1841-1845).
+
+The response does not include the body of `updateParentsPflags()`, so the exact mechanics of how it walks ancestors (loop versus recursion) are not shown; what is shown is its effect: it populates `c.parentsPflags` with all parents' persistent flags, and `persistentFlag` then looks the name up in that aggregated set, returning nil if no ancestor defines it.
+
+Related context in the response: the same parent chain is walked by `Root()` (command.go:860-866), which recursively calls `c.Parent().Root()` while `c.HasParent()`, confirming the parent-link pattern used throughout. Note also that, per site/content/user_guide.md:288-300, this inheritance concerns persistent flags: by default local flags on parent commands are ignored during parsing unless `Command.TraverseChildren` is enabled, which makes Cobra parse local flags on each command before executing the target.

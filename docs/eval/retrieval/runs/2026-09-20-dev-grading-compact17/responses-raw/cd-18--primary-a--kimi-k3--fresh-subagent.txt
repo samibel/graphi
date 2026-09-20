@@ -1,0 +1,24 @@
+doc/rest_docs.go — structure and declarations (per the task_context/2 response, which returned 4 ranked source spans from this file, "322/325 source tokens", marked "truncated":true)
+
+Package
+- The file belongs to package `doc` (span 1: doc/rest_docs.go line 15, `package doc`). Lines 1–14 are not included in the response, so any license header, package comment, or import block above line 15 is not visible; however, the shown code uses `bytes.Buffer`, `fmt.Sprintf`, `io.Writer`, `strings.ReplaceAll`, and `*cobra.Command`, implying imports of bytes, fmt, io, strings, and github.com/spf13/cobra (the import declaration itself is not among the returned spans).
+
+Declarations visible in the spans (all are functions; no types, constants, or package-level variables appear in any returned span):
+
+1. `func printOptionsReST(buf *bytes.Buffer, cmd *cobra.Command, name string) error` (span 2, within lines 29–77). Unexported helper. It writes an "Options" section (underlined with `~~~~~~~`) from `cmd.NonInheritedFlags()` when `flags.HasAvailableFlags()`, and an "Options inherited from parent commands" section (underlined with `~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`) from `cmd.InheritedFlags()` when available, each followed by `flags.PrintDefaults()` / `parentFlags.PrintDefaults()`; returns nil.
+
+2. `func defaultLinkHandler(name, ref string) string` (span 2). Comment: "// defaultLinkHandler for default ReST hyperlink markup". Returns `fmt.Sprintf("`%s <%s.rst>`_", name, ref)`.
+
+3. `func GenReST(cmd *cobra.Command, w io.Writer) error` (span 2). Comment: "// GenReST creates reStructured Text output." Thin wrapper: `return GenReSTCustom(cmd, w, defaultLinkHandler)`.
+
+4. `func GenReSTCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string, string) string) error` (span 2, starts within lines 29–77 and is cut off mid-body at line 77). Comment: "// GenReSTCustom creates custom reStructured Text output." The shown portion calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, builds a `bytes.Buffer`, computes `name := cmd.CommandPath()`, falls back `long = short` when `cmd.Long` is empty, computes `ref := strings.ReplaceAll(name, " ", "_")`, and begins writing the ReST page header (`buf.WriteString(".. _" + ref + ":\n\n")` and the command name). The remainder of this function (roughly lines 78–130) is not included in the response.
+
+5. `func GenReSTTree(cmd *cobra.Command, dir string) error` (span 3, lines 131–154). Doc comment: "GenReSTTree will generate a ReST page for this command and all descendants in the directory given," with a warning that it "may not work correctly if your command names have `-` in them" (undefined which help output lands in `cmd-sub-third.1` for colliding names). Body defines `emptyStr := func(s string) string { return "" }` and delegates to `GenReSTTreeCustom(cmd, dir, emptyStr, defaultLinkHandler)`.
+
+6. `func GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error` (span 3, lines 131–154, cut off mid-body at line 154). Comment: "the same as GenReSTTree, but with custom filePrepender and linkHandler." The shown portion recurses over `cmd.Commands()`, skipping commands for which `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, and calls `GenReSTTreeCustom(c, dir, filePrepender, linkHandler)` on each, returning on first error. The tail of the function (post-recursion file generation) is not included.
+
+7. `func indentString(s, p string) string` (span 4, lines 171–181, cut off mid-body at line 181). Comment: "indentString adapted from: https://github.com/kr/text/blob/main/indent.go". The shown portion builds `res []byte` by iterating over the bytes of `s`, prepending the prefix `p` at the beginning of each line (`bol` tracking beginning-of-line, skipping prefix on blank lines where `c == '\n'`). The rest of the loop and the return statement are not included.
+
+Overall structure: a small cobra-doc-style generator file that renders reStructuredText documentation for cobra commands — a flag-section printer (`printOptionsReST`), a default link formatter (`defaultLinkHandler`), a single-page generator pair (`GenReST` / `GenReSTCustom`), a recursive tree generator pair (`GenReSTTree` / `GenReSTTreeCustom`), and a text utility (`indentString`).
+
+Caveats/gaps: the response is explicitly truncated; lines 1–14, 78–130, 155–170, and 182+ of doc/rest_docs.go are not present, so the import block, the remainder of GenReSTCustom, any code between GenReSTTreeCustom and indentString, the end of indentString, and any declarations after line 181 cannot be described from this response.

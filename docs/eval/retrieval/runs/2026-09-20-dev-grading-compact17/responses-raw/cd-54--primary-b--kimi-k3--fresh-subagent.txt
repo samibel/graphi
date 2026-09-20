@@ -1,0 +1,23 @@
+Call `cmd.SetUsageTemplate(s string)` on your command, passing your template string.
+
+Evidence:
+
+- The user guide states this directly (site/content/user_guide.md, lines 583-591, "### Defining your own usage"): "You can provide your own usage function or template for Cobra to use. Like help, the function and template are overridable through public methods:" followed by
+  ```go
+  cmd.SetUsageFunc(f func(*Command) error)
+  cmd.SetUsageTemplate(s string)
+  ```
+
+- The setter itself is shown in command.go, lines 310-314: "// SetUsageTemplate sets usage template. Can be defined by Application." with the body
+  ```go
+  func (c *Command) SetUsageTemplate(s string) {
+      c.usageTemplate = s
+  }
+  ```
+  The string is stored in the command's `usageTemplate` field (command.go, lines 166-169: "// usageTemplate is usage template defined by user. / usageTemplate string").
+
+- How it gets used: the default usage function (command.go, lines 423-448) renders your template via `tmpl(c.OutOrStderr(), c.UsageTemplate(), c)`, so the template is a Go text/template executed with the command `c` as its data and written to the command's output (OutOrStderr). `UsageTemplate()` (command.go, lines 542-545) returns your custom template when `c.usageTemplate != ""`.
+
+- Alternative: if a string template is not enough, you can instead override the whole usage function with `cmd.SetUsageFunc(f func(*Command) error)`; `UsageFunc()` (command.go, lines 423-448) returns your function if set, otherwise walks up to a parent's, otherwise falls back to the default that renders the template.
+
+Note: the response does not include the text of the default usage template, so the exact set of template placeholders/fields available is not shown here — only that the template is executed with the command as its data argument.

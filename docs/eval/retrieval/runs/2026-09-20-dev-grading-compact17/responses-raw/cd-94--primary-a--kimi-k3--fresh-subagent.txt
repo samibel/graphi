@@ -1,0 +1,23 @@
+Use the "Custom" variants of the ReST generators and pass a `linkHandler` callback.
+
+Evidence (from `site/content/docgen/rest.md`, lines 72-114, the top-ranked source):
+
+- "Both `GenReST` and `GenReSTTree` have alternate versions with callbacks to get some control of the output":
+
+```go
+func GenReSTTreeCustom(cmd *Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error
+func GenReSTCustom(cmd *Command, out *bytes.Buffer, linkHandler func(string, string) string) error
+```
+
+- "The `linkHandler` can be used to customize the rendered links to the commands, given a command name and reference. This is useful while converting rst to html or while generating documentation with tools like Sphinx where `:ref:` is used":
+
+```go
+// Sphinx cross-referencing format
+linkHandler := func(name, ref string) string {
+    return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
+}
+```
+
+So concretely: call `GenReSTCustom` (single page into a `bytes.Buffer`) or `GenReSTTreeCustom` (a page per command into a directory, confirmed by the signature at `doc/rest_docs.go:145` and the "will generate a ReST page for this command and all" comment at `doc/rest_docs.go:132`) and supply a `linkHandler func(string, string) string` that receives the command name and its reference and returns whatever link markup you want (e.g. a Sphinx `:ref:` role as above). If you don't supply one, the built-in default is used — `defaultLinkHandler(name, ref string) string` in `doc/rest_docs.go` (lines 50-52), described as "for default ReST hyperlink markup".
+
+Note: `GenReSTTreeCustom` also takes a `filePrepender` for prepending front matter, but that is for file headers, not links; the link customization is solely the `linkHandler`.

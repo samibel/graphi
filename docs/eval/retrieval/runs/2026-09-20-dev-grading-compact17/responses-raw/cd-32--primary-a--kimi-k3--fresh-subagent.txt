@@ -1,0 +1,9 @@
+Cobra detects an already-present --help or --version flag during completion via the helper `helpOrVersionFlagPresent` in completions.go (lines 521-532). For each of the two flags it performs a three-part check on the command's full FlagSet:
+
+1. Existence: `cmd.Flags().Lookup("version")` (and likewise `Lookup("help")`) must return a non-nil flag, i.e. the flag is registered on the command. `Flags()` (command.go lines 1640-1653) returns the complete FlagSet, after `mergePersistentFlags()` (command.go lines 1846-1853) has folded in persistent and parent flags.
+
+2. Cobra-owned: the flag must carry the `FlagSetByCobraAnnotation` annotation — `len(versionFlag.Annotations[FlagSetByCobraAnnotation]) > 0` — proving it is Cobra's own default flag rather than a user-defined one. `InitDefaultHelpFlag` (command.go lines 1182-1198) sets exactly this annotation when it creates the default help flag: `_ = c.Flags().SetAnnotation("help", FlagSetByCobraAnnotation, []string{"true"})`, and only if `c.Flags().Lookup("help") == nil` so a user-defined flag is left untouched (and therefore un-annotated).
+
+3. Actually used: `versionFlag.Changed` / `helpFlag.Changed` must be true, meaning the flag was explicitly set on the command line being completed, not merely defined.
+
+If either flag passes all three checks the function returns true, and the completion code then skips adding its own --help/--version flags — per the comment at completions.go line 300 ("// Let's add the --help and --version flag ourselves but only if the finalCmd ..."). This complements command.go lines 883-886, where Cobra initializes the default help and version flags "at the last point possible to allow for user overriding" (`c.InitDefaultHelpFlag()` / `c.InitDefaultVersionFlag()`).

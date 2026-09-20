@@ -1,0 +1,12 @@
+`doc/md_docs.go` belongs to package `doc` (line 15) and provides Markdown documentation generation for Cobra commands.
+
+Visible declarations:
+
+- `markdownExtension = ".md"` (line 29).
+- `printOptions(...)` (lines 31–49): writes local and inherited command flags into fenced Markdown “Options” sections.
+- `GenMarkdown(...)` (lines 52–55): generates Markdown using an identity link handler.
+- `GenMarkdownCustom(...)` (lines 58–82): initializes Cobra help, writes the command title, description, synopsis, usage, examples, and options to a buffer.
+- `GenMarkdownTree(...)` (lines 125–129): generates pages for a command tree using default prepender/link handlers.
+- `GenMarkdownTreeCustom(...)` (lines 133–150): recursively processes available subcommands, derives filenames by replacing spaces in `CommandPath()` with underscores and appending `.md`, then creates each output file.
+
+The response is truncated, so the ends of both custom-generation functions and any declarations in omitted line ranges are not visible.

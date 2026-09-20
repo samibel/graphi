@@ -1,0 +1,39 @@
+completions.go — structure and declarations as shown in the response
+
+The file belongs to package cobra (completions.go, line 15: `package cobra`). The response returns 4 ranked source spans covering lines 15, 25–52, 54–65, and 95–116, so only the declarations in those ranges can be described; everything else (imports, function bodies, and any declarations outside those ranges) is not present in the response, which is marked `truncated: true`.
+
+Visible declarations, in file order:
+
+1. Hidden completion command-name constants (lines 25–33, in the 25–52 span):
+   - `ShellCompRequestCmd = "__complete"` — "the name of the hidden command that is used to request completion results from the program ... used by the shell completion scripts."
+   - `ShellCompNoDescRequestCmd = "__completeNoDesc"` — the hidden command used to request completion results without their description.
+
+2. Global flag-completion registry and its lock (lines 36–41, in the 25–52 span):
+   - `var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}` — "Global map of flag completion functions", to be accessed only under the mutex.
+   - `var flagCompletionMutex = &sync.RWMutex{}` — "lock for reading and writing from flagCompletionFunctions".
+
+3. `type ShellCompDirective int` (line 44, in the 25–52 span) — "a bit map representing the different behaviors the shell can be instructed to have once completions have been provided."
+
+4. Unexported error type (lines 46–52, end of the 25–52 span):
+   - `type flagCompError struct { subCommand string; flagName string }`
+   - `func (e *flagCompError) Error() string` returning `"Subcommand '" + e.subCommand + "' does not support flag '" + e.flagName + "'"`.
+
+5. ShellCompDirective constant block (lines 54–65 span); the block is shown starting at `ShellCompDirectiveError ShellCompDirective = 1 << iota` and continues:
+   - `ShellCompDirectiveError` — "indicates an error occurred and completions should be ignored."
+   - `ShellCompDirectiveNoSpace` — "indicates that the shell should not add a space after the completion even if there is a single completion provided."
+   - `ShellCompDirectiveNoFileComp` — "indicates that the shell should not provide file completion even when no completion is provided."
+   The span ends mid-block (no closing `)` is shown), so any further directive constants (lines 66+) are not visible.
+
+6. Completion command constants (lines 95–101, in the 95–116 span), in a block commented "Constants for the completion command":
+   - `compCmdName = "completion"`
+   - `compCmdNoDescFlagName = "no-descriptions"`
+   - `compCmdNoDescFlagDesc = "disable completion descriptions"`
+   - `compCmdNoDescFlagDefault = false`
+
+7. `type CompletionOptions struct` (lines 103–116, end of the 95–116 span) — "the options to control shell completion", with four bool fields:
+   - `DisableDefaultCmd` — "prevents Cobra from creating a default 'completion' command"
+   - `DisableNoDescFlag` — "prevents Cobra from creating the '--no-descriptions' flag for shells that support completion descriptions"
+   - `DisableDescriptions` — "turns off all completion descriptions for shells that support them"
+   - `HiddenDefaultCmd` — "makes the default 'completion' command hidden"
+
+What cannot be determined from this response: the file's import list (though the spans reference `pflag.Flag` and `sync.RWMutex`, implying pflag and sync imports), any functions or methods implementing the completion logic (e.g., the `__complete` handler, flag-completion registration, or completion-script generation), the remainder of the ShellCompDirective const block, and any declarations before line 15, between lines 66–94, or after line 116. The provenance block confirms only 323 of a 325-token source budget was used and the result is truncated.

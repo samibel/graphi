@@ -1,0 +1,7 @@
+Completion uses this priority order:
+
+1. Try matching subcommand names.
+2. If none are found, offer the command’s `ValidArgs`.
+3. Only if neither subcommands nor `ValidArgs` produce completions, offer `ArgAliases`.
+
+Evidence: `site/content/completions/_index.md:123-166` says `ValidArgs` supplies predefined non-flag (“noun”) completions and explicitly states: “The aliases are shown … only if no completions were found within sub-commands or `ValidArgs`.” `command.go:82-84` also defines `ValidArgs` as valid non-flag arguments accepted in shell completion.
