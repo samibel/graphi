@@ -1,0 +1,21 @@
+cobra.go — structure and declarations as shown in the response (request: "describe this file's structure and declarations"; 10 ranked spans, `truncated: true`, so this is a partial, non-contiguous view).
+
+Package clause:
+- Line 18: `package cobra` — the file belongs to package `cobra`.
+
+Package-level variable declarations (configuration toggles and state):
+- Line 43: `var finalizers []func()` — a package-level slice of finalizer functions.
+- Lines 61-62: `var EnableCaseInsensitive = defaultCaseInsensitive` — doc: "EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)".
+- Lines 64-66: `var EnableTraverseRunHooks = defaultTraverseRunHooks` — doc: "executes persistent pre-run and post-run hooks from all parents. By default this is disabled, which means only the first run hook to be found is executed."
+- Lines 68-74: `var MousetrapHelpText = `This is a command line tool.\n\nYou need to open cmd.exe and run it from there.`` — doc: enables an info splash on Windows when the CLI is started from explorer.exe; set to "" to disable; "Works only on Microsoft Windows."
+- Lines 78-81: `var MousetrapDisplayDuration = 5 * time.Second` — doc: set to 0 to wait for the return key; disable via blank MousetrapHelpText; Windows-only.
+
+Function declarations:
+- Lines 111-115 (partial): `func Gt(a interface{}, b interface{}) bool` — doc: "Gt takes two types and checks whether the first type is greater than the second. In case of types Arrays, Chans, Maps and Slices, Gt will compare their lengths. Ints are compared directly while strings are first parsed as ints and then compared." Visible body begins `var left, right int64`.
+- Lines 173-177: `func rpad(s string, padding int) string` — "rpad adds padding to the right of a string"; builds `fmt.Sprintf("%%-%ds", padding)` and returns `fmt.Sprintf(formattedString, s)`.
+- Lines 187-202 (partial): `func ld(s, t string, ignoreCase bool) int` — "ld compares two strings and returns the levenshtein distance between them." Visible body: lowercases both strings via `strings.ToLower` when `ignoreCase`, allocates a `[][]int` matrix of size (len(s)+1) x (len(t)+1), seeds first column `d[i][0] = i` and first row `d[0][j] = j`.
+- Lines 240-243 (partial): `func WriteStringAndCheck(b io.StringWriter, s string)` — "writes a string into a buffer, and checks if the error is not nil"; body calls `b.WriteString(s)` then `CheckErr(err)`.
+
+Structural picture: after the package clause (line 18), the file carries a block of package-level vars (lines 43-81 region: `finalizers`, the `EnableCaseInsensitive` / `EnableTraverseRunHooks` behavior toggles initialized from `defaultCaseInsensitive` / `defaultTraverseRunHooks`, and the Windows mousetrap settings), followed by helper functions in the lines 111-243 region (`Gt`, `rpad`, `ld`, `WriteStringAndCheck`). No type declarations or imports are visible in the returned spans. Identifiers referenced but not declared in the shown spans: `defaultCaseInsensitive`, `defaultTraverseRunHooks`, `CheckErr`; packages used: `strings`, `fmt`, `time`, `io`.
+
+Caveat: the response is explicitly `truncated: true` and the spans are non-contiguous (gaps at lines 19-42, 44-60, 75-77, 82-110, 116-172, 178-186, 203-239, and anything after 243), so additional declarations in cobra.go are not covered by this response.

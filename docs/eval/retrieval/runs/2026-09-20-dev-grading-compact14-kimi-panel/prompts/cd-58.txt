@@ -1,0 +1,25 @@
+You are answering one question about a Go codebase you cannot see.
+
+Your ONLY sources of information are the two complete, unmodified responses
+printed between the BEGIN and END markers below. The first is one tool response.
+The second is one follow-up read of the file span designated by that tool
+response. You have no checkout, no search, no notes and no other material, and
+you must not use recollection of any public project to supply facts that are not
+in the two responses.
+
+Answer the question directly and concretely, citing the specific evidence in the
+responses you relied on (file paths, symbol names, snippet lines).
+
+If the responses do not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Usage
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 8d59829c1e15; read in order (305/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"README.md","start_line":89,"end_line":101,"text":"Next, include Cobra in your application:\n\n```go\nimport \"github.com/spf13/cobra\"\n```\n\n# Usage\n`cobra-cli` is a command line program to generate cobra applications and command files.\nIt will bootstrap your application scaffolding to rapidly\ndevelop a Cobra-based application. It is the easiest way to incorporate Cobra into your application.\n\nIt can be installed by running:\n"},{"path":"command.go","start_line":443,"end_line":448,"text":"// Usage puts out the usage for the command.\n// Used when a user provides invalid input.\n// Can be defined by user by overriding UsageFunc.\nfunc (c *Command) Usage() error {\n\treturn c.UsageFunc()(c)\n}"},{"path":"command.go","start_line":424,"end_line":441,"text":"// UsageFunc returns either the function set by SetUsageFunc for this command\n// or a parent, or it returns a default usage function.\nfunc (c *Command) UsageFunc() (f func(*Command) error) {\n\tif c.usageFunc != nil {\n\t\treturn c.usageFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().UsageFunc()\n\t}\n\treturn func(c *Command) error {\n\t\tc.mergePersistentFlags()\n\t\terr := tmpl(c.OutOrStderr(), c.UsageTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t\treturn err\n\t}\n}"},{"path":"command.go","start_line":478,"end_line":495,"text":"// UsageString returns usage string.\nfunc (c *Command) UsageString() string {\n\t// Storing normal writers\n\ttmpOutput := c.outWriter\n\ttmpErr := c.errWriter\n\n\tbb := new(bytes.Buffer)\n\tc.outWriter = bb\n\tc.errWriter = bb\n\n\tCheckErr(c.Usage())\n\n\t// Setting things back to normal\n\tc.outWriter = tmpOutput\n\tc.errWriter = tmpErr\n\n\treturn bb.String()\n}"},{"path":"command.go","start_line":49,"end_line":57,"text":"// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:\n\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the\n\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command."}],"provenance":{"input_sha256":"973e6a0d8e915539984a915274bb3612443bd2a11818944bf4a836a95f9f585d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"README.md:81-94"},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----
+----- BEGIN task_context/2 FOLLOW-UP READ BYTES -----
+{"path":"README.md","start_line":81,"end_line":94,"text":"# Installing\nUsing Cobra is easy. First, use `go get` to install the latest version\nof the library.\n\n```\ngo get -u github.com/spf13/cobra@latest\n```\n\nNext, include Cobra in your application:\n\n```go\nimport \"github.com/spf13/cobra\"\n```\n"}
+----- END task_context/2 FOLLOW-UP READ BYTES -----

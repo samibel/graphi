@@ -1,0 +1,15 @@
+Set the `DisableSuggestions` field on your command to `true`:
+
+```go
+command.DisableSuggestions = true
+```
+
+Evidence from the response:
+
+1. The user guide (`site/content/user_guide.md`, lines 694-734) states: "If you need to disable suggestions or tweak the string distance in your command, use: `command.DisableSuggestions = true`". It also notes an alternative tweak: `command.SuggestionsMinimumDistance = 1` (the default minimum Levenshtein distance is 2, ignoring case).
+
+2. The field is documented in the source (`command.go`, line 248): "// DisableSuggestions disables the suggestions based on Levenshtein distance".
+
+3. The mechanism is visible in `command.go` (lines 750-765): `func (c *Command) findSuggestions(arg string) string` begins with `if c.DisableSuggestions { return "" }`, so when the flag is set, no "Did you mean this?" block is produced for unknown commands. `findSuggestions` is what feeds the error message for invalid arguments, e.g. in `args.go` (lines 61-62): `fmt.Errorf("invalid argument %q for %q%s", v, cmd.CommandPath(), cmd.findSuggestions(args[0]))`.
+
+So, to turn off the automatic "Did you mean this?" suggestions that Cobra prints on "unknown command" errors, set `DisableSuggestions = true` on the command (typically your root command). If you only want to make suggestions stricter rather than off, adjust `SuggestionsMinimumDistance` instead.

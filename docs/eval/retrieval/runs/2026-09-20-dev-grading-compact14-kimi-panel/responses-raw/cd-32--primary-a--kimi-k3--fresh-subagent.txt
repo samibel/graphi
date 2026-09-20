@@ -1,0 +1,9 @@
+Cobra detects this with the helper `helpOrVersionFlagPresent(cmd *Command) bool` in completions.go (lines 522-532). For each of the two flag names it performs a three-part check against the command's full flag set:
+
+1. Lookup by name: `cmd.Flags().Lookup("version")` and `cmd.Flags().Lookup("help")` must return a non-nil flag (i.e., the flag exists in the merged FlagSet returned by `Command.Flags()`, command.go:1641-1653).
+2. Cobra-origin annotation: the flag must carry the `FlagSetByCobraAnnotation` annotation — `len(versionFlag.Annotations[FlagSetByCobraAnnotation]) > 0` and likewise for the help flag. This is the marker Cobra itself stamps on the flags it creates by default; e.g. `InitDefaultHelpFlag` (command.go:1183-1198) ends with `_ = c.Flags().SetAnnotation("help", FlagSetByCobraAnnotation, []string{"true"})` right after registering `BoolP("help", "h", false, usage)`.
+3. Actually set on the command line: `versionFlag.Changed` / `helpFlag.Changed` must be true, meaning the user really passed `--version` / `--help`.
+
+If either flag satisfies all three conditions, the function returns true; otherwise false.
+
+In the completion flow this guards Cobra's own injection of the flags: completions.go:300 contains the comment "// Let's add the --help and --version flag ourselves but only if the finalCmd" — i.e., during completion Cobra adds its default `--help`/`--version` flags only when they are not already present, using this detection (and mirrored by the test scenario at completions_test.go:3188, "Have a command that adds its own help and version flag").

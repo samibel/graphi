@@ -1,0 +1,21 @@
+`MarkPersistentFlagRequired` is a method on `*Command` defined in `shell_completions.go` (lines 28-33). Its doc comment says it "instructs the various shell completion implementations to prioritize the named persistent flag when performing completion, and causes your command to report an error if invoked without the flag."
+
+Signature and implementation:
+
+```go
+func (c *Command) MarkPersistentFlagRequired(name string) error {
+	return MarkFlagRequired(c.PersistentFlags(), name)
+}
+```
+
+It works by delegating to the package-level helper `MarkFlagRequired(flags *pflag.FlagSet, name string) error` (shell_completions.go lines 35-40), which sets an annotation on the flag:
+
+```go
+return flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{"true"})
+```
+
+So marking a persistent flag as required amounts to setting the `BashCompOneRequiredFlag` annotation to `"true"` on the flag in the command's persistent FlagSet.
+
+The FlagSet it operates on comes from `c.PersistentFlags()` (command.go lines 1725-1735), which lazily initializes and returns `c.pflags` — the field documented at command.go lines 154-155 as "pflags contains persistent flags" (`pflags *flag.FlagSet`).
+
+Two nearby related symbols also appear in the response: the method `(c *Command) MarkFlagRequired(name string) error` (shell_completions.go lines 21-26), the local-flag counterpart that calls `MarkFlagRequired(c.Flags(), name)`, and the package-level `MarkFlagRequired` helper noted above.

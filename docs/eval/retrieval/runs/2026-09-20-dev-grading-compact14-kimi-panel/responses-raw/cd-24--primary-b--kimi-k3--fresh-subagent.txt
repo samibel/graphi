@@ -1,0 +1,28 @@
+Executing a command returns flag.ErrHelp instead of running it in exactly two situations, both inside `func (c *Command) execute(a []string) (err error)` in command.go (follow-up read, command.go:874-993):
+
+1. The "help" flag is set. After `c.InitDefaultHelpFlag()` / `c.InitDefaultVersionFlag()` and a successful `c.ParseFlags(a)`, the code reads the help flag with `helpVal, err := c.Flags().GetBool("help")` and then:
+
+   if helpVal {
+       return flag.ErrHelp
+   }
+
+   The comment above it states the intent: "If help is called, regardless of other flags, return we want help. Also say we need help if the command isn't runnable." This check happens immediately after flag parsing and before version-flag handling, so a set help flag short-circuits everything else, including the `--version` path. (If the "help" flag was declared as a non-bool, `GetBool` fails and that error — not flag.ErrHelp — is returned, a case the comment says "should be impossible to get here as we always declare a help flag in InitDefaultHelpFlag()".)
+
+2. The command is not runnable. After the help check and the version-flag block (`if c.Version != "" { ... }`), the code does:
+
+   if !c.Runnable() {
+       return flag.ErrHelp
+   }
+
+   Per the ranked source span at command.go:1550-1553, `Runnable()` is defined as:
+
+   // Runnable determines if the command is itself runnable.
+   func (c *Command) Runnable() bool {
+       return c.Run != nil || c.RunE != nil
+   }
+
+   So if neither `Run` nor `RunE` is set on the command, execute returns flag.ErrHelp.
+
+In both cases the run path is never reached: the Runnable() check sits before `c.preRun()`, `c.ValidateArgs(argWoFlags)`, the PersistentPreRun/PreRun hooks, flag-group validation, and the final `c.RunE(c, argWoFlags)` / `c.Run(c, argWoArgs)` dispatch (all visible in command.go:874-993), so flag.ErrHelp is returned in place of running the command.
+
+Note on what does NOT produce flag.ErrHelp here: a flag-parse failure is routed through `return c.FlagErrorFunc()(c, err)` (command.go:885-891 in the first response), and FlagErrorFunc by default "returns a function which returns the original error" (command.go:497-511), so parse errors are not converted to flag.ErrHelp in the shown code.

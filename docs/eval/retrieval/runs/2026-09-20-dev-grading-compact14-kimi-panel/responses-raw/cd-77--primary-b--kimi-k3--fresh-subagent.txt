@@ -1,0 +1,19 @@
+The response contains the complete contents of the repository's `Makefile` (path "Makefile", lines 1-35). It is a small Go build Makefile with the following structure:
+
+**Variables and setup (lines 1-6):**
+- `BIN="./bin"` — output directory for binaries.
+- `SRC=$(shell find . -name "*.go")` — collects all Go source files recursively.
+- An `ifeq` guard warns if `golangci-lint` is not on `PATH`, suggesting installation via `curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh`.
+
+**Targets:**
+- `.PHONY: fmt lint test install_deps clean` (line 8)
+- `default: all` (line 10) — the default goal delegates to `all`.
+- `all: fmt test` (line 12) — formatting check plus tests.
+- `fmt` (lines 14-16): checks formatting with `@test -z $(shell gofmt -l $(SRC)) || (gofmt -d $(SRC); exit 1)`, printing a banner `******************** checking formatting ********************` first via `$(info ...)`.
+- `lint` (lines 18-20): runs `golangci-lint run -v` (notably, `lint` is declared `.PHONY` but is not part of `all`).
+- `test: install_deps` (lines 22-24): depends on `install_deps`, then runs `go test -v ./...`.
+- `richtest: install_deps` (lines 26-28): an alternative test target running `richgo test -v ./...` (tests with kyoh86/richgo).
+- `install_deps` (lines 30-32): runs `go get -v ./...` to download dependencies.
+- `clean` (lines 34-35): `rm -rf $(BIN)`.
+
+The remaining spans in the response (completion-file generators in `powershell_completions.go`, `bash_completions.go`, `fish_completions.go`, `zsh_completions.go`, and the `Command` struct in `command.go`) are unrelated to the Makefile itself; the Makefile answer is fully covered by the first source span, which the response header notes was read "in order (306/325 source tokens)".

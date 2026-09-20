@@ -1,0 +1,20 @@
+DebugFlags is a method on *Command (command.go:1453-1493) that prints a labelled dump of every flag in the command tree via a depth-first, pre-order walk driven by a recursive closure.
+
+Tree walking:
+- The method defines a local recursive closure `debugflags func(*Command)` and kicks it off with `debugflags(c)`, so the walk starts at the receiver command itself (after printing "DebugFlags called on" and c.Name()).
+- For each visited command x it first processes x itself, then, if `x.HasSubCommands()`, loops `for _, y := range x.commands { debugflags(y) }` — recursing into each subcommand in x.commands order. That is a pre-order depth-first traversal: parent printed before children.
+- Per command, it only prints the command's name (`c.Println(x.Name())`) when `x.HasFlags() || x.HasPersistentFlags()`. After the flags it also prints `x.flagErrorBuf`.
+
+Flag printing and labelling (each line has the form `  -<Shorthand>, --<Name> [<DefValue>] <Value>  [LABEL]`):
+
+1. Local flags — if `x.HasFlags()`, it iterates the local flag set with `x.flags.VisitAll(func(f *flag.Flag) {...})` and labels each flag:
+   - `[LP]` when the same flag name also exists in the command's persistent set: the condition is `x.HasPersistentFlags() && x.persistentFlag(f.Name) != nil` — i.e. the flag is both Local and Persistent (a local flag shadowing/sharing a name with a persistent one).
+   - `[L]` otherwise — a purely local flag.
+
+2. Persistent flags — if `x.HasPersistentFlags()`, it iterates `x.pflags.VisitAll(func(f *flag.Flag) {...})` and labels with `[P]`, but with a de-duplication guard:
+   - If `x.HasFlags()`, a persistent flag is printed (`[P]`) only when `x.flags.Lookup(f.Name) == nil` — i.e. it is not already represented in the local set (those were already shown as `[LP]` in the local pass).
+   - If the command has no local flags at all, every persistent flag is printed with `[P]` unconditionally.
+
+So the labelling scheme is: [L] = local-only, [LP] = local flag whose name also matches a persistent flag on the same command, [P] = persistent-only (not shadowed by a local flag of the same name). Membership tests used are `x.persistentFlag(f.Name)` for the persistent side and `x.flags.Lookup(f.Name)` for the local side, with `HasFlags()` / `HasPersistentFlags()` gating each pass.
+
+Corroborating spans in the same response show the same local-vs-persistent idiom elsewhere: LocalNonPersistentFlags (command.go:1655-1666) filters `c.LocalFlags()` by `persistentFlags.Lookup(f.Name) == nil`, and command.go:1690-1691 visits `c.Flags()` and `c.PersistentFlags()` separately (`c.Flags().VisitAll(addToLocal)` / `c.PersistentFlags().VisitAll(addToLocal)`).

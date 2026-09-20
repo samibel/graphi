@@ -1,0 +1,15 @@
+The suppression is driven by the set of "local non-persistent" flags: flags that belong to the current command but do NOT carry over to its subcommands. Once such a flag has actually been set on the command line, offering subcommand names as completions would be wrong, so the completion logic stops suggesting them.
+
+Mechanism, per the evidence:
+
+1. Computing the set. command.go lines 1655-1666 define `LocalNonPersistentFlags()`: "LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands." It builds a new FlagSet by visiting `c.LocalFlags()` and adding only those flags for which `persistentFlags.Lookup(f.Name) == nil` — i.e., local flags minus persistent flags.
+
+2. The suppression check. completions.go line 444 contains the guard:
+   `if localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed {`
+   So while preparing completions, each flag already parsed on the command line is looked up in the localNonPersistentFlags set; the branch is taken only if the flag is in that set AND `flag.Changed` is true (the flag was actually provided by the user, not just defined).
+
+3. Stated intent. bash_completions.go line 574 carries the comment: `// localNonPersistentFlags are used to stop the completion of subcommands when one is set`, and the generated bash script tracks them via the variable at bash_completions.go line 421: `local local_nonpersistent_flags=()`. So the same rule is applied on the shell-script side: when one of these flags is set, subcommand name completion is stopped.
+
+In short: the completer identifies flags that are local and non-persistent (via LocalNonPersistentFlags / the local_nonpersistent_flags list), checks whether any such flag on the command line has flag.Changed == true (completions.go:444), and when one is found, subcommand names are no longer offered as completions, because those flags would not be valid on a subcommand.
+
+Caveat: the response excerpt shows the guard condition at completions.go:444 but not the body of that branch (the exact statement that disables subcommand completion, e.g., a return/break or directive), since the response is marked truncated; the comment at bash_completions.go:574 nonetheless states the effect directly.

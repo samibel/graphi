@@ -1,0 +1,27 @@
+Cobra detects this with the helper function `helpOrVersionFlagPresent(cmd *Command) bool` in `completions.go` (lines 522-532), which is used by the completion machinery (the comment at `completions.go` line 300, "Let's add the --help and --version flag ourselves but only if the finalCmd...", shows the completion code deciding whether to add these flags itself).
+
+For each of the two flags, the function checks three conditions, all of which must hold:
+
+1. **The flag exists in the command's full flag set.** It calls `cmd.Flags().Lookup("version")` and `cmd.Flags().Lookup("help")` and requires a non-nil result. Per `command.go` lines 1641-1653, `Flags()` returns "the complete FlagSet that applies to this command (local and persistent declared here and by all parents)", lazily created via `flag.NewFlagSet`.
+
+2. **The flag was added by Cobra itself, not by the user.** It requires `len(flag.Annotations[FlagSetByCobraAnnotation]) > 0`, i.e. the flag carries the `FlagSetByCobraAnnotation` annotation. This annotation is how Cobra marks flags it installed itself: `InitDefaultHelpFlag` in `command.go` (lines 1183-1198) adds the default help flag with `c.Flags().BoolP("help", "h", false, usage)` and then immediately tags it via `_ = c.Flags().SetAnnotation("help", FlagSetByCobraAnnotation, []string{"true"})`. That initializer also only adds the flag "If c already has help flag, it will do nothing" (i.e. when `c.Flags().Lookup("help") == nil`). The test-file line `completions_test.go` line 3188, "// Have a command that adds its own help and version flag", confirms the distinction: a command adding its own flags lacks Cobra's annotation, so the annotation check is what tells Cobra-added flags apart from user-added ones.
+
+3. **The flag was actually set on the command line.** It requires `flag.Changed` to be true, meaning the user supplied `--help` or `--version` during invocation.
+
+In short, from the cited snippet:
+
+```go
+func helpOrVersionFlagPresent(cmd *Command) bool {
+	if versionFlag := cmd.Flags().Lookup("version"); versionFlag != nil &&
+		len(versionFlag.Annotations[FlagSetByCobraAnnotation]) > 0 && versionFlag.Changed {
+		return true
+	}
+	if helpFlag := cmd.Flags().Lookup("help"); helpFlag != nil &&
+		len(helpFlag.Annotations[FlagSetByCobraAnnotation]) > 0 && helpFlag.Changed {
+		return true
+	}
+	return false
+}
+```
+
+Cobra considers its `--help` or `--version` flag already present during completion when the flag is found in the merged flag set, carries the `FlagSetByCobraAnnotation` (proving Cobra itself registered it), and has `Changed == true` (proving it was passed on the command line). If either flag satisfies all three, the function returns true; otherwise false.

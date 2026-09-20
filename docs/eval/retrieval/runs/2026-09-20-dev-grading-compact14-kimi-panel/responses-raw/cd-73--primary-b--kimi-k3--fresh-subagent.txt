@@ -1,0 +1,6 @@
+Based on the two ranked source spans returned for command_notwin.go (request: "describe this file's structure and declarations"):
+
+- The file belongs to package cobra: line 18 reads `package cobra`.
+- Its only visible declaration is a package-level variable at line 20: `var preExecHookFn func(*Command)` — a hook variable holding a function that takes a *Command (presumably a pre-exec hook, consistent with the "_notwin" filename indicating a non-Windows build variant).
+
+The response is marked "truncated": true and reports "5/325 source tokens" read, so these two lines are all the evidence available; any further declarations in the file (e.g., build tags, imports, or function bodies) are not shown and cannot be described.

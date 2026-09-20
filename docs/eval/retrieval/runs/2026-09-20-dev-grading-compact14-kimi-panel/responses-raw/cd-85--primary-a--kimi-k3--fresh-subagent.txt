@@ -1,0 +1,22 @@
+LocalFlags (command.go:1668-1693) rebuilds the current command's local flag view as follows, per the returned source span:
+
+1. Merge first: the method starts with `c.mergePersistentFlags()`, so persistent flags are merged into the command's flag set before the local view is computed.
+
+2. Lazily (re)create the local set: if `c.lflags == nil`, it creates a fresh `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`, allocates `c.flagErrorBuf` if needed (`c.flagErrorBuf = new(bytes.Buffer)`), and redirects output with `c.lflags.SetOutput(c.flagErrorBuf)`. It then syncs settings from the full flag set: `c.lflags.SortFlags = c.Flags().SortFlags` and, if `c.globNormFunc != nil`, `c.lflags.SetNormalizeFunc(c.globNormFunc)`. Note the nil-guard plus the dedup check below mean the rebuild is incremental: flags already in `c.lflags` are not re-added.
+
+3. Selective copy via the `addToLocal` closure, which is the exact mechanism that excludes unshadowed parent flags:
+
+   addToLocal := func(f *flag.Flag) {
+       // Add the flag if it is not a parent PFlag, or it shadows a parent PFlag
+       if c.lflags.Lookup(f.Name) == nil && f != c.parentsPflags.Lookup(f.Name) {
+           c.lflags.AddFlag(f)
+       }
+   }
+
+   Two conditions must hold for a flag `f` to be added:
+   - `c.lflags.Lookup(f.Name) == nil` — no flag with that name is already in the local set (dedup, keeps the first occurrence).
+   - `f != c.parentsPflags.Lookup(f.Name)` — a pointer comparison against the parent's persistent flag of the same name. If `f` is the identical *flag.Flag object registered on the parent (an unshadowed, inherited parent persistent flag), it is excluded. If `f` merely shares the name but is a different object — i.e., this command re-declared the flag and thereby shadows the parent's — it is included. The code comment states this verbatim: "Add the flag if it is not a parent PFlag, or it shadows a parent PFlag".
+
+4. Sources scanned: the closure is applied to both relevant sets in order — `c.Flags().VisitAll(addToLocal)` then `c.PersistentFlags().VisitAll(addToLocal)` — so both regular and this command's own persistent flags are candidates, and the method returns `c.lflags`.
+
+Supporting context in the same response: the struct fields at command.go:154-158 document `lflags` as "contains local flags", `pflags` as "contains persistent flags", and `iflags` as inherited flags; `NonInheritedFlags` (command.go:1720-1723) is simply `return c.LocalFlags()`; and `LocalNonPersistentFlags` (command.go:1655-1666) builds on LocalFlags by filtering out flags present in `c.PersistentFlags()`.

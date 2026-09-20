@@ -1,0 +1,23 @@
+Call `SetErrPrefix` on your command with the replacement string:
+
+```go
+cmd.SetErrPrefix("FATAL:")
+```
+
+Evidence from the response:
+
+1. The user guide states it directly (site/content/user_guide.md, lines 599-604): "The default error message is `Error: <error contents>`. The Prefix, `Error:` can be customized using the `cmd.SetErrPrefix(s string)` function."
+
+2. The setter just stores the string on the command (command.go, lines 357-360):
+```go
+// SetErrPrefix sets error message prefix to be used. Application can use it to set custom prefix.
+func (c *Command) SetErrPrefix(s string) {
+	c.errPrefix = s
+}
+```
+
+3. The prefix is resolved with inheritance and a default (command.go, lines 611-621): `ErrPrefix()` returns the command's own `errPrefix` if non-empty; otherwise it walks up to the parent (`c.parent.ErrPrefix()`); if no command in the chain sets one, it falls back to the literal `"Error:"`. So setting the prefix on the root command effectively customizes it for the whole command tree, while setting it on a subcommand overrides the inherited value for that subtree.
+
+4. This is what gets printed on error: in the error-printing path (command.go, lines 1095-1101), when `SilenceErrors` is false, Cobra calls `c.PrintErrln(c.ErrPrefix(), err.Error())`, so your custom prefix replaces `Error:` in the printed line.
+
+Caveat: the standalone helper `CheckErr` (cobra.go, lines 232-238) hardcodes the prefix — it does `fmt.Fprintln(os.Stderr, "Error:", msg)` and does not consult `ErrPrefix()`. `SetErrPrefix` only affects the normal command-execution error printing, not `CheckErr`. Likewise, the completion helper `CompError` (completions.go, lines 892-896) uses its own fixed `[Error]` prefix.

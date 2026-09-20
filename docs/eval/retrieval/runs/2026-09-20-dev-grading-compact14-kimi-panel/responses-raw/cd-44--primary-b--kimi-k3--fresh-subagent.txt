@@ -1,0 +1,11 @@
+The response shows the mechanism by which completion of subcommand names is suppressed once a local non-persistent flag has been set, through the following pieces of evidence:
+
+1. The detection check (completions.go:444): the single-line snippet shows the guard condition
+   `if localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed {`
+   i.e., while visiting flags during completion, the code looks the flag up in a `localNonPersistentFlags` set and tests `flag.Changed` (the pflag marker that the user has actually supplied the flag on the command line). When both hold — the flag is a local non-persistent flag and it has been set — the branch that suppresses subcommand-name completion is taken.
+
+2. How the set is built (command.go:1655-1666): `LocalNonPersistentFlags()` constructs the set used above. It iterates `c.LocalFlags().VisitAll(...)` and adds only those flags for which `persistentFlags.Lookup(f.Name) == nil`, i.e. flags local to this command that do NOT persist to subcommands — matching the doc comment: "LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands."
+
+3. Intent confirmation in the generated bash completion (bash_completions.go:574): the literal comment "// localNonPersistentFlags are used to stop the completion of subcommands when one is set", with the corresponding shell-side array initialized at bash_completions.go:421 (`local local_nonpersistent_flags=()`), showing the same suppression logic is mirrored in the generated bash script: once one such flag is present, subcommand completion is stopped.
+
+What is not fully shown: the snippet for completions.go:444 is truncated to the single `if` line, so the exact suppression action inside the branch (e.g., which directive or flag is used to drop subcommand-name candidates) is not visible in the response; the bash comment at bash_completions.go:574 states the effect ("stop the completion of subcommands when one is set") but the shell code implementing it is likewise not included.

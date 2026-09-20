@@ -1,0 +1,17 @@
+Cobra considers a command to have an available subcommand for help output — specifically for the "Available Commands" section of the default usage/help template — when at least one entry in its `c.commands` slice passes `IsAvailableCommand()`. This is implemented in `HasAvailableSubCommands()` (command.go, lines 1615–1629), whose doc comment states it "determines if a command has available sub commands that need to be shown in the usage/help default template under 'available commands'": it loops over `c.commands` and returns true on the first subcommand for which `sub.IsAvailableCommand()` is true, returning false otherwise ("the command either has no sub commands, or no available (non deprecated/help/hidden) sub commands").
+
+Per `IsAvailableCommand()` (command.go, lines 1560–1576), a subcommand counts as available ("a non-help command … this includes all non deprecated/hidden commands") when ALL of the following hold:
+
+1. It is not deprecated and not hidden: `if len(c.Deprecated) != 0 || c.Hidden { return false }`.
+2. It is not the parent's auto-generated help command: `if c.HasParent() && c.Parent().helpCommand == c { return false }`.
+3. It is either runnable itself or recursively has at least one available subcommand of its own: `if c.Runnable() || c.HasAvailableSubCommands() { return true }`.
+
+Otherwise the subcommand is not available, and if none of the subcommands qualify, `HasAvailableSubCommands()` returns false and the command is treated as having no available subcommands for help output.
+
+Related evidence in the response:
+
+- `HasHelpSubCommands()` (command.go, lines 1600–1613) is the sibling check for the "additional help topics" section: it iterates `c.commands` and returns true on the first subcommand for which `sub.IsAdditionalHelpTopicCommand()` is true. `IsAdditionalHelpTopicCommand()` (command.go, lines 1580–1583, partial) is described as true when a command is NOT runnable and is not hidden/deprecated, and has no runnable/non-hidden/non-deprecated subcommands (referencing https://github.com/spf13/cobra/issues/393#issuecomment-282741924).
+- Downstream usage in `doc/md_docs.go` (lines 100–105) shows the same predicate gating documentation generation: `for _, child := range children { if !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() { continue } ... }`.
+- `InitDefaultHelpCmd()` (command.go, lines 1228–1229) notes: "If c already has help command or c has no subcommands, it will do nothing," and the user guide (site/content/user_guide.md, lines 494–495) confirms "Cobra automatically adds a help command to your application when you have subcommands."
+
+In short: a command has an available subcommand for help output iff at least one subcommand is non-deprecated, non-hidden, not the parent's auto-generated help command, and is itself runnable or recursively has such an available subcommand.

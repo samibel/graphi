@@ -86,7 +86,11 @@ Readings, checked against the graders' rationales:
   candidate delta, re-grade the committed compact/14 capture
   (`../2026-09-15-dev-grading-reviewed/bundles/`) with this same
   subagent panel; that comparison is cheap and both sides would share
-  the panel.
+  the panel. **Done:** `../2026-09-20-dev-grading-compact14-kimi-panel/`
+  — compact/14 scores 59 of 64 under this panel too; the 48 → 59
+  difference was the panel, and the candidate delta at constant panel is
+  the transcript structure (completeness 49 → 60, misses 4 → 2), which
+  no panel votes on.
 - The two real misses (cd-29's `findFlag` window, cd-87's flow span) are
   the retrieval slice's business: candidate pool and ranking, with the
   ranking gates as their own evidence. The projection is not implicated.

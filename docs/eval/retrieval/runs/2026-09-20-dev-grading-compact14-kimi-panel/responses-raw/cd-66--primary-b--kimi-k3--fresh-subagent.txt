@@ -1,0 +1,20 @@
+ContainsGroup is a method on *Command defined in command.go at lines 1346-1354:
+
+    // ContainsGroup return if groupID exists in the list of command groups.
+    func (c *Command) ContainsGroup(groupID string) bool {
+        for _, x := range c.commandgroups {
+            if x.ID == groupID {
+                return true
+            }
+        }
+        return false
+    }
+
+It reports whether the given groupID exists among the command's command groups: it iterates over the unexported slice field c.commandgroups and returns true if any element's ID field equals groupID, otherwise false.
+
+Supporting evidence from the same response:
+- The elements being matched are of type Group, defined in command.go lines 41-45 as `type Group struct { ID string; Title string }`; ContainsGroup compares against the Group.ID string field.
+- The slice it scans is populated by AddGroup, command.go lines 1356-1359: `func (c *Command) AddGroup(groups ...*Group) { c.commandgroups = append(c.commandgroups, groups...) }`, which confirms c.commandgroups is a []*Group holding the command's groups.
+- The Command struct (excerpt at command.go lines 73-106) also has a separate exported field GroupID, described as "The group id under which this subcommand is grouped in the 'help' output of its parent" — i.e., the per-command group membership that ContainsGroup checks on the parent side.
+
+In short: ContainsGroup(groupID string) bool is a linear-scan membership test over a Command's registered help groups, returning true when one of its *Group entries has a matching ID.

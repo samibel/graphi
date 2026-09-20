@@ -1,0 +1,7 @@
+Cobra identifies required flags for completion via a pflag annotation:
+
+1. Marking: `MarkFlagRequired(flags *pflag.FlagSet, name string)` in `shell_completions.go:35-40` calls `flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{"true"})`. The constant `BashCompOneRequiredFlag = "cobra_annotation_bash_completion_one_required_flag"` is defined in `bash_completions.go:28-34`. Command-level convenience wrappers `(*Command).MarkFlagRequired` (shell_completions.go:21-26) and `(*Command).MarkPersistentFlagRequired` (shell_completions.go:28-33) apply the same annotation to local or persistent flags respectively.
+
+2. Reading during completion: `completeRequireFlags(finalCmd *Command, toComplete string)` in `completions.go:567-590` visits every flag in `finalCmd.InheritedFlags()` and `finalCmd.NonInheritedFlags()` (via `VisitAll`) and checks `if _, present := flag.Annotations[BashCompOneRequiredFlag]; present`. For each annotated flag that has not already been set (`!flag.Changed`), it appends `getFlagNameCompletions(flag, toComplete)` to the completions list — i.e., it suggests required flags that the user has not yet provided.
+
+The code comment in `completeRequireFlags` notes it deliberately uses `InheritedFlags()`/`NonInheritedFlags()` instead of `finalCmd.Flags()` because `ParseFlags()` (not `Flags()`) merges inherited and non-inherited flags, and `ParsedFlags()` may not have been called for commands with `DisableFlagParsing`.

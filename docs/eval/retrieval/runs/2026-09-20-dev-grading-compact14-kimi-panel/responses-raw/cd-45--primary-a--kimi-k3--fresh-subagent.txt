@@ -1,0 +1,14 @@
+You have two options, per site/content/completions/_index.md (lines 334-354, section "Limit flag completions to directory names"):
+
+1. The simple way: call MarkFlagDirname on your command, e.g.
+   flagName := "output"
+   cmd.MarkFlagDirname(flagName)
+
+2. The flexible way: combine RegisterFlagCompletionFunc with cobra.ShellCompDirectiveFilterDirs, e.g.
+   cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+       return nil, cobra.ShellCompDirectiveFilterDirs
+   })
+
+The implementation evidence backs this up: in shell_completions.go lines 81-85, (c *Command) MarkFlagDirname(name string) delegates to the package-level MarkFlagDirname(c.Flags(), name), and lines 94-98 show that function sets the BashCompSubdirsInDir annotation on the flag (flags.SetAnnotation(name, BashCompSubdirsInDir, []string{})), which is what tells the shell completion machinery to offer only directory names.
+
+As a bonus, the same doc section shows how to limit completions to directory names *within another directory* by returning a subdirectory from the completion func while still using ShellCompDirectiveFilterDirs, e.g. return []string{"themes"}, cobra.ShellCompDirectiveFilterDirs.

@@ -1,0 +1,15 @@
+Set the global variable `EnableTraverseRunHooks` to `true`.
+
+Evidence in the response:
+
+1. `cobra.go`, lines 64-66:
+   "// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.
+    // By default this is disabled, which means only the first run hook to be found is executed.
+    var EnableTraverseRunHooks = defaultTraverseRunHooks"
+
+2. `site/content/user_guide.md`, lines 686-693:
+   "By default, only the first persistent hook found in the command chain is executed.
+    That is why in the above output, the `rootCmd PersistentPostRun` was not called for a child command.
+    Set `EnableTraverseRunHooks` global variable to `true` if you want to execute all parents' persistent hooks."
+
+So in your program, assign `cobra.EnableTraverseRunHooks = true` (the package-level variable declared in cobra.go) before executing your command tree, and every parent's persistent pre-run and post-run hooks will run rather than only the first one found in the command chain. Supporting context: `command.go` lines 944-945 note the traversal semantics when this is enabled ("Execute all persistent pre-runs from the root parent till this command" and "Execute all persistent post-runs from this command till the root parent").

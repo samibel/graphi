@@ -1,0 +1,25 @@
+# bash_completionsV2.go — structure and declarations
+
+Evidence: the response carries 5 ranked source spans from `bash_completionsV2.go` (request: "describe this file's structure and declarations"), flagged `truncated: true`. The file spans at least lines 15–396.
+
+## Package
+
+- Line 15: `package cobra` — the file is part of the `cobra` package.
+
+## Declarations (in ranked order returned)
+
+1. **`func genBashComp(buf io.StringWriter, name string, includeDesc bool)`** (lines 31–85, body cut off mid-function by the truncated span). This is the core generator: it picks `compCmd := ShellCompRequestCmd`, switching to `ShellCompNoDescRequestCmd` when `includeDesc` is false, then writes the completion script via `WriteStringAndCheck(buf, fmt.Sprintf(...))`. The emitted template defines shell functions `__<name>_debug`, `__<name>_init_completion` (a minimal `_init_completion` for Mac bash3, noted in an inline comment), and `__<name>_get_completion_results` (builds `requestComp="${words[0]} <compCmd> ${args[*]}"`, handles the trailing-space empty-parameter case and the `-n=<TAB>` flag case by stripping `cur="${cur#*=}"`, then runs `out=$(eval "${requestComp}" 2>/dev/null)`).
+
+2. **`func (c *Command) genBashCompletion(w io.Writer, includeDesc bool) error`** (lines 24–29). Private method; renders into `buf := new(bytes.Buffer)` via `genBashComp(buf, c.Name(), includeDesc)`, then `buf.WriteTo(w)` and returns the error.
+
+3. **`func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error`** (lines 392–396). Public wrapper with doc comment "GenBashCompletionV2 generates Bash completion file version 2 and writes it to the passed writer." Body is just `return c.genBashCompletion(w, includeDesc)`.
+
+4. **`func (c *Command) GenBashCompletionFileV2(filename string, includeDesc bool) error`** (lines 381–390). Public wrapper with doc comment "GenBashCompletionFileV2 generates Bash completion version 2." Does `outFile, err := os.Create(filename)`, `defer outFile.Close()`, then `return c.GenBashCompletionV2(outFile, includeDesc)`.
+
+## Call chain
+
+`GenBashCompletionFileV2` (file path) → `GenBashCompletionV2` (writer) → `genBashCompletion` (buffered private impl) → `genBashComp` (script template writer).
+
+## Caveats
+
+The span for `genBashComp` ends at line 85 inside the function (`out=$(eval ...)`), so the remainder of the script template and any further declarations between lines ~86–380 are not shown in the response. No imports, types, constants, or variables of the file are visible beyond `ShellCompRequestCmd` / `ShellCompNoDescRequestCmd` referenced inside `genBashComp`.

@@ -1,0 +1,26 @@
+Based solely on the task_context/2 response (10 ranked spans from `completions.go`, request: "describe this file's structure and declarations"; response marked `truncated: true`), the file's structure and declarations are as follows.
+
+## Package
+
+- `completions.go:15` — `package cobra`. The file belongs to the `cobra` package and references `pflag` (e.g. `*pflag.Flag`), so it imports the pflag library.
+
+## Package-level declarations
+
+- `completions.go:26-33` — a `const` block declaring the two hidden command names used by the shell completion scripts:
+  - `ShellCompRequestCmd = "__complete"`
+  - `ShellCompNoDescRequestCmd = "__completeNoDesc"`
+- `completions.go:35` — a package-level variable: `var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}`, documented as the "Global map of flag completion functions" whose reads/writes must be guarded by `flagCompletionMutex` (the mutex itself is mentioned in the comment but its declaration is not shown).
+- `completions.go:54-55` — a second `const` block beginning the `ShellCompDirective` enumeration; the first member shown is `ShellCompDirectiveError` ("indicates an error occurred and completions should be ignored"). The remaining directive constants are cut off in this span, but a later span references `ShellCompDirectiveNoFileComp`.
+
+## Functions and methods (in ranked-span order)
+
+- `func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error)` (`completions.go:266-275`) — the core completion entry point; it splits off the last (incompletely typed) argument as `toComplete`, keeps the rest as `trimmedArgs`, and declares `finalCmd *Command`, `finalArgs []string`, `err error` before finding "the real command for which completion must be performed".
+- `func (d ShellCompDirective) string() string` (`completions.go:162-167`) — a method on the `ShellCompDirective` bitmask that builds a `[]string` of the enabled directive names (e.g. appending `"ShellCompDirectiveError"` when `d&ShellCompDirectiveError != 0`) for a human-readable listing.
+- `func getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string` (`completions.go:534-536`) — returns flag-name completions, returning an empty slice early when `nonCompletableFlag(flag)` is true.
+- `func checkIfFlagCompletion(finalCmd *Command, args []string, lastArg string) (*pflag.Flag, []string, string, error)` (`completions.go:592-593`) — checks whether completion should target a flag, branching first on `finalCmd.DisableFlagParsing`.
+- `func (c *Command) InitDefaultCompletionCmd()` (`completions.go:678-684`) — exported method that adds a default `completion` command to `c`; it is a no-op when the feature is explicitly disabled (`c.CompletionOptions.DisableDefaultCmd`), when `c` has no subcommands (`!c.HasSubCommands()`), or when a `completion` command already exists.
+- `func NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)` (`completions.go:118-121`) — an exported helper completion function that disables file completion by returning `nil, ShellCompDirectiveNoFileComp`.
+
+## Overall structure
+
+The file implements cobra's shell-completion machinery: it opens with the package clause, then declares the hidden completion-request command name constants, the global flag-completion-function registry map, and the `ShellCompDirective` bitmask constants; the body of the file consists of the completion engine (`getCompletions`), directive formatting (`ShellCompDirective.string`), flag-completion helpers (`getFlagNameCompletions`, `checkIfFlagCompletion`), the user-facing `NoFileCompletions` helper, and the default `completion` command installer (`InitDefaultCompletionCmd`). Spans span lines 15 through 684, but the response is truncated (`truncated: true`), so declarations between the shown spans (e.g. the rest of the directive constants, `nonCompletableFlag`, `flagCompletionMutex`, any imports) are not visible in this response.

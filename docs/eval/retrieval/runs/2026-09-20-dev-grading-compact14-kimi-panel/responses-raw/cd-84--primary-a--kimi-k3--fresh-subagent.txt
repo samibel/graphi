@@ -1,0 +1,13 @@
+In checkIfFlagCompletion (completions.go:592-676), when the current token (lastArg) starts with '-' and contains an '=' sign, it splits the token at the first '=' and treats the part after it as the value to complete:
+
+1. Locate the '=': `if index := strings.Index(lastArg, "="); index >= 0` — the index of the first '=' in lastArg is found.
+
+2. Extract the flag name from the part before the '=':
+   - Long flag: if `strings.HasPrefix(lastArg[:index], "--")`, the flag has a full name, so `flagName = lastArg[2:index]` — everything between the leading "--" and the '='.
+   - Shorthand: otherwise the token is shorthand form (possibly a cluster like `-asd=value`), and only the last character before the '=' is taken: `flagName = lastArg[index-1 : index]`. The comment explains "We have to get the last shorthand flag name, e.g. `-asd` => d to provide the correct completion" (referencing https://github.com/spf13/cobra/issues/1257).
+
+3. The value portion becomes the new toComplete string: `lastArg = lastArg[index+1:]` — everything after the '='.
+
+4. Record the split: `flagWithEqual = true` is set so later logic knows the value came from a `--flag=value` form rather than a two-word flag (this matters at the end of the function: the `flag.NoOptDefVal` boolean-flag reset is only applied `if !flagWithEqual`).
+
+After that, `findFlag(finalCmd, flagName)` (completions.go:841-858) resolves the name — for a single-character shorthand it first converts it to the long flag name via `flagSet.ShorthandLookup(name)` (falling back to `cmd.InheritedFlags().ShorthandLookup(name)`) before calling `cmd.Flag(name)`. If the flag is not found, it returns a `&flagCompError{...}` with the original args and orgLastArg; otherwise it returns the flag, the trimmed args, and the stripped value portion (lastArg) for value completion.

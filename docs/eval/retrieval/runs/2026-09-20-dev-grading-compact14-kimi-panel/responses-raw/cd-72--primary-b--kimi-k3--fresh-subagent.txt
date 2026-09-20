@@ -1,0 +1,26 @@
+AddGroup is a method on *Command defined in command.go at lines 1356-1359. It adds one or more command groups to the parent command by appending them to the command's internal commandgroups slice. The exact source given is:
+
+    // AddGroup adds one or more command groups to this parent command.
+    func (c *Command) AddGroup(groups ...*Group) {
+        c.commandgroups = append(c.commandgroups, groups...)
+    }
+
+So its signature is `func (c *Command) AddGroup(groups ...*Group)` — variadic, taking any number of *Group values, with no return value and no duplicate checking.
+
+Supporting evidence in the same response about what a Group is and how groups relate to commands:
+
+- The Group type itself is defined in command.go at lines 41-45:
+      // Group Structure to manage groups for commands
+      type Group struct {
+          ID    string
+          Title string
+      }
+  i.e. a group is just an ID plus a display Title.
+
+- Commands are associated with groups via the GroupID field on Command (shown in the Command struct excerpt at command.go lines 60-97): "The group id under which this subcommand is grouped in the 'help' output of its parent." This is the purpose of the groups registered via AddGroup — they control how subcommands are grouped in the parent's help output.
+
+- Two sibling methods that operate on the same commandgroups field are included:
+  - Groups() at command.go lines 1331-1334 returns the slice of child command groups (`return c.commandgroups`).
+  - ContainsGroup(groupID string) bool at command.go lines 1346-1354 reports whether a groupID exists in the list of command groups by scanning c.commandgroups and comparing x.ID.
+
+Note that the response shows AddGroup does NOT call ContainsGroup to dedupe — it blindly appends. All cited spans come from a single file, command.go; the response was marked truncated:true but includes the full AddGroup definition, which is sufficient to answer what AddGroup is and does.

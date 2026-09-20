@@ -1,0 +1,11 @@
+Cobra appends " [flags]" to a command's use line inside (*Command).UseLine() (command.go, lines 1436-1451) when all of the following hold:
+
+1. The command's DisableFlagsInUseLine field is not set. The code returns early before appending when it is true:
+   "if c.DisableFlagsInUseLine { return useline }"
+   The field's own doc comment (command.go, lines 244-245) confirms: "DisableFlagsInUseLine will disable the addition of [flags] to the usage line of a command when printing help or generating docs".
+
+2. The command has at least one available flag: "if c.HasAvailableFlags() && ...". (The man-page generator in doc/man_docs.go, lines 187-200, likewise gates its OPTIONS sections on flags.HasAvailableFlags(), showing this is the standard availability check; mergePersistentFlags at command.go 1847-1853 merges persistent and parent flags into c.Flags() beforehand, so inherited persistent flags count toward availability.)
+
+3. The use line does not already contain the literal "[flags]" marker: "... && !strings.Contains(useline, \"[flags]\") { useline += \" [flags]\" }".
+
+In short: when building the usage line (parent command path plus c.Use, or just c.Use for a root command), Cobra appends " [flags]" exactly when flags-in-use-line is not disabled, the command has available flags, and the marker is not already present in the use line.

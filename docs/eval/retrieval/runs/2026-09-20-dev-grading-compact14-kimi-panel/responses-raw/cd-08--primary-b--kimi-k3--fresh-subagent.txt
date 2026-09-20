@@ -1,0 +1,29 @@
+GenYamlTreeCustom is an exported function in doc/yaml_docs.go (lines 58-85) that recursively generates a tree of YAML documentation files for a cobra command and all of its subcommands.
+
+Signature and purpose (from the response, doc/yaml_docs.go:58-60):
+    // GenYamlTreeCustom creates yaml structured ref files.
+    func GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error
+
+It takes the root command, an output directory, and two callback functions: filePrepender (content prepended to each generated file) and linkHandler (rewrites links in the YAML output).
+
+Behavior, step by step (all from the doc/yaml_docs.go:58-85 span):
+
+1. Recursion over subcommands: it iterates cmd.Commands() and skips any subcommand c for which `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, then calls GenYamlTreeCustom(c, dir, filePrepender, linkHandler) on each remaining subcommand, returning the first error encountered.
+
+2. File naming: the file name for each command is derived from the command path with spaces replaced by underscores, plus a ".yaml" suffix:
+       basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + ".yaml"
+       filename := filepath.Join(dir, basename)
+
+3. File creation: it creates the file with os.Create(filename), returns any error, and defers f.Close().
+
+4. Content writing: it first writes the prepender output —
+       io.WriteString(f, filePrepender(filename))
+   — and then writes the actual YAML documentation via GenYamlCustom(cmd, f, linkHandler), returning nil on success.
+
+Supporting context also present in the response:
+
+- GenYamlCustom (doc/yaml_docs.go:92-123), the per-file generator it delegates to: it calls cmd.InitDefaultHelpCmd() and cmd.InitDefaultHelpFlag(), fills a cmdDoc struct with Name (cmd.CommandPath()), forceMultiLine'd Synopsis/Description from cmd.Short/cmd.Long, Usage from cmd.UseLine() when cmd.Runnable(), Example, Options from genFlagResult(cmd.NonInheritedFlags()), InheritedOptions from genFlagResult(cmd.InheritedFlags()), and begins building a "see also" list from the parent command (the span ends mid-function at line 123).
+- GenYaml (doc/yaml_docs.go:87-90) is the non-custom convenience wrapper: `return GenYamlCustom(cmd, w, func(s string) string { return s })` — i.e., an identity linkHandler.
+- IsAvailableCommand (command.go:1560-1576), the availability predicate used in the recursion's skip test: a command is unavailable if it has a non-empty Deprecated string or is Hidden, if it is its parent's helpCommand, or if it is neither Runnable nor has available subcommands (per HasAvailableSubCommands).
+
+Note: the response is marked "truncated":true, so the tail of GenYamlCustom (the actual YAML marshaling and the rest of the see-also logic) is not included; everything about GenYamlTreeCustom itself is fully present.

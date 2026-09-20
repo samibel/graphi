@@ -1,0 +1,26 @@
+Cobra considers a command to have an available subcommand for help output when at least one of its direct subcommands passes the IsAvailableCommand() check.
+
+Evidence and mechanics:
+
+1. HasAvailableSubCommands() (command.go, lines 1615-1629) is the gatekeeper, documented as determining "if a command has available sub commands that need to be shown in the usage/help default template under 'available commands'". Its implementation iterates over c.commands and returns true "on the first found available (non deprecated/help/hidden) sub command":
+
+   for _, sub := range c.commands {
+       if sub.IsAvailableCommand() {
+           return true
+       }
+   }
+   return false
+
+2. A subcommand qualifies as "available" via IsAvailableCommand() (command.go, lines 1560-1576), which returns false when:
+   - the subcommand is deprecated (len(c.Deprecated) != 0) or hidden (c.Hidden), or
+   - the subcommand is its parent's help command (c.HasParent() && c.Parent().helpCommand == c).
+   Otherwise it returns true only if the subcommand is either runnable itself or recursively has available subcommands:
+
+   if c.Runnable() || c.HasAvailableSubCommands() {
+       return true
+   }
+   return false
+
+So, in short: a command has an available subcommand for the "Available Commands" help section as soon as it has at least one direct child in c.commands that is non-deprecated, non-hidden, not the auto-generated help command, and is either runnable or itself has available subcommands (a non-runnable grouping command still counts if it contains available descendants).
+
+Corroborating usage of the same predicate: doc/md_docs.go (lines 100-105) applies the identical filter when emitting generated docs, skipping any child where !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand(). The related HasHelpSubCommands() (command.go, lines 1600-1613) separately checks for "additional help topics" via IsAdditionalHelpTopicCommand(), but that governs a different help-output section, not the "available commands" section asked about here.

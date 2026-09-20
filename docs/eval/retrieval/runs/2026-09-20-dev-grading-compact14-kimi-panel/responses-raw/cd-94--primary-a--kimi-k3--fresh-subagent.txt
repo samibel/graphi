@@ -1,0 +1,28 @@
+Use the `linkHandler` hook: instead of `GenReSTTree`, call `GenReSTTreeCustom` and pass your own link-handler function of type `func(string, string) string` (it receives the command name and reference and returns the link markup).
+
+Evidence from the response:
+
+1. `site/content/docgen/rest.md` (line 107): "The `linkHandler` can be used to customize the rendered links to the commands, given a command name and reference. This is useful while converting rst to html or while generating documentation with tools like Sphinx where `:ref:` is used:"
+
+2. `doc/rest_docs.go` (lines 51–54) shows the default behavior you are overriding:
+   ```go
+   // defaultLinkHandler for default ReST hyperlink markup
+   func defaultLinkHandler(name, ref string) string {
+       return fmt.Sprintf("`%s <%s.rst>`_", name, ref)
+   }
+   ```
+   i.e. by default links render as `` `name <ref.rst>`_ ``.
+
+3. `doc/rest_docs.go` (lines 132–145) shows the entry points:
+   ```go
+   func GenReSTTree(cmd *cobra.Command, dir string) error {
+       emptyStr := func(s string) string { return "" }
+       return GenReSTTreeCustom(cmd, dir, emptyStr, defaultLinkHandler)
+   }
+
+   // GenReSTTreeCustom is the the same as GenReSTTree, but
+   // with custom filePrepender and linkHandler.
+   func GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error {
+   ```
+
+So: call `GenReSTTreeCustom(cmd, dir, filePrepender, myLinkHandler)` where `myLinkHandler := func(name, ref string) string { ... }` returns whatever markup you need — e.g. a Sphinx `:ref:`-style target instead of the default `` `name <ref.rst>`_ `` form. If you don't need a file prepender, pass the no-op `func(s string) string { return "" }` that `GenReSTTree` itself uses.

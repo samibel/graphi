@@ -1,0 +1,17 @@
+There are three documented ways to turn off the descriptions shown next to shell completions, depending on whether you are the end user or the program author:
+
+1. End user: pass `--no-descriptions` to the program's default `completion` command when generating/sourcing the script. The docs at site/content/completions/_index.md:388-395 say: "If you don't want to show descriptions in the completions, you can add `--no-descriptions` to the default `completion` command to disable them", with the example:
+
+```bash
+$ source <(helm completion bash --no-descriptions)
+$ helm completion [tab][tab]
+bash        fish        powershell  zsh
+```
+
+(without the flag, the same completion shows `bash  (generate autocompletion script for bash)  powershell  (generate autocompletion script for powershell)  ...`).
+
+2. Program author (all shells): set `DisableDescriptions` to true on your `cobra.Command`. The field's doc comment at completions.go:111-112 reads: "// DisableDescriptions turns off all completion descriptions for shells // that support them".
+
+3. Program author (PowerShell specifically): generate the script with the non-description generators. Per site/content/completions/_index.md:519, use `command.GenPowerShellCompletion()` or `command.GenPowerShellCompletionFile()` instead of `command.GenPowerShellCompletionWithDesc()` / `command.GenPowerShellCompletionFileWithDesc()`; powershell_completions.go:305 confirms "// GenPowerShellCompletionFile generates powershell completion file without descriptions."
+
+One caveat from the docs (site/content/completions/_index.md:355-358): descriptions are supported for each shell, but for bash they are only available in the completion V2 version, so on bash V1 completions there are no descriptions to turn off.

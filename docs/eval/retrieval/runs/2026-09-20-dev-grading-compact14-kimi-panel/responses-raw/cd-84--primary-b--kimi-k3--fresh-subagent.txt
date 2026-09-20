@@ -1,0 +1,11 @@
+In `checkIfFlagCompletion` (completions.go:592-676), the current token is split only when the last argument starts with `-` and contains an `=`:
+
+1. Guard: the split happens inside `if len(lastArg) > 0 && lastArg[0] == '-'`, and only if `strings.Index(lastArg, "=")` finds an `=` (`index >= 0`). If there is no `=`, the function returns immediately with `nil, args, lastArg, nil` ("Normal flag completion"), i.e. no value completion.
+
+2. Locating the flag name, using `index` as the position of the first `=`:
+   - Long form `--flag=value`: if `strings.HasPrefix(lastArg[:index], "--")`, the flag name is taken as everything between the `--` prefix and the `=`: `flagName = lastArg[2:index]` (comment: "Flag has full name").
+   - Shorthand form `-s=value` (or bundled like `-asd=value`): the flag name is taken as the single character immediately before the `=`: `flagName = lastArg[index-1 : index]`. The comment explains: "We have to get the last shorthand flag name, e.g. `-asd` => d to provide the correct completion" (referencing https://github.com/spf13/cobra/issues/1257).
+
+3. Extracting the value-to-complete: `lastArg = lastArg[index+1:]`, i.e. everything after the `=` becomes the new `lastArg` (the partial value to complete), and `flagWithEqual = true` is set to record that the value was attached via `=`.
+
+After the split, the extracted `flagName` is resolved with `findFlag(finalCmd, flagName)` (which maps a one-character shorthand to its long name via `ShorthandLookup`, completions.go:841-858), and `flagWithEqual` later prevents the boolean-flag (`NoOptDefVal`) reset from discarding the flag, since `if !flagWithEqual { ... }` only applies the two-word/boolean reconsideration when no `=` was present.

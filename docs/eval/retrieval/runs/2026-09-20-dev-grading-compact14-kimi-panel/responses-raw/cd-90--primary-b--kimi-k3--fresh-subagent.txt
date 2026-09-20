@@ -1,0 +1,13 @@
+Set the DisableSuggestions field to true on your command:
+
+```go
+command.DisableSuggestions = true
+```
+
+Evidence from the response:
+
+- site/content/user_guide.md (lines 694-734) states: "If you need to disable suggestions or tweak the string distance in your command, use: `command.DisableSuggestions = true`". The same section explains that suggestions are generated for "unknown command" errors based on Levenshtein distance, with a default minimum distance of 2.
+- command.go (lines 750-765), the `findSuggestions` method, confirms the behavior in code: its first check is `if c.DisableSuggestions { return "" }`, so no "Did you mean this?" block is produced when the flag is set.
+- command.go (line 248) documents the field: "// DisableSuggestions disables the suggestions based on Levenshtein distance".
+
+Related alternatives from the same user_guide.md span, if you want to keep suggestions but change behavior: set `command.SuggestionsMinimumDistance = 1` to tweak the matching distance, or use the `SuggestFor` attribute to register explicit strings for which a command is suggested.

@@ -1,0 +1,17 @@
+completions.go — structure and declarations, as evidenced by the 10 ranked spans in the task_context/2 response (the response is marked "truncated":true, so this covers only what the spans show).
+
+Package and top-level declarations:
+- Package clause: `package cobra` (completions.go line 15).
+- Constant block (lines 26-33) declaring the hidden command names used by shell completion scripts: `ShellCompRequestCmd = "__complete"` and `ShellCompNoDescRequestCmd = "__completeNoDesc"`.
+- A package-level variable (lines 35-36): `var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}` — commented as the global map of flag completion functions, to be used with `flagCompletionMutex`.
+- A second constant block beginning at line 54 declaring the `ShellCompDirective` values, starting with `ShellCompDirectiveError` ("indicates an error occurred and completions should be ignored").
+
+Functions and methods:
+- `func NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)` (lines 118-121) — a helper that disables file completion, returning `nil, ShellCompDirectiveNoFileComp`.
+- `func (d ShellCompDirective) string() string` (lines 162-167) — returns a string listing the directives enabled in the parameter, appending names such as "ShellCompDirectiveError" based on bit flags.
+- `func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error)` (lines 266-275) — splits off the last argument as `toComplete` from `trimmedArgs` and finds the real command for which completion must be performed.
+- `func getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string` (lines 534-536) — returns an empty slice when `nonCompletableFlag(flag)` is true.
+- `func checkIfFlagCompletion(finalCmd *Command, args []string, lastArg string) (*pflag.Flag, []string, string, error)` (lines 592-593) — checks `finalCmd.DisableFlagParsing`.
+- `func (c *Command) InitDefaultCompletionCmd()` (lines 678-684) — adds a default 'completion' command to c; a no-op if the feature is disabled, c has no subcommands, or a 'completion' command already exists (guard: `c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands()`).
+
+Overall, the file implements cobra's shell-completion machinery: the hidden `__complete`/`__completeNoDesc` request commands, the `ShellCompDirective` bitmask type with a string renderer, a registry of per-flag completion functions, and the command/flag completion logic (getCompletions, getFlagNameCompletions, checkIfFlagCompletion) plus the default 'completion' command installer. The file spans at least to line 684; because the response is truncated, other declarations between or beyond the cited spans are not evidenced here.

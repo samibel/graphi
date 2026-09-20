@@ -1,0 +1,10 @@
+The codebase supports three distinct kinds of aliases:
+
+1. Command aliases. A `Command` has an `Aliases []string` field, documented at command.go:63-66 as "an array of aliases that can be used instead of the first word in Use" (declared just before the `SuggestFor` field). Lookup support lives in command.go: `HasAlias(s string) bool` (command.go:1505-1513) reports whether a string is an alias of the command by looping over `c.Aliases` and testing each with `commandNameMatches(a, s)`. `hasNameOrAliasPrefix(prefix string) bool` (command.go:1524-1538) returns true if the command's `Name()` or any of its `Aliases` starts with the given prefix, and records the matched name or alias in `c.commandCalledAs.name`.
+
+2. Argument/noun aliases (`ArgAliases`). Per site/content/completions/_index.md:151-157 ("Aliases for nouns"), nouns can have aliases defined alongside `ValidArgs` using `ArgAliases`, e.g. `argAliases = []string { "pods", "nodes", "services", "svc", "replicationcontrollers", "rc" }`. In bash completion generation, `writeArgAliases(buf io.StringWriter, cmd *Command)` (bash_completions.go:647-653) sorts `cmd.ArgAliases` and emits them as a `noun_aliases=(...)` array in the generated script.
+
+3. Shell-level bash aliases for the whole program. Per site/content/completions/_index.md:402-408 ("### Aliases", confirmed by the follow-up read of lines 402-409), you can configure `bash` aliases for your program and they will also support completions:
+   alias aliasname=origcommand
+   complete -o default -F __start_origcommand aliasname
+   The generated per-command completion function also initializes an empty `command_aliases=()` array (bash_completions.go:669-679) before calling `writeCommands`, `writeFlags`, and `writeRequiredFlag`.

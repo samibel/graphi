@@ -1,0 +1,9 @@
+When a command runs, cobra checks whether the command's `Deprecated` field is non-empty and, if so, prints a warning line through the command's own output before continuing.
+
+Evidence: in `command.go`, lines 876–882 (inside the Execute path, right after the nil-Command guard `return fmt.Errorf("Called Execute() on a nil Command")`):
+
+    if len(c.Deprecated) > 0 {
+        c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)
+    }
+
+So the mechanism is: the length of the `Deprecated` string on the `Command` struct acts as the flag — if it is set, `c.Printf` emits `Command "<name>" is deprecated, <deprecation message>` followed by a newline, using the command's configured output stream. The content of the `Deprecated` field itself becomes the trailing explanation in the message. The response does not show where `Printf` writes (out writer vs. stderr) or whether execution proceeds normally afterward, but the shown snippet places the warning directly in the run/execute flow.

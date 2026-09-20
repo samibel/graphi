@@ -1,0 +1,26 @@
+GenYamlTreeCustom is a Go function in doc/yaml_docs.go (lines 58-85). Its doc comment says: "GenYamlTreeCustom creates yaml structured ref files."
+
+Signature:
+  func GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error
+
+What it does, per the source span at doc/yaml_docs.go:58-85:
+
+1. Recurses over the command tree. It iterates cmd.Commands() and skips any subcommand where !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand(), calling GenYamlTreeCustom(c, dir, filePrepender, linkHandler) recursively on the rest and returning immediately on the first error.
+
+2. Computes the output filename for the current command: basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + ".yaml", then filename := filepath.Join(dir, basename) — i.e. one YAML file per command, named from its space-separated command path with spaces replaced by underscores.
+
+3. Creates the file with os.Create(filename) and defers f.Close().
+
+4. Writes a header by calling the caller-supplied filePrepender(filename) and writing the result with io.WriteString(f, ...).
+
+5. Writes the YAML body by calling GenYamlCustom(cmd, f, linkHandler), returning any error from either write step.
+
+Supporting context from the same response:
+
+- GenYamlCustom (doc/yaml_docs.go:92-123, "GenYamlCustom creates custom yaml output") is the per-command body writer GenYamlTreeCustom delegates to: it calls cmd.InitDefaultHelpCmd() and cmd.InitDefaultHelpFlag(), fills a cmdDoc with Name (cmd.CommandPath()), Synopsis (forceMultiLine(cmd.Short)), Description (forceMultiLine(cmd.Long)), Usage (cmd.UseLine() when cmd.Runnable()), Example, Options from cmd.NonInheritedFlags() via genFlagResult, InheritedOptions from cmd.InheritedFlags(), and begins a "see also" section via hasSeeAlso(cmd) / cmd.HasParent() / cmd.Parent() (the span ends mid-block).
+
+- GenYaml (doc/yaml_docs.go:87-90) is the non-custom convenience wrapper: func GenYaml(cmd *cobra.Command, w io.Writer) error { return GenYamlCustom(cmd, w, func(s string) string { return s }) }.
+
+- IsAvailableCommand (command.go:1560-1576) defines the availability filter used in step 1: a command is unavailable if it has a non-empty Deprecated string or is Hidden, or if it is its parent's helpCommand; otherwise it is available if c.Runnable() || c.HasAvailableSubCommands(). The Deprecated field itself is documented at command.go:97-105 ("Deprecated defines, if this command is deprecated and should print this string when used.").
+
+In short: GenYamlTreeCustom walks a cobra command tree and writes one YAML reference file per available, non-help-topic command into dir, each file prefixed by filePrepender output and filled by GenYamlCustom using the given linkHandler.

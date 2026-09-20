@@ -1,0 +1,15 @@
+A Command finds a flag by climbing the parent chain through the exported method `Command.Flag(name)` in `command.go` (lines 1794-1803), whose doc comment states exactly this: "// Flag climbs up the command tree looking for matching flag."
+
+The mechanism, as shown in that snippet, is a two-step lookup:
+
+1. `flag = c.Flags().Lookup(name)` — it first searches the command's own complete FlagSet. That FlagSet is built by `Flags()` (command.go, lines 1641-1653), whose comment says it "returns the complete FlagSet that applies to this command (local and persistent declared here and by all parents)". So the first lookup already covers flags inherited from parents via the merged set.
+
+2. If that returns nil, it falls back to `flag = c.persistentFlag(name)` — a private helper that, by the doc comment's "climbs up the command tree" wording, is the step that walks the parent chain for a persistent flag.
+
+Supporting structural evidence for the chain and the inherited-flag storage:
+
+- `Parent()` (command.go, lines 1842-1845) is the chain link: `func (c *Command) Parent() *Command { return c.parent }` — this is how a command reaches its parent when climbing.
+- The Command struct fields (command.go, lines 157-161) hold the parent-derived flag sets: `iflags *flag.FlagSet` ("iflags contains inherited flags") and `parentsPflags *flag.FlagSet` ("parentsPflags is all persistent flags of cmd's parents"), alongside `lflags` for local flags.
+- A corroborating caller in `completions.go` (lines 841-845), `findFlag(cmd *Command, name string)`, uses `cmd.Flags()` and notes in a comment that "the cmd.Flag() search only accepts long flags", confirming `cmd.Flag()` is the canonical flag-search entry point.
+
+One caveat: the body of the private `persistentFlag(name)` helper is not included in the response, so the exact loop (e.g., a `for` over `c.Parent()`) that performs the actual climb is not visible — only its role as the second-stage fallback within `Flag()` is shown.

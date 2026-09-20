@@ -1,0 +1,19 @@
+Executing a command returns flag.ErrHelp instead of running it in exactly two situations, both inside (*Command).execute in command.go (follow-up read, command.go:874-993):
+
+1. The help flag is set. After c.InitDefaultHelpFlag()/c.InitDefaultVersionFlag() and a successful c.ParseFlags(a), the code reads the "help" bool flag (c.Flags().GetBool("help")) and, per the comment "If help is called, regardless of other flags, return we want help", does:
+
+   if helpVal {
+       return flag.ErrHelp
+   }
+
+   This happens before any version handling, arg validation, or run hooks, so a set help flag short-circuits everything else.
+
+2. The command is not runnable. After the version-flag handling, the code checks:
+
+   if !c.Runnable() {
+       return flag.ErrHelp
+   }
+
+   Runnable() (command.go:1550-1553) returns c.Run != nil || c.RunE != nil, so a command with neither Run nor RunE defined returns flag.ErrHelp rather than running. The comment at the help check also states this intent: "Also say we need help if the command isn't runnable."
+
+Notably, flag parse errors do NOT return flag.ErrHelp here: if c.ParseFlags(a) fails, execute returns c.FlagErrorFunc()(c, err) instead (FlagErrorFunc, command.go:497-511, defaults to returning the original error). Only when parsing succeeds do the two ErrHelp checks above apply, and both occur before preRun, ValidateArgs, the PersistentPreRun/PreRun hooks, and the actual RunE/Run invocation.

@@ -1,0 +1,11 @@
+The response answers the fallback order explicitly through the Cobra documentation span in site/content/completions/_index.md (lines 123-166), though it contains no implementing completion code.
+
+Fallback chain, per the docs:
+
+1. Subcommand names are the first source of completion candidates. The doc sentence states the condition under which later sources appear: "The aliases are shown to the user on tab completion only if no completions were found within sub-commands or `ValidArgs`." So sub-command matches are checked first.
+
+2. `ValidArgs` is the second source. The same section ("Static completion of nouns") explains that `ValidArgs` provides "a pre-defined list of completion choices for your nouns", with the `kubectl get` example (`ValidArgs: validArgs` with "pod", "node", "service", "replicationcontroller") showing that `kubectl get [tab][tab]` lists those nouns. The field itself is evidenced by command.go lines 82-83: "ValidArgs is list of all valid non-flag arguments that are accepted in shell completions". So if no sub-command completes, `ValidArgs` entries are offered next.
+
+3. `ArgAliases` is the last resort. The "Aliases for nouns" subsection shows `ArgAliases` defined alongside `ValidArgs` (e.g., "pods", "nodes", "svc", "rc") and states they "are shown to the user on tab completion only if no completions were found within sub-commands or `ValidArgs`" — i.e., ArgAliases fire only when both subcommand names and ValidArgs yield nothing.
+
+What is missing: the response contains no actual implementation of the fallback logic (no completions.go / getCompletions code path); the only code spans are the `ValidArgs` field declaration (command.go:82-83), an unrelated `OnlyValidArgs` validator (args.go:50-51), and `stringInSlice` (cobra.go:223). So the order above is supported solely by the documented behavior sentence, not by source code showing the checks.

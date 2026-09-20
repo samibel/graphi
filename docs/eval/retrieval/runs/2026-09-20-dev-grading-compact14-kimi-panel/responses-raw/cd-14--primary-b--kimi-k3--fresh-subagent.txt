@@ -1,0 +1,22 @@
+cobra.go — structure and declarations, per the task_context/2 response (10 ranked spans, 325/325 source tokens, response marked truncated:true, so this is a partial view of the file, not its complete declaration list).
+
+Package declaration:
+- Line 18: `package cobra`.
+
+Package-level variable declarations:
+- Line 43: `var finalizers []func()` — an unexported slice of finalizer functions.
+- Lines 61-62: `var EnableCaseInsensitive = defaultCaseInsensitive` — documented as "allows case-insensitive commands names. (case sensitive by default)".
+- Lines 64-66: `var EnableTraverseRunHooks = defaultTraverseRunHooks` — documented as "executes persistent pre-run and post-run hooks from all parents"; disabled by default so only the first run hook found is executed.
+- Lines 68-74: `var MousetrapHelpText = `This is a command line tool.\n\nYou need to open cmd.exe and run it from there.`` — splash text shown on Windows when the CLI is started from explorer.exe; set to "" to disable.
+- Lines 78-81: `var MousetrapDisplayDuration = 5 * time.Second` — how long the mousetrap splash is shown; 0 waits for the return key; Windows-only.
+
+Function declarations:
+- Lines 111-115: `func Gt(a interface{}, b interface{}) bool` (partial body) — "takes two types and checks whether the first type is greater than the second"; compares lengths for Arrays/Chans/Maps/Slices, compares Ints directly, parses strings as ints first. The visible body starts with `var left, right int64`.
+- Lines 173-177: `func rpad(s string, padding int) string` (complete) — "adds padding to the right of a string"; implemented via `fmt.Sprintf("%-%ds", padding)` then `fmt.Sprintf(formattedString, s)`.
+- Lines 187-202: `func ld(s, t string, ignoreCase bool) int` (partial body) — "compares two strings and returns the levenshtein distance between them"; lowercases both via `strings.ToLower` when ignoreCase is set, then builds the `(len(s)+1) x (len(t)+1)` int matrix `d` and initializes the first row and column.
+- Lines 240-243: `func WriteStringAndCheck(b io.StringWriter, s string)` (partial body) — "writes a string into a buffer, and checks if the error is not nil"; calls `b.WriteString(s)` and passes the error to `CheckErr`.
+
+Structural observations from the evidence:
+- The file mixes exported configuration variables (EnableCaseInsensitive, EnableTraverseRunHooks, MousetrapHelpText, MousetrapDisplayDuration) with unexported state (`finalizers`) and a mix of exported (`Gt`, `WriteStringAndCheck`) and unexported (`ld`, `rpad`) utility functions.
+- Dependencies used by the shown snippets imply imports of `strings`, `fmt`, `time`, and `io`, and an in-package symbol `CheckErr`, plus defaults `defaultCaseInsensitive` and `defaultTraverseRunHooks` defined elsewhere (not shown in this response).
+- Line numbers span 18 to 243, so the file is at least ~243 lines, but since the response is truncated (325/325 token budget exhausted, `truncated:true`, only 10 spans returned), other declarations that live in this file are not visible here — for example any import block, `CheckErr`, the defaults referenced above, or additional functions — and cannot be enumerated from this response alone.

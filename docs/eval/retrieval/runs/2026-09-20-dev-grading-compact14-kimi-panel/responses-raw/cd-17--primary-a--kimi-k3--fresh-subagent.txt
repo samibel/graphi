@@ -1,0 +1,35 @@
+Based solely on the task_context/2 response (8 ranked source spans from doc/yaml_docs.go, flagged "truncated":true, so this is a partial view of the file), the file's structure and declarations are as follows.
+
+Package: `package doc` (span lines 15-15).
+
+Type declarations:
+
+1. `cmdOption` struct (lines 30-35) — describes a single CLI flag/option in the YAML output:
+   - `Name string`
+   - `Shorthand string `yaml:",omitempty"``
+   - `DefaultValue string `yaml:"default_value,omitempty"``
+   - `Usage string `yaml:",omitempty"``
+
+2. `cmdDoc` struct (lines 37-46) — the top-level YAML document model for one command:
+   - `Name string`
+   - `Synopsis string `yaml:",omitempty"``
+   - `Description string `yaml:",omitempty"``
+   - `Usage string `yaml:",omitempty"``
+   - `Options []cmdOption `yaml:",omitempty"``
+   - `InheritedOptions []cmdOption `yaml:"inherited_options,omitempty"``
+   - `Example string `yaml:",omitempty"``
+   - `SeeAlso []string `yaml:"see_also,omitempty"``
+
+Function declarations:
+
+3. `GenYamlTree(cmd *cobra.Command, dir string) error` (lines 48-57) — documented as creating "yaml structured ref files for this command and all descendants in the directory given"; the doc comment warns it "may not work correctly if your command names have `-` in them" (undefined which help output lands in files like `cmd-sub-third.1`). It builds an `identity` and an `emptyStr` func and delegates to `GenYamlTreeCustom(cmd, dir, emptyStr, identity)`.
+
+4. `GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error` (lines 59-68) — "creates yaml structured ref files"; the shown body iterates `cmd.Commands()`, skips commands where `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, and recurses via `GenYamlTreeCustom(c, dir, filePrepender, linkHandler)`, returning the first error.
+
+5. `GenYaml(cmd *cobra.Command, w io.Writer) error` (lines 87-90) — "creates yaml output"; thin wrapper returning `GenYamlCustom(cmd, w, func(s string) string { return s })`.
+
+6. `GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error` (lines 92-107, truncated mid-body) — "creates custom yaml output"; calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, builds a `cmdDoc{}` filling `Name` from `cmd.CommandPath()`, `Synopsis` from `forceMultiLine(cmd.Short)`, `Description` from `forceMultiLine(cmd.Long)`, sets `Usage = cmd.UseLine()` when `cmd.Runnable()`, and begins an `if len(cmd.Example) > 0 {` block (cut off).
+
+7. `genFlagResult(flags *pflag.FlagSet) []cmdOption` (lines 149-161, truncated mid-body) — unexported helper converting a flag set to `[]cmdOption`; iterates with `flags.VisitAll`, and per the inline comment/Todo skips flags whose shorthand is deprecated (`len(flag.ShorthandDeprecated) > 0` can't distinguish an empty deprecation message), appending `cmdOption{flag.Name, flag.Shorthand, flag.DefValue, forceMultiLine(flag.Usage), ...}` (literal cut off).
+
+Overall shape: the file declares two YAML-serializable structs (`cmdOption`, `cmdDoc`) and a family of yaml-generation entry points (`GenYaml`, `GenYamlCustom`, `GenYamlTree`, `GenYamlTreeCustom`) built on `*cobra.Command` and `io.Writer`, plus the unexported helper `genFlagResult` over `*pflag.FlagSet`. Dependencies evidenced in the snippets: `cobra`, `pflag`, and `io`. Helpers referenced but not declared in the response: `forceMultiLine`. Because the response is explicitly truncated (315/325 source tokens read; only spans up to line 161 shown), any declarations outside these spans (imports, other helpers, the remainder of `GenYamlCustom`/`genFlagResult`) are not visible here.

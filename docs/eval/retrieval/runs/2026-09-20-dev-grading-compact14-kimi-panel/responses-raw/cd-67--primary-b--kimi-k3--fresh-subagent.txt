@@ -1,0 +1,12 @@
+NameAndAliases is a method on *Command defined in command.go (lines 1540-1543). Its doc comment says: "NameAndAliases returns a list of the command name and all aliases". Its body is:
+
+    func (c *Command) NameAndAliases() string {
+        return strings.Join(append([]string{c.Name()}, c.Aliases...), ", ")
+    }
+
+So it builds a slice consisting of the command's Name() followed by all entries of c.Aliases, and joins them with ", " into a single comma-separated string (e.g. "name, alias1, alias2").
+
+Supporting evidence from the same response:
+
+- The Name() method it calls is also shown (command.go lines 1495-1503): "Name returns the command's name: the first word in the use line." It takes c.Use and truncates at the first space (strings.Index(name, " ")), so NameAndAliases leads with the first word of the Use line.
+- The c.Aliases field it appends is referenced in the method body, though the struct field declaration itself is not among the returned spans (the shown Command struct excerpt at command.go lines 66-91 covers SuggestFor, Short, GroupID, Long, Example, ValidArgs, ValidArgsFunction and Args, not Aliases).

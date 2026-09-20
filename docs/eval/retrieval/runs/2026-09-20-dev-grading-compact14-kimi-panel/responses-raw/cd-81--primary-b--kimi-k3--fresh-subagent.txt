@@ -1,0 +1,29 @@
+NoFileCompletions tells the shell not to offer file names by returning a directive, not by returning completions.
+
+Mechanism, per the response:
+
+1. It is a completion function that returns no candidates plus a directive flag. In completions.go lines 118-122:
+
+   // NoFileCompletions can be used to disable file completion for commands that should
+   // not trigger file completions.
+   func NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+       return nil, ShellCompDirectiveNoFileComp
+   }
+
+   It returns nil completions and the ShellCompDirective value ShellCompDirectiveNoFileComp.
+
+2. That directive carries the actual instruction to the shell. In completions.go lines 62-70, its doc comment states:
+
+   // ShellCompDirectiveNoFileComp indicates that the shell should not provide
+   // file completion even when no completion is provided.
+   ShellCompDirectiveNoFileComp
+
+3. The generated shell scripts know this directive's numeric value, because the code generator embeds the directive constants into the script text. In bash_completions.go lines 389-402, the bash completion script template is formatted with:
+
+   ..., name, ShellCompNoDescRequestCmd,
+       ShellCompDirectiveError, ShellCompDirectiveNoSpace, ShellCompDirectiveNoFileComp,
+       ShellCompDirectiveFilterFileExt, ShellCompDirectiveFilterDirs, activeHelpEnvVar(name)))
+
+   i.e. the value of ShellCompDirectiveNoFileComp is interpolated into the bash script so the script's shell-side logic can test the directive returned by the program and suppress filename completion.
+
+So: a command whose completion function is NoFileCompletions yields (nil, ShellCompDirectiveNoFileComp); the completion protocol passes that directive back to the generated shell script, which—knowing the directive's value—refrains from offering file names even though no completion candidates were provided.

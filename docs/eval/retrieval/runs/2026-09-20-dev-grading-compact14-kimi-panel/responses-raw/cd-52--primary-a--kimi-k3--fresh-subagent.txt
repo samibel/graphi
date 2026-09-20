@@ -1,0 +1,35 @@
+Use `MatchAll`. It is a variadic combinator defined in `args.go` (lines 113-123):
+
+```go
+// MatchAll allows combining several PositionalArgs to work in concert.
+func MatchAll(pargs ...PositionalArgs) PositionalArgs {
+	return func(cmd *Command, args []string) error {
+		for _, parg := range pargs {
+			if err := parg(cmd, args); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+```
+
+Each validator is a `PositionalArgs`, i.e. `func(cmd *Command, args []string) error` (`args.go`, line 22). `MatchAll` returns a single `PositionalArgs` that runs the given validators in order and returns the first error encountered (nil if all pass), so you can assign the result directly to the `Args` field of a `Command`.
+
+Concrete example from `site/content/user_guide.md` (lines 367-421), combining an arg-count check with a content check:
+
+```go
+var cmd = &cobra.Command{
+  Short: "hello",
+  Args: cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),
+  Run: func(cmd *cobra.Command, args []string) {
+    fmt.Println("Hello, World!")
+  },
+}
+```
+
+The guide states: "Moreover, `MatchAll(pargs ...PositionalArgs)` enables combining existing checks with arbitrary other checks."
+
+This is also the recommended replacement for the deprecated `ExactValidArgs(n)`, whose own deprecation note in `args.go` (lines 125-131) says: "Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead" — its implementation is literally `return MatchAll(ExactArgs(n), OnlyValidArgs)`.
+
+Built-in validators you can compose this way (from the user guide list) include `NoArgs`, `ArbitraryArgs`, `MinimumNArgs(int)`, `MaximumNArgs(int)`, `ExactArgs(int)`, `RangeArgs(min, max)`, and `OnlyValidArgs`. You can also mix in any custom validator satisfying the `PositionalArgs` signature; the guide's custom-validator example shows calling a built-in (e.g. `cobra.MinimumNArgs(1)(cmd, args)`) from inside your own function, which you can then pass to `MatchAll` alongside others.

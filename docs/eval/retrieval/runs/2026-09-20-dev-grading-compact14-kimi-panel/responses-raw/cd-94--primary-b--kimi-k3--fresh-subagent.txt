@@ -1,0 +1,22 @@
+To customize links in generated ReST documentation, pass a custom `linkHandler` function to `GenReSTTreeCustom` instead of using the plain `GenReSTTree`.
+
+How it works, per the evidence:
+
+1. The generation entry points are in `doc/rest_docs.go`. The simple variant, `GenReSTTree(cmd *cobra.Command, dir string) error` (lines 132-141), is just a wrapper that calls `GenReSTTreeCustom(cmd, dir, emptyStr, defaultLinkHandler)` — i.e. it uses the default link handler.
+
+2. The customization point is `GenReSTTreeCustom` (`doc/rest_docs.go`, lines 140-145), documented as "the same as GenReSTTree, but with custom filePrepender and linkHandler":
+   `func GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error`
+   So you supply a `linkHandler` of signature `func(name, ref string) string`.
+
+3. The default behavior is defined by `defaultLinkHandler` (`doc/rest_docs.go`, lines 51-54):
+   ```go
+   // defaultLinkHandler for default ReST hyperlink markup
+   func defaultLinkHandler(name, ref string) string {
+       return fmt.Sprintf("`%s <%s.rst>`_", name, ref)
+   }
+   ```
+   Your custom handler receives the command name and reference and returns whatever link markup you want in place of this default `` `name <ref.rst>`_ `` format.
+
+4. The docs page `site/content/docgen/rest.md` (line 107) confirms the intent: "The `linkHandler` can be used to customize the rendered links to the commands, given a command name and reference. This is useful while converting rst to html or while generating documentation with tools like Sphinx where `:ref:` is used."
+
+So in practice: write a function `func(name, ref string) string` that returns your desired link syntax (for example a Sphinx `:ref:`-style reference instead of the default `` `<ref.rst>`_ `` hyperlink), and call `GenReSTTreeCustom(cmd, dir, filePrepender, yourLinkHandler)`. If you don't need to customize the file prepender, pass a no-op like the one `GenReSTTree` itself uses (`emptyStr := func(s string) string { return "" }`).

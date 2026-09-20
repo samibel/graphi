@@ -1,0 +1,14 @@
+"post-run" in this codebase (the spf13/cobra command library) refers to the PostRun hooks: user-supplied functions that a command executes after its main Run function.
+
+API surface:
+- command.go:136-138 declares the hook fields on the Command struct: `PostRun func(cmd *Command, args []string)` with the doc comment "// PostRun: run after the Run command." and, immediately after, "PostRunE: PostRun but returns an error." A PersistentPostRun counterpart is implied by the guide text.
+
+Execution semantics (site/content/user_guide.md:605-693, "PreRun and PostRun Hooks"):
+- "`PersistentPostRun` and `PostRun` will be executed after `Run`."
+- The full hook order for a command is: PersistentPreRun -> PreRun -> Run -> PostRun -> PersistentPostRun.
+- "The `Persistent*Run` functions will be inherited by children if they do not declare their own."
+- "The `*PreRun` and `*PostRun` functions will only be executed if the `Run` function of the current command has been declared" — so a command with no Run function never fires its PostRun.
+- By default only the first persistent hook found walking up the command chain runs: in the guide's worked example, executing `sub` prints "Inside subCmd PostRun" and "Inside subCmd PersistentPostRun" but never "Inside rootCmd PersistentPostRun" — "That is why in the above output, the `rootCmd PersistentPostRun` was not called for a child command."
+- Setting the `EnableTraverseRunHooks` global to true changes this so all parents' persistent hooks execute. cobra.go:64-65 documents it: "// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents. // By default this is disabled, which means only the first run hook to be found is executed."
+
+Separately, command.go:1012-1026 shows an internal, unexported `func (c *Command) postRun()` that iterates the package-level `finalizers` slice and calls each — a process-level finalizer mechanism distinct from the per-command PostRun hook (the snippet shows only that it runs `for _, x := range finalizers { x() }`; the responses do not show where finalizers are registered).

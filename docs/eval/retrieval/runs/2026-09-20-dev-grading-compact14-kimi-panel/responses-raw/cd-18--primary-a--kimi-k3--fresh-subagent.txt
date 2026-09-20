@@ -1,0 +1,38 @@
+doc/rest_docs.go — structure and declarations, per the task_context/2 response (8 ranked spans, truncated: true, so not every line of the file is shown).
+
+Package
+- The file belongs to package `doc` (span: doc/rest_docs.go, line 15: `package doc`).
+
+Top-level declarations visible in the response, in ranked order:
+
+1. GenReST (lines 56-59)
+   `func GenReST(cmd *cobra.Command, w io.Writer) error`
+   Comment: "GenReST creates reStructured Text output." It simply delegates: `return GenReSTCustom(cmd, w, defaultLinkHandler)`.
+
+2. GenReSTCustom (lines 61-77, span truncated mid-function)
+   `func GenReSTCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string, string) string) error`
+   Comment: "GenReSTCustom creates custom reStructured Text output." The visible body calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, allocates a `bytes.Buffer`, takes `name := cmd.CommandPath()`, falls back from `cmd.Long` to `cmd.Short` when Long is empty, computes a ReST anchor `ref := strings.ReplaceAll(name, " ", "_")`, and writes the anchor (`.. _<ref>:`) and the command name into the buffer.
+
+3. indentString (lines 172-185, span ends before the closing brace)
+   `func indentString(s, p string) string`
+   Comment: "indentString adapted from: https://github.com/kr/text/blob/main/indent.go". Byte-wise loop over `s` that inserts prefix `p` at the beginning of each line (tracks beginning-of-line with `bol`, set when the previous byte was '\n'), returns the result as a string.
+
+4. GenReSTTreeCustom (lines 143-148, span truncated mid-function)
+   `func GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error`
+   Comment: "GenReSTTreeCustom is the the same as GenReSTTree, but with custom filePrepender and linkHandler." Visible body iterates `cmd.Commands()`, skipping commands where `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`.
+
+5. printOptionsReST (lines 30-45, span truncated mid-function)
+   `func printOptionsReST(buf *bytes.Buffer, cmd *cobra.Command, name string) error`
+   Writes an "Options" section (heading underlined with `~~~~~~~`, followed by a `::` literal block) from `cmd.NonInheritedFlags()` when `flags.HasAvailableFlags()`, and an "Options inherited from parent commands" section (underlined with `~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`) from `cmd.InheritedFlags()`, each via `flags.PrintDefaults()` with output redirected to `buf`.
+
+6. GenReSTTree (lines 132-141)
+   `func GenReSTTree(cmd *cobra.Command, dir string) error`
+   Comment: "GenReSTTree will generate a ReST page for this command and all descendants in the directory given," plus a warning that it "may not work correctly if your command names have `-` in them" (undefined which help output lands in `cmd-sub-third.1` for colliding names). Body defines `emptyStr := func(s string) string { return "" }` and returns `GenReSTTreeCustom(cmd, dir, emptyStr, defaultLinkHandler)`.
+
+7. defaultLinkHandler (lines 51-54)
+   `func defaultLinkHandler(name, ref string) string`
+   Comment: "defaultLinkHandler for default ReST hyperlink markup". Returns `fmt.Sprintf("`%s <%s.rst>`_", name, ref)`.
+
+Overall structure: the file is the reStructuredText backend of a Cobra documentation generator. It exposes four exported entry points — GenReST / GenReSTCustom (single-command page to an io.Writer) and GenReSTTree / GenReSTTreeCustom (recursive page generation into a directory) — where the plain variants delegate to the *Custom variants with `defaultLinkHandler` (and, for the tree, an empty-string filePrepender). Two unexported helpers support them: printOptionsReST (flag sections) and indentString (line-prefixing utility).
+
+Caveats about completeness (response is marked truncated: true, 313/325 source tokens read): the file header before line 15 (license/package doc comment and the import block — the bodies imply imports of bytes, fmt, io, strings, and github.com/spf13/cobra), the tail of printOptionsReST after line 45, the middle of GenReSTCustom after line 77 (including where the buffer is flushed to w and any Synopsis/Examples/SEE ALSO sections), the bulk of GenReSTTreeCustom between lines 148 and 172 (the per-child recursion and file writing), the end of indentString, and anything after line 185 are not present in the response, so no claims about those regions can be made.

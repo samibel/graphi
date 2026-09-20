@@ -1,0 +1,15 @@
+A nil Command receiver is guarded explicitly at the very top of the internal execution method, and Cobra returns an error instead of panicking.
+
+Evidence: command.go lines 874-877 (present in both the task_context/2 response and the follow-up read) show the first statement of `func (c *Command) execute(a []string) (err error)`:
+
+	if c == nil {
+		return fmt.Errorf("Called Execute() on a nil Command")
+	}
+
+So if execution reaches `(*Command).execute` with a nil receiver, no flag parsing, help/version handling, or Run lifecycle happens; the caller gets back the error value `Called Execute() on a nil Command`.
+
+Two caveats grounded in the shown code:
+
+1. The public entry points shown are `Execute()` (command.go:1038-1041, delegating to `ExecuteC()`), `ExecuteContext()` (command.go:1030-1033), and `ExecuteContextC()` (command.go:1046-1049). Only the signature line of `ExecuteC()` (command.go:1052) is included, so the responses do not show whether `ExecuteC` itself dereferences `c` before calling down into `execute`; the nil-guard is only confirmed inside `execute`.
+
+2. The context-setting variants do `c.ctx = ctx` before delegating (command.go:1031-1032 and 1047-1048). Assigning a struct field through a nil *Command would panic with a nil pointer dereference before `execute`'s nil check is ever reached, so the friendly error is only guaranteed for paths that call `execute` without touching the receiver first.

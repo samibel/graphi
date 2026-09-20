@@ -1,0 +1,20 @@
+Group is a struct type defined in command.go that models a command group — a named heading under which subcommands are organized in a parent command's help output.
+
+Definition (command.go:41-45):
+
+    // Group Structure to manage groups for commands
+    type Group struct {
+        ID    string
+        Title string
+    }
+
+It has exactly two fields: `ID string` (the identifier used to reference the group) and `Title string` (the display title).
+
+How it relates to Command, per the other spans in the response:
+
+- A subcommand references a group through its `GroupID` field (command.go:73-74): "The group id under which this subcommand is grouped in the 'help' output of its parent." So the linkage is by the group's `ID`.
+- A command stores its groups in an internal `commandgroups` slice and exposes them via `Groups() []*Group` (command.go:1331-1334): "Groups returns a slice of child command groups."
+- Groups are registered with `AddGroup(groups ...*Group)` (command.go:1356-1359), a variadic method on *Command that appends to `c.commandgroups`: "AddGroup adds one or more command groups to this parent command."
+- Membership can be tested with `ContainsGroup(groupID string) bool` (command.go:1346-1354), which linearly scans `c.commandgroups` comparing `x.ID == groupID`: "ContainsGroup return if groupID exists in the list of command groups."
+
+All five spans are in command.go; the type is manipulated through pointer receivers on *Command and passed around as *Group. The response is marked truncated:true, but the spans shown fully cover the Group type definition and its primary API surface (Groups, AddGroup, ContainsGroup, and the GroupID field on Command), which is enough to answer what Group is and how it is used.

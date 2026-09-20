@@ -1,0 +1,16 @@
+The codebase supports aliases in three distinct senses, all evidenced in the provided responses:
+
+1. Command aliases on the Command type. In `command.go:63-66`, the `Command` struct has a field `Aliases []string`, documented as "Aliases is an array of aliases that can be used instead of the first word in Use." (It sits immediately before the `SuggestFor` field.) Two helpers operate on it:
+   - `command.go:1505-1513`: `func (c *Command) HasAlias(s string) bool` — "determines if a given string is an alias of the command"; it loops over `c.Aliases` and returns true when `commandNameMatches(a, s)` succeeds.
+   - `command.go:1524-1538`: `func (c *Command) hasNameOrAliasPrefix(prefix string) bool` — "returns true if the Name or any of aliases start with prefix"; it first checks `strings.HasPrefix(c.Name(), prefix)` (recording `c.commandCalledAs.name = c.Name()`), then iterates `c.Aliases` and on a prefix match records `c.commandCalledAs.name = alias` and returns true.
+
+2. Argument ("noun") aliases. In `site/content/completions/_index.md:151-157`, under "Aliases for nouns": "If your nouns have aliases, you can define them alongside `ValidArgs` using `ArgAliases`", e.g. `argAliases = []string { "pods", "nodes", "services", "svc", "replicationcontrollers", "rc" }`. The bash completion generator consumes these in `bash_completions.go:647-653`: `writeArgAliases(buf io.StringWriter, cmd *Command)` writes `    noun_aliases=()\n`, sorts `cmd.ArgAliases` with `sort.Strings`, and appends each value via `WriteStringAndCheck(buf, fmt.Sprintf("    noun_aliases+=(%q)\n", value))`.
+
+3. Bash aliases of the whole program. In `site/content/completions/_index.md:402-409` (the "### Aliases" section, confirmed by the follow-up read): "You can also configure `bash` aliases for your program and they will also support completions," with the snippet:
+   ```
+   alias aliasname=origcommand
+   complete -o default -F __start_origcommand aliasname
+   ```
+   Relatedly, the generated per-command completion function in `bash_completions.go:669-679` emits `last_command=%q` for the command name and initializes an empty `command_aliases=()` array before calling `writeCommands(buf, cmd)`, `writeFlags(buf, cmd)`, and `writeRequiredFlag(buf, cmd)` — the visible span does not show anything being appended to `command_aliases`, only its initialization.
+
+In short: `Command.Aliases` provides alternate names for a command (matched exactly via `HasAlias`/`commandNameMatches` and by prefix via `hasNameOrAliasPrefix`, with the matched alias tracked in `commandCalledAs.name`), `ArgAliases` provides aliases for positional-arg nouns that are emitted as `noun_aliases` in bash completion, and the docs describe wiring shell-level `bash` aliases of the program into completion with `complete -o default -F __start_<prog> <alias>`.

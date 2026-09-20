@@ -1,0 +1,18 @@
+GetFlagCompletionFunc is a method on *Command defined in completions.go (lines 148-160). Per its doc comment, it "returns the completion function for the given flag of the command, if available."
+
+Signature:
+    func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool)
+
+So it takes a flag name and returns two values: the registered completion function (type func(*Command, []string, string) ([]string, ShellCompDirective)) and a bool reporting whether one exists.
+
+Behavior, from the body in completions.go:148-160:
+1. It resolves the flag with flag := c.Flag(flagName); if flag == nil it returns nil, false.
+2. It then takes a read lock: flagCompletionMutex.RLock() with defer flagCompletionMutex.RUnlock().
+3. It looks up completionFunc, exists := flagCompletionFunctions[flag] and returns the pair.
+
+Supporting evidence in the same response:
+- The backing store is a global map keyed by *pflag.Flag (completions.go:35-36): "Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it." declared as var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}.
+- The lock is var flagCompletionMutex = &sync.RWMutex{} (completions.go:38-39), described as the "lock for reading and writing from flagCompletionFunctions".
+- The c.Flag helper it calls is defined in command.go:1794-1803: "Flag climbs up the command tree looking for matching flag." It first tries c.Flags().Lookup(name), and if that returns nil it falls back to c.persistentFlag(name), returning the result.
+
+In short: GetFlagCompletionFunc resolves a flag by name (local flags first, then persistent flags up the command tree), returns (nil, false) when the flag does not exist, and otherwise returns the completion function registered for that flag in the global flagCompletionFunctions map, guarded by a read lock on flagCompletionMutex, with the second return value indicating whether a function was registered.

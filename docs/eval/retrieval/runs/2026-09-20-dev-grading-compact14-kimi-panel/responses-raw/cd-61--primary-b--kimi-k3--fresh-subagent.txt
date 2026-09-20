@@ -1,0 +1,14 @@
+In this repository, "directive" refers to ShellCompDirective, the shell-completion directive type defined in completions.go.
+
+Definition (completions.go:41-43): "ShellCompDirective is a bit map representing the different behaviors the shell can be instructed to have once completions have been provided." It is declared as `type ShellCompDirective int`.
+
+Values (completions.go:54-63): the constants are bit flags built with `1 << iota` inside a `const` block:
+- ShellCompDirectiveError — "indicates an error occurred and completions should be ignored" (`ShellCompDirectiveError ShellCompDirective = 1 << iota`).
+- ShellCompDirectiveNoSpace — "indicates that the shell should not add a space after the completion even if there is a single completion provided."
+- ShellCompDirectiveNoFileComp — "indicates that the shell should not provide file completion even when no completion is provided."
+
+Additional flags visible via the string() method (completions.go:162-191): ShellCompDirectiveFilterFileExt, ShellCompDirectiveFilterDirs, and ShellCompDirectiveKeepOrder. The method `func (d ShellCompDirective) string() string` "returns a string listing the different directive enabled in the specified parameter": it tests each bit (`if d&ShellCompDirectiveError != 0 { ... }`, etc.), appends the matching name to a `directives []string` slice, falls back to "ShellCompDirectiveDefault" when no bits are set, and returns an error string (`fmt.Sprintf("ERROR: unexpected ShellCompDirective value: %d", d)`) if `d >= shellCompDirectiveMaxValue`; otherwise it joins the names with ", " via `strings.Join`.
+
+Usage (completions.go:372-383): directive values are returned from the completion logic — e.g. `return finalCmd, []string{}, ShellCompDirectiveFilterDirs, nil` — and a local `var directive ShellCompDirective` is declared in the completion path, right before `finalCmd.enforceFlagGroupsForCompletion()` is called to "enforce flag groups before doing flag completions."
+
+In short: a directive here is a bitmask of shell-behavior hints (error, no-space, no-file-completion, filter-by-extension, filter-dirs, keep-order) produced during completion and consumed by the calling shell; the response (marked truncated) shows no other meaning of "directive" in this codebase.

@@ -1,0 +1,25 @@
+You are answering one question about a Go codebase you cannot see.
+
+Your ONLY sources of information are the two complete, unmodified responses
+printed between the BEGIN and END markers below. The first is one tool response.
+The second is one follow-up read of the file span designated by that tool
+response. You have no checkout, no search, no notes and no other material, and
+you must not use recollection of any public project to supply facts that are not
+in the two responses.
+
+Answer the question directly and concretely, citing the specific evidence in the
+responses you relied on (file paths, symbol names, snippet lines).
+
+If the responses do not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Aliases
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query d2dae439f35a; read in order (226/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/completions/_index.md","start_line":402,"end_line":408,"text":"### Aliases\n\nYou can also configure `bash` aliases for your program and they will also support completions.\n\n```bash\nalias aliasname=origcommand\ncomplete -o default -F __start_origcommand aliasname"},{"path":"site/content/completions/_index.md","start_line":151,"end_line":157,"text":"#### Aliases for nouns\n\nIf your nouns have aliases, you can define them alongside `ValidArgs` using `ArgAliases`:\n\n```go\nargAliases = []string { \"pods\", \"nodes\", \"services\", \"svc\", \"replicationcontrollers\", \"rc\" }\n"},{"path":"command.go","start_line":1505,"end_line":1513,"text":"// HasAlias determines if a given string is an alias of the command.\nfunc (c *Command) HasAlias(s string) bool {\n\tfor _, a := range c.Aliases {\n\t\tif commandNameMatches(a, s) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1524,"end_line":1538,"text":"// hasNameOrAliasPrefix returns true if the Name or any of aliases start\n// with prefix\nfunc (c *Command) hasNameOrAliasPrefix(prefix string) bool {\n\tif strings.HasPrefix(c.Name(), prefix) {\n\t\tc.commandCalledAs.name = c.Name()\n\t\treturn true\n\t}\n\tfor _, alias := range c.Aliases {\n\t\tif strings.HasPrefix(alias, prefix) {\n\t\t\tc.commandCalledAs.name = alias\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"bash_completions.go","start_line":647,"end_line":653,"text":"func writeArgAliases(buf io.StringWriter, cmd *Command) {\n\tWriteStringAndCheck(buf, \"    noun_aliases=()\\n\")\n\tsort.Strings(cmd.ArgAliases)\n\tfor _, value := range cmd.ArgAliases {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    noun_aliases+=(%q)\\n\", value))\n\t}\n}"},{"path":"bash_completions.go","start_line":669,"end_line":679,"text":"\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"_%s()\\n{\\n\", commandName))\n\t}\n\n\tWriteStringAndCheck(buf, fmt.Sprintf(\"    last_command=%q\\n\", commandName))\n\tWriteStringAndCheck(buf, \"\\n\")\n\tWriteStringAndCheck(buf, \"    command_aliases=()\\n\")\n\tWriteStringAndCheck(buf, \"\\n\")\n\n\twriteCommands(buf, cmd)\n\twriteFlags(buf, cmd)\n\twriteRequiredFlag(buf, cmd)"},{"path":"command.go","start_line":63,"end_line":66,"text":"\t// Aliases is an array of aliases that can be used instead of the first word in Use.\n\tAliases []string\n\n\t// SuggestFor is an array of command names for which this command will be suggested -"}],"provenance":{"input_sha256":"82b06bd945c104306544468bd32a804960efba10498afd5339d3941056a04c1f","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/completions/_index.md:402-409"},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----
+----- BEGIN task_context/2 FOLLOW-UP READ BYTES -----
+{"path":"site/content/completions/_index.md","start_line":402,"end_line":409,"text":"### Aliases\n\nYou can also configure `bash` aliases for your program and they will also support completions.\n\n```bash\nalias aliasname=origcommand\ncomplete -o default -F __start_origcommand aliasname\n"}
+----- END task_context/2 FOLLOW-UP READ BYTES -----

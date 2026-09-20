@@ -1,0 +1,25 @@
+VisitParents walks upward from the receiver command to the root by simple recursion on the parent pointer, invoking the callback once per ancestor.
+
+The full implementation (command.go, lines 852-858):
+
+    // VisitParents visits all parents of the command and invokes fn on each parent.
+    func (c *Command) VisitParents(fn func(*Command)) {
+        if c.HasParent() {
+            fn(c.Parent())
+            c.Parent().VisitParents(fn)
+        }
+    }
+
+Step by step, per that code and the supporting accessors:
+
+1. Base-case test: `c.HasParent()` (command.go, lines 1631-1634) returns `c.parent != nil`. If the current command has no parent (i.e., it is the root), the body is skipped and the recursion stops there.
+2. Callback invocation: if a parent exists, `fn(c.Parent())` is called immediately, where `Parent()` (command.go, lines 1842-1845) simply returns `c.parent`. So the callback fires on the direct parent before any higher ancestors.
+3. Recursion toward the root: `c.Parent().VisitParents(fn)` re-invokes the method on that parent, which repeats the check-callback-recurse cycle on the next ancestor up.
+
+Net traversal order and behavior, all directly evidenced by the snippet:
+
+- The callback `fn` is invoked exactly once for each ancestor, starting with the immediate parent and proceeding upward parent-by-parent until it reaches the root command (whose `parent` is nil). The root itself does get `fn` called on it (it is someone's parent); the receiver command itself never does — the callback is only ever invoked on `c.Parent()`, never on `c`.
+- The walk terminates because each recursive call moves strictly one level closer to the root, and `HasParent()` returns false there. The snippet at command.go lines 1304-1308 (`cmds[i].parent = c` with a "Command can't be a child of itself" panic) shows the parent links are established in AddCommand with a self-cycle guard, supporting that this chain is finite.
+- The traversal mirrors the same recursion pattern as `Root()` (command.go, lines 860-866: `if c.HasParent() { return c.Parent().Root() } return c`), confirming the "toward the root" direction.
+
+A concrete caller is shown in doc/man_docs.go, lines 223-228: `cmd.VisitParents(func(c *cobra.Command) { if c.DisableAutoGenTag { cmd.DisableAutoGenTag = c.DisableAutoGenTag } ... })`, where the closure propagates the DisableAutoGenTag flag from each ancestor down onto `cmd`, demonstrating the callback receiving each ancestor *Command in bottom-up order.

@@ -1,0 +1,13 @@
+Call `SetUsageTemplate` on your command, passing your template string:
+
+```go
+cmd.SetUsageTemplate(s string)
+```
+
+Evidence and details:
+
+- The user guide's "Defining your own usage" section (site/content/user_guide.md:583-591) states: "You can provide your own usage function or template for Cobra to use. Like help, the function and template are overridable through public methods," and shows `cmd.SetUsageFunc(f func(*Command) error)` and `cmd.SetUsageTemplate(s string)`.
+- The setter itself is at command.go:311-314: "SetUsageTemplate sets usage template. Can be defined by Application." — it simply assigns `c.usageTemplate = s` (the field is declared at command.go:166-169 as "usageTemplate is usage template defined by user").
+- How the template gets used: if you don't set a custom usage function, the default `UsageFunc()` (command.go:424-441) renders your template via `tmpl(c.OutOrStderr(), c.UsageTemplate(), c)`, with the command itself as template data, and `Usage()` (command.go:443-448) invokes that function when the user provides invalid input.
+- If your template needs custom helper functions, register them with `cobra.AddTemplateFuncs(tmplFuncs template.FuncMap)` (cobra.go:89-95): "AddTemplateFuncs adds multiple template functions that are available to Usage and Help template generation."
+- Alternative: if a template string isn't enough, you can fully override usage output with `cmd.SetUsageFunc(f func(*Command) error)`; `UsageFunc()` returns your function if set, otherwise walks up to a parent's, otherwise uses the default template-rendering function (command.go:424-441).

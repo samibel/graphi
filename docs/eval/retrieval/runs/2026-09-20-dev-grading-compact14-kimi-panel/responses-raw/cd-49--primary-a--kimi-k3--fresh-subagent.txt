@@ -1,0 +1,25 @@
+To turn off the descriptions shown next to shell completions in Cobra, you have two options, both documented in the provided sources:
+
+1. As an end user (consuming a program built with Cobra): pass `--no-descriptions` to the program's default `completion` command when generating/sourcing the completion script. From site/content/completions/_index.md:355-395 ("### Descriptions for completions"):
+
+   "If you don't want to show descriptions in the completions, you can add `--no-descriptions` to the default `completion` command to disable them, like:
+
+   ```bash
+   $ source <(helm completion bash)
+   $ helm completion [tab][tab]
+   bash        (generate autocompletion script for bash)        powershell  (generate autocompletion script for powershell)
+   fish        (generate autocompletion script for fish)        zsh         (generate autocompletion script for zsh)
+
+   $ source <(helm completion bash --no-descriptions)
+   $ helm completion [tab][tab]
+   bash        fish        powershell  zsh
+   ```"
+
+   So, e.g., `source <(helm completion bash --no-descriptions)` produces completions without the parenthesized/dashed description text.
+
+2. As a program author (in Go code): set the `DisableDescriptions` field on your `cobra.Command`. From completions.go:111-112:
+
+   "// DisableDescriptions turns off all completion descriptions for shells
+   // that support them"
+
+Additional relevant notes from the sources: descriptions are supported for each shell, but for bash they are only available in the completion V2 version (site/content/completions/_index.md:355-358). For PowerShell specifically, descriptions are only included if you generate the script with `command.GenPowerShellCompletionWithDesc()` / `command.GenPowerShellCompletionFileWithDesc()`; the plain `command.GenPowerShellCompletion()` and `command.GenPowerShellCompletionFile()` functions generate scripts without descriptions (site/content/completions/_index.md:519 and powershell_completions.go:305: "// GenPowerShellCompletionFile generates powershell completion file without descriptions.").

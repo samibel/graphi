@@ -1,0 +1,29 @@
+VisitParents walks upward from the receiver command toward the root by simple recursion on the parent pointer, invoking the callback once per ancestor.
+
+The implementation (command.go:852-858) is:
+
+    // VisitParents visits all parents of the command and invokes fn on each parent.
+    func (c *Command) VisitParents(fn func(*Command)) {
+        if c.HasParent() {
+            fn(c.Parent())
+            c.Parent().VisitParents(fn)
+        }
+    }
+
+Mechanics, per the spans in the response:
+
+1. Guard: it first checks c.HasParent(), which (command.go:1631-1634) returns `c.parent != nil`. If the command has no parent (i.e., it is the root), the function does nothing and the recursion bottoms out — so traversal stops at the root and the callback is never invoked on the root's (nonexistent) parent, nor on the receiver itself.
+2. Callback first, then recurse: if a parent exists, it invokes fn(c.Parent()) on the immediate parent, then calls c.Parent().VisitParents(fn) to repeat the process on the parent. Parent() (command.go:1842-1845) simply returns the `c.parent` field.
+3. Order: because fn runs before the recursive call, the callback fires in bottom-up order — immediate parent first, then grandparent, and so on up to the root command. The root itself is visited (as the parent of its child) but does not recurse further since its own parent is nil.
+
+The parent links that make this walk possible are set when a command is added as a child: the span at command.go:1304-1308 shows `cmds[i].parent = c` inside the add loop (which also panics on `cmds[i] == c`, "Command can't be a child of itself", so cycles through self are excluded).
+
+A concrete caller in the response (doc/man_docs.go:223-228) uses it to propagate DisableAutoGenTag down from ancestors:
+
+    cmd.VisitParents(func(c *cobra.Command) {
+        if c.DisableAutoGenTag {
+            cmd.DisableAutoGenTag = c.DisableAutoGenTag
+        }
+    })
+
+So: VisitParents traverses from a command toward the root by recursively following the `parent` pointer, invoking fn on each ancestor in nearest-first order, and terminating when it reaches a command with no parent.

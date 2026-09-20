@@ -1,0 +1,18 @@
+Parent is a method on *Command that returns the command's parent command.
+
+Definition (command.go:1842-1845):
+
+    // Parent returns a commands parent command.
+    func (c *Command) Parent() *Command {
+        return c.parent
+    }
+
+So Parent() is a simple accessor: it takes no arguments, returns *Command, and its entire body is `return c.parent`, i.e. it exposes the private `parent` field of the Command receiver.
+
+How it is used elsewhere in the response:
+
+- VisitParents (command.go:852-858) recursively walks the parent chain: `if c.HasParent() { fn(c.Parent()); c.Parent().VisitParents(fn) }`, invoking fn on each parent.
+- Root (command.go:860-866) finds the root command via `if c.HasParent() { return c.Parent().Root() } return c`, i.e. it climbs through Parent() until a command with no parent is reached.
+- Flags (command.go:1641-1653) mentions parents only in its doc comment ("the complete FlagSet that applies to this command (local and persistent declared here and by all parents)") and does not call Parent() directly.
+
+Caveats: the response does not show the declaration of the `parent` field itself, nor the definition of the companion `HasParent()` method that guards the two call sites above; only the accessor and its callers are included.

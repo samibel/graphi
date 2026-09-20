@@ -1,0 +1,18 @@
+NameAndAliases is a method on *Command defined in command.go at lines 1540-1543. It returns the command's name together with all of its aliases as a single comma-separated string. The full source span in the response is:
+
+    // NameAndAliases returns a list of the command name and all aliases
+    func (c *Command) NameAndAliases() string {
+        return strings.Join(append([]string{c.Name()}, c.Aliases...), ", ")
+    }
+
+Concretely, it prepends c.Name() to the c.Aliases slice and joins the result with ", ". The bundle also includes the supporting Name() method it depends on (command.go:1495-1503), which returns the first word of the command's Use line:
+
+    // Name returns the command's name: the first word in the use line.
+    func (c *Command) Name() string {
+        name := c.Use
+        i := strings.Index(name, " ")
+        if i >= 0 {
+            name = name[:i]
+        }
+        return name
+    }

@@ -1,0 +1,21 @@
+Append the description text to each completion candidate, separated from the candidate by a tab character (`\t`). The doc section "Descriptions for completions" in site/content/completions/_index.md (lines 355-395) states: "Cobra allows you to add descriptions to your own completions. Simply add the description text after each completion, following a `\t` separator. This technique applies to completions returned by `ValidArgs`, `ValidArgsFunction` and `RegisterFlagCompletionFunc()`."
+
+Concrete examples given there:
+
+With ValidArgsFunction:
+```go
+ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"harbor\tAn image registry", "thanos\tLong-term metrics"}, cobra.ShellCompDirectiveNoFileComp
+}}
+```
+
+With ValidArgs:
+```go
+ValidArgs: []string{"bash\tCompletions for bash", "zsh\tCompletions for zsh"}
+```
+
+Supporting notes from the same responses:
+- Descriptions are supported for each shell, but for bash they require the completion V2 version (site/content/completions/_index.md lines 355-358; the default `completion` command uses bash completion V2, per line 451).
+- For commands and flags, Cobra provides descriptions automatically from usage information; the `\t` technique is for your own dynamic/fixed choices (lines 358-359).
+- For PowerShell specifically, use `command.GenPowerShellCompletionWithDesc()` / `command.GenPowerShellCompletionFileWithDesc()` to include descriptions (line 519).
+- End users can suppress descriptions with `--no-descriptions` on the default `completion` command (lines 380-395; the flag wiring appears in completions.go line 695 via `CompletionOptions.DisableNoDescFlag` / `DisableDescriptions`).

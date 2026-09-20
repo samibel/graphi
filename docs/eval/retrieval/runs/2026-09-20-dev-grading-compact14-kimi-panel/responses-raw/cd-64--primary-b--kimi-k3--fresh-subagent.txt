@@ -1,0 +1,14 @@
+In this Go repository, "prefix" shows up in two distinct mechanisms, both evidenced by the returned spans.
+
+1. Error message prefix
+- The `Command` struct has a field `errPrefix string` documented as "the error message prefix defined by user" (command.go, lines 187-192).
+- `func (c *Command) SetErrPrefix(s string)` sets it: "SetErrPrefix sets error message prefix to be used. Application can use it to set custom prefix." Its body is just `c.errPrefix = s` (command.go, lines 357-360).
+- `func (c *Command) ErrPrefix() string` resolves the effective prefix: it returns `c.errPrefix` if non-empty; otherwise, if the command has a parent, it delegates with `return c.parent.ErrPrefix()`; otherwise it falls back to the default `"Error:"` (command.go, lines 611-621).
+- The prefix is actually used when an error is printed: in the error path, if `!c.SilenceErrors`, the code calls `c.PrintErrln(c.ErrPrefix(), err.Error())` followed by `c.PrintErrf("Run '%v --help' for usage.\n", c.CommandPath())` (command.go, lines 1095-1101).
+- The user guide documents this behavior: "Cobra prints an error message when receiving a non-nil error value. The default error message is `Error: <error contents>`. The Prefix, `Error:` can be customized using the `cmd.SetErrPrefix(s string)` function." (site/content/user_guide.md, lines 599-604).
+
+2. Command name/alias prefix matching
+- `func (c *Command) hasNameOrAliasPrefix(prefix string) bool` "returns true if the Name or any of aliases start with prefix". It checks `strings.HasPrefix(c.Name(), prefix)` first and, on a match, records the name via `c.commandCalledAs.name = c.Name()`; otherwise it loops over `c.Aliases` doing the same `strings.HasPrefix(alias, prefix)` check and records the matched alias in `c.commandCalledAs.name` (command.go, lines 1524-1538).
+- The feature is gated by a package-level variable: `var EnablePrefixMatching = defaultPrefixMatching`, whose comment warns "EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing to automatically enable in CLI tools. Set this to true to enable it." (cobra.go, lines 52-55).
+
+Note: the response header states "7 ranked source span(s)" and is marked `"truncated":true` (225/325 source tokens read), so this covers what the returned spans show; there may be additional prefix-related code not included in the response.

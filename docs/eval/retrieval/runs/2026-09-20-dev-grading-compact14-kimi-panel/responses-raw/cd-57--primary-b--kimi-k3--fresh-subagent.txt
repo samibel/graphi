@@ -1,0 +1,17 @@
+`Parent` is a method on `*Command` defined in `command.go` (lines 1842-1845):
+
+```go
+// Parent returns a commands parent command.
+func (c *Command) Parent() *Command {
+	return c.parent
+}
+```
+
+It returns the command's parent command by simply returning the unexported `parent` field of the receiver, with the result typed as `*Command`.
+
+Corroborating spans in the same response show how it is used:
+
+- `command.go:852-858` — `VisitParents(fn func(*Command))` walks the ancestor chain by calling `c.Parent()` when `c.HasParent()` is true, then recursing: `c.Parent().VisitParents(fn)`.
+- `command.go:860-866` — `Root()` climbs to the top-level command via `if c.HasParent() { return c.Parent().Root() }`, otherwise returning `c`.
+
+Note: the response does not include the declaration of the `parent` field itself (the struct-fields span at `command.go:73-107` shows other fields like `GroupID`, `Long`, `Example`, `ValidArgs`, `Annotations`, etc., but not `parent`), nor a definition of `HasParent()`; only its usage alongside `Parent()` is visible.

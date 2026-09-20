@@ -1,0 +1,18 @@
+Completion options in this repository (Cobra) center on the `CompletionOptions` struct, which controls shell completion behavior.
+
+The struct is defined in completions.go (lines 104-116) as "the options to control shell completion" and has four boolean fields:
+
+- `DisableDefaultCmd bool` — prevents Cobra from creating a default 'completion' command
+- `DisableNoDescFlag bool` — prevents Cobra from creating the '--no-descriptions' flag for shells that support completion descriptions
+- `DisableDescriptions bool` — turns off all completion descriptions for shells that support them
+- `HiddenDefaultCmd bool` — makes the default 'completion' command hidden
+
+According to the documentation (site/content/completions/_index.md, lines 94-95), these options apply to the default `completion` command, and "to configure such options you must set the `CompletionOptions` field on the *root* command."
+
+Beyond the struct itself, the response shows related completion customization surface:
+
+- Static noun completion: "Cobra allows you to provide a pre-defined list of completion choices for your nouns using the `ValidArgs` field" (site/content/completions/_index.md, lines 117-125, under "## Completion of nouns" / "### Static completion of nouns").
+- Dynamic noun completion: `ValidArgsFunction` is documented in command.go (lines 84-85) as "an optional function that provides valid non-flag arguments for shell completion. It is a dynamic version of using ValidArgs."
+- Bash completion versions: Cobra's default `completion` command uses bash completion V2; bash V1 requires implementing your own `completion` command (site/content/completions/_index.md, lines 421-423 and 451).
+- PowerShell: native completions are generated from the root `cobra.Command` via `command.GenPowerShellCompletion()` / `command.GenPowerShellCompletionFile()`, with description variants `command.GenPowerShellCompletionWithDesc()` / `command.GenPowerShellCompletionFileWithDesc()` (site/content/completions/_index.md, line 519).
+- Supported shells: Bash, Zsh, and fish (site/content/completions/_index.md, lines 1-7).

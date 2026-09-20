@@ -1,0 +1,14 @@
+The repository's template support, per the returned spans, centers on Go's text/template for generating Help, Usage, and Version output:
+
+1. Execution engine: `cobra.go:179-185` defines `tmpl(w io.Writer, text string, data interface{}) error`, which creates `template.New("top")`, registers `templateFuncs` via `t.Funcs(templateFuncs)`, parses the text with `template.Must(t.Parse(text))`, and executes it into `w`.
+
+2. Built-in function map: `cobra.go:31-40` defines `var templateFuncs = template.FuncMap{...}` with entries "trim" (strings.TrimSpace), "trimRightSpace" and "trimTrailingWhitespaces" (both trimRightSpace), "appendIfNotPresent", "rpad", "gt" (Gt), and "eq" (Eq).
+
+3. Extension points for custom functions: `cobra.go:83-87` `AddTemplateFunc(name string, tmplFunc interface{})` and `cobra.go:89-95` `AddTemplateFuncs(tmplFuncs template.FuncMap)` merge user functions into `templateFuncs`; both doc comments state the functions are available to Usage and Help template generation.
+
+4. Per-command templates with parent inheritance:
+   - Version: `command.go:598-609` `VersionTemplate()` returns `c.versionTemplate` if set, otherwise delegates to `c.parent.VersionTemplate()`, else the default `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}\n`. It is set via `command.go:352-355` `SetVersionTemplate(s string)`.
+   - Help: `command.go:584-593` `HelpTemplate()` follows the same pattern (c.helpTemplate, else parent, else a default beginning `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}...`, truncated in the response).
+   - Usage: `command.go:167-170` shows a `usageTemplate string` field on Command ("usage template defined by user"), though its accessor was not included in the returned spans.
+
+In short: templates are parsed/executed centrally by `tmpl`, extended through `AddTemplateFunc(s)`, built-in helpers live in `templateFuncs`, and each Command resolves its Help/Usage/Version template with a set-value-or-inherit-from-parent-or-default chain.

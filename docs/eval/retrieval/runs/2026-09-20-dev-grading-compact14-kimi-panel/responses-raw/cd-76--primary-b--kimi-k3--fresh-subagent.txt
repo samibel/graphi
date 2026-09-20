@@ -1,0 +1,13 @@
+LICENSE.txt is the repository's license file, and it contains the Apache License, Version 2.0 (January 2004).
+
+Evidence from the response:
+
+1. The first ranked source span is LICENSE.txt itself, lines 1-26, whose text begins:
+   "Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/"
+   followed by "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION" and the start of section "1. Definitions." (defining "License", "Licensor", "Legal Entity", "You"/"Your", and "Source" form). The span is truncated at line 26, so only the header and the beginning of the Definitions section are visible; the response as a whole is marked "truncated":true.
+
+2. README.md lines 110-112 confirm the file's role: "# License\n\nCobra is released under the Apache 2.0 license. See [LICENSE.txt](LICENSE.txt)". This identifies the project as Cobra and states that LICENSE.txt is the canonical license text it points to.
+
+3. active_help.go lines 3-4 show the per-file license header consistent with that license: "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License."
+
+In short: LICENSE.txt is the Apache License 2.0 text for the Cobra project; the response shows its first 26 lines (title, URL, and the start of the Terms and Conditions / Definitions), and both the README and a source-file header corroborate that Apache 2.0 is the project's license.

@@ -1,0 +1,9 @@
+command_notwin.go — structure and declarations, per the evidence in the task_context/2 response:
+
+1. Package clause: the file belongs to package cobra.
+   Evidence: source span command_notwin.go, start_line 18, end_line 18, text "package cobra".
+
+2. One package-level variable declaration: preExecHookFn, of function type func(*Command) (i.e., a variable holding a function that takes a *Command and returns nothing).
+   Evidence: source span command_notwin.go, start_line 20, end_line 20, text "var preExecHookFn func(*Command)".
+
+Limits of the evidence: the response returns exactly "2 ranked source span(s)" and its structuredContent is marked "truncated": true, with only 5 of 325 source tokens read. Nothing else about the file is shown: no build-constraint lines (the content of lines 1–17 is not in the response, despite the "_notwin" filename implying a build tag), no import block, no function declarations or method definitions, and no usage of preExecHookFn beyond its declaration. Only the two lines above can be attested from this response.

@@ -1,0 +1,29 @@
+GenBashCompletionV2 is an exported method on *Command defined in bash_completionsV2.go (lines 391-396):
+
+    // GenBashCompletionV2 generates Bash completion file version 2
+    // and writes it to the passed writer.
+    func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error {
+        return c.genBashCompletion(w, includeDesc)
+    }
+
+Purpose and behavior:
+- It generates a Bash completion script (version 2 of the completion format) and writes it to the caller-supplied io.Writer. The includeDesc bool controls whether descriptions are included in the generated completion output.
+
+Implementation:
+- It is a thin wrapper that delegates to the unexported method genBashCompletion (bash_completionsV2.go, lines 24-29):
+
+    func (c *Command) genBashCompletion(w io.Writer, includeDesc bool) error {
+        buf := new(bytes.Buffer)
+        genBashComp(buf, c.Name(), includeDesc)
+        _, err := buf.WriteTo(w)
+        return err
+    }
+
+  genBashCompletion renders the script into an in-memory bytes.Buffer via genBashComp(buf, c.Name(), includeDesc) — passing the command's name and the includeDesc flag — then copies the buffer to w with buf.WriteTo(w) and returns any error from that write.
+
+- The generated script content (partially shown at bash_completionsV2.go, lines 37-59) begins with a header `# bash completion V2 for <name> -*- shell-script -*-` and defines shell functions such as `__<name>_debug` (logs to ${BASH_COMP_DEBUG_FILE}), `__<name>_init_completion` (a minimal _init_completion replacement for Macs shipping bash3, using _get_comp_words_by_ref), and `__<name>_get_completion_results` (which calls the program itself to obtain completion results and the directive).
+
+Related caller:
+- GenBashCompletionFileV2 (bash_completionsV2.go, lines 381-390) is the file-based counterpart: it creates the named file with os.Create, defers outFile.Close(), and calls c.GenBashCompletionV2(outFile, includeDesc), so GenBashCompletionV2 is the writer-based core of that API.
+
+Note: the response also includes an unrelated-looking span from command.go (lines 97-115) showing Command struct fields (BashCompletionFunction, Deprecated, Annotations, Version, and the start of the Run-functions doc comment); none of those fields are referenced by the GenBashCompletionV2 code shown.

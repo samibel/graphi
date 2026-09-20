@@ -1,0 +1,16 @@
+bash_completionsV2.go is a file in `package cobra` (line 15: `package cobra`). Based on the 5 ranked spans returned, it contains at least four declarations, organized as one internal script-template writer plus three *Command methods (one unexported, two exported):
+
+1. `func genBashComp(buf io.StringWriter, name string, includeDesc bool)` (lines 31-85). This is the core generator: it picks the completion-request command based on `includeDesc` (`compCmd := ShellCompRequestCmd`, switching to `ShellCompNoDescRequestCmd` when `includeDesc` is false), then writes the bash completion V2 script into `buf` via `WriteStringAndCheck(buf, fmt.Sprintf(...))`. The emitted shell template shown in the span defines:
+   - `__<name>_debug()` — logs to `${BASH_COMP_DEBUG_FILE}` if set.
+   - `__<name>_init_completion()` — a minimal stand-in for `_init_completion` ("Macs have bash3 for which the bash-completion package doesn't include _init_completion"), setting `COMPREPLY=()` and calling `_get_comp_words_by_ref "$@" cur prev words cword`.
+   - `__<name>_get_completion_results()` — builds `requestComp` from `${words[0]} <compCmd> ${args[*]}` (using `${words[0]}` so aliases work), appends an extra empty `''` parameter when the last param is complete, strips the flag part when completing `-flag=<TAB>` (`cur="${cur#*=}"`), and finally runs `out=$(eval "${requestComp}" 2>/dev/null)` — the span ends there, mid-function.
+
+2. `func (c *Command) genBashCompletion(w io.Writer, includeDesc bool) error` (lines 24-29). Unexported method; buffers the output (`buf := new(bytes.Buffer); genBashComp(buf, c.Name(), includeDesc)`) and flushes it to `w` with `buf.WriteTo(w)`.
+
+3. `func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error` (lines 392-396). Exported wrapper, documented "GenBashCompletionV2 generates Bash completion file version 2 and writes it to the passed writer."; simply delegates to `c.genBashCompletion(w, includeDesc)`.
+
+4. `func (c *Command) GenBashCompletionFileV2(filename string, includeDesc bool) error` (lines 381-390). Exported wrapper, documented "GenBashCompletionFileV2 generates Bash completion version 2."; creates the file (`outFile, err := os.Create(filename)`, `defer outFile.Close()`) and calls `c.GenBashCompletionV2(outFile, includeDesc)`.
+
+The dependency direction is GenBashCompletionFileV2 -> GenBashCompletionV2 -> genBashCompletion -> genBashComp. Symbols used but declared elsewhere (not in these spans): `ShellCompRequestCmd`, `ShellCompNoDescRequestCmd`, `WriteStringAndCheck`, plus imports implied by usage (`io`, `bytes`, `fmt`, `os`).
+
+Caveat: the response is marked `"truncated":true` and the spans cover lines 15-396 with gaps (16-23, 30, 86-380). The gap between lines 85 and 380 almost certainly contains the remainder of `genBashComp`'s shell template (the visible span stops at `out=$(eval "${requestComp}" 2>/dev/null)`, before the function closes); whether any additional top-level declarations live in the unseen ranges cannot be determined from this response.

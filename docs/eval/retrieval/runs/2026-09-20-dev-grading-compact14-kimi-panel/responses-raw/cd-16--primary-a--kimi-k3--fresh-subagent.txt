@@ -1,0 +1,20 @@
+Based solely on the task_context/2 response (7 ranked source spans from doc/md_docs.go, flagged truncated:true, 324/325 source tokens), the file is structured as follows:
+
+Package
+- `package doc` at line 15 (span doc/md_docs.go:15).
+
+Constants
+- `const markdownExtension = ".md"` at line 30 (span doc/md_docs.go:30).
+
+Functions (in ranked-span order, with source line anchors)
+1. `GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error` — documented "// GenMarkdownCustom creates custom markdown output." (span lines 56-89). It calls `cmd.InitDefaultHelpCmd()` and `cmd.InitDefaultHelpFlag()`, writes into a `bytes.Buffer`: a `## <CommandPath>` heading, `cmd.Short`, an optional `### Synopsis` section from `cmd.Long`, a fenced `cmd.UseLine()` block if `cmd.Runnable()`, an optional `### Examples` fenced block from `cmd.Example`, then delegates flag output to `printOptions(buf, cmd, name)`. It then conditionally emits a `### SEE ALSO` section guarded by `hasSeeAlso(cmd)`, computing the parent link as `parent.CommandPath() + markdownExtension` with spaces replaced by `_` via `strings.ReplaceAll`. (Span ends mid-function at line 89.)
+2. `GenMarkdownTree(cmd *cobra.Command, dir string) error` — documented "// GenMarkdownTree will generate a markdown page for this command and all descendants in the directory given. The header may be nil." with a caveat that command names containing `-` make it undefined which help output lands in files like `cmd-sub-third.1` (span lines 119-129). It defines `identity` and `emptyStr` closures and delegates to `GenMarkdownTreeCustom(cmd, dir, emptyStr, identity)`.
+3. `GenMarkdown(cmd *cobra.Command, w io.Writer) error` — documented "// GenMarkdown creates markdown output." (span lines 51-54). Thin wrapper: `return GenMarkdownCustom(cmd, w, func(s string) string { return s })`.
+4. `GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error` — documented "// GenMarkdownTreeCustom is the the same as GenMarkdownTree, but with custom filePrepender and linkHandler." (span lines 131-144). It recurses over `cmd.Commands()`, skipping commands where `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()`, then computes `basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + markdownExtension` and `filename := filepath.Join(dir, basename)`. (Span ends mid-function at line 144.)
+5. `printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error` (span lines 32-43). Unexported helper: sets `cmd.NonInheritedFlags()` output to `buf` and, if `flags.HasAvailableFlags()`, writes a `### Options` fenced section via `flags.PrintDefaults()`; then begins the same treatment for `cmd.InheritedFlags()` (`parentFlags`). (Span ends mid-function at line 43.)
+
+Referenced but not shown in the response
+- `hasSeeAlso(cmd)` is called inside GenMarkdownCustom (span lines 56-89) but its declaration is not included in any span.
+- Imports are not shown as a span, but the snippets use `cobra.Command`, `io.Writer`, `bytes.Buffer`, `fmt.Sprintf`, `strings.ReplaceAll`, and `filepath.Join`, implying imports of cobra, io, bytes, fmt, strings, and filepath.
+
+Caveats: the response is marked `"truncated":true` and several spans cut off mid-function (GenMarkdownCustom at line 89, GenMarkdownTreeCustom at line 144, printOptions at line 43), so the complete tail of those functions, the import block, any declarations between lines 16-29 and 44-50, and anything after line 144 are not evidenced here.

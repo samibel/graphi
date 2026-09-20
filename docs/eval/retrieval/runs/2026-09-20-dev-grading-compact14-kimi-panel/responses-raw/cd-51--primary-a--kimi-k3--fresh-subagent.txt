@@ -1,0 +1,23 @@
+Append the description text to each completion string, separated from the completion itself by a tab character (`\t`). Per the "Descriptions for completions" section of site/content/completions/_index.md (lines 355-395): "Simply add the description text after each completion, following a `\t` separator. This technique applies to completions returned by `ValidArgs`, `ValidArgsFunction` and `RegisterFlagCompletionFunc()`."
+
+Examples given there:
+
+```go
+ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"harbor\tAn image registry", "thanos\tLong-term metrics"}, cobra.ShellCompDirectiveNoFileComp
+}
+```
+
+or
+
+```go
+ValidArgs: []string{"bash\tCompletions for bash", "zsh\tCompletions for zsh"}
+```
+
+Additional notes from the same source:
+
+- Descriptions are supported for each shell, but for bash only in completion V2 ("for bash, it is only available in the [completion V2 version]"), and the follow-up read notes "Cobra's default `completion` command uses bash completion V2" (site/content/completions/_index.md line 451).
+- For commands and flags, Cobra provides descriptions automatically based on usage information; the `\t` technique is only needed for your own custom completions.
+- End users can suppress descriptions by passing `--no-descriptions` to the default `completion` command (e.g. `source <(helm completion bash --no-descriptions)`); the code-side gate for offering that flag appears in completions.go line 695: `haveNoDescFlag := !c.CompletionOptions.DisableNoDescFlag && !c.CompletionOptions.DisableDescriptions`.
+- For PowerShell specifically, descriptions come from `command.GenPowerShellCompletionWithDesc()` / `GenPowerShellCompletionFileWithDesc()`, with Cobra deriving descriptions automatically from usage info (site/content/completions/_index.md line 519).
+- If you generate completions programmatically rather than via `ValidArgsFunction`, completions.go line 126 shows `func FixedCompletions(choices []string, directive ShellCompDirective) ...`, whose `choices` strings follow the same `completion\tdescription` format.

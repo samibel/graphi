@@ -1,0 +1,9 @@
+In the legacy Bash completion path, the translation happens in `writeRequiredNouns` (bash_completions.go:618-630), which the script generator invokes per command right after `writeRequiredFlag` (bash_completions.go:679-680: `writeRequiredFlag(buf, cmd)` / `writeRequiredNouns(buf, cmd)`).
+
+For `ValidArgs`, `writeRequiredNouns` emits the required-noun array into the generated bash script:
+- It first writes the initializer `    must_have_one_noun=()\n`.
+- It then `sort.Strings(cmd.ValidArgs)` and, for each value, strips any tab-joined description suffix (`value = strings.Split(value, "\t")[0]`, with the comment that descriptions are not supported by bash completion), appending each as `    must_have_one_noun+=(%q)\n`.
+
+For `ValidArgsFunction`, the same function records that a dynamic completion function exists rather than enumerating nouns: `if cmd.ValidArgsFunction != nil { WriteStringAndCheck(buf, "    has_completion_function=1\n") }` (bash_completions.go:627-629). `ValidArgsFunction` is the Command field documented as "an optional function that provides valid non-flag arguments for shell completion" (command.go:84).
+
+So the required-noun state in the legacy bash script is the pair of shell variables: `must_have_one_noun` (sorted, description-stripped `ValidArgs` entries) plus the `has_completion_function=1` flag when a `ValidArgsFunction` is set. This is part of the legacy Bash-only dynamic completion solution described in site/content/completions/bash.md:7-10, which works only for Bash and can coexist with `ValidArgsFunction`/`RegisterFlagCompletionFunc()` as long as both solutions are not used for the same command.

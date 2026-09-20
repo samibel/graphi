@@ -1,0 +1,19 @@
+Root is a method on the `Command` type, defined in `command.go` at lines 860-866:
+
+```go
+// Root finds root command.
+func (c *Command) Root() *Command {
+	if c.HasParent() {
+		return c.Parent().Root()
+	}
+	return c
+}
+```
+
+Per its doc comment ("Root finds root command"), it returns the root of the command tree: it checks `c.HasParent()` and, if the command has a parent, recurses via `c.Parent().Root()`; otherwise it returns the command itself (`c`). The signature shows it takes no arguments and returns a `*Command`.
+
+Supporting evidence in the same response:
+- `command.go:1631-1634` defines the helper it relies on: `// HasParent determines if the command is a child command. func (c *Command) HasParent() bool { return c.parent != nil }` — i.e., a command with `parent == nil` is the root, which is the recursion's base case.
+- The receiver type `Command` is the central struct of the package, declared at `command.go:47-73` ("Command is just that, a command for your application. E.g. 'go run ...' - 'run' is the command..."), with fields such as `Use`, `Aliases`, `SuggestFor`, and `Short`.
+
+The body of `Parent()` itself is not included in the response (only its call site inside `Root()`), but the recursion plus the `HasParent` base case fully establish Root's behavior: it walks up the parent chain to the topmost command.

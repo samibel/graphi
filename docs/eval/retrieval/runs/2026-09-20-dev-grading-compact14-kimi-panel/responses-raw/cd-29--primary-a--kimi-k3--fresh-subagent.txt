@@ -1,0 +1,14 @@
+Based on the response, the shorthand-to-flag matching happens in getFlagNameCompletions (completions.go, lines 534-565). After handling the long form ("--" + flag.Name), it builds the shorthand candidate by string concatenation and prefix-matches it against what the user typed:
+
+    flagName = "-" + flag.Shorthand
+    if len(flag.Shorthand) > 0 && strings.HasPrefix(flagName, toComplete) {
+        completions = append(completions, fmt.Sprintf("%s\t%s", flagName, flag.Usage))
+    }
+
+So a one-letter shorthand resolves to its flag purely by string comparison: for each flag on the command, if the flag's Shorthand field is non-empty, the code prepends a single dash ("-" + flag.Shorthand) and checks strings.HasPrefix(flagName, toComplete). A flag is only associated with the typed text when the typed prefix matches the dashed shorthand; the emitted completion carries that flag's Usage text ("%s\t%s", flagName, flag.Usage), which is what ties the suggestion back to the originating flag. Flags that are hidden or deprecated are excluded up front via nonCompletableFlag (bash_completions.go, lines 699-701: return flag.Hidden || len(flag.Deprecated) > 0).
+
+Two caveats from the evidence:
+
+1. The other direction — taking an already-typed "-x" argument and resolving it back to the *pflag.Flag for value completion — goes through checkIfFlagCompletion (completions.go, line 592: func checkIfFlagCompletion(finalCmd *Command, args []string, lastArg string) (*pflag.Flag, []string, string, error)), but only its signature is included in the response, so the exact shorthand lookup mechanics there (e.g., stripping the dash and a pflag shorthand lookup) are not shown.
+
+2. The only flag-by-name lookup visible, Command.Flag (command.go, lines 1794-1803), resolves via c.Flags().Lookup(name) with a persistentFlag(name) fallback, i.e., by long name; GetFlagCompletionFunc (completions.go, lines 148-155) uses it the same way. No shorthand-based lookup function appears in the response.

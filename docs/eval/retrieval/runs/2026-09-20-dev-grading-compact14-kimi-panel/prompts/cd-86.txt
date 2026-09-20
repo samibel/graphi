@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does VisitParents traverse from a command toward the root and invoke its callback
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 31c7718886ac; read in order (190/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":852,"end_line":858,"text":"// VisitParents visits all parents of the command and invokes fn on each parent.\nfunc (c *Command) VisitParents(fn func(*Command)) {\n\tif c.HasParent() {\n\t\tfn(c.Parent())\n\t\tc.Parent().VisitParents(fn)\n\t}\n}"},{"path":"command.go","start_line":1631,"end_line":1634,"text":"// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":1842,"end_line":1845,"text":"// Parent returns a commands parent command.\nfunc (c *Command) Parent() *Command {\n\treturn c.parent\n}"},{"path":"command.go","start_line":860,"end_line":866,"text":"// Root finds root command.\nfunc (c *Command) Root() *Command {\n\tif c.HasParent() {\n\t\treturn c.Parent().Root()\n\t}\n\treturn c\n}"},{"path":"site/content/user_guide.md","start_line":288,"end_line":294,"text":"### Local Flag on Parent Commands\n\nBy default, Cobra only parses local flags on the target command, and any local flags on\nparent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will\nparse local flags on each command before executing the target command.\n\n```go"},{"path":"command.go","start_line":1304,"end_line":1308,"text":"\tfor i, x := range cmds {\n\t\tif cmds[i] == c {\n\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}\n\t\tcmds[i].parent = c"},{"path":"command.go","start_line":58,"end_line":58,"text":"\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are"},{"path":"doc/man_docs.go","start_line":223,"end_line":228,"text":"\t\t\tseealso := fmt.Sprintf(\"**%s(%s)**\", dashParentPath, header.Section)\n\t\t\tseealsos = append(seealsos, seealso)\n\t\t\tcmd.VisitParents(func(c *cobra.Command) {\n\t\t\t\tif c.DisableAutoGenTag {\n\t\t\t\t\tcmd.DisableAutoGenTag = c.DisableAutoGenTag\n\t\t\t\t}"}],"provenance":{"input_sha256":"a7c3e8480ca3736c49d5696a0926a2ebceef4e8aac0d38f7b92c74c865ad25ac","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

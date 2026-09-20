@@ -1,0 +1,7 @@
+A command finds a flag by climbing the parent chain through `Command.Flag(name)` (command.go:1794-1803), whose doc comment states: "Flag climbs up the command tree looking for matching flag." The lookup proceeds in two stages:
+
+1. `flag = c.Flags().Lookup(name)` — it first searches the command's complete FlagSet. `Flags()` (command.go:1641-1653) is documented as returning "the complete FlagSet that applies to this command (local and persistent declared here and by all parents)", so this single Lookup already covers flags inherited from parents.
+
+2. If that returns nil, it falls back to `flag = c.persistentFlag(name)` — a helper that, per the doc comment on `Flag`, is the part that climbs the command tree. The body of `persistentFlag` is not included in the response, so the exact loop is not visible; the climbing primitive available is `Parent()` (command.go:1842-1845), which "returns a commands parent command" (`return c.parent`).
+
+Supporting evidence for the inherited-flag machinery: the `Command` struct holds `iflags *flag.FlagSet` ("iflags contains inherited flags") and `parentsPflags *flag.FlagSet` ("parentsPflags is all persistent flags of cmd's parents") (command.go:157-161). Additionally, `findFlag` in completions.go:841-845 notes that it first converts a short flag into a long flag "as the cmd.Flag() search only accepts long flags", confirming `Flag` is the canonical parent-climbing lookup.

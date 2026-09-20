@@ -1,0 +1,17 @@
+GetFlagCompletionFunc is a method on *Command defined in completions.go (lines 148-160). Its doc comment states: "GetFlagCompletionFunc returns the completion function for the given flag of the command, if available."
+
+Signature:
+    func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool)
+
+Behavior (from the body in completions.go:148-160):
+1. It resolves the flag by name via c.Flag(flagName); if the flag is nil it returns (nil, false).
+2. It acquires a read lock: flagCompletionMutex.RLock() with defer flagCompletionMutex.RUnlock().
+3. It looks up the flag in the package-level map flagCompletionFunctions and returns (completionFunc, exists).
+
+Supporting evidence in the response:
+- completions.go:35-36 declares the backing store: "// Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it." — var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}
+- completions.go:38-39 declares the lock: "// lock for reading and writing from flagCompletionFunctions" — var flagCompletionMutex = &sync.RWMutex{}
+- command.go:1794-1803 shows the c.Flag(name) helper it calls: "Flag climbs up the command tree looking for matching flag." It first tries c.Flags().Lookup(name), then falls back to c.persistentFlag(name).
+- command.go:84-109 (Command struct fields) shows the related completion hook ValidArgsFunction with the same function shape — func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) — which matches the type of the per-flag completion function returned by GetFlagCompletionFunc.
+
+In short: GetFlagCompletionFunc returns the registered shell-completion function for a named flag of the command, plus a boolean reporting whether one was registered, reading from the mutex-guarded global map flagCompletionFunctions keyed by *pflag.Flag.

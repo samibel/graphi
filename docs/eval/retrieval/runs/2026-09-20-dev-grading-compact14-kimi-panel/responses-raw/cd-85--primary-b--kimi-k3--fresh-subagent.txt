@@ -1,0 +1,57 @@
+QUESTION: how does LocalFlags rebuild the current command's local flag view while excluding unshadowed parent flags
+
+ANSWER:
+
+The whole mechanism lives in `LocalFlags()` at command.go:1668-1693. Step by step, exactly as written there:
+
+1. Merge persistent flags first.
+   The body opens with `c.mergePersistentFlags()`, so the command's persistent flags are folded into `c.Flags()` before any local-view computation happens.
+
+2. Lazily create the local FlagSet once, and reuse it.
+   ```
+   if c.lflags == nil {
+       c.lflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
+       if c.flagErrorBuf == nil {
+           c.flagErrorBuf = new(bytes.Buffer)
+       }
+       c.lflags.SetOutput(c.flagErrorBuf)
+   }
+   ```
+   `c.lflags` is the dedicated per-command local FlagSet (the struct comment at command.go:156-157 says "`lflags` contains local flags", alongside `pflags` for persistent and `iflags` for inherited). It is created on first use, named after the command, with error output captured into `c.flagErrorBuf`.
+
+3. Mirror the main flag set's presentation settings.
+   ```
+   c.lflags.SortFlags = c.Flags().SortFlags
+   if c.globNormFunc != nil {
+       c.lflags.SetNormalizeFunc(c.globNormFunc)
+   }
+   ```
+
+4. Rebuild/populate via a filtering closure — this is where unshadowed parent flags are excluded.
+   ```
+   addToLocal := func(f *flag.Flag) {
+       // Add the flag if it is not a parent PFlag, or it shadows a parent PFlag
+       if c.lflags.Lookup(f.Name) == nil && f != c.parentsPflags.Lookup(f.Name) {
+           c.lflags.AddFlag(f)
+       }
+   }
+   ```
+   Two conditions must hold for a flag `f` to be added:
+   - `c.lflags.Lookup(f.Name) == nil`: the flag is not already in the local set. This makes repeated calls incremental/idempotent — a call only tops up `lflags` with newly added flags rather than duplicating them, so the "rebuild" is a refill of the cached set, not a fresh allocation.
+   - `f != c.parentsPflags.Lookup(f.Name)`: a pointer-identity comparison against the parents' persistent-flag set. If the flag object reachable from this command is the *same* `*flag.Flag` object the parents registered under that name, the flag is merely inherited (unshadowed) and is skipped. If the command defined its own flag under the same name, the object is a different pointer, so the parent flag is shadowed and the command's own flag *is* admitted to the local view. The inline comment states the rule verbatim: "Add the flag if it is not a parent PFlag, or it shadows a parent PFlag."
+
+5. Feed every candidate flag through the filter.
+   ```
+   c.Flags().VisitAll(addToLocal)
+   c.PersistentFlags().VisitAll(addToLocal)
+   ```
+   Both the full flag set and the command's own persistent flag set are visited, so local regular flags and local persistent flags both land in `c.lflags`, while anything inherited unchanged from a parent is left out.
+
+6. Return the cached set: `return c.lflags`.
+
+Corroborating context in the same response:
+- command.go:1720-1723 `NonInheritedFlags()` is implemented as `return c.LocalFlags()`, confirming that the local view is exactly "flags not inherited from parent commands".
+- command.go:1655-1666 `LocalNonPersistentFlags()` shows the complementary filter in the other direction: it walks `LocalFlags()` and keeps only flags where `persistentFlags.Lookup(f.Name) == nil`.
+- command.go:1761-1764 `HasLocalFlags()` just reports `c.LocalFlags().HasFlags()`.
+
+Evidence relied on: the `LocalFlags` source span command.go:1668-1693 (the only span containing the function), the field-comment span command.go:154-158, and the sibling accessors at command.go:1655-1666 and 1720-1723.

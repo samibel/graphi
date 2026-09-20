@@ -1,0 +1,28 @@
+QUESTION: post-run
+
+ANSWER:
+
+"Post-run" in this codebase refers to the PostRun and PersistentPostRun hooks that a cobra Command executes after its main Run function, plus one internal method of the same name. All facts below come only from the two provided responses.
+
+1. The hook fields. command.go:136-138 declares on the Command struct:
+   - "// PostRun: run after the Run command." -> `PostRun func(cmd *Command, args []string)`
+   - "// PostRunE: PostRun but returns an error." (a variant that returns an error).
+
+2. Execution order. The user guide (site/content/user_guide.md:605-693, follow-up read) states the full hook order:
+   - PersistentPreRun
+   - PreRun
+   - Run
+   - PostRun
+   - PersistentPostRun
+   So both post-run hooks run strictly after Run.
+
+3. Conditions and inheritance (user_guide.md:605-611 and the follow-up):
+   - "PersistentPostRun and PostRun will be executed after Run."
+   - "The Persistent*Run functions will be inherited by children if they do not declare their own."
+   - "The *PreRun and *PostRun functions will only be executed if the Run function of the current command has been declared" — i.e., PostRun/PersistentPostRun are skipped for a command with no Run.
+
+4. Only the first persistent post-run hook in the chain runs by default. The guide's worked example (rootCmd with PersistentPostRun, subCmd with its own PersistentPostRun) shows that invoking "sub arg1 arg2" prints rootCmd's PersistentPreRun but NOT rootCmd's PersistentPostRun; the output lines are "Inside subCmd PostRun" then "Inside subCmd PersistentPostRun". The guide explains: "By default, only the first persistent hook found in the command chain is executed... Set EnableTraverseRunHooks global variable to true if you want to execute all parents' persistent hooks."
+
+5. The traversal switch. cobra.go:64-65 documents it: "// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents. // By default this is disabled, which means only the first run hook to be found is executed."
+
+6. Distinct internal method. command.go:1012-1026 also defines an unexported `func (c *Command) postRun()` that iterates over the package-level `finalizers` slice and calls each (mirroring `preRun()` over `initializers`). This is library-internal initializer/finalizer machinery, separate from the user-facing PostRun/PersistentPostRun hooks above.

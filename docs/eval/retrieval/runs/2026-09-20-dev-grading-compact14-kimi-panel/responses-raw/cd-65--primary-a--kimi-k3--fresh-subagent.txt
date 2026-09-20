@@ -1,0 +1,21 @@
+AllChildCommandsHaveGroup is a method on *Command, defined in command.go at lines 1336-1344. Its doc comment says it "returns if all subcommands are assigned to a group."
+
+Full definition (command.go:1336-1344):
+
+    // AllChildCommandsHaveGroup returns if all subcommands are assigned to a group
+    func (c *Command) AllChildCommandsHaveGroup() bool {
+        for _, sub := range c.commands {
+            if (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == "" {
+                return false
+            }
+        }
+        return true
+    }
+
+Behavior: it iterates over the command's registered subcommands (c.commands). For each subcommand that is either an available command (sub.IsAvailableCommand()) or the command's help command (sub == c.helpCommand), it checks the subcommand's GroupID. If any such subcommand has an empty GroupID (sub.GroupID == ""), the method returns false immediately; otherwise, after the loop completes, it returns true. In other words, it reports true exactly when every available subcommand (plus the help command) has been assigned a non-empty group ID.
+
+Supporting evidence from the same response:
+- IsAvailableCommand (command.go:1560-1576) defines "available": a command is not available if it is deprecated (len(c.Deprecated) != 0) or Hidden, or if it is its parent's help command (c.HasParent() && c.Parent().helpCommand == c); otherwise it is available if it is runnable or has available subcommands (c.Runnable() || c.HasAvailableSubCommands()). This explains why AllChildCommandsHaveGroup explicitly adds the `sub == c.helpCommand` disjunct — the help command is excluded by IsAvailableCommand but still needs a group check.
+- The Group type (command.go:41-45) is `type Group struct { ID string; Title string }`, and ContainsGroup (command.go:1346-1354) checks whether a groupID exists in c.commandgroups, giving the surrounding grouping API context.
+
+Note: the response marks "truncated":true, but the entire AllChildCommandsHaveGroup function body and its doc comment are present verbatim, so the question is fully answerable from the provided bytes.

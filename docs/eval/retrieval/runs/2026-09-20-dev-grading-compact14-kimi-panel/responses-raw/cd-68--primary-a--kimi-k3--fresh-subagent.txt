@@ -1,0 +1,13 @@
+CompErrorln is a Go function defined in completions.go (lines 898-901) that prints a completion error message to stderr with a trailing newline. Its signature is `func CompErrorln(msg string)`. The doc comment states: "CompErrorln prints the specified completion message to stderr with a newline at the end." Its body is a thin wrapper: `CompError(fmt.Sprintf("%s\n", msg))` — it appends a newline to the message and delegates to CompError.
+
+Evidence in the response shows the full call chain it triggers:
+
+1. CompError (completions.go, lines 892-896) prefixes the message with "[Error] " via `msg = fmt.Sprintf("[Error] %s", msg)` and passes it to `CompDebug(msg, true)`.
+
+2. CompDebug (completions.go, lines 860-882) prefixes the message with "[Debug] ", appends it to the file named by the BASH_COMP_DEBUG_FILE environment variable if that is set (opening with os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644, using WriteStringAndCheck), and — because CompError passes printToStdErr=true — also writes it to os.Stderr with fmt.Fprint. The comments note completion printouts must never go to stdout, as they would be misinterpreted as completion choices by the completion script.
+
+3. A call site appears at completions.go lines 208-226, where `CompErrorln(err.Error())` is used to report an error during completion generation, after which the code deliberately keeps going because valid completions may still exist and the directive still needs to be printed.
+
+So the net effect of CompErrorln(msg) is: the message "msg\n" is wrapped as "[Debug] [Error] msg\n", optionally logged to the BASH_COMP_DEBUG_FILE, and printed to stderr.
+
+There is also a sibling CompDebugln (completions.go, lines 884-890) which does the analogous newline-appending wrap around CompDebug for debug (non-error) messages.

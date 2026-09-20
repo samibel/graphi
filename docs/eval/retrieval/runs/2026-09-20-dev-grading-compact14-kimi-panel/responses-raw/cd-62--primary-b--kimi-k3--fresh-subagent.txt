@@ -1,0 +1,15 @@
+The response bundles 8 ranked Go source spans (from cobra.go and command.go) showing the repository's template machinery for Usage/Help/Version output:
+
+1. Template execution engine — cobra.go:179-185 defines `func tmpl(w io.Writer, text string, data interface{}) error`, which creates `template.New("top")`, registers `templateFuncs` via `t.Funcs(templateFuncs)`, parses the text with `template.Must(t.Parse(text))`, and executes it against `data` into `w`.
+
+2. Function map — cobra.go:31-40 defines `var templateFuncs = template.FuncMap` with entries `"trim"` (strings.TrimSpace), `"trimRightSpace"` and `"trimTrailingWhitespaces"` (both trimRightSpace), `"appendIfNotPresent"`, `"rpad"`, `"gt"` (Gt), and `"eq"` (Eq).
+
+3. Extension points — cobra.go:83-87 `AddTemplateFunc(name string, tmplFunc interface{})` inserts a single function into `templateFuncs`; cobra.go:89-95 `AddTemplateFuncs(tmplFuncs template.FuncMap)` merges a whole map. Both doc comments state the functions are available to Usage and Help template generation.
+
+4. Version template — command.go:352-355 `SetVersionTemplate(s string)` sets `c.versionTemplate`; command.go:598-609 `VersionTemplate()` returns the custom template if set, otherwise walks up to the parent's template, otherwise defaults to `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}\n`.
+
+5. Help template — command.go:584-593 `HelpTemplate()` mirrors the same pattern: return `c.helpTemplate` if non-empty, else inherit from parent, else a default beginning `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}` (the span is cut off mid-template; the response is marked truncated).
+
+6. Storage fields — command.go:167-170 shows the Command struct holds `usageFunc func(*Command) error` and `usageTemplate string` ("usage template defined by user").
+
+Overall: templates are Go text/template strings executed by the central `tmpl` helper with a shared, user-extendable function map, with per-command override fields plus parent-inheritance and built-in defaults for help, usage, and version output.

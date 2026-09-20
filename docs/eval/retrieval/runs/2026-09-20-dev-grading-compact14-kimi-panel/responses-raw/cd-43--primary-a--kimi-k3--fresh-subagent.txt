@@ -1,0 +1,20 @@
+Based on the full body of `func (c *Command) DebugFlags()` in command.go (lines 1453-1493), DebugFlags works as follows.
+
+Walking the command tree (depth-first, pre-order):
+
+1. It prints "DebugFlags called on" plus the receiver's name, then defines a recursive closure `var debugflags func(*Command)` and kicks it off with `debugflags(c)` on the receiver.
+2. For each command `x`, the closure first prints `x.Name()` — but only if `x.HasFlags() || x.HasPersistentFlags()` — then processes that command's flag sets (below), then prints `x.flagErrorBuf`.
+3. Recursion happens at the end: `if x.HasSubCommands() { for _, y := range x.commands { debugflags(y) } }`. So it visits a node, prints its flags, then recurses into each child in `x.commands` order — a depth-first pre-order walk of the whole tree rooted at `c`.
+
+Labeling local versus persistent flags:
+
+For each visited command `x`, it handles the two flag sets separately, using three labels: [L] (local only), [LP] (local and persistent), and [P] (persistent only).
+
+- Local set (`x.flags`): if `x.HasFlags()`, it calls `x.flags.VisitAll(...)`. For each flag `f`:
+  - If the command also has persistent flags AND the same flag name is registered as persistent — `x.HasPersistentFlags() && x.persistentFlag(f.Name) != nil` — it prints the flag with the `[LP]` tag: `c.Println("  -"+f.Shorthand+",", "--"+f.Name, "["+f.DefValue+"]", "", f.Value, "  [LP]")`.
+  - Otherwise it prints the identical line with the `[L]` tag (local only).
+- Persistent set (`x.pflags`): if `x.HasPersistentFlags()`, it calls `x.pflags.VisitAll(...)`. For each flag `f`, it prints the `[P]`-tagged line, but with a deduplication guard: if the command also has local flags (`x.HasFlags()`), the persistent flag is printed only when `x.flags.Lookup(f.Name) == nil` — i.e., only if it was not already emitted as `[LP]` during the local pass. If the command has no local flags, every persistent flag is printed with `[P]` unconditionally.
+
+Each printed flag line contains the shorthand (`-`+f.Shorthand), the long name (`--`+f.Name), the default value in brackets (`[`+f.DefValue+`]`), the current value (`f.Value`), and the two-letter label (`[L]`, `[LP]`, or `[P]`).
+
+In short: DebugFlags recursively descends the command tree via the `commands` slice in pre-order, and per command it emits `[LP]` for names present in both the local and persistent sets, `[L]` for local-only names, and `[P]` for persistent-only names, using `x.persistentFlag(f.Name) != nil` and `x.flags.Lookup(f.Name) == nil` lookups to classify and to suppress duplicates between the two passes.

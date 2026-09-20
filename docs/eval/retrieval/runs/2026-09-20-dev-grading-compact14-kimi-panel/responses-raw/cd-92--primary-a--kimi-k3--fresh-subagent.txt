@@ -1,0 +1,23 @@
+CompletionOptions is a struct that controls shell completion behavior, defined in completions.go (lines 104-116):
+
+// CompletionOptions are the options to control shell completion
+type CompletionOptions struct {
+	// DisableDefaultCmd prevents Cobra from creating a default 'completion' command
+	DisableDefaultCmd bool
+	// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag
+	// for shells that support completion descriptions
+	DisableNoDescFlag bool
+	// DisableDescriptions turns off all completion descriptions for shells
+	// that support them
+	DisableDescriptions bool
+	// HiddenDefaultCmd makes the default 'completion' command hidden
+	HiddenDefaultCmd bool
+}
+
+It has four boolean fields:
+- DisableDefaultCmd — prevents Cobra from creating a default 'completion' command.
+- DisableNoDescFlag — prevents Cobra from creating the '--no-descriptions' flag for shells that support completion descriptions.
+- DisableDescriptions — turns off all completion descriptions for shells that support them.
+- HiddenDefaultCmd — makes the default 'completion' command hidden.
+
+Per the documentation snippet in site/content/completions/_index.md (lines 94-95): "Cobra provides a few options for the default `completion` command. To configure such options you must set the `CompletionOptions` field on the *root* command."

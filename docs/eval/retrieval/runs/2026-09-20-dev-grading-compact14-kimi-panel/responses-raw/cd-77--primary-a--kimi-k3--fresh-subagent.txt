@@ -1,0 +1,20 @@
+The response includes the complete Makefile (path "Makefile", start_line 1, end_line 35). Its contents:
+
+Variables:
+- `BIN="./bin"` — output binary directory.
+- `SRC=$(shell find . -name "*.go")` — all Go source files in the tree.
+
+Startup check:
+- If `golangci-lint` is not on `$(PATH)`, it emits a warning: `could not find golangci-lint in $(PATH), run: curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh`.
+
+Phony targets (`.PHONY: fmt lint test install_deps clean`):
+- `default: all`
+- `all: fmt test`
+- `fmt`: prints "checking formatting" and fails if any file is unformatted — `@test -z $(shell gofmt -l $(SRC)) || (gofmt -d $(SRC); exit 1)`.
+- `lint`: prints "running lint tools" and runs `golangci-lint run -v`.
+- `test: install_deps`: prints "running tests" and runs `go test -v ./...`.
+- `richtest: install_deps` (not in .PHONY): prints "running tests with kyoh86/richgo" and runs `richgo test -v ./...`.
+- `install_deps`: prints "downloading dependencies" and runs `go get -v ./...`.
+- `clean`: `rm -rf $(BIN)`.
+
+So the Makefile is a standard Go build automation file: formatting verification via gofmt, linting via golangci-lint, tests via `go test` (or richgo via `richtest`), dependency download via `go get`, and cleanup of `./bin`. The other spans in the response (completion generators in powershell_completions.go, bash_completions.go, fish_completions.go, zsh_completions.go, and the Command struct in command.go) are unrelated to the Makefile.

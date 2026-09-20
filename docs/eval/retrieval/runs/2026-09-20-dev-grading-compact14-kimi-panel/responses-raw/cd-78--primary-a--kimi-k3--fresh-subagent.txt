@@ -1,0 +1,9 @@
+Executing through Cobra's internal `execute` path is guarded: a nil Command receiver returns an error instead of panicking. In `command.go:874-878`, `func (c *Command) execute(a []string) (err error)` begins with:
+
+    if c == nil {
+        return fmt.Errorf("Called Execute() on a nil Command")
+    }
+
+so a nil receiver short-circuits immediately with the error "Called Execute() on a nil Command", before any deprecation printing, flag initialization (`InitDefaultHelpFlag`/`InitDefaultVersionFlag`), or `ParseFlags` happens.
+
+One caveat visible in the provided spans: the context-setting entry points write a field on the receiver before delegating. `ExecuteContext` (command.go:1030-1033) does `c.ctx = ctx; return c.Execute()`, and `ExecuteContextC` (command.go:1046-1049) does `c.ctx = ctx; return c.ExecuteC()`. On a nil receiver, that `c.ctx = ctx` assignment would dereference a nil pointer and panic before the nil check in `execute` is ever reached. `Execute` itself (command.go:1038-1041) just calls `c.ExecuteC()`, whose body (signature only at command.go:1052) is not shown, so whether `ExecuteC` has its own nil guard or relies on the one in `execute` cannot be confirmed from these responses; the explicit, evidenced protection is the nil check at the top of `execute`.

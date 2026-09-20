@@ -1,0 +1,16 @@
+When a command runs, cobra checks whether the command's `Deprecated` field is a non-empty string, and if so it prints a warning naming the command and giving the deprecation message.
+
+The direct evidence is in `command.go`, lines 876-882 of the response bundle. The snippet shows the guard and the print statement, sitting just after a nil-Command check in the execute path:
+
+```
+		return fmt.Errorf("Called Execute() on a nil Command")
+	}
+
+	if len(c.Deprecated) > 0 {
+		c.Printf("Command %q is deprecated, %s\n", c.Name(), c.Deprecated)
+	}
+```
+
+Concretely: if `len(c.Deprecated) > 0`, cobra calls `c.Printf` with the format `Command %q is deprecated, %s\n`, interpolating `c.Name()` (the command's name, quoted via `%q`) and the `c.Deprecated` string (the deprecation message supplied by the author). The warning goes through the command's own `Printf`, i.e. to the command's configured output, and includes a trailing newline. Execution continues normally afterward — the deprecation warning does not stop the command from running.
+
+One other retrieved span references deprecation tangentially: `command.go` lines 1579-1582 note that a "help topic command" is determined partly by it being "NOT runnable/hidden/deprecated", i.e. deprecated commands are also excluded from help-topic consideration, but the actual runtime warning is the `Printf` shown above.

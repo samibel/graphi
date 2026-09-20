@@ -1,0 +1,26 @@
+In this repository, "directive" refers to ShellCompDirective, the shell-completion directive type defined in completions.go.
+
+Definition (completions.go:41-43):
+  "// ShellCompDirective is a bit map representing the different behaviors the shell
+   // can be instructed to have once completions have been provided.
+   type ShellCompDirective int"
+
+It is a bitmask of int flags. The constant block (completions.go:54-63) begins with:
+  - ShellCompDirectiveError ShellCompDirective = 1 << iota — "indicates an error occurred and completions should be ignored."
+  - ShellCompDirectiveNoSpace — "indicates that the shell should not add a space after the completion even if there is a single completion provided."
+  - ShellCompDirectiveNoFileComp — "indicates that the shell should not provide file completion even when no completion is provided." (the block is cut off here in the response)
+
+The full set of directive bits is visible in the string() method on ShellCompDirective (completions.go:162-191), which checks each bit and appends its name:
+  - ShellCompDirectiveError
+  - ShellCompDirectiveNoSpace
+  - ShellCompDirectiveNoFileComp
+  - ShellCompDirectiveFilterFileExt
+  - ShellCompDirectiveFilterDirs
+  - ShellCompDirectiveKeepOrder
+If no bits are set, it reports "ShellCompDirectiveDefault". If the value is out of range (d >= shellCompDirectiveMaxValue), string() returns fmt.Sprintf("ERROR: unexpected ShellCompDirective value: %d", d); otherwise it returns the names joined with ", ".
+
+Usage in the completion flow (completions.go:372-383):
+  - One path returns a directive alongside the command and completions: "return finalCmd, []string{}, ShellCompDirectiveFilterDirs, nil".
+  - The main flow declares "var directive ShellCompDirective" and then enforces flag groups before flag completion: "finalCmd.enforceFlagGroupsForCompletion()", with a note that flagname completion is performed even when finalCmd.DisableFlagParsing==true so persistent flag names still complete for commands that disable flag parsing.
+
+In short: a directive is a ShellCompDirective bitmask value returned by the completion logic to tell the shell how to behave after completions are produced (error/ignore, no trailing space, no file completion, filter by file extension, filter directories, keep order; default when none set).

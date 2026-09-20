@@ -1,0 +1,23 @@
+active_help.go — structure and declarations (per the task_context/2 response, which returns 6 ranked source spans; the response is flagged "truncated":true, so spans outside lines 15–67 may exist but are not shown).
+
+Package
+- Line 15: `package cobra` — the file belongs to package cobra.
+
+Constants (lines 24–31, one const block)
+- `activeHelpMarker = "_activeHelp_ "` — prefix marker used when appending active-help strings.
+- `activeHelpEnvVarSuffix  = "_ACTIVE_HELP"` — suffix for the per-program env var.
+- `activeHelpGlobalEnvVar  = "COBRA_ACTIVE_HELP"` — global override env var name.
+- `activeHelpGlobalDisable = "0"` — value that disables active help globally.
+- An inline comment states these values "should not be changed: programs will be using them explicitly in their user documentation, and users will be using them explicitly."
+
+Variables (line 33)
+- `var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)` — package-level compiled regexp matching any character that is not an uppercase ASCII letter, digit, or underscore.
+
+Functions
+- `AppendActiveHelp(compArray []string, activeHelpStr string) []string` (lines 35–44): exported helper that appends `activeHelpMarker + activeHelpStr` (via `fmt.Sprintf("%s%s", ...)`) to the given completion array and returns it. The doc comment says the array is processed by the completion script and shown to the user as ActiveHelp, and that the function may be called multiple times before/after completions are added, with each new line shown below previous ones.
+- `GetActiveHelpConfig(cmd *Command) string` (lines 46–57): exported. Reads the global env var `COBRA_ACTIVE_HELP` (`os.Getenv(activeHelpGlobalEnvVar)`); unless it equals `"0"` (`activeHelpGlobalDisable`), it instead reads the program-specific env var computed by `activeHelpEnvVar(cmd.Root().Name())`, and returns that value. Doc comment notes it always returns "0" when `COBRA_ACTIVE_HELP` is "0".
+- `activeHelpEnvVar(name string) string` (lines 59–67): unexported. Builds `<NAME>_ACTIVE_HELP` by uppercasing `name + activeHelpEnvVarSuffix` (`strings.ToUpper(fmt.Sprintf("%s%s", name, activeHelpEnvVarSuffix))`) and replacing every match of `activeHelpEnvVarPrefixSubstRegexp` with `_`. Comment warns the format must not change.
+
+Observations / gaps
+- The spans shown cover lines 15–67 only; lines 1–14 (likely license header), the import block (the snippets reference `fmt`, `regexp`, `os`, `strings`, and the `Command` type, but no import declarations are included in the response), and anything after line 67 are not present, so the declaration list above may be incomplete given "truncated":true.
+- Only "289/325 source tokens" were read per the response text, again indicating some content was omitted.

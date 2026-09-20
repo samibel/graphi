@@ -1,0 +1,23 @@
+The response contains the file go.mod in full (span go.mod, start_line 1 to end_line 10), and its complete contents are:
+
+module github.com/spf13/cobra
+
+go 1.15
+
+require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.3
+	github.com/inconshreveable/mousetrap v1.1.0
+	github.com/spf13/pflag v1.0.5
+	gopkg.in/yaml.v3 v3.0.1
+)
+
+In other words:
+- Module path: github.com/spf13/cobra (the Cobra CLI library).
+- Go language version directive: go 1.15.
+- Direct dependencies (all in a single require block):
+  - github.com/cpuguy83/go-md2man/v2 v2.0.3
+  - github.com/inconshreveable/mousetrap v1.1.0
+  - github.com/spf13/pflag v1.0.5
+  - gopkg.in/yaml.v3 v3.0.1
+
+Evidence: the "sources" array's first entry, path "go.mod", start_line 1, end_line 10, whose "text" field is the quoted block above. The require block's closing parenthesis is present within the span, so the dependency list shown is complete for that block, although the overall response is marked "truncated":true (232/325 source tokens used), which does not affect this 10-line file appearing complete.

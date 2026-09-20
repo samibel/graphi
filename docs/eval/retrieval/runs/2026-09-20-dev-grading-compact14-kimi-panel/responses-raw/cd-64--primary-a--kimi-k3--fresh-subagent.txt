@@ -1,0 +1,14 @@
+The response covers two distinct "prefix" concepts in this Go repository (a cobra-style command library).
+
+1. Error message prefix
+- `Command.ErrPrefix() string` (command.go:611-621) returns the error message prefix: it returns the command's own `errPrefix` field if non-empty, otherwise walks up via `c.HasParent()` to `c.parent.ErrPrefix()`, and defaults to `"Error:"`.
+- `Command.SetErrPrefix(s string)` (command.go:357-360) lets an application set a custom prefix by assigning `c.errPrefix = s`.
+- The backing field is declared in command.go:187-192: `errPrefix string` with the comment "errPrefix is the error message prefix defined by user."
+- It is used when printing errors in command.go:1095-1101: if `!c.SilenceErrors`, the code calls `c.PrintErrln(c.ErrPrefix(), err.Error())` followed by `c.PrintErrf("Run '%v --help' for usage.\n", c.CommandPath())`.
+- The user guide (site/content/user_guide.md:599-604) documents this under "Error Message Prefix": "The default error message is `Error: <error contents>`. The Prefix, `Error:` can be customized using the `cmd.SetErrPrefix(s string)` function."
+
+2. Command name/alias prefix matching
+- `hasNameOrAliasPrefix(prefix string) bool` (command.go:1524-1538) returns true if the command's `Name()` or any entry in `c.Aliases` starts with the given prefix (using `strings.HasPrefix`), and records the matched name in `c.commandCalledAs.name`.
+- `EnablePrefixMatching` (cobra.go:52-55) is a package-level variable ("var EnablePrefixMatching = defaultPrefixMatching") that controls automatic prefix matching; its comment warns that "Automatic prefix matching can be a dangerous thing to automatically enable in CLI tools" and says to set it to true to enable it.
+
+Note: the response header reports `"truncated":true` and only 225/325 source tokens were read, so additional prefix-related material may exist beyond these 7 ranked spans, but the spans shown fully cover both the error-prefix API and the prefix-matching feature.

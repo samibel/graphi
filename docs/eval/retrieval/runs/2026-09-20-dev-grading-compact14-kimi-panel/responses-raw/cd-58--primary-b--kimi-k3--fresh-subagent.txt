@@ -1,0 +1,12 @@
+"Usage" in this codebase (spf13/cobra) has two faces: the README's "Usage" section describing the cobra-cli generator, and the command.go API that produces a command's usage output.
+
+1. README.md "Usage" section (README.md:89-101): "`cobra-cli` is a command line program to generate cobra applications and command files. It will bootstrap your application scaffolding to rapidly develop a Cobra-based application. It is the easiest way to incorporate Cobra into your application." The section continues "It can be installed by running:" (the actual install command is cut off in the span). The follow-up read (README.md:81-94) supplies the preceding "Installing" context: `go get -u github.com/spf13/cobra@latest` and `import "github.com/spf13/cobra"`.
+
+2. The usage-printing API in command.go:
+   - `func (c *Command) Usage() error` (command.go:443-448): "Usage puts out the usage for the command. Used when a user provides invalid input. Can be defined by user by overriding UsageFunc." Its body is just `return c.UsageFunc()(c)`.
+   - `func (c *Command) UsageFunc() (f func(*Command) error)` (command.go:424-441): "returns either the function set by SetUsageFunc for this command or a parent, or it returns a default usage function." Resolution order: `c.usageFunc` if non-nil; else `c.Parent().UsageFunc()` when `c.HasParent()`; else a default that calls `c.mergePersistentFlags()` and renders `tmpl(c.OutOrStderr(), c.UsageTemplate(), c)`, printing any error via `c.PrintErrln(err)` and returning it.
+   - `func (c *Command) UsageString() string` (command.go:478-495): "UsageString returns usage string." It swaps `c.outWriter`/`c.errWriter` for a `bytes.Buffer`, calls `CheckErr(c.Usage())`, restores the original writers, and returns `bb.String()`.
+
+3. The `Use` field doc on the Command struct (command.go:49-57): "Use is the one-line usage message. Recommended syntax is as follows: [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required. ... indicates that you can specify multiple values for the previous argument. | indicates mutually exclusive information..." (the snippet ends mid-comment).
+
+Net: end users set the one-line `Use` string on a Command; at runtime `Usage()` invokes `UsageFunc()`, which resolves a custom function (own or inherited from a parent) or falls back to the default template render to `OutOrStderr()`; `UsageString()` captures that same output into a string. Separately, the README's "Usage" heading introduces cobra-cli as the scaffolding generator for Cobra apps.

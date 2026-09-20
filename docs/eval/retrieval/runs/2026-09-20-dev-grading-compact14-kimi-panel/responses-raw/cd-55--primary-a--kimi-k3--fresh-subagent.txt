@@ -1,0 +1,28 @@
+Root is a method on the *Command receiver defined in command.go (lines 860–866):
+
+    // Root finds root command.
+    func (c *Command) Root() *Command {
+        if c.HasParent() {
+            return c.Parent().Root()
+        }
+        return c
+    }
+
+Behavior: it walks up the command parent chain and returns the topmost (root) *Command. If the command has a parent (c.HasParent() is true), it recursively calls Root() on the parent command (c.Parent().Root()); otherwise it returns the command itself (c). So the result is the receiver itself when the command has no parent, i.e. when it is the root.
+
+Supporting evidence in the response:
+
+1. The definition itself, command.go:860–866 (the full body quoted above), with its doc comment "Root finds root command."
+
+2. The HasParent helper it depends on, command.go:1631–1634:
+       // HasParent determines if the command is a child command.
+       func (c *Command) HasParent() bool {
+           return c.parent != nil
+       }
+   This shows "has a parent" means the unexported field c.parent is non-nil, so Root recurses until it reaches a command whose parent field is nil.
+
+3. The Command type it is defined on, command.go:47–73: "type Command struct { ... }" with doc comment "Command is just that, a command for your application", showing fields such as Use, Aliases, SuggestFor, Short (the listing is cut off mid-struct at the "group id" field comment, and the response is marked "truncated":true).
+
+The remaining two ranked spans are test helpers from command_test.go — executeCommand(root *Command, args ...string) at lines 32–35 and checkStringContains at lines 74–78 — which show tests operate on a root *Command when executing commands, but contain no direct call to Root().
+
+One caveat: the Parent() method itself is referenced by Root (c.Parent()) but its definition is not included in the response; from the code shown it evidently returns the parent command that HasParent() guards. Everything else needed to explain what Root is and does is present.
