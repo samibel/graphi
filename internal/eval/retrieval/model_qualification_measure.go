@@ -164,9 +164,17 @@ func measureQualificationOperating(ctx context.Context, options operatingMeasure
 		return OperatingEvidence{}, fmt.Errorf("embedded-model qualification measure: non-positive reindex duration")
 	}
 	if len(reindex.admittedDocuments) != 768 || reindex.embedded != 768 || reindex.reused != 0 ||
-		reindex.fingerprintCanonical != options.pre.Arms[ArmCodeRank].FingerprintCanonical || reindex.state != embed.StateReady ||
-		!reindex.flushed || !reindex.closed || !reindex.durableReady {
+		reindex.state != embed.StateReady || !reindex.flushed || !reindex.closed || !reindex.durableReady {
 		return OperatingEvidence{}, fmt.Errorf("embedded-model qualification measure: reindex is not a fresh exact 768-document durable M3 build")
+	}
+	// The reindex fingerprint is compared to the preregistered pin field by
+	// field, EXCEPT graph_generation: this reindex just minted a fresh random
+	// generation (engine/ingest.mintCommitGeneration), so the preregistration
+	// could not have named it. The generation this build produced is what the
+	// evidence below records, and the gate then requires the whole run to
+	// carry that one value.
+	if err := qualificationFingerprintsAgree(reindex.fingerprintCanonical, options.pre.Arms[ArmCodeRank].FingerprintCanonical); err != nil {
+		return OperatingEvidence{}, fmt.Errorf("embedded-model qualification measure: reindex fingerprint differs from the preregistered M3 pin: %w", err)
 	}
 	corpusDigest, err := qualificationCorpusDigest(reindex.admittedDocuments)
 	if err != nil {
@@ -210,7 +218,12 @@ func measureQualificationOperating(ctx context.Context, options operatingMeasure
 		DatasetSHA256: options.dataset.SHA256, SourceRepoSHA: options.pre.SourceRepoSHA,
 		CandidateSHA: options.pre.CandidateSHA, CandidateDiffSHA256: options.pre.CandidateDiffSHA256,
 		CandidateBindingStart: deps.candidateStart, CandidateBindingEnd: deps.candidateEnd,
-		ManifestSHA256: options.pre.Arms[ArmCodeRank].ManifestSHA256, FingerprintCanonical: options.pre.Arms[ArmCodeRank].FingerprintCanonical,
+		// The evidence records the OBSERVED fingerprint, not the pin. It used
+		// to echo the pin back, which was harmless only while the two were
+		// required to be byte-equal; now that graph_generation is bound at
+		// runtime, echoing the pin would record the placeholder generation and
+		// lose the one value the eighth field can attest.
+		ManifestSHA256: options.pre.Arms[ArmCodeRank].ManifestSHA256, FingerprintCanonical: reindex.fingerprintCanonical,
 		StartAttestation: start, EndAttestation: end, Machine: deps.machine, BackgroundLoad: options.background,
 		SourceTreeSHA256: deps.sourceTreeSHA256, CorpusSHA256: corpusDigest,
 		Reindex: OperatingReindexEvidence{FreshEmptyWorkDir: true, AdmittedDocuments: len(reindex.admittedDocuments),

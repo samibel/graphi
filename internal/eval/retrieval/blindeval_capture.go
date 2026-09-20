@@ -329,15 +329,25 @@ func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBi
 
 // CandidateCaptureProvenance records the composition the bytes came out of.
 type CandidateCaptureProvenance struct {
-	CaptureVersion    string `json:"capture_version"`
-	Transport         string `json:"transport"`
-	Surface           string `json:"surface"`
-	Boundary          string `json:"boundary"`
-	RepoName          string `json:"repo_name"`
-	RepoSHA           string `json:"repo_sha"`
-	DatasetSHA256     string `json:"dataset_sha256"`
-	EmbedderSelector  string `json:"embedder_selector"`
-	ModelFingerprint  string `json:"model_fingerprint"`
+	CaptureVersion   string `json:"capture_version"`
+	Transport        string `json:"transport"`
+	Surface          string `json:"surface"`
+	Boundary         string `json:"boundary"`
+	RepoName         string `json:"repo_name"`
+	RepoSHA          string `json:"repo_sha"`
+	DatasetSHA256    string `json:"dataset_sha256"`
+	EmbedderSelector string `json:"embedder_selector"`
+	// ModelFingerprint carries TWO different kinds of value depending on the
+	// capture mode, which is a hazard worth stating rather than discovering:
+	// a strict qualification capture writes idx.fingerprint.Canonical() here,
+	// a legacy blind capture writes idx.embedderID (a model id). Every gate
+	// that compares it (validateQualificationBuildProvenance) is on the
+	// qualification path and therefore compares canonical against canonical;
+	// a reader who assumes the blind meaning and compares against a model id
+	// gets a condition that can never hold.
+	ModelFingerprint string `json:"model_fingerprint"`
+	// IndexFingerprint is always a canonical fingerprint, or "" for the
+	// lexical arm.
 	IndexFingerprint  string `json:"index_fingerprint"`
 	GenerationID      string `json:"generation_id"`
 	PersistedVectors  int    `json:"persisted_vectors"`
@@ -773,6 +783,20 @@ func buildCandidateCaptureIndex(ctx context.Context, o CandidateCaptureOptions, 
 	return buildTaskContextIndex(ctx, root, workDir, o.EmbedderSelector, log)
 }
 
+// validateCandidateCaptureFingerprint is where this capture BINDS its graph
+// generation.
+//
+// The loaded index's fingerprint is the runtime reference. Its eighth field is
+// the generation this very build just minted from crypto/rand
+// (engine/ingest.mintCommitGeneration by way of graphGenerationFromStore), so
+// the preregistration cannot name it and is compared on fields 0-6 only — see
+// model_qualification_fingerprint.go. Comparing the whole canonical against the
+// pin, as an earlier revision did, demanded a value no build can reproduce.
+//
+// The search service's requested fingerprint is a second RUNTIME value from the
+// same build, so it is compared byte for byte, graph generation included: a
+// service querying a different generation than the one that was loaded would
+// retrieve against a graph this capture did not build.
 func validateCandidateCaptureFingerprint(o CandidateCaptureOptions, idx *taskContextIndex) error {
 	if o.ExpectedFingerprint == nil {
 		return nil
@@ -780,10 +804,12 @@ func validateCandidateCaptureFingerprint(o CandidateCaptureOptions, idx *taskCon
 	if idx == nil {
 		return fmt.Errorf("embedded-model qualification capture: no loaded index")
 	}
-	want := o.ExpectedFingerprint.Canonical()
-	state := idx.search.SemanticState()
-	if idx.fingerprint.Canonical() != want || state.Requested.Canonical() != want {
-		return fmt.Errorf("embedded-model qualification capture: loaded generation and search request must equal the expected canonical fingerprint")
+	loaded := idx.fingerprint.Canonical()
+	if err := qualificationFingerprintsAgree(loaded, o.ExpectedFingerprint.Canonical()); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: loaded generation differs from the preregistered fingerprint: %w", err)
+	}
+	if requested := idx.search.SemanticState().Requested.Canonical(); requested != loaded {
+		return fmt.Errorf("embedded-model qualification capture: the search service's requested fingerprint is not the loaded generation fingerprint, so this capture would query a different graph generation than it built")
 	}
 	return nil
 }
@@ -889,7 +915,13 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		if o.ExpectedFingerprint != nil {
 			expected = *o.ExpectedFingerprint
 		}
-		if err := validateQualificationRetrieverSummary(o.QualificationArm, expected, last); err != nil {
+		// idx.fingerprint is the runtime reference: the generation this
+		// capture built. expected is the frozen pin, which cannot name it.
+		loaded := embed.Fingerprint{}
+		if idx != nil {
+			loaded = idx.fingerprint
+		}
+		if err := validateQualificationRetrieverSummary(o.QualificationArm, expected, loaded, last); err != nil {
 			return CapturedCandidateBundle{}, err
 		}
 	}
@@ -1020,16 +1052,51 @@ func (c *qualificationOracleCaptureClient) TaskContext(ctx context.Context, p cl
 	return raw, nil
 }
 
-func validateQualificationRetrieverSummary(arm QualificationArm, expected embed.Fingerprint, got resolve.RetrieverResult) error {
+// validateQualificationRetrieverSummary checks the retrieval summary the
+// payload was produced with.
+//
+// preregistered is the frozen pin and loaded is the fingerprint of the index
+// this capture actually built. The two are compared on fields 0-6 only, because
+// the eighth field is minted per build and cannot be preregistered. The summary
+// itself is a runtime observation of the SAME build as loaded, so it is
+// compared to loaded byte for byte — graph generation included. That is what
+// keeps the whole capture pinned to one graph.
+//
+// The two summary fields are NOT the same kind of value, and comparing them as
+// if they were is what made this check unsatisfiable until now:
+//
+//	Summary.IndexFingerprint is a CANONICAL fingerprint — the eight
+//	length-prefixed fields — so it is compared against loaded.Canonical().
+//	Summary.ModelFingerprint is a MODEL ID: engine/retrieval fills it from
+//	st.Requested.ModelID (engine/retrieval/service.go), i.e. field 0 of that
+//	canonical. Compared against the whole canonical it could never be equal.
+//
+// The statement the gate makes is unchanged: the payload retrieval ran against
+// exactly the generation this capture loaded. That is carried by the index
+// fingerprint, which still has to equal loaded.Canonical() byte for byte,
+// graph generation included; the model id is checked as a model id alongside it.
+func validateQualificationRetrieverSummary(arm QualificationArm, preregistered, loaded embed.Fingerprint, got resolve.RetrieverResult) error {
 	if arm == ArmLexical {
 		if got.Degradation != string(engineretrieval.StateLexicalOnly) || got.Summary.ModelFingerprint != "" || got.Summary.IndexFingerprint != "" {
-			return fmt.Errorf("embedded-model qualification capture: lexical payload retrieval carries semantic state or identity")
+			return fmt.Errorf("embedded-model qualification capture: lexical payload retrieval carries semantic state or identity: state %q, model fingerprint %s, index fingerprint %s; want %q and two empty fingerprints",
+				got.Degradation, qualificationFingerprintValue(got.Summary.ModelFingerprint), qualificationFingerprintValue(got.Summary.IndexFingerprint),
+				string(engineretrieval.StateLexicalOnly))
 		}
 		return nil
 	}
-	want := expected.Canonical()
-	if got.Degradation != string(engineretrieval.StateReady) || got.Summary.ModelFingerprint != want || got.Summary.IndexFingerprint != want {
-		return fmt.Errorf("embedded-model qualification capture: payload retrieval state and fingerprints do not equal the preregistered canonical identity")
+	if got.Degradation != string(engineretrieval.StateReady) {
+		return fmt.Errorf("embedded-model qualification capture: payload retrieval state is %q, want ready", got.Degradation)
+	}
+	if err := qualificationFingerprintsAgree(loaded.Canonical(), preregistered.Canonical()); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: loaded generation differs from the preregistered fingerprint: %w", err)
+	}
+	if want := loaded.Canonical(); got.Summary.IndexFingerprint != want {
+		return fmt.Errorf("embedded-model qualification capture: payload retrieval index fingerprint does not equal the loaded generation fingerprint: observed %s, want %s",
+			qualificationFingerprintValue(got.Summary.IndexFingerprint), qualificationFingerprintValue(want))
+	}
+	if got.Summary.ModelFingerprint != loaded.ModelID {
+		return fmt.Errorf("embedded-model qualification capture: payload retrieval model id does not equal the loaded generation's model id: observed %s, want %s",
+			qualificationFingerprintValue(got.Summary.ModelFingerprint), qualificationFingerprintValue(loaded.ModelID))
 	}
 	return nil
 }

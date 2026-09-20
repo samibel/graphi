@@ -121,8 +121,20 @@ func ValidateOperatingEvidence(evidence OperatingEvidence, pre QualificationPrer
 	if evidence.PreregistrationSHA256 != preSHA || evidence.DatasetSHA256 != dataset.SHA256 || evidence.DatasetSHA256 != pre.DatasetSHA256 ||
 		evidence.SourceRepoSHA != pre.SourceRepoSHA || evidence.SourceRepoSHA != dataset.Dataset.RepoSHA ||
 		evidence.CandidateSHA != pre.CandidateSHA || evidence.CandidateDiffSHA256 != pre.CandidateDiffSHA256 ||
-		evidence.ManifestSHA256 != m3.ManifestSHA256 || evidence.FingerprintCanonical != m3.FingerprintCanonical {
+		evidence.ManifestSHA256 != m3.ManifestSHA256 {
 		return fmt.Errorf("embedded-model operating evidence: frozen input binding differs")
+	}
+	// The fingerprint is the one frozen input that cannot be compared
+	// byte-for-byte: its eighth field, graph_generation, is minted from
+	// crypto/rand by every index build, so the preregistered value and the
+	// measured value differ there by construction (see
+	// model_qualification_fingerprint.go). Fields 0-6 — model, tokenizer,
+	// dimension, schema, durable profile — are still compared exactly, and a
+	// mismatch is named field by field rather than folded into the binding
+	// message above, because "the manifest digest moved" and "the sidecar
+	// serves a different tokenizer" are different operator problems.
+	if err := qualificationFingerprintsAgree(evidence.FingerprintCanonical, m3.FingerprintCanonical); err != nil {
+		return fmt.Errorf("embedded-model operating evidence: measured M3 fingerprint differs from the preregistered pin: %w", err)
 	}
 	if !reflect.DeepEqual(evidence.CandidateBindingStart, evidence.CandidateBindingEnd) {
 		return fmt.Errorf("embedded-model operating evidence: candidate binding changed during measurement")
@@ -160,7 +172,13 @@ func ValidateOperatingEvidence(evidence OperatingEvidence, pre QualificationPrer
 		evidence.EndAttestation.RuntimeThreads != pre.ReferenceMachine.RuntimeThreads {
 		return fmt.Errorf("embedded-model operating evidence: invalid attested operating metrics")
 	}
-	if err := validateOperatingReindex(evidence.Reindex, m3.FingerprintCanonical); err != nil {
+	// The reindex is checked against the evidence's OWN fingerprint, not
+	// against the pin: the pin comparison above already covered fields 0-6,
+	// and what remains to prove is that the reindex the run performed and the
+	// embedder the run measured named the SAME graph generation. That is the
+	// property the byte-for-byte pin comparison used to give us by accident,
+	// and it is the only thing graph_generation can actually attest.
+	if err := validateOperatingReindex(evidence.Reindex, evidence.FingerprintCanonical); err != nil {
 		return err
 	}
 	if len(dataset.Dataset.Queries) != 64 {
@@ -187,10 +205,25 @@ func ValidateOperatingEvidence(evidence OperatingEvidence, pre QualificationPrer
 	return nil
 }
 
+// validateOperatingReindex checks the reindex record against the measured M3
+// fingerprint. expectedFingerprint is the fingerprint the SAME evidence file
+// reports for the embedder under measurement, so here — unlike against the
+// preregistered pin — graph_generation must match too: one run carries one
+// generation, and a reindex naming a different one means the latency samples
+// were taken against a graph the reindex did not produce.
 func validateOperatingReindex(reindex OperatingReindexEvidence, expectedFingerprint string) error {
-	if !reindex.FreshEmptyWorkDir || reindex.AdmittedDocuments != 768 || reindex.FingerprintCanonical != expectedFingerprint ||
+	if !reindex.FreshEmptyWorkDir || reindex.AdmittedDocuments != 768 ||
 		reindex.State != embed.StateReady.String() || !reindex.Flushed || !reindex.Closed || !reindex.DurableReady || reindex.ElapsedNS <= 0 {
 		return fmt.Errorf("embedded-model operating evidence: reindex is not a fresh, exact 768-document, durable ready M3 build")
+	}
+	if err := qualificationFingerprintsAgree(reindex.FingerprintCanonical, expectedFingerprint); err != nil {
+		return fmt.Errorf("embedded-model operating evidence: reindex fingerprint differs from the measured M3 fingerprint: %w", err)
+	}
+	reindexGeneration, reindexOK := qualificationGraphGenerationOf(reindex.FingerprintCanonical)
+	measuredGeneration, measuredOK := qualificationGraphGenerationOf(expectedFingerprint)
+	if !reindexOK || !measuredOK || reindexGeneration != measuredGeneration {
+		return fmt.Errorf("embedded-model operating evidence: reindex graph generation %q differs from the measured M3 graph generation %q; one run must carry exactly one graph generation",
+			reindexGeneration, measuredGeneration)
 	}
 	return nil
 }

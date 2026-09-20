@@ -266,8 +266,16 @@ type Summary struct {
 	// (AC-11 truthfulness: the hash is the audit discipline, not a claim
 	// that the weights influenced the order).
 	WeightsHash string
-	// ModelFingerprint is the embedder fingerprint the semantic list was
-	// built against (Fingerprint.Canonical), or "" on the lexical-only path.
+	// ModelFingerprint is the MODEL ID of the embedder the semantic list was
+	// built against (Fingerprint.ModelID, i.e. field 0 of the canonical
+	// encoding), or "" on the lexical-only path.
+	//
+	// It is NOT a canonical fingerprint, and this doc used to say it was. The
+	// field it is filled from is st.Requested.ModelID (see
+	// searchServiceBridge.fingerprints in service.go), while IndexFingerprint
+	// below carries the full Canonical(). A consumer that compares this value
+	// against a Canonical() states a condition that can never hold — the
+	// defect that made the embedded-model qualification gate unsatisfiable.
 	ModelFingerprint string
 	// IndexFingerprint is the GenerationStore fingerprint the semantic list
 	// was loaded from (the active generation's Fingerprint.Canonical), or

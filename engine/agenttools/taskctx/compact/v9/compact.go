@@ -3299,34 +3299,24 @@ func compactTaskContextProvenance(summary, inputSHA string, budget int, retrieva
 	if !isLowerHexDigest(inputSHA, 64) {
 		return CompactTaskContextProvenance{}, fmt.Errorf("compact task_context: invalid input digest")
 	}
-	open, close := strings.LastIndex(summary, " ("), strings.LastIndex(summary, ")")
-	if open < 0 || close <= open+2 {
-		return CompactTaskContextProvenance{}, fmt.Errorf("compact task_context: cannot parse input summary provenance")
+	audit, err := parseTaskContextAudit(summary)
+	if err != nil {
+		return CompactTaskContextProvenance{}, err
 	}
-	fields := strings.Split(summary[open+2:close], "; ")
-	if len(fields) < 6 || fields[0] != "task_context/2" {
-		return CompactTaskContextProvenance{}, fmt.Errorf("compact task_context: incomplete input summary provenance")
-	}
-	value := func(prefix string) string {
-		for _, field := range fields {
-			if strings.HasPrefix(field, prefix) {
-				return strings.TrimPrefix(field, prefix)
-			}
-		}
-		return ""
-	}
+	// RetrievalState is what the input testified to, not what the caller
+	// asked for. Copying the caller's own argument into the field would make
+	// the equality check below tautological and would let a projection claim
+	// a state its input never attested.
 	p := CompactTaskContextProvenance{
-		InputSHA256: inputSHA, Method: fields[0], Retrieval: fields[1], RetrievalState: retrievalState, Weights: value("weights "),
-		Model: compactTaskContextModelFingerprint(value("model ")), SourceOrder: "ranked_coherent_regions", Budget: budget,
+		InputSHA256: inputSHA, Method: audit.Method, Retrieval: audit.Retrieval, RetrievalState: audit.RetrievalState, Weights: audit.Weights,
+		Model: compactTaskContextModelFingerprint(audit.Model), SourceSelection: audit.SourceSelection,
+		SourceOrder: "ranked_coherent_regions", Budget: budget,
 		BudgetUnit: "whitespace-fields-v1",
 	}
-	for _, field := range fields {
-		if strings.HasPrefix(field, "context-definitions/") {
-			p.SourceSelection = field
-			break
-		}
+	if p.RetrievalState != retrievalState {
+		return CompactTaskContextProvenance{}, ErrRetrievalNotReady
 	}
-	if p.Retrieval == "" || p.RetrievalState != retrievalState || (retrievalState == "ready" && (p.Weights == "" || p.Model == "")) || p.SourceSelection == "" {
+	if (retrievalState == "ready" && (p.Weights == "" || p.Model == "")) || p.SourceSelection == "" {
 		return CompactTaskContextProvenance{}, fmt.Errorf("compact task_context: incomplete method identity")
 	}
 	return p, nil

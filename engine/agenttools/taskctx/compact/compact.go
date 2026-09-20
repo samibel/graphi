@@ -28,7 +28,19 @@ const (
 // ErrRetrievalNotReady tells a surface to preserve task_context/2's canonical
 // lexical fallback instead of turning an expected degraded state into an RPC
 // failure. Only ready retrieval results are eligible for compact projection.
+//
+// It means the input attested a retrieval state and that state was not the
+// required one — never that the input failed to attest at all. That second
+// case is ErrSummaryNotAttested.
 var ErrRetrievalNotReady = errors.New("compact task_context: retrieval is not ready")
+
+// ErrSummaryNotAttested tells a surface that the input carries no readable
+// task_context/2 audit block, so nothing can be said about the retrieval
+// behind it. It is also a "preserve the canonical bundle" signal rather than
+// an RPC failure — the unavailable envelope legitimately has no audit block —
+// but it must stay distinguishable from ErrRetrievalNotReady so a diagnosis
+// blames the missing attestation rather than an innocent embedder.
+var ErrSummaryNotAttested = errors.New("compact task_context: input summary carries no task_context/2 audit block")
 
 // Source is both source text and its exact repository-relative citation.
 type Source struct {
@@ -100,10 +112,7 @@ type Result struct {
 func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int) (Result, error) {
 	summary, structured, err := compactv9.Build(ctx, query, legacy, repository, sourceBudget)
 	if err != nil {
-		if errors.Is(err, compactv9.ErrRetrievalNotReady) {
-			return Result{}, ErrRetrievalNotReady
-		}
-		return Result{}, err
+		return Result{}, translateV9Error(err)
 	}
 	return fromV9(summary, structured), nil
 }
@@ -134,10 +143,22 @@ func fromV9(summary string, structured compactv9.CompactTaskContextStructured) R
 func BuildEvaluationControl(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int) (Result, error) {
 	summary, structured, err := compactv9.BuildEvaluationControl(ctx, query, legacy, repository, sourceBudget)
 	if err != nil {
-		if errors.Is(err, compactv9.ErrRetrievalNotReady) {
-			return Result{}, ErrRetrievalNotReady
-		}
-		return Result{}, err
+		return Result{}, translateV9Error(err)
 	}
 	return fromV9(summary, structured), nil
+}
+
+// translateV9Error re-labels the selector's sentinels as this package's own,
+// keeping the two attestation failures distinct across the boundary: a
+// surface must be able to tell "attested a state I cannot project" from
+// "attested nothing", because only the first says anything about retrieval.
+func translateV9Error(err error) error {
+	switch {
+	case errors.Is(err, compactv9.ErrRetrievalNotReady):
+		return ErrRetrievalNotReady
+	case errors.Is(err, compactv9.ErrSummaryNotAttested):
+		return ErrSummaryNotAttested
+	default:
+		return err
+	}
 }

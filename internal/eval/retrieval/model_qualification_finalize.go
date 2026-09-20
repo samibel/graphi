@@ -133,6 +133,24 @@ func decodeQualificationJSONFile(path string, into any) error {
 }
 
 func loadStrictQualificationDataset(path string) (*Loaded, error) {
+	loaded, err := decodeStrictQualificationDataset(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := loaded.Dataset.Validate(); err != nil {
+		return nil, fmt.Errorf("embedded-model qualification: dataset: %w", err)
+	}
+	return loaded, nil
+}
+
+// decodeStrictQualificationDataset is the byte-level half of the qualification
+// loader: read, reject unknown fields, reject trailing JSON, seal the digest. It
+// is split out from loadStrictQualificationDataset so the dataset pre-flight
+// checker can read a candidate population through the exact same bytes-to-struct
+// path the gate uses and still describe a population that does not yet pass
+// Dataset.Validate. A parallel reader would let the checker bless a file the
+// harness cannot even decode.
+func decodeStrictQualificationDataset(path string) (*Loaded, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("embedded-model qualification: read dataset: %w", err)
@@ -146,8 +164,20 @@ func loadStrictQualificationDataset(path string) (*Loaded, error) {
 	if err := decoder.Decode(new(any)); err != io.EOF {
 		return nil, fmt.Errorf("embedded-model qualification: dataset has trailing JSON")
 	}
-	if err := dataset.Validate(); err != nil {
-		return nil, fmt.Errorf("embedded-model qualification: dataset: %w", err)
-	}
 	return &Loaded{Dataset: &dataset, Path: path, Raw: raw, SHA256: SHA256Hex(raw)}, nil
+}
+
+// resealQualificationDataset rebuilds Raw and SHA256 after the pre-flight
+// checker narrows a population in memory. ValidateQualificationDataset refuses
+// any Loaded whose digest does not match its bytes, so a narrowed population
+// that kept the file's digest would be rejected for the wrong reason and hide
+// the reasons the operator needs to see.
+func resealQualificationDataset(loaded *Loaded) error {
+	raw, err := json.Marshal(loaded.Dataset)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification: reseal filtered dataset: %w", err)
+	}
+	loaded.Raw = raw
+	loaded.SHA256 = SHA256Hex(raw)
+	return nil
 }

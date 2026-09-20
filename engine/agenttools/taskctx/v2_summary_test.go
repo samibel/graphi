@@ -15,6 +15,7 @@ func TestBuildV2Summary_AuditFingerprintBytes(t *testing.T) {
 		"Where is the auth token validated?",
 		2, 1, 0, 1, 0, 3,
 		"low",
+		"",
 		"492/1200 snippet tokens",
 		"ready",
 		resolve.RetrieverSummary{
@@ -41,6 +42,7 @@ func TestBuildV2Summary_CandidatePoolCounted(t *testing.T) {
 		"how does X work",
 		0, 0, 0, 0, 0, 0,
 		"low",
+		"",
 		"snippets disabled",
 		"ready",
 		resolve.RetrieverSummary{RetrievalVersion: "retrieval/4", Strategy: "semantic_first"},

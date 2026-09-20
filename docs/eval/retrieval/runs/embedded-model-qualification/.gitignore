@@ -1,0 +1,9 @@
+# Capture artefacts are large (captures.json alone is ~9.5 MB) and are
+# reproducible from the preregistration plus the pinned sidecar. What belongs in
+# the repository is the EVIDENCE ABOUT them — the finding, the operating
+# measurements, the preregistration that produced them — not the raw bundles.
+#
+# A run that reaches a verdict should publish its report directory instead; this
+# run did not, because it fails an operating gate before any quality evidence
+# exists (see FINDING-admission-and-rss-budget-are-incompatible.md).
+captures/

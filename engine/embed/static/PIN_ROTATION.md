@@ -230,6 +230,15 @@ and become stale when `PinnedRevision` changes:
   — the valid candidate-bound compact-v17 holdout run. Its captured bundles,
   follow-up reads and blind release decision depend on this production
   embedder revision.
+- `docs/eval/retrieval/runs/embedded-model-qualification/`
+  — the embedded-model development qualification. Two of its four arms
+  (`M1_potion_512`, `M2_potion_8192`) ARE this production embedder, so their
+  preregistered `fingerprint_canonical` and `admission_sha256` are functions of
+  this pinned revision. Rotating the pin invalidates the preregistration itself,
+  not merely the captures taken under it: the arm pins would no longer describe
+  the embedder the run would construct, and `capture` fails closed on that
+  mismatch. A rotation therefore requires a fresh preregistration and a fresh
+  capture, not a re-run against the existing one.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

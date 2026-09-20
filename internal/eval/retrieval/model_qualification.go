@@ -30,10 +30,25 @@ const (
 	// the embedded-model qualification gate.
 	QualificationSchemaVersion = 1
 
-	QualificationCompactVersion   = "compact/17"
 	QualificationTokenBudget      = 1200
 	QualificationBootstrapSamples = 100000
+)
 
+// QualificationCompactVersion is the method version a capture must stamp. It is
+// TAKEN FROM the compact package rather than restated here.
+//
+// A restated copy read "compact/17" while every capture stamped
+// taskcompact.Version, "task_context/2-compact/17". The two were then compared
+// for equality in validateQualificationCaptureProvenance, so finalize refused
+// every real run — and capture never noticed, because the artefact check
+// (model_qualification_artifact.go) does not verify this field. The defect was
+// only reachable once a capture had actually succeeded.
+//
+// Deriving it means the preregistered value and the stamped value cannot drift
+// again: one changes only when the other does.
+const QualificationCompactVersion = taskcompact.Version
+
+const (
 	QualificationMinPasses                     = 56
 	QualificationMinPairedGain                 = 9
 	QualificationMinWeakStrataWithPositiveGain = 2
@@ -194,15 +209,26 @@ type QualificationObservation struct {
 	UnknownTokens      QualificationIntMetric  `json:"unknown_tokens"`
 	QueryVectorAllZero QualificationBoolMetric `json:"query_vector_all_zero"`
 	RetrievalState     string                  `json:"retrieval_state"`
-	ModelFingerprint   string                  `json:"model_fingerprint"`
-	IndexFingerprint   string                  `json:"index_fingerprint"`
-	Degraded           bool                    `json:"degraded"`
+	// ModelFingerprint is a MODEL ID, not a canonical fingerprint: it records
+	// engine/retrieval's Summary.ModelFingerprint verbatim, which that package
+	// fills from st.Requested.ModelID (engine/retrieval/service.go) — field 0
+	// of the canonical. Every gate reading it must compare it against another
+	// model id; comparing it against a canonical is a condition that can never
+	// hold.
+	ModelFingerprint string `json:"model_fingerprint"`
+	// IndexFingerprint is a CANONICAL fingerprint: the eight length-prefixed
+	// fields embed.Fingerprint.Canonical() emits, recorded from
+	// engine/retrieval's Summary.IndexFingerprint.
+	IndexFingerprint string `json:"index_fingerprint"`
+	Degraded         bool   `json:"degraded"`
 }
 
 // QualificationBuildDigest separates the independently reproducible byte
-// classes. Staging generation IDs are intentionally absent; no other
-// persisted field is excluded. Oracle payload bytes/digests and their real
-// token counts have independent digests so either can invalidate publication.
+// classes. Staging generation IDs are intentionally absent, and so — in the
+// observations digest alone, and named there — is the index fingerprint's
+// randomly minted graph_generation. No other persisted field is excluded.
+// Oracle payload bytes/digests and their real token counts have independent
+// digests so either can invalidate publication.
 type QualificationBuildDigest struct {
 	Arm                     QualificationArm                     `json:"arm"`
 	Build                   int                                  `json:"build"`
@@ -214,9 +240,16 @@ type QualificationBuildDigest struct {
 	OraclePayloadsSHA256    string                               `json:"oracle_payloads_sha256"`
 	OracleTokenCountsSHA256 string                               `json:"oracle_token_counts_sha256"`
 	QueryDiagnosticsSHA256  string                               `json:"query_diagnostics_sha256"`
-	ObservationsSHA256      string                               `json:"observations_sha256"`
-	Diagnostics             QualificationBuildDiagnostics        `json:"diagnostics"`
-	SHA256                  string                               `json:"sha256"`
+	// ObservationsExceptGraphGenerationSHA256 digests the arm's 64
+	// observations with exactly one value left out: the index fingerprint's
+	// graph_generation field, which every index build mints afresh from
+	// crypto/rand and which therefore differs between the two independent
+	// builds by construction. It is NOT a digest over all observations — see
+	// qualificationObservationsExceptGraphGenerationSHA256 for the full
+	// reasoning. Every other observation byte is covered.
+	ObservationsExceptGraphGenerationSHA256 string                        `json:"observations_except_graph_generation_sha256"`
+	Diagnostics                             QualificationBuildDiagnostics `json:"diagnostics"`
+	SHA256                                  string                        `json:"sha256"`
 }
 
 // QualificationCaptureProvenanceRecord closes the provenance behind one
@@ -275,16 +308,43 @@ func captureQualificationObservation(f qualificationCaptureFacts) (Qualification
 		if f.SemanticState != embed.StateReady {
 			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s semantic state is %s, want ready", f.Query.ID, f.SemanticState)
 		}
+		// The loaded generation is the RUNTIME reference for this observation.
+		// Its eighth field is the graph generation this build minted from
+		// crypto/rand, so the preregistration is compared on fields 0-6 only
+		// (see model_qualification_fingerprint.go); demanding the whole
+		// canonical here was a condition no build could satisfy.
+		loaded := f.IndexFingerprint.Canonical()
+		if err := qualificationFingerprintsAgree(loaded, expected); err != nil {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s loaded generation fingerprint differs from the preregistered fingerprint: %w", f.Query.ID, err)
+		}
+		// The remaining identities all come from that same build, so they stay
+		// compared byte for byte — against the loaded generation, not against
+		// the pin. This is what proves the query was embedded, the index was
+		// searched and the payload was retrieved under ONE graph generation; it
+		// is exactly the strictness the pin comparison used to provide, minus
+		// the part that could never hold.
+		//
+		// Three of them are CANONICAL fingerprints and are compared against the
+		// loaded canonical. The fourth is not: engine/retrieval fills
+		// Summary.ModelFingerprint from st.Requested.ModelID
+		// (engine/retrieval/service.go), so it is a MODEL ID — field 0 of the
+		// canonical — and comparing it against the whole canonical stated a
+		// condition no production retrieval could satisfy. It is compared
+		// against the loaded generation's model id instead, which is the same
+		// claim expressed in the right kind.
 		for _, identity := range []struct{ name, value string }{
-			{name: "loaded generation", value: f.IndexFingerprint.Canonical()},
 			{name: "search request", value: f.SearchFingerprint.Canonical()},
 			{name: "capture model", value: f.ModelFingerprint},
-			{name: "retrieval model", value: f.Retrieval.Summary.ModelFingerprint},
 			{name: "retrieval index", value: f.Retrieval.Summary.IndexFingerprint},
 		} {
-			if identity.value != expected {
-				return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s %s fingerprint does not equal preregistered canonical fingerprint", f.Query.ID, identity.name)
+			if identity.value != loaded {
+				return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s %s fingerprint does not equal the loaded generation fingerprint: observed %s, want %s",
+					f.Query.ID, identity.name, qualificationFingerprintValue(identity.value), qualificationFingerprintValue(loaded))
 			}
+		}
+		if f.Retrieval.Summary.ModelFingerprint != f.IndexFingerprint.ModelID {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s retrieval model id does not equal the loaded generation's model id: observed %s, want %s",
+				f.Query.ID, qualificationFingerprintValue(f.Retrieval.Summary.ModelFingerprint), qualificationFingerprintValue(f.IndexFingerprint.ModelID))
 		}
 		if f.Retrieval.Degradation != engineretrieval.StateReady || f.Retrieval.Summary.Strategy != "semantic_first" {
 			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s retrieval is %s/%s, want ready semantic_first", f.Query.ID, f.Retrieval.Degradation, f.Retrieval.Summary.Strategy)
@@ -423,8 +483,11 @@ func validateQualificationCaptureBinding(arm QualificationArm, pre Qualification
 		}
 		return nil
 	}
-	if pin.FingerprintCanonical != expected.Canonical() {
-		return fmt.Errorf("embedded-model qualification capture: arm %s expected fingerprint does not equal preregistration", arm)
+	// Fields 0-6 must equal the preregistration exactly; graph_generation is
+	// bound at runtime and cannot be preregistered, because every index build
+	// mints a fresh random one (see model_qualification_fingerprint.go).
+	if err := qualificationFingerprintsAgree(expected.Canonical(), pin.FingerprintCanonical); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: arm %s expected fingerprint does not equal preregistration: %w", arm, err)
 	}
 	if arm == ArmCodeRank {
 		if len(manifestBytes) == 0 || SHA256Hex(manifestBytes) != pin.ManifestSHA256 {
@@ -524,11 +587,33 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 		Arm: arm, VectorBytesSHA256: SHA256Hex(vectors.Bytes()), PersistedRowsSHA256: SHA256Hex(persisted.Bytes()),
 		BundlesSHA256: SHA256Hex(bundles.Bytes()), TokenCountsSHA256: SHA256Hex(tokens.Bytes()),
 		OraclePayloadsSHA256: oraclePayloadsSHA, OracleTokenCountsSHA256: oracleTokensSHA,
-		QueryDiagnosticsSHA256: SHA256Hex(queryDiagnostics.Bytes()), ObservationsSHA256: qualificationObservationsSHA256(in.Observations),
+		QueryDiagnosticsSHA256:                  SHA256Hex(queryDiagnostics.Bytes()),
+		ObservationsExceptGraphGenerationSHA256: qualificationObservationsExceptGraphGenerationSHA256(in.Observations),
 	}
 }
 
-func qualificationObservationsSHA256(observations []QualificationObservation) string {
+// qualificationObservationsExceptGraphGenerationSHA256 digests the
+// observations with ONE value elided: the canonical index fingerprint's eighth
+// field, graph_generation.
+//
+// It is NOT a digest over all observations, and the name says so. Every other
+// byte of every observation is hashed exactly as recorded, including the whole
+// rest of the index fingerprint.
+//
+// Why that one value is out: index.commit_generation is minted from
+// crypto/rand by mintCommitGeneration (engine/ingest/warmstart.go) on every
+// committed graph mutation, and each (build, arm) of a qualification run
+// builds its own index in its own work directory
+// (captureQualificationBuilds). Two independent builds therefore carry
+// DIFFERENT generations by construction. A digest that hashed it could never
+// be equal across the two builds, so the two-build reproducibility gate would
+// state a condition no run can satisfy — unsatisfiable, not strict.
+//
+// The observations themselves keep their FULL fingerprint, generation
+// included: the evidence stays complete and auditable, and the generation is
+// checked where it can actually carry evidence (per arm, see
+// bindQualificationArmGraphGeneration).
+func qualificationObservationsExceptGraphGenerationSHA256(observations []QualificationObservation) string {
 	canonical := append([]QualificationObservation(nil), observations...)
 	sort.Slice(canonical, func(i, j int) bool {
 		if canonical[i].Arm != canonical[j].Arm {
@@ -536,6 +621,9 @@ func qualificationObservationsSHA256(observations []QualificationObservation) st
 		}
 		return canonical[i].QueryID < canonical[j].QueryID
 	})
+	for i := range canonical {
+		canonical[i].IndexFingerprint = qualificationFingerprintWithGraphGenerationElided(canonical[i].IndexFingerprint)
+	}
 	raw, _ := json.Marshal(canonical)
 	return SHA256Hex(raw)
 }
@@ -569,7 +657,7 @@ func compareQualificationBuildDigests(first, second QualificationBuildDigest) er
 		{"oracle payloads", first.OraclePayloadsSHA256, second.OraclePayloadsSHA256},
 		{"oracle token counts", first.OracleTokenCountsSHA256, second.OracleTokenCountsSHA256},
 		{"query diagnostics", first.QueryDiagnosticsSHA256, second.QueryDiagnosticsSHA256},
-		{"observations", first.ObservationsSHA256, second.ObservationsSHA256},
+		{"observations (graph generation excluded)", first.ObservationsExceptGraphGenerationSHA256, second.ObservationsExceptGraphGenerationSHA256},
 	} {
 		if digest.first != digest.second {
 			return fmt.Errorf("embedded-model qualification reproducibility: arm %s %s digest differs across independent builds", first.Arm, digest.name)
@@ -597,42 +685,95 @@ func qualificationWriteVector(buf *bytes.Buffer, vector []float32) {
 	}
 }
 
-type qualificationEnvironment struct {
-	Repo, Dataset, Preregistration, CodeRankManifest, Out, StaticModelDir string
+// CaptureQualificationOptions names every input of the eight-capture run. It
+// is the complete surface of the capture stage: every path the run reads or
+// writes is named here, none is inferred from ambient process state. That is
+// the point of the struct rather than a convenience - an operator runs this
+// command from wherever they happen to stand, and an input the command guesses
+// from the working directory is an input that can be silently wrong without
+// ever failing. CandidateRoot is the field that used to be guessed; see
+// CaptureQualification.
+//
+// The paths are inputs, not identities. What binds this run is the sealed
+// preregistration: the dataset must hash to its dataset_sha256, the manifest
+// bytes to the CodeRank arm's manifest_sha256, and the candidate worktree to
+// candidate_sha plus candidate_diff_sha256 both before and after the complete
+// capture. Naming a different file only changes which refusal the operator
+// gets.
+type CaptureQualificationOptions struct {
+	// RepoRoot is only a commit source. The corpus is a private detached
+	// worktree the capture creates at the preregistered source_repo_sha; the
+	// operator's own checkout is never read.
+	RepoRoot string
+	// DatasetPath is the frozen development dataset JSON. Its byte digest
+	// must equal the preregistration's dataset_sha256.
+	DatasetPath string
+	// PreregistrationPath is the sealed qualification preregistration JSON.
+	PreregistrationPath string
+	// ManifestPath is the pinned CodeRank sidecar manifest JSON. Its bytes
+	// are checked against the preregistered digest before AND after the
+	// sidecar constructor reads them.
+	ManifestPath string
+	// OutputPath is an EXISTING but strictly empty directory. The capture
+	// stages all eight builds inside it and publishes them with one rename,
+	// so a directory that does not exist is a refusal, not a mkdir.
+	OutputPath string
+	// StaticModelDir is the pinned Potion artifact directory. Note that the
+	// Potion arms themselves resolve their artifact through
+	// static.ResolveArtifactDir ($GRAPHI_STATIC_MODEL_DIR, else the XDG
+	// cache): this field is the pre-flight assertion that the artifact is
+	// installed, so it must name the same directory that resolution finds.
+	StaticModelDir string
+	// CandidateRoot is the GrapHi candidate repository root - the tree whose
+	// commit and diff the preregistration froze, and whose drift over the
+	// run invalidates it.
+	CandidateRoot string
 }
 
-func qualificationEnvironmentFromOS() qualificationEnvironment {
-	return qualificationEnvironment{
-		Repo: os.Getenv("GRAPHI_QUALIFICATION_REPO"), Dataset: os.Getenv("GRAPHI_QUALIFICATION_DATASET"),
-		Preregistration: os.Getenv("GRAPHI_QUALIFICATION_PREREGISTRATION"), CodeRankManifest: os.Getenv("GRAPHI_CODERANK_MANIFEST"),
-		Out: os.Getenv("GRAPHI_QUALIFICATION_OUT"), StaticModelDir: os.Getenv("GRAPHI_STATIC_MODEL_DIR"),
-	}
-}
-
-func runEmbeddedModelQualificationCapture(ctx context.Context, env qualificationEnvironment) error {
+// CaptureQualification produces the eight captures (2 independent builds x 4
+// arms) that finalize consumes as captures.json, together with the per-arm
+// capture.json artifacts and the M3/build-1 oracle controls.
+//
+// It refuses to manufacture partial evidence: every input is validated, the
+// dataset and preregistration are checked against each other, the manifest
+// bytes are checked against the pin, the pinned Potion artifact must be
+// installed, and the candidate binding is observed before and after the
+// complete capture. Nothing is published unless all eight builds succeed and
+// the two builds of each arm agree digest for digest.
+//
+// CandidateRoot is a required option rather than a value derived from
+// os.Getwd(): this used to walk up from the working directory looking for a
+// go.mod, which silently bound whichever module the operator happened to
+// stand in. For a command an operator starts from an arbitrary directory that
+// is not a fallback, it is a wrong answer that looks like a right one, and the
+// preregistered candidate diff would then be compared against the wrong tree.
+// The measure stage already takes an explicit --candidate-root; capture now
+// agrees with it.
+func CaptureQualification(ctx context.Context, options CaptureQualificationOptions) error {
 	for _, field := range []struct{ name, value string }{
-		{"repository", env.Repo}, {"dataset", env.Dataset}, {"preregistration", env.Preregistration},
-		{"CodeRank manifest", env.CodeRankManifest}, {"output", env.Out}, {"static model directory", env.StaticModelDir},
+		{"repository", options.RepoRoot}, {"dataset", options.DatasetPath}, {"preregistration", options.PreregistrationPath},
+		{"CodeRank manifest", options.ManifestPath}, {"output", options.OutputPath}, {"static model directory", options.StaticModelDir},
+		{"candidate root", options.CandidateRoot},
 	} {
 		if strings.TrimSpace(field.value) == "" {
 			return fmt.Errorf("embedded-model qualification capture: %s is required", field.name)
 		}
 	}
-	entries, err := os.ReadDir(env.Out)
+	entries, err := os.ReadDir(options.OutputPath)
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: read output directory: %w", err)
 	}
 	if len(entries) != 0 {
-		return fmt.Errorf("embedded-model qualification capture: output directory %s is not empty", env.Out)
+		return fmt.Errorf("embedded-model qualification capture: output directory %s is not empty", options.OutputPath)
 	}
-	loaded, err := LoadDataset(env.Dataset)
+	loaded, err := LoadDataset(options.DatasetPath)
 	if err != nil {
 		return err
 	}
 	if err := ValidateQualificationDataset(loaded); err != nil {
 		return err
 	}
-	raw, err := os.ReadFile(env.Preregistration)
+	raw, err := os.ReadFile(options.PreregistrationPath)
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: read preregistration: %w", err)
 	}
@@ -643,7 +784,7 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 	if pre.DatasetSHA256 != loaded.SHA256 {
 		return fmt.Errorf("embedded-model qualification capture: dataset differs from preregistration")
 	}
-	manifestBytes, err := os.ReadFile(env.CodeRankManifest)
+	manifestBytes, err := os.ReadFile(options.ManifestPath)
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: read CodeRank manifest: %w", err)
 	}
@@ -653,11 +794,11 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 	// The live driver refuses to manufacture partial evidence. Arm construction,
 	// capture, and two-build comparison are implemented by the test harness in a
 	// single invocation; absence of the pinned model artifacts is an error.
-	if _, err := os.Stat(filepath.Join(env.StaticModelDir, static.FileSafetensors)); err != nil {
+	pinnedArtifact, err := os.Stat(filepath.Join(options.StaticModelDir, static.FileSafetensors))
+	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: pinned Potion artifact: %w", err)
 	}
-	candidateRoot, err := qualificationModuleRoot()
-	if err != nil {
+	if err := requireQualificationPotionArtifactIsTheOneLoaded(options.StaticModelDir, pinnedArtifact); err != nil {
 		return err
 	}
 	counter, err := LoadPinnedRealPayloadCounter()
@@ -665,23 +806,23 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 		return fmt.Errorf("embedded-model qualification capture: load pinned payload tokenizer: %w", err)
 	}
 	var bindingStart CandidateBinding
-	if err := withDetachedQualificationCheckout(ctx, env.Repo, pre.SourceRepoSHA, func(sourceSnapshot string) error {
+	if err := withDetachedQualificationCheckout(ctx, options.RepoRoot, pre.SourceRepoSHA, func(sourceSnapshot string) error {
 		var observeErr error
 		bindingStart, observeErr = ObserveCandidateBinding(ctx, GitRepoProbe(), CandidateBindingOptions{
-			CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA, ExcludePath: QualificationCandidateExcludedPath,
+			CandidateRoot: options.CandidateRoot, FrozenCandidateSHA: pre.CandidateSHA, ExcludePath: QualificationCandidateExcludedPath,
 			ExpectedCandidateDiffSHA256: pre.CandidateDiffSHA256, CheckoutRoot: sourceSnapshot, CheckoutSHA: pre.SourceRepoSHA,
 		})
 		return observeErr
 	}); err != nil {
 		return fmt.Errorf("embedded-model qualification capture: pre-capture binding: %w", err)
 	}
-	return publishQualificationAtomically(env.Out, func(stage string) error {
-		if err := captureQualificationBuilds(ctx, stage, env, loaded, pre, counter, candidateRoot); err != nil {
+	return publishQualificationAtomically(options.OutputPath, func(stage string) error {
+		if err := captureQualificationBuilds(ctx, stage, options, loaded, pre, counter); err != nil {
 			return err
 		}
-		return withDetachedQualificationCheckout(ctx, env.Repo, pre.SourceRepoSHA, func(sourceSnapshot string) error {
+		return withDetachedQualificationCheckout(ctx, options.RepoRoot, pre.SourceRepoSHA, func(sourceSnapshot string) error {
 			bindingEnd, observeErr := ObserveCandidateBinding(ctx, GitRepoProbe(), CandidateBindingOptions{
-				CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA, ExcludePath: QualificationCandidateExcludedPath,
+				CandidateRoot: options.CandidateRoot, FrozenCandidateSHA: pre.CandidateSHA, ExcludePath: QualificationCandidateExcludedPath,
 				ExpectedCandidateDiffSHA256: pre.CandidateDiffSHA256, CheckoutRoot: sourceSnapshot, CheckoutSHA: pre.SourceRepoSHA,
 			})
 			if observeErr != nil {
@@ -695,13 +836,13 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 	})
 }
 
-func captureQualificationBuilds(ctx context.Context, out string, env qualificationEnvironment, loaded *Loaded, pre QualificationPreregistration, counter PayloadCounter, candidateRoot string) error {
+func captureQualificationBuilds(ctx context.Context, out string, options CaptureQualificationOptions, loaded *Loaded, pre QualificationPreregistration, counter PayloadCounter) error {
 	arms := []QualificationArm{ArmLexical, ArmPotion512, ArmPotion8192, ArmCodeRank}
 	first := make(map[QualificationArm]QualificationBuildDigest, len(arms))
 	artifacts := make([]QualificationCaptureArtifact, 0, len(arms)*2)
 	for build := 1; build <= 2; build++ {
 		for _, arm := range arms {
-			emb, expected, armManifest, err := qualificationArmEmbedder(ctx, arm, pre, env.CodeRankManifest)
+			emb, expected, armManifest, err := qualificationArmEmbedder(ctx, arm, pre, options.ManifestPath)
 			if err != nil {
 				return err
 			}
@@ -712,13 +853,13 @@ func captureQualificationBuilds(ctx context.Context, out string, env qualificati
 			}
 			var captured []CapturedCandidateBundle
 			var provenance CandidateCaptureProvenance
-			err = withDetachedQualificationCheckout(ctx, env.Repo, pre.SourceRepoSHA, func(sourceSnapshot string) error {
+			err = withDetachedQualificationCheckout(ctx, options.RepoRoot, pre.SourceRepoSHA, func(sourceSnapshot string) error {
 				opts := CandidateCaptureOptions{
 					RepoRoot: sourceSnapshot, RepoName: loaded.Dataset.Repo, RepoSHA: pre.SourceRepoSHA,
 					Dataset: loaded, Queries: append([]Query(nil), loaded.Dataset.Queries...), EmbedderSelector: pre.Arms[arm].Label, WorkDir: workDir,
 					RealCounter: counter, Log: io.Discard, Embedder: emb, ExpectedFingerprint: expected,
 					QualificationArm: arm, QualificationBuild: build, QualificationPreregistration: &pre,
-					Binding: CandidateBindingOptions{CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
+					Binding: CandidateBindingOptions{CandidateRoot: options.CandidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
 						ExcludePath: QualificationCandidateExcludedPath, ExpectedCandidateDiffSHA256: pre.CandidateDiffSHA256,
 						CheckoutRoot: sourceSnapshot, CheckoutSHA: pre.SourceRepoSHA}, Probe: GitRepoProbe(),
 				}
@@ -1023,22 +1164,66 @@ func qualificationFingerprintFromCanonical(canonical string) (embed.Fingerprint,
 	}, nil
 }
 
-func qualificationModuleRoot() (string, error) {
-	dir, err := os.Getwd()
+// qualificationStaticModelDirEnv is the artifact location override the static
+// embedder honours. It is restated here rather than imported because the
+// constant is unexported in engine/embed/static/static.go; that package's own
+// test restates it the same way, with the same reason. If it ever changes
+// there, this message is what goes stale, and the test below names the
+// variable too.
+const qualificationStaticModelDirEnv = "GRAPHI_STATIC_MODEL_DIR"
+
+// requireQualificationPotionArtifactIsTheOneLoaded closes the gap between the
+// directory the operator NAMES and the directory the run READS.
+//
+// --static-model-dir is only a pre-flight assertion: the Potion arms construct
+// themselves through static.New, which resolves its artifact with
+// static.ResolveArtifactDir - $GRAPHI_STATIC_MODEL_DIR first, else the XDG
+// artifact cache. Nothing carries the flag into that lookup. So an operator
+// who names one directory while the environment resolves another used to get a
+// green pre-flight on the artifact they meant and a run against the artifact
+// they did not, with no step in between that could notice. That is the same
+// failure shape as the guessed candidate root: silently wrong rather than
+// refused.
+//
+// The comparison is os.SameFile on the two model.safetensors, not on the two
+// path strings. Two spellings of one file are routine here - a symlinked model
+// cache, /tmp against /private/tmp on darwin, a trailing slash - and a string
+// mismatch on any of those would be a refusal with nothing actually wrong
+// behind it. Device and inode answer the question that is really being asked:
+// will the run read the bytes the operator pinned?
+//
+// The caller has already stat'ed the operator's own artifact and reported its
+// absence with a clearer message than this function could; that check stays
+// where it is, so this one never runs against two missing files.
+func requireQualificationPotionArtifactIsTheOneLoaded(named string, namedArtifact os.FileInfo) error {
+	origin := "the default artifact cache, because $" + qualificationStaticModelDirEnv + " is unset"
+	if strings.TrimSpace(os.Getenv(qualificationStaticModelDirEnv)) != "" {
+		origin = "from $" + qualificationStaticModelDirEnv
+	}
+	resolved := static.ResolveArtifactDir(static.PinnedModel + "@" + static.PinnedRevision)
+	if strings.TrimSpace(resolved) == "" {
+		return fmt.Errorf("embedded-model qualification capture: the Potion arms cannot resolve an artifact directory at all (%s, and no home or cache directory is set); export %s=%s so the arms load the artifact --static-model-dir names",
+			origin, qualificationStaticModelDirEnv, named)
+	}
+	resolvedArtifact, err := os.Stat(filepath.Join(resolved, static.FileSafetensors))
 	if err != nil {
-		return "", fmt.Errorf("embedded-model qualification capture: working directory: %w", err)
+		return fmt.Errorf("embedded-model qualification capture: --static-model-dir names %s, but the Potion arms will load %s (%s), whose %s is unreadable: %w; export %s=%s or correct the flag",
+			named, resolved, origin, static.FileSafetensors, err, qualificationStaticModelDirEnv, named)
 	}
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir, nil
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", fmt.Errorf("embedded-model qualification capture: could not find module root")
-		}
-		dir = parent
+	if !os.SameFile(namedArtifact, resolvedArtifact) {
+		return fmt.Errorf("embedded-model qualification capture: --static-model-dir names %s, but the Potion arms will load a different artifact from %s (%s); export %s=%s, or point --static-model-dir at the artifact that will actually be loaded",
+			named, resolved, origin, qualificationStaticModelDirEnv, named)
 	}
+	return nil
 }
+
+// qualificationModuleRoot is deliberately absent. Capture used to derive the
+// candidate root by walking up from os.Getwd() to the nearest go.mod, which
+// answered with whatever module the operator happened to stand in. The
+// candidate root is the tree the preregistration froze, so guessing it wrong
+// binds the run to the wrong tree; it is now the required
+// CaptureQualificationOptions.CandidateRoot, matching --candidate-root on
+// measure and digests.
 
 // ValidateQualificationDataset accepts exactly one fresh, holdout-shaped
 // development population. A path is not an identity: spent evidence is
@@ -1252,11 +1437,26 @@ func validatePotionQualificationArms(arms map[QualificationArm]ArmPin, fingerpri
 	if arms[ArmPotion512].ManifestSHA256 != arms[ArmPotion8192].ManifestSHA256 {
 		return fmt.Errorf("embedded-model qualification Potion arms must share one pinned artifact manifest")
 	}
-	if arms[ArmPotion512].AdmissionSHA256 == arms[ArmPotion8192].AdmissionSHA256 ||
-		arms[ArmPotion512].FingerprintCanonical == arms[ArmPotion8192].FingerprintCanonical {
+	if arms[ArmPotion512].AdmissionSHA256 == arms[ArmPotion8192].AdmissionSHA256 {
 		return fmt.Errorf("embedded-model qualification Potion/512 and Potion/8192 profiles must be distinct")
 	}
-	if fingerprints[ArmPotion512][7] != fingerprints[ArmPotion8192][7] {
+	// M1 and M2 must be two different embedding spaces, and "different" has to
+	// mean different in a field that says something: model id, revision,
+	// digests, dimension, schema, chunker config. An inequality in
+	// graph_generation alone would NOT be arm separation — that field is a
+	// random token minted per index build (see
+	// model_qualification_fingerprint.go), so two arms could differ there
+	// while embedding identically, and the 512-vs-8192 comparison would then
+	// compare nothing.
+	distinct, err := qualificationFingerprintsDifferOutsideGraphGeneration(
+		arms[ArmPotion512].FingerprintCanonical, arms[ArmPotion8192].FingerprintCanonical)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification Potion arm fingerprints: %w", err)
+	}
+	if !distinct {
+		return fmt.Errorf("embedded-model qualification Potion/512 and Potion/8192 fingerprints are identical outside the runtime-bound graph generation, so they do not name two distinct embedding spaces")
+	}
+	if fingerprints[ArmPotion512][qualificationGraphGenerationField] != fingerprints[ArmPotion8192][qualificationGraphGenerationField] {
 		return fmt.Errorf("embedded-model qualification Potion arms must name the same graph generation")
 	}
 	return nil
@@ -1286,7 +1486,7 @@ func qualificationPotionIdentity(maxTokens int) (modelID, admissionSHA string) {
 func validateCodeRankQualificationArm(arms map[QualificationArm]ArmPin, fingerprints map[QualificationArm][]string) error {
 	pin := arms[ArmCodeRank]
 	fields := fingerprints[ArmCodeRank]
-	if fields[5] != embed.DocumentSchema || fields[7] != fingerprints[ArmPotion512][7] {
+	if fields[5] != embed.DocumentSchema || fields[qualificationGraphGenerationField] != fingerprints[ArmPotion512][qualificationGraphGenerationField] {
 		return fmt.Errorf("embedded-model qualification CodeRank arm must use the common document schema and graph generation")
 	}
 	var manifest coderank.Manifest

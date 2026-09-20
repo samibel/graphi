@@ -660,7 +660,7 @@ func qualificationPreregistrationFixture() QualificationPreregistration {
 				AdmissionSHA256:      SHA256Hex([]byte(manifest.AdmissionSpec().String())),
 			},
 		},
-		CompactVersion:   "compact/17",
+		CompactVersion:   QualificationCompactVersion,
 		TokenBudget:      1200,
 		BootstrapSamples: 100000,
 		BootstrapSeed:    8675309,

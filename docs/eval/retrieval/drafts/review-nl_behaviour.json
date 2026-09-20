@@ -1,0 +1,501 @@
+{
+  "stratum": "nl_behaviour",
+  "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)",
+  "reviewed_at": "2026-09-17",
+  "cobra_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "source_of_truth": {
+    "cobra_checkout_read": "<session scratchpad>/cobra at a0a6ae020bb3899ff0276067863e50523f897370",
+    "revision_confirmed": "git rev-parse HEAD in the checkout returned a0a6ae020bb3899ff0276067863e50523f897370",
+    "precedent_read": "internal/eval/retrieval/testdata/datasets/cobra-v2.json (cb-11, cb-15, cb-16, cb-18, ci-43 read in full for nl_behaviour calibration)",
+    "mechanical_check": "Every judgement was re-checked with the same rule as retrieval.CheckSpanCoverage (internal/eval/retrieval/coverage.go:33-45): end_line within the file's line count and the anchor a substring of the joined [start_line,end_line] text. All 36 judgements pass.",
+    "manual_check": "Every span in this lot was additionally read at the pinned revision, including its line before start_line and its line after end_line, to check the boundary against the draft's stated span convention."
+  },
+  "scope": "Only the six candidates with stratum == nl_behaviour (cq-30..cq-35). No other candidate was reviewed and none is released by this file.",
+  "merge_warning": "`queries` carries all six reviewed candidates, the rejected one included, so the record is complete. Only candidates whose verdict is accepted or amended may be merged into a dataset.",
+  "calibration": "cobra-v2.json's nl_behaviour rows (cb-11, cb-12, cb-13, cb-14, cb-15, cb-16, cb-17, cb-18, ci-43) were read before judging. Two findings govern this review. First, their queries carry no Go identifier and no path; cb-15 says 'the version flag' and cb-16 'the levenshtein distance', i.e. user-facing or domain vocabulary, never a symbol. Second, their grade-3 spans are whole declarations (ValidateRequiredFlags, InitDefaultVersionFlag, ld, IsAvailableCommand) - so a whole-function span is NOT per se a definition-instead-of-behaviour defect in this stratum. The precedent's real rule is that the grade-3 span must CONTAIN the deciding branch or condition. ci-43 shows the sub-span form for the case where it does not. The demotion in cq-32 follows from this rule, not from span size.",
+  "stratum_disputes": [],
+  "queries": [
+    {
+      "id": "cq-30",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where does cobra decide whether command names are matched case-insensitively",
+      "family_id": "cobra-family-23ecca2bfaaaad1c",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A 'where is this behaviour implemented' question in the shape of cb-11/cb-16: one small function is the whole answer, and the global that switches it is the obvious grade-2.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1876,
+          "end_line": 1885,
+          "anchor": "func commandNameMatches(",
+          "grade": 3,
+          "reason": "commandNameMatches is the single comparison point: EqualFold when EnableCaseInsensitive is set, plain equality otherwise.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 61,
+          "end_line": 62,
+          "anchor": "var EnableCaseInsensitive = defaultCaseInsensitive",
+          "grade": 2,
+          "reason": "The global the comparison reads.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 767,
+          "end_line": 786,
+          "anchor": "func (c *Command) findNext(",
+          "grade": 2,
+          "reason": "The lookup that calls it for each child command.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1505,
+          "end_line": 1513,
+          "anchor": "func (c *Command) HasAlias(",
+          "grade": 2,
+          "reason": "The alias check that calls it too, so aliases follow the same rule.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1343,
+          "end_line": 1434,
+          "anchor": "func TestCaseInsensitive(",
+          "grade": 1,
+          "reason": "The table test that pins the behaviour.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        }
+      ]
+    },
+    {
+      "id": "cq-31",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "what happens when a cobra program on windows is launched from explorer instead of a terminal",
+      "family_id": "cobra-family-5abab8d871c5fc9d",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question whose answer sits in a build-tagged file that nothing in cobra-v2.json judges. The !windows twin is a genuine trap: it declares the same variable and does nothing.",
+      "judgements": [
+        {
+          "path": "command_win.go",
+          "start_line": 30,
+          "end_line": 41,
+          "anchor": "func preExecHook(",
+          "grade": 3,
+          "reason": "preExecHook prints MousetrapHelpText, waits (or asks for return), and exits 1 when mousetrap.StartedByExplorer() reports an explorer launch.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1062,
+          "end_line": 1065,
+          "anchor": "if preExecHookFn != nil {",
+          "grade": 2,
+          "reason": "The call site in ExecuteC, before any command lookup happens.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 68,
+          "end_line": 75,
+          "anchor": "var MousetrapHelpText = `This is a command line tool.",
+          "grade": 2,
+          "reason": "The message printed, and the empty-string opt-out documented on it.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 77,
+          "end_line": 81,
+          "anchor": "var MousetrapDisplayDuration = 5 * time.Second",
+          "grade": 2,
+          "reason": "The delay, and the zero value that switches to waiting for return.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command_notwin.go",
+          "start_line": 15,
+          "end_line": 20,
+          "anchor": "var preExecHookFn func(*Command)",
+          "grade": 1,
+          "reason": "The !windows twin: the hook variable exists but is nil, so nothing runs.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        }
+      ]
+    },
+    {
+      "id": "cq-32",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how are shell completions for a flag limited to files with particular extensions",
+      "family_id": "cobra-family-f387ac204ff63b9f",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question spanning the public marker API and the completion-time enforcement. cb-11 cites MarkFlagRequired as a grade-2 neighbour but nothing in cobra-v2.json asks about the filename annotations.",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 352,
+          "end_line": 364,
+          "anchor": "if validExts, present := flag.Annotations[BashCompFilenameExt]; present {",
+          "grade": 3,
+          "reason": "The enforcement point: during completion the annotation is turned into ShellCompDirectiveFilterFileExt and the extensions are returned as the completion list.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "shell_completions.go",
+          "start_line": 42,
+          "end_line": 46,
+          "anchor": "func (c *Command) MarkFlagFilename(",
+          "grade": 2,
+          "reason": "The command-level marker a program calls to set the BashCompFilenameExt annotation; it only delegates to the package-level MarkFlagFilename and decides nothing itself. Reviewer demoted 3 -> 2 to match cb-11, which grades MarkFlagRequired 2 against the validation it feeds.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "shell_completions.go",
+          "start_line": 65,
+          "end_line": 69,
+          "anchor": "func MarkFlagFilename(",
+          "grade": 2,
+          "reason": "The package-level function that actually writes the BashCompFilenameExt annotation.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "shell_completions.go",
+          "start_line": 58,
+          "end_line": 63,
+          "anchor": "func (c *Command) MarkPersistentFlagFilename(",
+          "grade": 2,
+          "reason": "The persistent-flag variant of the same marker.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 54,
+          "end_line": 94,
+          "anchor": "ShellCompDirectiveFilterFileExt",
+          "grade": 2,
+          "reason": "The ShellCompDirective const block; ShellCompDirectiveFilterFileExt (line 71) is the directive the enforcement at completions.go:352-364 returns.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "completions_test.go",
+          "start_line": 1004,
+          "end_line": 1124,
+          "anchor": "func TestFlagFileExtFilterCompletionInGo(",
+          "grade": 1,
+          "reason": "The test for the behaviour.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 320,
+          "end_line": 333,
+          "anchor": "### Specify valid filename extensions for flags that take a filename",
+          "grade": 1,
+          "reason": "The user-facing description.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        }
+      ]
+    },
+    {
+      "id": "cq-33",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how are subcommands ordered when they are listed in the help output",
+      "family_id": "cobra-family-5388e4388a5204a8",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question with a small, cached implementation and a global opt-out. cb-18 asks which commands are *excluded* from help; this asks in what order the surviving ones appear.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1292,
+          "end_line": 1300,
+          "anchor": "func (c *Command) Commands(",
+          "grade": 3,
+          "reason": "Commands() sorts lazily by name, once, and only when EnableCommandSorting is set: this is where the order is decided.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1285,
+          "end_line": 1290,
+          "anchor": "type commandSorterByName []*Command",
+          "grade": 2,
+          "reason": "The sort.Interface implementation the sort uses (hand-widened to include Len/Swap/Less).",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 57,
+          "end_line": 59,
+          "anchor": "var EnableCommandSorting = defaultCommandSorting",
+          "grade": 2,
+          "reason": "The global that turns sorting off.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1302,
+          "end_line": 1329,
+          "anchor": "func (c *Command) AddCommand(",
+          "grade": 2,
+          "reason": "AddCommand clears commandsAreSorted, which is what makes the cache correct.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1778,
+          "end_line": 1798,
+          "anchor": "func TestCommandsAreSorted(",
+          "grade": 1,
+          "reason": "The test for the default behaviour.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1800,
+          "end_line": 1819,
+          "anchor": "func TestEnableCommandSortingIsDisabled(",
+          "grade": 1,
+          "reason": "The test for the opt-out.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        }
+      ],
+      "review_note": "Two things. (a) command.go:1292-1300 (Commands) is already ci-1861's grade-3 span (cobra-family-1b1bb1e8402d0ab1) - an exact grade-3 collision. (b) command.go:1285-1290 is a hand-widened span: the declaration alone is 1285-1286, and I extended it to 1290 so the three sort.Interface methods are included. Every other span in this file is machine-derived by the same rule as cobra-v2.json (doc comment through the closing brace at column 0)."
+    },
+    {
+      "id": "cq-34",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where is the warning printed when a deprecated command is run",
+      "family_id": "cobra-family-1eb5ff466e156979",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A 'where exactly' question whose honest answer is three lines at the top of execute(), plus the field that drives it and the predicate that hides the command from help.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 879,
+          "end_line": 881,
+          "anchor": "if len(c.Deprecated) > 0 {",
+          "grade": 3,
+          "reason": "The print: execute() emits the deprecation warning immediately after the nil-receiver check at command.go:875-877 and before any flag is parsed.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 101,
+          "end_line": 102,
+          "anchor": "Deprecated string",
+          "grade": 2,
+          "reason": "The field whose non-empty value triggers it, and whose text is printed.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1560,
+          "end_line": 1576,
+          "anchor": "func (c *Command) IsAvailableCommand(",
+          "grade": 2,
+          "reason": "The other half of deprecation: a deprecated command is still runnable but is not listed in help.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 159,
+          "end_line": 185,
+          "anchor": "func manPrintFlags(",
+          "grade": 1,
+          "reason": "The parallel rule for deprecated *flags* in generated man pages; adjacent, not the answer.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1493,
+          "end_line": 1508,
+          "anchor": "func TestDeprecatedCommand(",
+          "grade": 1,
+          "reason": "The test that pins the message.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        }
+      ],
+      "review_note": "command.go:879-881 is already ci-1343's grade-3 span (family cobra-family-37f0353f67a41908). The family id here is new and the question is worded differently, but this is an exact grade-3 span collision and the reviewer should decide whether to keep it."
+    },
+    {
+      "id": "cq-35",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how is the prefix in front of a command's error message chosen",
+      "family_id": "cobra-family-bcf830a50476e005",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question over a small inheritance chain (own prefix, else parent's, else the literal 'Error:') and its two use sites in ExecuteC. Nothing in cobra-v2.json judges ErrPrefix or SetErrPrefix.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 611,
+          "end_line": 621,
+          "anchor": "func (c *Command) ErrPrefix(",
+          "grade": 3,
+          "reason": "ErrPrefix returns the command's own prefix, else walks to the parent, else the default literal \"Error:\".",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 357,
+          "end_line": 360,
+          "anchor": "func (c *Command) SetErrPrefix(",
+          "grade": 2,
+          "reason": "The setter that populates it.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1097,
+          "end_line": 1101,
+          "anchor": "c.PrintErrln(c.ErrPrefix(), err.Error())",
+          "grade": 2,
+          "reason": "The first use site: a command-lookup failure in ExecuteC.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1126,
+          "end_line": 1128,
+          "anchor": "c.PrintErrln(cmd.ErrPrefix(), err.Error())",
+          "grade": 2,
+          "reason": "The second use site: a run failure, where the prefix comes from the executed command, not the root.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1132,
+          "end_line": 1143,
+          "anchor": "func TestRootErrPrefixExecutedOnSubcommand(",
+          "grade": 1,
+          "reason": "The test that a subcommand inherits the root's prefix.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1145,
+          "end_line": 1163,
+          "anchor": "func TestRootAndSubErrPrefix(",
+          "grade": 1,
+          "reason": "The test that a subcommand's own prefix wins.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 599,
+          "end_line": 604,
+          "anchor": "## Error Message Prefix",
+          "grade": 1,
+          "reason": "The user-guide section on the prefix.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R5)"
+        }
+      ]
+    }
+  ],
+  "verdicts": [
+    {
+      "id": "cq-30",
+      "verdict": "accepted",
+      "note": "All five spans read at the pinned revision and all resolve under CheckSpanCoverage (anchor inside [start_line,end_line], end_line within the file). command.go:1876-1885 is the whole commandNameMatches declaration including its doc comment, and it carries the deciding branch itself (if EnableCaseInsensitive -> strings.EqualFold, else s == t), so grade 3 is not a mere definition span. Verified independently that commandNameMatches has exactly two non-test call sites - command.go:770 in findNext and command.go:1508 in HasAlias - which are precisely the two grade-2 spans, so the reason 'the single comparison point' is true and not merely plausible. Stratum fits: the query names no identifier and no path and is the same shape as cb-16 ('where is the levenshtein distance computed')."
+    },
+    {
+      "id": "cq-31",
+      "verdict": "accepted",
+      "note": "command_win.go:30-41 is the complete preExecHook body and answers the question on its own: MousetrapHelpText != \"\" and mousetrap.StartedByExplorer() gate it, the text is printed, MousetrapDisplayDuration > 0 sleeps while 0 waits for return, then os.Exit(1). Grade 3 justified. command.go:1062-1065 verified as the ExecuteC call site and it does precede Find/Traverse (command.go:1088-1091), so 'before any command lookup happens' is accurate. Two observations that do not block release: (a) command_notwin.go:15-20 is widened beyond the span convention the draft states - the declaration alone is line 20, and lines 15-16 are the //go:build !windows constraint, not a doc comment. The widening is what makes the grade-1 reason true, but unlike cq-33 the draft does not declare it. Reviewer leaves the span as drafted and records the deviation here. (b) The grade-3 span sits in a //go:build windows file. I checked the ingest path (engine/ingest/walk.go uses a plain fs.WalkDir; core/parse/parser_go.go selects by extension and parses with go/parser) and it applies no build constraints, so command_win.go is indexed on darwin and the span is reachable. Note that preExecHookFn is declared in both command_win.go and command_notwin.go, so the two declarations compete during linking; that is a property of the repository, not a defect of this candidate."
+    },
+    {
+      "id": "cq-32",
+      "verdict": "amended",
+      "note": "Spans all exist and resolve. Two corrections. (1) shell_completions.go:42-46 (Command.MarkFlagFilename) was graded 3. It is a two-line wrapper that returns MarkFlagFilename(c.Flags(), name, extensions...) and determines no behaviour; the extension filter is decided at completions.go:352-364, where the BashCompFilenameExt annotation becomes ShellCompDirectiveFilterFileExt. cb-11 is the governing precedent and grades the analogous MarkFlagRequired 2 against ValidateRequiredFlags at 3. Demoted to 2; the candidate now has exactly one grade-3 span, the enforcement. (2) completions.go:54-94 is the entire ShellCompDirective const block, not a single constant; the reason now says so and names line 71 as the directive in question. The grade-3 span was read in full: lines 352-364 run from 'if flag != nil && flagCompletion {' through the close of the validExts block, and line 357 returns validExts with ShellCompDirectiveFilterFileExt - the behaviour the query asks about. Stratum fits."
+    },
+    {
+      "id": "cq-33",
+      "verdict": "accepted",
+      "note": "command.go:1292-1300 is Commands() with its doc comment, and it holds the deciding branch ('if EnableCommandSorting && !c.commandsAreSorted { sort.Sort(commandSorterByName(...)) }'), so grade 3 is a behaviour span, not a signature. The 'in the help output' half of the question holds up: the usage template at command.go:560 binds '{{$cmds := .Commands}}' and ranges it for 'Available Commands', which I read to confirm the link. The hand-widened span command.go:1285-1290 is exactly as the draft declares it - line 1285 is the comment 'Sorts commands by their names.' and 1290 is the Less method - and AddCommand at 1302-1329 does clear commandsAreSorted at line 1327, so that reason is correct too. Both grade-1 tests were read and match their reasons. Not blocking, but for the dataset owner: the grade-3 span is byte-identical to one of the two grade-3 spans of ci-1861, which is a HOLDOUT row. Unlike cq-34 the two questions target different behaviour (dynamic subcommand discovery vs. ordering) and cq-33's decisive evidence - the sorting branch, the sorter type, the cache invalidation - is not what ci-1861 is about, so I release it. If the qualification forbids any grade-3 overlap between a dev row and a holdout row, this one goes with cq-34."
+    },
+    {
+      "id": "cq-34",
+      "verdict": "rejected",
+      "note": "Not released as a dev row. The spans themselves are sound - I read all five and they resolve; command.go:879-881 is the deprecation print inside execute() and is a textbook behaviour span, and the grades are defensible. The blocker is elsewhere. cq-34's ONLY grade-3 span (command.go:879-881) is the ONLY grade-3 span of ci-1343, and ci-1343 is a HOLDOUT row whose question - 'Is there a way to customise entire deprecate message for a command' - is the same behaviour in another wording. A dev row whose complete grade-3 evidence set is identical to a holdout row's complete grade-3 evidence set for the same behaviour is not an independent development item: it makes the dev score a partial read-out of holdout evidence, which is the leakage family_id exists to prevent. The draft gives it a fresh family id (cobra-family-1eb5ff466e156979), which keeps Dataset.validate happy - families must not cross splits, and ci-1343 is holdout - but that is exactly what hides the problem instead of solving it. The reviewer's criterion applied here: reject when the whole grade-3 evidence set coincides with a holdout row's whole grade-3 evidence set AND both questions ask about the same behaviour. I invent no replacement span. The dataset owner can revive the row only by folding it into cobra-family-37f0353f67a41908 and moving it to split=holdout, which does not serve a dev qualification, or by re-drafting it around evidence ci-1343 does not use. Separately, the grade-3 reason claimed the print is 'the first thing execute() does'; it is not - command.go:875-877 is a nil-receiver check. The reason is corrected in `queries` so the record is accurate, but the correction does not lift the rejection."
+    },
+    {
+      "id": "cq-35",
+      "verdict": "accepted",
+      "note": "All seven spans read and verified. command.go:611-621 is ErrPrefix with its doc comment and is the whole decision - own errPrefix, else recurse to the parent, else the literal \"Error:\" - so grade 3 is justified. Both use sites check out: command.go:1097-1101 is the lookup-failure branch in ExecuteC guarded by !c.SilenceErrors, and command.go:1126-1128 is the run-failure branch guarded by !cmd.SilenceErrors && !c.SilenceErrors, where the prefix is taken from cmd, not c - the reason's claim that it comes from the executed command rather than the root is correct, and TestRootAndSubErrPrefix (command_test.go:1145-1163) pins exactly that. The user_guide.md span and both test spans match their reasons. Stratum fits: the query says 'the prefix in front of a command's error message' and deliberately avoids naming ErrPrefix or SetErrPrefix."
+    }
+  ],
+  "summary": {
+    "reviewed": 6,
+    "accepted": 4,
+    "amended": 1,
+    "rejected": 1,
+    "not_released": [
+      {
+        "id": "cq-34",
+        "verdict": "rejected",
+        "reason": "Its only grade-3 span, command.go:879-881, is the only grade-3 span of the holdout row ci-1343, which asks about the same behaviour. A new family id hides the dev/holdout evidence overlap rather than removing it. The spans are valid; the row is not an independent dev item. No replacement span was invented."
+      }
+    ],
+    "released": [
+      "cq-30",
+      "cq-31",
+      "cq-32",
+      "cq-33",
+      "cq-35"
+    ],
+    "amendments_applied": [
+      "cq-32 / shell_completions.go:42-46: grade 3 -> 2, reason rewritten (cb-11 precedent: the marker API is grade 2, the enforcement is grade 3).",
+      "cq-32 / completions.go:54-94: reason rewritten - the span is the whole ShellCompDirective const block, and ShellCompDirectiveFilterFileExt sits at line 71.",
+      "cq-34 / command.go:879-881: reason corrected - the deprecation print is not 'the first thing execute() does'; command.go:875-877 is a nil-receiver check that precedes it. (Correction recorded for accuracy; cq-34 stays rejected.)"
+    ],
+    "grades_changed": 1,
+    "spans_changed": 0,
+    "spans_found_nonexistent": 0,
+    "open_decisions_for_the_dataset_owner": [
+      "cq-33's grade-3 span command.go:1292-1300 is byte-identical to a grade-3 span of the holdout row ci-1861. Released because the two questions target different behaviour, but a blanket no-dev/holdout-grade-3-overlap rule would also remove cq-33.",
+      "cq-31's grade-3 span sits in a //go:build windows file. The ingest applies no build constraints, so the span is indexed on darwin, but the qualification may still want a policy for platform-gated evidence."
+    ]
+  }
+}

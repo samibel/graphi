@@ -31,7 +31,94 @@ const (
 	PayloadOperationRead        = "read"
 )
 
+// ErrRetrievalNotReady means exactly one thing: the input summary carries an
+// audit block, the block names a retrieval state, and that state is not the
+// one this projection requires. The input is a complete, self-describing
+// task_context/2 answer — it simply describes a different retrieval than the
+// caller asked to project.
 var ErrRetrievalNotReady = errors.New("compact task_context: retrieval is not ready")
+
+// ErrSummaryNotAttested means the input summary does not testify at all: it
+// carries no parsable task_context/2 audit block, so no retrieval state can be
+// read from it.
+//
+// This is deliberately NOT ErrRetrievalNotReady. Conflating them makes the
+// diagnosis point the wrong way — it reports a retrieval problem when the
+// retrieval may have been perfectly ready and only the attestation was
+// missing, which is what a task_context/2 envelope without an audit block
+// (the pre-attestation empty shell, or the unavailable shell) used to look
+// like. A reader of this error should go looking at who produced the summary,
+// not at whether the embedder was up.
+var ErrSummaryNotAttested = errors.New("compact task_context: input summary carries no task_context/2 audit block")
+
+// taskContextAudit is the parsed parenthesised audit block of a
+// task_context/2 summary — the trailing "(task_context/2; retrieval/N;
+// weights ...; model ...; ...; degradation: <state>)" group.
+//
+// Every check that wants to know what an input attests goes through here
+// instead of through strings.Contains on the whole summary. A substring test
+// cannot tell a field from prose: it accepts "degradation: ready" wherever it
+// appears, including inside the quoted user task, and it cannot distinguish a
+// summary that names a different state from one that names no state at all.
+type taskContextAudit struct {
+	// Method is the first field of the block: the method version it opens
+	// with.
+	Method string
+	// Retrieval is the second field: the retrieval implementation version.
+	Retrieval string
+	// Weights and Model are the retrieval identity; both are empty on the
+	// lexical fallback, which has neither.
+	Weights string
+	Model   string
+	// SourceSelection is the "context-definitions/N" selector stamp.
+	SourceSelection string
+	// RetrievalState is the value of the "degradation: " field — the state
+	// the answer testifies retrieval was in when it was produced.
+	RetrievalState string
+}
+
+// parseTaskContextAudit reads the audit block out of a task_context/2 summary.
+// It returns ErrSummaryNotAttested when the summary carries no such block, so
+// callers can report "this does not testify" separately from "this testifies
+// to a state I cannot use".
+//
+// The block is located as the LAST parenthesised group, which is what makes it
+// safe for the headline to carry free prose (an empty answer's next-step hint,
+// a quoted task containing punctuation) ahead of it.
+func parseTaskContextAudit(summary string) (taskContextAudit, error) {
+	open, close := strings.LastIndex(summary, " ("), strings.LastIndex(summary, ")")
+	if open < 0 || close <= open+2 {
+		return taskContextAudit{}, ErrSummaryNotAttested
+	}
+	fields := strings.Split(summary[open+2:close], "; ")
+	if len(fields) < 6 || fields[0] != PayloadOperationTaskContext {
+		return taskContextAudit{}, ErrSummaryNotAttested
+	}
+	value := func(prefix string) string {
+		for _, field := range fields {
+			if strings.HasPrefix(field, prefix) {
+				return strings.TrimPrefix(field, prefix)
+			}
+		}
+		return ""
+	}
+	audit := taskContextAudit{
+		Method: fields[0], Retrieval: fields[1],
+		Weights: value("weights "), Model: value("model "), RetrievalState: value("degradation: "),
+	}
+	for _, field := range fields {
+		if strings.HasPrefix(field, "context-definitions/") {
+			audit.SourceSelection = field
+			break
+		}
+	}
+	// A block that names no retrieval state testifies to nothing about
+	// retrieval, which is the same failure as having no block at all.
+	if audit.Retrieval == "" || audit.RetrievalState == "" {
+		return taskContextAudit{}, ErrSummaryNotAttested
+	}
+	return audit, nil
+}
 
 type PayloadBoundary string
 
@@ -162,7 +249,14 @@ func validatePayloadCostInputState(_ string, payload PreservedPayload, counter P
 	if !strings.HasPrefix(bundle.Summary, "task_context/2:") {
 		return fmt.Errorf("input does not attest task_context/2 retrieval")
 	}
-	if !strings.Contains(bundle.Summary, "degradation: "+retrievalState) {
+	// Read the state out of the structured audit block rather than testing
+	// the summary for a substring: the two failures below are different
+	// diagnoses and the caller acts differently on each.
+	audit, err := parseTaskContextAudit(bundle.Summary)
+	if err != nil {
+		return err
+	}
+	if audit.RetrievalState != retrievalState {
 		return ErrRetrievalNotReady
 	}
 	if counter.Count == nil || counter.TokenizerID == "" {
@@ -207,7 +301,11 @@ func buildForRetrievalState(ctx context.Context, query string, legacy []byte, re
 	if err := json.Unmarshal(legacy, &legacyBundle); err != nil {
 		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: decode input: %w", err)
 	}
-	if !strings.Contains(legacyBundle.Summary, "degradation: "+retrievalState) {
+	legacyAudit, err := parseTaskContextAudit(legacyBundle.Summary)
+	if err != nil {
+		return "", CompactTaskContextStructured{}, err
+	}
+	if legacyAudit.RetrievalState != retrievalState {
 		return "", CompactTaskContextStructured{}, ErrRetrievalNotReady
 	}
 	var content bytes.Buffer

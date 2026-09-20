@@ -1,0 +1,2232 @@
+{
+  "schema_version": 1,
+  "id": "coderank-qualification-candidates",
+  "repo": "cobra",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "language": "en",
+  "evidence_class": "agent-drafted candidates; UNREVIEWED; not a dataset",
+  "status": "review queue - every judgement below is a PROPOSAL, not ground truth",
+  "notes": "35 candidate development queries drafted on 2026-09-17 to top up the CodeRank development qualification from the 29 conformant rows cobra-v2.json supplies to 64. Do not merge into a dataset before a human has annotated the spans and cleared the review notes. Companion: coderank-qualification-candidate-queries.md.",
+  "source_of_truth": {
+    "cobra_revision_read": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "revision_is_the_requested_one": true,
+    "source_method_used": "git clone --filter=blob:none https://github.com/spf13/cobra into the session scratchpad, then git checkout a0a6ae020bb3899ff0276067863e50523f897370",
+    "source_method_not_used": "Go module cache: the Go module cache reported by `go env GOMODCACHE` contains no github.com/spf13 directory at all, so there was nothing to read there.",
+    "clone_path": "<session scratchpad>/cobra (outside the repository; not committed)",
+    "checkout_head_subject": "Improve API to get flag completion function (#2063)"
+  },
+  "span_convention": "Line numbers follow cobra-v2.json exactly: a span starts at the first line of the declaration's doc comment (or at the declaration itself when there is none) and ends at the closing brace in column 0. The convention was reverse-engineered from cobra-v2.json and verified to reproduce cb-01, cb-02, cb-22, cb-24, cb-33, cb-11, cb-15, cb-18 and cb-23 byte-for-byte before any candidate was written. Sub-spans (a few lines inside a larger function) follow the precedent of ci-43, ci-1111 and ci-1289.",
+  "id_convention": "cq-NN, following the <prefix>-<number> convention of cb-NN (cobra-v1 rows) and ci-NNNN (issue-derived rows). 'cq' = cobra qualification. Chosen so the ids collide neither with cb-01..cb-40 (cb-05 withdrawn but reserved), nor with ci-*, nor with the cd-* ids used by docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json.",
+  "family_convention": "cobra-family-<first 16 hex of sha256('coderank-qualification:' + key)>, the same shape and derivation style as docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/generate.py. All 35 are distinct from each other and were checked against all 224 cobra-family-* ids occurring anywhere in this repository (cobra-v2.json included), not just cobra-v2.json.",
+  "counts_produced": {
+    "ambiguous": 7,
+    "architecture_flow": 7,
+    "exact_identifier": 7,
+    "exact_path": 8,
+    "nl_behaviour": 6
+  },
+  "counts_requested": {
+    "ambiguous": 7,
+    "architecture_flow": 7,
+    "config_docs": 0,
+    "exact_identifier": 7,
+    "exact_path": 8,
+    "nl_behaviour": 6
+  },
+  "shortfalls": "None. All 35 requested candidates were produced and every one has at least one grade-3 span that was read at the pinned revision.",
+  "candidates_with_review_notes": [
+    "cq-01",
+    "cq-05",
+    "cq-13",
+    "cq-16",
+    "cq-18",
+    "cq-20",
+    "cq-21",
+    "cq-22",
+    "cq-23",
+    "cq-26",
+    "cq-28",
+    "cq-33",
+    "cq-34"
+  ],
+  "grade3_span_collisions_with_cobra_v2": {
+    "method": "Computed, not estimated: every grade-3 span below is byte-identical to a grade-3 span already used by a cobra-v2.json row. Partial overlaps (a function inside a whole-file exact_path span, or a sub-span inside a larger function) are NOT listed here; they are pervasive and are inherent to the exact_path stratum.",
+    "exact_matches": [
+      {
+        "candidate": "cq-16",
+        "span": "command.go:470-476",
+        "already_grade_3_of": [
+          {
+            "id": "ci-470",
+            "family_id": "cobra-family-34f15dcf692eb04c",
+            "stratum": "config_docs"
+          }
+        ]
+      },
+      {
+        "candidate": "cq-18",
+        "span": "command.go:41-45",
+        "already_grade_3_of": [
+          {
+            "id": "cb-28",
+            "family_id": "cobra-family-5139464c59f6d6a7",
+            "stratum": "config_docs"
+          }
+        ]
+      },
+      {
+        "candidate": "cq-20",
+        "span": "command.go:257-266",
+        "already_grade_3_of": [
+          {
+            "id": "ci-1289",
+            "family_id": "cobra-family-bd4afc6a794098e9",
+            "stratum": "config_docs"
+          },
+          {
+            "id": "ci-1416",
+            "family_id": "cobra-family-e890b5e57973fefd",
+            "stratum": "config_docs"
+          }
+        ]
+      },
+      {
+        "candidate": "cq-23",
+        "span": "completions.go:193-264",
+        "already_grade_3_of": [
+          {
+            "id": "cb-14",
+            "family_id": "cobra-family-6069545f930ad2e6",
+            "stratum": "nl_behaviour"
+          }
+        ]
+      },
+      {
+        "candidate": "cq-26",
+        "span": "command.go:1139-1144",
+        "already_grade_3_of": [
+          {
+            "id": "ci-827",
+            "family_id": "cobra-family-2dac3eed574054fb",
+            "stratum": "config_docs"
+          }
+        ]
+      },
+      {
+        "candidate": "cq-26",
+        "span": "args.go:24-39",
+        "already_grade_3_of": [
+          {
+            "id": "ci-1202",
+            "family_id": "cobra-family-1b1bb1e8402d0ab1",
+            "stratum": "config_docs"
+          },
+          {
+            "id": "ci-2138",
+            "family_id": "cobra-family-1b1bb1e8402d0ab1",
+            "stratum": "config_docs"
+          }
+        ]
+      },
+      {
+        "candidate": "cq-33",
+        "span": "command.go:1292-1300",
+        "already_grade_3_of": [
+          {
+            "id": "ci-1861",
+            "family_id": "cobra-family-1b1bb1e8402d0ab1",
+            "stratum": "config_docs"
+          }
+        ]
+      },
+      {
+        "candidate": "cq-34",
+        "span": "command.go:879-881",
+        "already_grade_3_of": [
+          {
+            "id": "ci-1343",
+            "family_id": "cobra-family-37f0353f67a41908",
+            "stratum": "config_docs"
+          }
+        ]
+      }
+    ],
+    "reviewer_decision_required": "Whether a new family may reuse an existing family's grade-3 span. cobra-v2.json already does this internally (command.go:1146-1168 is the grade-3 span of five distinct families), so the precedent permits it; the qualification's own rule governs."
+  },
+  "what_is_not_verified": [
+    "Grades. Every grade is a proposal. The grade-3/grade-2 boundary in particular is a judgement call the reviewer owns.",
+    "Family collisions by meaning. Family *ids* are provably unique; whether a candidate belongs to an existing family by topic or paraphrase is a human call. Every case I could see is listed in candidates_with_review_notes.",
+    "Answer-span token budgets. Some grade-3 spans are large (bash_completionsV2.go:31-379 is 349 lines) and may not fit whatever ceiling the qualification applies.",
+    "Whether the qualification's conformance rules accept whole-file exact_path spans, sub-spans, or struct-field spans."
+  ],
+  "queries": [
+    {
+      "id": "cq-01",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "MarkFlagsOneRequired",
+      "family_id": "cobra-family-d46a80dddf4a75de",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier, the shape of cb-01..cb-06: the query is the symbol name and the grade-3 span is its declaration. Chosen because the one-required flag group API is the newest of the three flag-group markers and is not the subject of any cobra-v2 row (cb-02 covers MarkFlagsMutuallyExclusive).",
+      "judgements": [
+        {
+          "path": "flag_groups.go",
+          "start_line": 47,
+          "end_line": 61,
+          "anchor": "func (c *Command) MarkFlagsOneRequired(",
+          "grade": 3,
+          "reason": "The declaration of MarkFlagsOneRequired itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "flag_groups.go",
+          "start_line": 167,
+          "end_line": 186,
+          "anchor": "func validateOneRequiredFlagGroups(",
+          "grade": 2,
+          "reason": "The validator that enforces the oneRequired annotation this marker sets.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "flag_groups.go",
+          "start_line": 25,
+          "end_line": 29,
+          "anchor": "oneRequired       = \"cobra_annotation_one_required\"",
+          "grade": 2,
+          "reason": "The annotation key constant the marker writes.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "flag_groups_test.go",
+          "start_line": 22,
+          "end_line": 195,
+          "anchor": "func TestValidateFlagGroups(",
+          "grade": 1,
+          "reason": "The flag-group table test exercises one-required groups among the others.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "",
+          "review_note": "flag_groups_test.go:22-195 is also cb-02's grade-1 span. Reviewer should decide whether reusing it here is acceptable or whether this judgement should be dropped."
+        }
+      ]
+    },
+    {
+      "id": "cq-02",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "GenBashCompletionV2",
+      "family_id": "cobra-family-8c733ade6fba3574",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. bash_completionsV2.go carries no judgement anywhere in cobra-v2.json, so the whole V2 generator is unseen ground; the V1 GenBashCompletion appears only as a grade-2 distractor in cb-31/cb-35.",
+      "judgements": [
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 392,
+          "end_line": 396,
+          "anchor": "func (c *Command) GenBashCompletionV2(",
+          "grade": 3,
+          "reason": "The declaration of GenBashCompletionV2 itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 24,
+          "end_line": 29,
+          "anchor": "func (c *Command) genBashCompletion(",
+          "grade": 2,
+          "reason": "The unexported worker both V2 entry points delegate to.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 381,
+          "end_line": 390,
+          "anchor": "func (c *Command) GenBashCompletionFileV2(",
+          "grade": 2,
+          "reason": "The file-writing sibling that calls GenBashCompletionV2.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 421,
+          "end_line": 451,
+          "anchor": "### Bash completion V2",
+          "grade": 1,
+          "reason": "The user-facing documentation section for the V2 bash script.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-03",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "AppendActiveHelp",
+      "family_id": "cobra-family-1cba3b2d9f1d9b8d",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. active_help.go has only two grade-3 spans in cobra-v2.json and AppendActiveHelp is the entry point programs actually call; cb-10 uses the file only as an exact_path target.",
+      "judgements": [
+        {
+          "path": "active_help.go",
+          "start_line": 35,
+          "end_line": 44,
+          "anchor": "func AppendActiveHelp(",
+          "grade": 3,
+          "reason": "The declaration of AppendActiveHelp itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "active_help.go",
+          "start_line": 24,
+          "end_line": 31,
+          "anchor": "activeHelpMarker = \"_activeHelp_ \"",
+          "grade": 2,
+          "reason": "The marker constant AppendActiveHelp prefixes onto the message.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "active_help.go",
+          "start_line": 46,
+          "end_line": 57,
+          "anchor": "func GetActiveHelpConfig(",
+          "grade": 2,
+          "reason": "The companion that decides whether the appended messages survive.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 216,
+          "end_line": 221,
+          "anchor": "if strings.HasPrefix(comp, activeHelpMarker) {",
+          "grade": 2,
+          "reason": "Where the __complete command strips the marked entries when ActiveHelp is disabled.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/active_help.md",
+          "start_line": 24,
+          "end_line": 29,
+          "anchor": "## Adding Active Help messages",
+          "grade": 1,
+          "reason": "The documentation section that names the function.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-04",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "FixedCompletions",
+      "family_id": "cobra-family-f01817b8c8149ed3",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. A small, self-contained public helper in completions.go with no cobra-v2 row of its own; sits next to NoFileCompletions, which gives the stratum its usual grade-2 near-miss.",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 124,
+          "end_line": 130,
+          "anchor": "func FixedCompletions(",
+          "grade": 3,
+          "reason": "The declaration of FixedCompletions itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 118,
+          "end_line": 122,
+          "anchor": "func NoFileCompletions(",
+          "grade": 2,
+          "reason": "The sibling canned completion function declared immediately above.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 502,
+          "end_line": 517,
+          "anchor": "completionFn = finalCmd.ValidArgsFunction",
+          "grade": 2,
+          "reason": "Where a function of this shape is actually invoked during completion.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 54,
+          "end_line": 94,
+          "anchor": "ShellCompDirectiveError ShellCompDirective = 1 << iota",
+          "grade": 1,
+          "reason": "The directive constants a caller passes to FixedCompletions.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-05",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "GenYamlCustom",
+      "family_id": "cobra-family-13c9b9a8e54b13d9",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. doc/yaml_docs.go appears in cobra-v2.json only as cb-31's grade-2 GenYaml span; GenYamlCustom is the function that actually renders a command to YAML.",
+      "judgements": [
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 92,
+          "end_line": 147,
+          "anchor": "func GenYamlCustom(",
+          "grade": 3,
+          "reason": "The declaration of GenYamlCustom itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 87,
+          "end_line": 90,
+          "anchor": "func GenYaml(",
+          "grade": 2,
+          "reason": "The one-line wrapper that calls GenYamlCustom with an identity link handler.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 149,
+          "end_line": 175,
+          "anchor": "func genFlagResult(",
+          "grade": 2,
+          "reason": "The flag renderer GenYamlCustom calls to fill cmdDoc.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 30,
+          "end_line": 51,
+          "anchor": "type cmdOption struct {",
+          "grade": 1,
+          "reason": "The document structs GenYamlCustom populates.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "The nearby draft docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json already has cd-08 = GenYamlTreeCustom. Different symbol and different span (59-85 vs 92-147), but the reviewer should confirm the two are not treated as one family by whatever collision check the qualification applies."
+    },
+    {
+      "id": "cq-06",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "MatchAll",
+      "family_id": "cobra-family-ee283740ef6a8a2a",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. args.go carries many grade-3 spans in cobra-v2.json but none for MatchAll, the combinator the deprecated ExactValidArgs is now defined in terms of.",
+      "judgements": [
+        {
+          "path": "args.go",
+          "start_line": 113,
+          "end_line": 123,
+          "anchor": "func MatchAll(",
+          "grade": 3,
+          "reason": "The declaration of MatchAll itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "args.go",
+          "start_line": 125,
+          "end_line": 131,
+          "anchor": "func ExactValidArgs(",
+          "grade": 2,
+          "reason": "The deprecated validator that is now just MatchAll(ExactArgs(n), OnlyValidArgs).",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "args.go",
+          "start_line": 22,
+          "end_line": 22,
+          "anchor": "type PositionalArgs func(cmd *Command, args []string) error",
+          "grade": 2,
+          "reason": "The function type MatchAll both takes and returns.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "args_test.go",
+          "start_line": 440,
+          "end_line": 486,
+          "anchor": "func TestMatchAll(",
+          "grade": 1,
+          "reason": "The test for the combinator.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 367,
+          "end_line": 421,
+          "anchor": "## Positional and Custom Arguments",
+          "grade": 1,
+          "reason": "The user-guide section on positional argument validators.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-07",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "LocalNonPersistentFlags",
+      "family_id": "cobra-family-4d385f929c08e0eb",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare exported identifier. The one flag-set accessor on Command that cobra-v2.json never judges (Flags, LocalFlags, InheritedFlags and PersistentFlags all appear in cb-33/cb-20/ci-* rows).",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1655,
+          "end_line": 1666,
+          "anchor": "func (c *Command) LocalNonPersistentFlags(",
+          "grade": 3,
+          "reason": "The declaration of LocalNonPersistentFlags itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1668,
+          "end_line": 1693,
+          "anchor": "func (c *Command) LocalFlags(",
+          "grade": 2,
+          "reason": "The accessor it filters.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1725,
+          "end_line": 1735,
+          "anchor": "func (c *Command) PersistentFlags(",
+          "grade": 2,
+          "reason": "The set it subtracts.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 437,
+          "end_line": 448,
+          "anchor": "localNonPersistentFlags := finalCmd.LocalNonPersistentFlags()",
+          "grade": 1,
+          "reason": "Its only in-tree caller: completion uses it to decide whether subcommand names may still be completed.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-08",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "args.go",
+      "family_id": "cobra-family-968c66eafcb63d1b",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path, the shape of cb-07..cb-10. args.go is a top-level package file that no cobra-v2 exact_path row names.",
+      "judgements": [
+        {
+          "path": "args.go",
+          "start_line": 1,
+          "end_line": 131,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "args_test.go",
+          "start_line": 1,
+          "end_line": 541,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-09",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "bash_completionsV2.go",
+      "family_id": "cobra-family-edc0725ac7dea120",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. Chosen because the stem collides with bash_completions.go, giving the row a real near-miss the way cb-10 has active_help_test.go.",
+      "judgements": [
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 1,
+          "end_line": 396,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "bash_completions.go",
+          "start_line": 1,
+          "end_line": 712,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The V1 bash generator has a near-identical name but is a different file.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "bash_completionsV2_test.go",
+          "start_line": 1,
+          "end_line": 33,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-10",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "doc/yaml_docs.go",
+      "family_id": "cobra-family-e3096c161715ce43",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path with a directory component, matching cb-08 (doc/man_docs.go). No cobra-v2 exact_path row names a doc/ file other than man_docs.go.",
+      "judgements": [
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 1,
+          "end_line": 175,
+          "anchor": "package doc",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/yaml_docs_test.go",
+          "start_line": 1,
+          "end_line": 101,
+          "anchor": "package doc",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-11",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "fish_completions.go",
+      "family_id": "cobra-family-fed02f483d9519db",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. fish_completions.go has exactly one judgement anywhere in cobra-v2.json (a grade-2 distractor in cb-35) and no exact_path row.",
+      "judgements": [
+        {
+          "path": "fish_completions.go",
+          "start_line": 1,
+          "end_line": 292,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "fish_completions_test.go",
+          "start_line": 1,
+          "end_line": 143,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-12",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "powershell_completions.go",
+      "family_id": "cobra-family-13a9c7591077102a",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path, the longest per-shell generator filename in the tree; one grade-2 judgement in cobra-v2.json and no exact_path row.",
+      "judgements": [
+        {
+          "path": "powershell_completions.go",
+          "start_line": 1,
+          "end_line": 325,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "powershell_completions_test.go",
+          "start_line": 1,
+          "end_line": 33,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-13",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "doc/util.go",
+      "family_id": "cobra-family-c5a327260fc85cca",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. A deliberately generic filename ('util.go') in a subdirectory, which is the hardest honest exact_path case in this repo: the name carries no topical signal at all.",
+      "judgements": [
+        {
+          "path": "doc/util.go",
+          "start_line": 1,
+          "end_line": 52,
+          "anchor": "package doc",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "doc/util.go is also the subject of cd-11 (hasSeeAlso) in docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json, as an exact_identifier row. Different query and different span, but the reviewer should confirm the overlap is tolerable."
+    },
+    {
+      "id": "cq-14",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "command_win.go",
+      "family_id": "cobra-family-dd418a9f008051e3",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path for a build-tagged file. Its !windows twin command_notwin.go is the natural near-miss.",
+      "judgements": [
+        {
+          "path": "command_win.go",
+          "start_line": 1,
+          "end_line": 41,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_notwin.go",
+          "start_line": 1,
+          "end_line": 20,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The !windows twin of the file asked for: same role, different build tag.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-15",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "doc/rest_docs.go",
+      "family_id": "cobra-family-d4b89f4341a29303",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. doc/rest_docs.go holds two grade-2 judgements in cobra-v2.json (cb-22, cb-31) but is named by no exact_path row.",
+      "judgements": [
+        {
+          "path": "doc/rest_docs.go",
+          "start_line": 1,
+          "end_line": 186,
+          "anchor": "package doc",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/rest_docs_test.go",
+          "start_line": 1,
+          "end_line": 113,
+          "anchor": "package doc",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-16",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Help",
+      "family_id": "cobra-family-608e40cd2ab825b2",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A bare token that names one method exactly and half a dozen near neighbours, the shape of cb-32 (Execute) and cb-34 (Usage): grade 3 for the exact name, grade 2 for the symbols a user might equally have meant.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 470,
+          "end_line": 476,
+          "anchor": "func (c *Command) Help(",
+          "grade": 3,
+          "reason": "The exact name.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 450,
+          "end_line": 468,
+          "anchor": "func (c *Command) HelpFunc(",
+          "grade": 2,
+          "reason": "The function Help calls.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 584,
+          "end_line": 596,
+          "anchor": "func (c *Command) HelpTemplate(",
+          "grade": 2,
+          "reason": "The template the help is rendered from.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1226,
+          "end_line": 1275,
+          "anchor": "func (c *Command) InitDefaultHelpCmd(",
+          "grade": 2,
+          "reason": "The built-in 'help' subcommand a user may mean.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1183,
+          "end_line": 1198,
+          "anchor": "func (c *Command) InitDefaultHelpFlag(",
+          "grade": 2,
+          "reason": "The built-in --help flag a user may mean.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 322,
+          "end_line": 325,
+          "anchor": "func (c *Command) SetHelpFunc(",
+          "grade": 1,
+          "reason": "A setter, not the help itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "command.go:470-476 (Command.Help) is already the grade-3 span of ci-470 (family cobra-family-34f15dcf692eb04c, stratum config_docs). Exact grade-3 span collision: the family id here is new and the query is a bare token rather than a question, but a reviewer enforcing 'one grade-3 span belongs to one family' would reject this row."
+    },
+    {
+      "id": "cq-17",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Name",
+      "family_id": "cobra-family-91e7d5c6bdfc3b72",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A bare token with one exact method and a cluster of naming-related neighbours. Deliberately mundane: unlike cb-32/cb-35 the token carries no domain flavour, so lexical and semantic retrievers should diverge.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1495,
+          "end_line": 1503,
+          "anchor": "func (c *Command) Name(",
+          "grade": 3,
+          "reason": "The exact name.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1540,
+          "end_line": 1543,
+          "anchor": "func (c *Command) NameAndAliases(",
+          "grade": 2,
+          "reason": "A name accessor a user may mean.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1425,
+          "end_line": 1434,
+          "anchor": "func (c *Command) CommandPath(",
+          "grade": 2,
+          "reason": "The fully-qualified name of the command.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1505,
+          "end_line": 1513,
+          "anchor": "func (c *Command) HasAlias(",
+          "grade": 2,
+          "reason": "The alias-matching counterpart of Name.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 535,
+          "end_line": 541,
+          "anchor": "func (c *Command) NamePadding(",
+          "grade": 1,
+          "reason": "A layout helper, not the name.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1515,
+          "end_line": 1522,
+          "anchor": "func (c *Command) CalledAs(",
+          "grade": 1,
+          "reason": "The name actually typed, which is a different question.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-18",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Group",
+      "family_id": "cobra-family-554ca443f08bd951",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A bare token naming an exported type and five methods that all contain it. Matches the cb-33 (Flags) pattern: exact declaration at grade 3, the operations over it at grade 2.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 41,
+          "end_line": 45,
+          "anchor": "type Group struct {",
+          "grade": 3,
+          "reason": "The exact name: the Group type itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1356,
+          "end_line": 1359,
+          "anchor": "func (c *Command) AddGroup(",
+          "grade": 2,
+          "reason": "The way groups are registered.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1331,
+          "end_line": 1334,
+          "anchor": "func (c *Command) Groups(",
+          "grade": 2,
+          "reason": "The accessor for the registered groups.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1346,
+          "end_line": 1354,
+          "anchor": "func (c *Command) ContainsGroup(",
+          "grade": 2,
+          "reason": "A predicate over the same list.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1336,
+          "end_line": 1344,
+          "anchor": "func (c *Command) AllChildCommandsHaveGroup(",
+          "grade": 2,
+          "reason": "A predicate the usage template calls.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 332,
+          "end_line": 339,
+          "anchor": "func (c *Command) SetHelpCommandGroupID(",
+          "grade": 1,
+          "reason": "Assigns the help command to a group; adjacent, not the type.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "command.go:41-45 is already the grade-3 span of cb-25..cb-30-era row cb-28 (family cobra-family-5139464c59f6d6a7, stratum config_docs). The family id here is new and the query is different, but a reviewer enforcing 'no two families share a grade-3 span' would reject this row. Flagged because it is the single most likely collision in this batch."
+    },
+    {
+      "id": "cq-19",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Print",
+      "family_id": "cobra-family-c1c716ff46c6bb06",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A bare token matching six sibling methods that differ only in suffix. The intended answer is the shortest one; everything else is a plausible misread. No cobra-v2 row touches the Print* family.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1395,
+          "end_line": 1398,
+          "anchor": "func (c *Command) Print(",
+          "grade": 3,
+          "reason": "The exact name.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1400,
+          "end_line": 1403,
+          "anchor": "func (c *Command) Println(",
+          "grade": 2,
+          "reason": "A sibling printer a user may mean.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1405,
+          "end_line": 1408,
+          "anchor": "func (c *Command) Printf(",
+          "grade": 2,
+          "reason": "A sibling printer a user may mean.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1410,
+          "end_line": 1413,
+          "anchor": "func (c *Command) PrintErr(",
+          "grade": 2,
+          "reason": "The stderr counterpart.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1415,
+          "end_line": 1418,
+          "anchor": "func (c *Command) PrintErrln(",
+          "grade": 2,
+          "reason": "The stderr counterpart.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1420,
+          "end_line": 1423,
+          "anchor": "func (c *Command) PrintErrf(",
+          "grade": 2,
+          "reason": "The stderr counterpart.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 2042,
+          "end_line": 2081,
+          "anchor": "func TestCommandPrintRedirection(",
+          "grade": 1,
+          "reason": "The test that pins where these write.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-20",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Context",
+      "family_id": "cobra-family-ea1fe255e09e742e",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A bare token with one exact accessor and three Execute* variants that carry the same word. Tests whether retrieval prefers the exact accessor over the longer, more-mentioned Execute family.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 257,
+          "end_line": 266,
+          "anchor": "func (c *Command) Context(",
+          "grade": 3,
+          "reason": "The exact name.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 268,
+          "end_line": 272,
+          "anchor": "func (c *Command) SetContext(",
+          "grade": 2,
+          "reason": "The setter for what Context returns.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1027,
+          "end_line": 1033,
+          "anchor": "func (c *Command) ExecuteContext(",
+          "grade": 2,
+          "reason": "A context-taking entry point a user may mean.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1043,
+          "end_line": 1049,
+          "anchor": "func (c *Command) ExecuteContextC(",
+          "grade": 2,
+          "reason": "A context-taking entry point a user may mean.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1109,
+          "end_line": 1113,
+          "anchor": "if cmd.ctx == nil {",
+          "grade": 2,
+          "reason": "Where ExecuteC propagates the root context to the target command.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 2468,
+          "end_line": 2491,
+          "anchor": "func TestSetContext(",
+          "grade": 1,
+          "reason": "The test for context propagation.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "command.go:257-266 (Command.Context) is already the grade-3 span of ci-1289 (cobra-family-bd4afc6a794098e9) and ci-1416 (cobra-family-e890b5e57973fefd), both config_docs. Exact grade-3 span collision with two existing families; note that cobra-v2.json itself already lets those two families share this span, so the precedent cuts both ways."
+    },
+    {
+      "id": "cq-21",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Parent",
+      "family_id": "cobra-family-cf1e674206619447",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A bare token with one exact accessor and four parent-walking neighbours. Same shape as cb-33: exact match at grade 3, the machinery around it at grade 2.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1842,
+          "end_line": 1845,
+          "anchor": "func (c *Command) Parent(",
+          "grade": 3,
+          "reason": "The exact name.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1631,
+          "end_line": 1634,
+          "anchor": "func (c *Command) HasParent(",
+          "grade": 2,
+          "reason": "The predicate form of the same pointer.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 852,
+          "end_line": 858,
+          "anchor": "func (c *Command) VisitParents(",
+          "grade": 2,
+          "reason": "The walk over the chain Parent exposes.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1855,
+          "end_line": 1874,
+          "anchor": "func (c *Command) updateParentsPflags(",
+          "grade": 2,
+          "reason": "The heaviest user of the parent chain.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1302,
+          "end_line": 1329,
+          "anchor": "func (c *Command) AddCommand(",
+          "grade": 1,
+          "reason": "Where the parent pointer is set; adjacent, not the accessor.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "command.go:1855-1874 is cb-20's grade-3 span and command.go:1302-1329 is cb-21's grade-3 span. Both are used here only at grade 2 and grade 1, but they mean this row's judgement set intersects two existing families (cobra-family-9c0f8371ac4c3aaf and cobra-family-e8109fdc0e5467e6)."
+    },
+    {
+      "id": "cq-22",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Run",
+      "family_id": "cobra-family-922b9bf44cdafd65",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A bare token matching a struct field, seven sibling hook fields and two methods. The exact field is the intended target; the hook chain and Runnable() are the plausible misreads.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 132,
+          "end_line": 133,
+          "anchor": "Run func(cmd *Command, args []string)",
+          "grade": 3,
+          "reason": "The exact name: the Run field itself.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 134,
+          "end_line": 135,
+          "anchor": "RunE func(cmd *Command, args []string) error",
+          "grade": 2,
+          "reason": "The error-returning variant declared immediately below.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1550,
+          "end_line": 1553,
+          "anchor": "func (c *Command) Runnable(",
+          "grade": 2,
+          "reason": "The predicate that tests whether Run or RunE is set.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 982,
+          "end_line": 988,
+          "anchor": "if c.RunE != nil {",
+          "grade": 2,
+          "reason": "Where execute chooses between Run and RunE.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 114,
+          "end_line": 127,
+          "anchor": "// The *Run functions are executed in the following order:",
+          "grade": 1,
+          "reason": "The hook-ordering comment and the first two hook fields.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1015,
+          "end_line": 1025,
+          "anchor": "func (c *Command) preRun(",
+          "grade": 1,
+          "reason": "preRun/postRun are package initializers, not the Run field.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "command.go:134-135 is ci-1148's grade-3 span and command.go:114-127 is the grade-3 span of ci-2176 and ci-674. Used here at grade 2 and grade 1 only."
+    },
+    {
+      "id": "cq-23",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does the generated bash completion script call the program back and read the completion directive",
+      "family_id": "cobra-family-6eb41355307e80de",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A cross-file 'how does X get from A to B' question in the shape of cb-19/cb-23: the answer is the generated script plus the hidden __complete command it invokes. bash_completionsV2.go is judged nowhere in cobra-v2.json.",
+      "judgements": [
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 31,
+          "end_line": 379,
+          "anchor": "func genBashComp(",
+          "grade": 3,
+          "reason": "genBashComp emits the whole V2 script, including __%[1]s_get_completion_results, which invokes the program with the __complete request command and parses the trailing :<directive> line.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 193,
+          "end_line": 264,
+          "anchor": "func (c *Command) initCompleteCmd(",
+          "grade": 3,
+          "reason": "initCompleteCmd is the other half: the hidden command that answers the script's call, prints one completion per line and then prints ':%d' with the directive.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 26,
+          "end_line": 33,
+          "anchor": "ShellCompRequestCmd = \"__complete\"",
+          "grade": 2,
+          "reason": "The request command names substituted into the generated script.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 54,
+          "end_line": 94,
+          "anchor": "ShellCompDirectiveError ShellCompDirective = 1 << iota",
+          "grade": 2,
+          "reason": "The directive bit values the script compares against.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 421,
+          "end_line": 451,
+          "anchor": "### Bash completion V2",
+          "grade": 1,
+          "reason": "The user-facing description of the V2 mechanism.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "completions.go:193-264 is cb-14's grade-3 span (family cobra-family-6069545f930ad2e6, nl_behaviour). cb-14 asks how the request is dispatched; this asks how the script and the program talk. A reviewer may judge these the same family."
+    },
+    {
+      "id": "cq-24",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how is the default help command created and attached to the root command",
+      "family_id": "cobra-family-a30198665370d695",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Deliberately the help-command mirror of cb-23 (which covers the default completion command, and is holdout). The wiring point is the same ExecuteC call site, so the row also exercises whether retrieval can separate two commands built at the same place.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1226,
+          "end_line": 1275,
+          "anchor": "func (c *Command) InitDefaultHelpCmd(",
+          "grade": 3,
+          "reason": "InitDefaultHelpCmd builds the help command, gives it a ValidArgsFunction and a Run that looks the topic up, and re-adds it to the parent.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1067,
+          "end_line": 1070,
+          "anchor": "c.InitDefaultHelpCmd()",
+          "grade": 2,
+          "reason": "The call site in ExecuteC where the help and completion commands are installed on the root.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 327,
+          "end_line": 330,
+          "anchor": "func (c *Command) SetHelpCommand(",
+          "grade": 2,
+          "reason": "The override that suppresses the default construction.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 332,
+          "end_line": 339,
+          "anchor": "func (c *Command) SetHelpCommandGroupID(",
+          "grade": 2,
+          "reason": "How the constructed command is placed into a group.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 906,
+          "end_line": 916,
+          "anchor": "func TestHelpCommandExecuted(",
+          "grade": 1,
+          "reason": "The test that the default command exists and runs.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 492,
+          "end_line": 532,
+          "anchor": "## Help Command",
+          "grade": 1,
+          "reason": "The user-guide section on the help command.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-25",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does cobra decide where a command's output and error text is written",
+      "family_id": "cobra-family-42e3930fa452ac96",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A structural question whose answer is a small inheritance chain (getOut/getErr walk to the parent, then fall back to os.Stdout/os.Stderr) plus the printers on top of it. No cobra-v2 row judges getOut or getErr.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 394,
+          "end_line": 402,
+          "anchor": "func (c *Command) getOut(",
+          "grade": 3,
+          "reason": "getOut returns the command's own writer, else the parent's, else the supplied default: the inheritance rule for stdout.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 404,
+          "end_line": 412,
+          "anchor": "func (c *Command) getErr(",
+          "grade": 3,
+          "reason": "getErr is the same rule for the error stream.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 374,
+          "end_line": 377,
+          "anchor": "func (c *Command) OutOrStdout(",
+          "grade": 2,
+          "reason": "The public accessor that fixes the default to os.Stdout.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 384,
+          "end_line": 387,
+          "anchor": "func (c *Command) ErrOrStderr(",
+          "grade": 2,
+          "reason": "The public accessor that fixes the default to os.Stderr.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1395,
+          "end_line": 1398,
+          "anchor": "func (c *Command) Print(",
+          "grade": 2,
+          "reason": "Print and its siblings are the callers; note Print deliberately uses OutOrStderr.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 478,
+          "end_line": 495,
+          "anchor": "func (c *Command) UsageString(",
+          "grade": 1,
+          "reason": "UsageString temporarily swaps both writers, which is the one place the rule is bypassed.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 2042,
+          "end_line": 2081,
+          "anchor": "func TestCommandPrintRedirection(",
+          "grade": 1,
+          "reason": "The test that pins which stream each printer uses.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-26",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does positional argument validation get selected and run for a command",
+      "family_id": "cobra-family-689b9c5b64bfac61",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A two-file flow: Command.Args is consulted in two different places (Find, for the legacy default, and execute, for the configured validator) and the validators themselves live in args.go. Distinct from cb-11, which is about required *flags*.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1139,
+          "end_line": 1144,
+          "anchor": "func (c *Command) ValidateArgs(",
+          "grade": 3,
+          "reason": "ValidateArgs is the dispatch point: nil Args means ArbitraryArgs, otherwise the configured PositionalArgs runs.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "args.go",
+          "start_line": 24,
+          "end_line": 39,
+          "anchor": "func legacyArgs(",
+          "grade": 3,
+          "reason": "legacyArgs is the other half of the rule: Find applies it when Args is nil, which is what makes an unknown subcommand an error on a root command.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 936,
+          "end_line": 938,
+          "anchor": "if err := c.ValidateArgs(argWoFlags); err != nil {",
+          "grade": 2,
+          "reason": "The call site in execute, after flag parsing and before the Run hooks.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 743,
+          "end_line": 747,
+          "anchor": "if commandFound.Args == nil {",
+          "grade": 2,
+          "reason": "The call site in Find that selects legacyArgs.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "args.go",
+          "start_line": 49,
+          "end_line": 66,
+          "anchor": "func OnlyValidArgs(",
+          "grade": 2,
+          "reason": "One of the shipped validators the dispatch can select.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 367,
+          "end_line": 421,
+          "anchor": "## Positional and Custom Arguments",
+          "grade": 1,
+          "reason": "The user-guide section on the validators.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "Two exact grade-3 span collisions, both measured against cobra-v2.json rather than guessed: command.go:1139-1144 (ValidateArgs) is ci-827's grade-3 span (cobra-family-2dac3eed574054fb), and args.go:24-39 (legacyArgs) is the grade-3 span of ci-1202 and ci-2138 (both cobra-family-1b1bb1e8402d0ab1). This row has the heaviest overlap of the 35; if the reviewer wants one row cut for family hygiene, cut this one."
+    },
+    {
+      "id": "cq-27",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how is a man page assembled from a command and its flags",
+      "family_id": "cobra-family-26feddc25add5ef6",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | The man generator's internals, as opposed to cb-22 which asks how the doc generators walk the *tree*. Here the tree walk is irrelevant and the answer is the per-command rendering pipeline.",
+      "judgements": [
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 202,
+          "end_line": 246,
+          "anchor": "func genMan(",
+          "grade": 3,
+          "reason": "genMan is the assembler: preamble, options, example, see-also and history, in order, into one buffer.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 103,
+          "end_line": 116,
+          "anchor": "func GenMan(",
+          "grade": 2,
+          "reason": "The public entry point that fills the header and runs the result through md2man.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 143,
+          "end_line": 157,
+          "anchor": "func manPreamble(",
+          "grade": 2,
+          "reason": "The NAME/SYNOPSIS/DESCRIPTION section writer.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 187,
+          "end_line": 200,
+          "anchor": "func manPrintOptions(",
+          "grade": 2,
+          "reason": "The OPTIONS and inherited-OPTIONS section writer.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 159,
+          "end_line": 185,
+          "anchor": "func manPrintFlags(",
+          "grade": 2,
+          "reason": "The per-flag formatter, including the skip for deprecated and hidden flags.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/util.go",
+          "start_line": 23,
+          "end_line": 37,
+          "anchor": "func hasSeeAlso(",
+          "grade": 1,
+          "reason": "The predicate that gates the SEE ALSO section.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/docgen/man.md",
+          "start_line": 1,
+          "end_line": 31,
+          "anchor": "# Generating Man Pages For Your Own cobra.Command",
+          "grade": 1,
+          "reason": "The documentation page for the man generator.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-28",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how do command groups get declared, checked and rendered in the help output",
+      "family_id": "cobra-family-f9032c0d1aa5524f",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A flow that starts at a public API (AddGroup), passes through a panic-on-misuse check run from ExecuteC, and ends in the usage template. Three files' worth of mechanism for a feature cobra-v2.json never asks about end to end.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1170,
+          "end_line": 1181,
+          "anchor": "func (c *Command) checkCommandGroups(",
+          "grade": 3,
+          "reason": "checkCommandGroups recurses the tree and panics if a subcommand names a group its parent never declared: the enforcement point of the whole feature.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1356,
+          "end_line": 1359,
+          "anchor": "func (c *Command) AddGroup(",
+          "grade": 2,
+          "reason": "Where groups are declared.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1072,
+          "end_line": 1074,
+          "anchor": "c.checkCommandGroups()",
+          "grade": 2,
+          "reason": "The call site in ExecuteC, after all commands have been added.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1336,
+          "end_line": 1344,
+          "anchor": "func (c *Command) AllChildCommandsHaveGroup(",
+          "grade": 2,
+          "reason": "The predicate the usage template uses to decide whether an 'Additional Commands' section is needed.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 543,
+          "end_line": 582,
+          "anchor": "func (c *Command) UsageTemplate(",
+          "grade": 2,
+          "reason": "The template block that ranges over .Groups and renders one section per group.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1821,
+          "end_line": 1840,
+          "anchor": "func TestUsageWithGroup(",
+          "grade": 1,
+          "reason": "The test that pins the rendered layout.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 533,
+          "end_line": 540,
+          "anchor": "### Grouping commands in help",
+          "grade": 1,
+          "reason": "The user-guide section on grouping.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "Shares subject matter with cq-18 ('Group', ambiguous) but not its grade-3 span: cq-18's grade-3 is the type declaration at command.go:41-45, this one's is checkCommandGroups at 1170-1181. If the qualification derives families from grade-3 spans these stay distinct; if it derives them from topic, they collide."
+    },
+    {
+      "id": "cq-29",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does completing a flag's value find the function registered for that flag",
+      "family_id": "cobra-family-60d62eb131d67783",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | The routing half of flag completion: detecting that the cursor is on a flag value, then looking the flag up in the package-level registry. cb-04 names RegisterFlagCompletionFunc as an identifier; nothing in cobra-v2.json asks how the lookup happens.",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 592,
+          "end_line": 676,
+          "anchor": "func checkIfFlagCompletion(",
+          "grade": 3,
+          "reason": "checkIfFlagCompletion decides whether the last argument is a flag value, extracts the flag name (handling --flag=, -f= and shorthand clusters) and returns the pflag.Flag to complete for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 502,
+          "end_line": 517,
+          "anchor": "completionFn = flagCompletionFunctions[flag]",
+          "grade": 3,
+          "reason": "The lookup in getCompletions: when a flag was identified, the registered function is fetched from the package map and called instead of ValidArgsFunction.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 35,
+          "end_line": 36,
+          "anchor": "var flagCompletionFunctions",
+          "grade": 2,
+          "reason": "The package-level registry the lookup reads.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 841,
+          "end_line": 858,
+          "anchor": "func findFlag(",
+          "grade": 2,
+          "reason": "The name-to-flag resolution checkIfFlagCompletion relies on, including shorthand handling.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 132,
+          "end_line": 146,
+          "anchor": "func (c *Command) RegisterFlagCompletionFunc(",
+          "grade": 2,
+          "reason": "The registration side of the same map.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 290,
+          "end_line": 306,
+          "anchor": "### Specify dynamic flag completion",
+          "grade": 1,
+          "reason": "The user-facing description of the feature.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-30",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where does cobra decide whether command names are matched case-insensitively",
+      "family_id": "cobra-family-23ecca2bfaaaad1c",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A 'where is this behaviour implemented' question in the shape of cb-11/cb-16: one small function is the whole answer, and the global that switches it is the obvious grade-2.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1876,
+          "end_line": 1885,
+          "anchor": "func commandNameMatches(",
+          "grade": 3,
+          "reason": "commandNameMatches is the single comparison point: EqualFold when EnableCaseInsensitive is set, plain equality otherwise.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 61,
+          "end_line": 62,
+          "anchor": "var EnableCaseInsensitive = defaultCaseInsensitive",
+          "grade": 2,
+          "reason": "The global the comparison reads.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 767,
+          "end_line": 786,
+          "anchor": "func (c *Command) findNext(",
+          "grade": 2,
+          "reason": "The lookup that calls it for each child command.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1505,
+          "end_line": 1513,
+          "anchor": "func (c *Command) HasAlias(",
+          "grade": 2,
+          "reason": "The alias check that calls it too, so aliases follow the same rule.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1343,
+          "end_line": 1434,
+          "anchor": "func TestCaseInsensitive(",
+          "grade": 1,
+          "reason": "The table test that pins the behaviour.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-31",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "what happens when a cobra program on windows is launched from explorer instead of a terminal",
+      "family_id": "cobra-family-5abab8d871c5fc9d",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question whose answer sits in a build-tagged file that nothing in cobra-v2.json judges. The !windows twin is a genuine trap: it declares the same variable and does nothing.",
+      "judgements": [
+        {
+          "path": "command_win.go",
+          "start_line": 30,
+          "end_line": 41,
+          "anchor": "func preExecHook(",
+          "grade": 3,
+          "reason": "preExecHook prints MousetrapHelpText, waits (or asks for return), and exits 1 when mousetrap.StartedByExplorer() reports an explorer launch.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1062,
+          "end_line": 1065,
+          "anchor": "if preExecHookFn != nil {",
+          "grade": 2,
+          "reason": "The call site in ExecuteC, before any command lookup happens.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 68,
+          "end_line": 75,
+          "anchor": "var MousetrapHelpText = `This is a command line tool.",
+          "grade": 2,
+          "reason": "The message printed, and the empty-string opt-out documented on it.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 77,
+          "end_line": 81,
+          "anchor": "var MousetrapDisplayDuration = 5 * time.Second",
+          "grade": 2,
+          "reason": "The delay, and the zero value that switches to waiting for return.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_notwin.go",
+          "start_line": 15,
+          "end_line": 20,
+          "anchor": "var preExecHookFn func(*Command)",
+          "grade": 1,
+          "reason": "The !windows twin: the hook variable exists but is nil, so nothing runs.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-32",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how are shell completions for a flag limited to files with particular extensions",
+      "family_id": "cobra-family-f387ac204ff63b9f",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question spanning the public marker API and the completion-time enforcement. cb-11 cites MarkFlagRequired as a grade-2 neighbour but nothing in cobra-v2.json asks about the filename annotations.",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 352,
+          "end_line": 364,
+          "anchor": "if validExts, present := flag.Annotations[BashCompFilenameExt]; present {",
+          "grade": 3,
+          "reason": "The enforcement point: during completion the annotation is turned into ShellCompDirectiveFilterFileExt and the extensions are returned as the completion list.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "shell_completions.go",
+          "start_line": 42,
+          "end_line": 46,
+          "anchor": "func (c *Command) MarkFlagFilename(",
+          "grade": 3,
+          "reason": "The API a program calls to set that annotation.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "shell_completions.go",
+          "start_line": 65,
+          "end_line": 69,
+          "anchor": "func MarkFlagFilename(",
+          "grade": 2,
+          "reason": "The package-level function that actually writes the BashCompFilenameExt annotation.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "shell_completions.go",
+          "start_line": 58,
+          "end_line": 63,
+          "anchor": "func (c *Command) MarkPersistentFlagFilename(",
+          "grade": 2,
+          "reason": "The persistent-flag variant of the same marker.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions.go",
+          "start_line": 54,
+          "end_line": 94,
+          "anchor": "ShellCompDirectiveFilterFileExt",
+          "grade": 2,
+          "reason": "The directive constant the enforcement returns.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "completions_test.go",
+          "start_line": 1004,
+          "end_line": 1124,
+          "anchor": "func TestFlagFileExtFilterCompletionInGo(",
+          "grade": 1,
+          "reason": "The test for the behaviour.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 320,
+          "end_line": 333,
+          "anchor": "### Specify valid filename extensions for flags that take a filename",
+          "grade": 1,
+          "reason": "The user-facing description.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    },
+    {
+      "id": "cq-33",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how are subcommands ordered when they are listed in the help output",
+      "family_id": "cobra-family-5388e4388a5204a8",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question with a small, cached implementation and a global opt-out. cb-18 asks which commands are *excluded* from help; this asks in what order the surviving ones appear.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1292,
+          "end_line": 1300,
+          "anchor": "func (c *Command) Commands(",
+          "grade": 3,
+          "reason": "Commands() sorts lazily by name, once, and only when EnableCommandSorting is set: this is where the order is decided.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1285,
+          "end_line": 1290,
+          "anchor": "type commandSorterByName []*Command",
+          "grade": 2,
+          "reason": "The sort.Interface implementation the sort uses (hand-widened to include Len/Swap/Less).",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 57,
+          "end_line": 59,
+          "anchor": "var EnableCommandSorting = defaultCommandSorting",
+          "grade": 2,
+          "reason": "The global that turns sorting off.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1302,
+          "end_line": 1329,
+          "anchor": "func (c *Command) AddCommand(",
+          "grade": 2,
+          "reason": "AddCommand clears commandsAreSorted, which is what makes the cache correct.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1778,
+          "end_line": 1798,
+          "anchor": "func TestCommandsAreSorted(",
+          "grade": 1,
+          "reason": "The test for the default behaviour.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1800,
+          "end_line": 1819,
+          "anchor": "func TestEnableCommandSortingIsDisabled(",
+          "grade": 1,
+          "reason": "The test for the opt-out.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "Two things. (a) command.go:1292-1300 (Commands) is already ci-1861's grade-3 span (cobra-family-1b1bb1e8402d0ab1) - an exact grade-3 collision. (b) command.go:1285-1290 is a hand-widened span: the declaration alone is 1285-1286, and I extended it to 1290 so the three sort.Interface methods are included. Every other span in this file is machine-derived by the same rule as cobra-v2.json (doc comment through the closing brace at column 0)."
+    },
+    {
+      "id": "cq-34",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where is the warning printed when a deprecated command is run",
+      "family_id": "cobra-family-1eb5ff466e156979",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A 'where exactly' question whose honest answer is three lines at the top of execute(), plus the field that drives it and the predicate that hides the command from help.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 879,
+          "end_line": 881,
+          "anchor": "if len(c.Deprecated) > 0 {",
+          "grade": 3,
+          "reason": "The print: the first thing execute() does, before flags are even parsed.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 101,
+          "end_line": 102,
+          "anchor": "Deprecated string",
+          "grade": 2,
+          "reason": "The field whose non-empty value triggers it, and whose text is printed.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1560,
+          "end_line": 1576,
+          "anchor": "func (c *Command) IsAvailableCommand(",
+          "grade": 2,
+          "reason": "The other half of deprecation: a deprecated command is still runnable but is not listed in help.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 159,
+          "end_line": 185,
+          "anchor": "func manPrintFlags(",
+          "grade": 1,
+          "reason": "The parallel rule for deprecated *flags* in generated man pages; adjacent, not the answer.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1493,
+          "end_line": 1508,
+          "anchor": "func TestDeprecatedCommand(",
+          "grade": 1,
+          "reason": "The test that pins the message.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ],
+      "review_note": "command.go:879-881 is already ci-1343's grade-3 span (family cobra-family-37f0353f67a41908). The family id here is new and the question is worded differently, but this is an exact grade-3 span collision and the reviewer should decide whether to keep it."
+    },
+    {
+      "id": "cq-35",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how is the prefix in front of a command's error message chosen",
+      "family_id": "cobra-family-bcf830a50476e005",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | A behaviour question over a small inheritance chain (own prefix, else parent's, else the literal 'Error:') and its two use sites in ExecuteC. Nothing in cobra-v2.json judges ErrPrefix or SetErrPrefix.",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 611,
+          "end_line": 621,
+          "anchor": "func (c *Command) ErrPrefix(",
+          "grade": 3,
+          "reason": "ErrPrefix returns the command's own prefix, else walks to the parent, else the default literal \"Error:\".",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 357,
+          "end_line": 360,
+          "anchor": "func (c *Command) SetErrPrefix(",
+          "grade": 2,
+          "reason": "The setter that populates it.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1097,
+          "end_line": 1101,
+          "anchor": "c.PrintErrln(c.ErrPrefix(), err.Error())",
+          "grade": 2,
+          "reason": "The first use site: a command-lookup failure in ExecuteC.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command.go",
+          "start_line": 1126,
+          "end_line": 1128,
+          "anchor": "c.PrintErrln(cmd.ErrPrefix(), err.Error())",
+          "grade": 2,
+          "reason": "The second use site: a run failure, where the prefix comes from the executed command, not the root.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1132,
+          "end_line": 1143,
+          "anchor": "func TestRootErrPrefixExecutedOnSubcommand(",
+          "grade": 1,
+          "reason": "The test that a subcommand inherits the root's prefix.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1145,
+          "end_line": 1163,
+          "anchor": "func TestRootAndSubErrPrefix(",
+          "grade": 1,
+          "reason": "The test that a subcommand's own prefix wins.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 599,
+          "end_line": 604,
+          "anchor": "## Error Message Prefix",
+          "grade": 1,
+          "reason": "The user-guide section on the prefix.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": ""
+        }
+      ]
+    }
+  ]
+}

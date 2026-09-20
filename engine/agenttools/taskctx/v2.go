@@ -15,6 +15,14 @@
 // default remains lexical-only and the fallback's audit trail (the typed
 // degradation state) makes the v2 path observably different from v1.
 //
+// Empty answers attest too: when the seed resolver resolves nothing, /2 does
+// NOT fall back to the shared shape.Empty envelope. That envelope names
+// neither the method nor the retrieval state, which leaves a reader unable to
+// tell a genuine "nothing here" from "retrieval was never ready" — the one
+// distinction an empty answer exists to convey. emptyV2Result below keeps the
+// empty outcome, the empty item/evidence lists and the human-readable hint,
+// and adds the same audit block every other /2 summary carries.
+//
 // Layering: taskctx imports engine/agenttools/resolve (its own dep) but does
 // NOT import engine/agenttools/hybridsearch, so neither agent tool imports
 // the other's package (AC-5). Both reach the retrieval instance through the
@@ -114,7 +122,7 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 		return nil, err
 	}
 	if len(seeds) == 0 {
-		return shape.Empty(tool, p.Task), nil
+		return emptyV2Result(ctx, p, degradation, retrievalSummary)
 	}
 	// seeds is the full bounded candidate pool (up to candidatePoolLimit).
 	// primarySeeds is the retrievalSeedLimit-wide OUTPUT-visible primary
@@ -600,7 +608,7 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 	}
 	items = keptItems
 
-	summary := buildV2Summary(len(primarySeeds), len(extraCandidates), p.Task, related, callers, callees, tests, configs, fileRows, string(level), snippetSummary, degradation, retrievalSummary)
+	summary := buildV2Summary(len(primarySeeds), len(extraCandidates), p.Task, related, callers, callees, tests, configs, fileRows, string(level), "", snippetSummary, degradation, retrievalSummary)
 	r := &contract.Result{
 		Outcome:    contract.OutcomeFound,
 		Summary:    summary,
@@ -843,11 +851,61 @@ func dominantTier(t shape.TierTally) string {
 	return bestLabel
 }
 
+// emptyV2Result is the /2 envelope for "the seed resolver ran and resolved
+// nothing" — no retrieval row hydrated to a graph node with a source path.
+//
+// Why this is not shape.Empty: a /2 result is an audited claim about how it
+// was produced. shape.Empty is the shared cross-tool envelope; it carries a
+// next-step hint and nothing else, so an empty /2 answer used to say neither
+// which method produced it nor what state retrieval was in. A consumer
+// deciding on the strength of the answer then could not tell "retrieval was
+// ready and this repository genuinely holds nothing for the query" from
+// "retrieval was not ready at all, so the emptiness says nothing about the
+// repository". Those two demand opposite follow-ups: accept the negative
+// answer, or re-ask once retrieval is up. The audit block is precisely what
+// separates them, so the empty answer must carry it too. Emptiness is a
+// finding, and a finding has to name its method.
+//
+// Everything else stays exactly the empty envelope other tools produce: the
+// unresolved confidence, no items, no evidence — and the human-readable hint,
+// which is still the most useful part for a person reading the terminal. The
+// hint is taken from shape.Empty rather than re-spelled here so /1 and /2
+// keep giving the same next-step advice when it changes.
+func emptyV2Result(ctx context.Context, p Params, degradation string, retrieval resolve.RetrieverSummary) (*contract.Result, error) {
+	r := shape.Empty(tool, p.Task)
+	hint := strings.TrimPrefix(r.Summary, tool+": ")
+	// The source-selection stamp belongs in the audit block of every /2
+	// summary: a reader (and the compact projector, which parses the block)
+	// must see which selector version would have chosen sources. With no
+	// candidates the assembly is a no-op that only reports its own method
+	// version, but reading it from the assembler keeps the stamp owned by
+	// one place instead of being duplicated as a literal here.
+	snippetSummary := "snippets disabled"
+	if budget := p.tokenBudget(); budget > 0 && p.Reader != nil {
+		bundle, err := enginecontext.AssembleDefinitions(ctx, p.Task, nil, enginecontext.Options{Budget: budget, ContextLines: snippetContext}, p.Reader)
+		if err != nil {
+			return nil, err
+		}
+		snippetSummary = fmt.Sprintf("%d/%d snippet tokens; %s", bundle.Tokens, budget, bundle.MethodVersion)
+	}
+	// risk is LevelUnknown, not the LevelFor(0, 0) "low" the found path would
+	// compute: nothing was assessed here. Reporting "low" would state a
+	// measurement that was never taken.
+	r.Summary = buildV2Summary(0, 0, p.Task, 0, 0, 0, 0, 0, 0, string(risk.LevelUnknown), hint, snippetSummary, degradation, retrieval)
+	return r, nil
+}
+
 // buildV2Summary assembles the /2 summary. The /1 summary template is
 // preserved (so existing summary parsers that key on "task_context:" still
 // find the call), with the /2 audit stamp appended and the AC-8 degradation
 // trailer when the fallback ran.
-func buildV2Summary(seeds, candidates int, task string, related, callers, callees, tests, configs, files int, riskLevel, snippetSummary, degradation string, retrieval resolve.RetrieverSummary) string {
+//
+// note is an optional human-readable clause appended to the headline, before
+// the parenthesised audit block. It exists so an answer that needs to tell a
+// person something in prose (the empty result's next-step hint) can do that
+// without displacing the audit block, which every machine reader locates as
+// the LAST parenthesised group of the summary.
+func buildV2Summary(seeds, candidates int, task string, related, callers, callees, tests, configs, files int, riskLevel, note, snippetSummary, degradation string, retrieval resolve.RetrieverSummary) string {
 	versionStamp := retrieval.RetrievalVersion
 	if versionStamp == "" {
 		versionStamp = "retrieval/0"
@@ -855,8 +913,13 @@ func buildV2Summary(seeds, candidates int, task string, related, callers, callee
 	// IndexFingerprint contains an operational freshness nonce. Keep it in
 	// the retrieval diagnostics, where it is used to reject stale vectors;
 	// it is not content identity and must not enter actor-visible token costs.
-	base := fmt.Sprintf("task_context/2: %d seed(s) for %q — %d related, %d callers, %d callees, %d tests, %d configs, %d files, risk %s (%s; %s; weights %s; model %s; %s",
-		seeds, task, related, callers, callees, tests, configs, files, riskLevel, MethodVersionV2, versionStamp, retrieval.WeightsHash, retrieval.ModelFingerprint, snippetSummary)
+	headline := fmt.Sprintf("task_context/2: %d seed(s) for %q — %d related, %d callers, %d callees, %d tests, %d configs, %d files, risk %s",
+		seeds, task, related, callers, callees, tests, configs, files, riskLevel)
+	if note != "" {
+		headline += " — " + note
+	}
+	base := headline + fmt.Sprintf(" (%s; %s; weights %s; model %s; %s",
+		MethodVersionV2, versionStamp, retrieval.WeightsHash, retrieval.ModelFingerprint, snippetSummary)
 	if candidates > 0 {
 		// SW-282: the widened internal candidate pool beyond the primary
 		// seeds, honestly counted so a reader can tell this bundle drew on
