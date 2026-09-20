@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "dataset_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "source_repo_sha": "REPLACE-WITH-DATASET-REPO-SHA",
+  "candidate_sha": "REPLACE-WITH-FROZEN-CANDIDATE-COMMIT-SHA",
+  "candidate_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "reader_prompt_sha256": "9e6f38c03e1e21e0c71d1d646ac13cd1073116b567cfebfa05b0e8522b1faccb",
+  "grader_prompt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "arms": {
+    "M0_lexical": {
+      "label": "M0_lexical"
+    },
+    "M1_potion_512": {
+      "label": "M1_potion_512",
+      "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+      "fingerprint_canonical": "REPLACE-WITH-EIGHT-FIELD-CANONICAL-FINGERPRINT",
+      "manifest_sha256": "d919fce66e91e9afd693b2387655592be8014d9b77e2f51712c6ae286ec97f78",
+      "admission_sha256": "d686c1edad9ba106d210c6a73d36242871f3fdc70f978ef735e14b1d0d09a966"
+    },
+    "M2_potion_8192": {
+      "label": "M2_potion_8192",
+      "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree-eval-max-8192:6e5cd9953e0f",
+      "fingerprint_canonical": "REPLACE-WITH-EIGHT-FIELD-CANONICAL-FINGERPRINT",
+      "manifest_sha256": "d919fce66e91e9afd693b2387655592be8014d9b77e2f51712c6ae286ec97f78",
+      "admission_sha256": "6e5cd9953e0fdb6d1119d29856894f0f53bf8885741169a8bd8748650cd69649"
+    },
+    "M3_coderank": {
+      "label": "M3_coderank",
+      "embedder_id": "REPLACE-WITH-CODERANK-EMBEDDER-ID",
+      "fingerprint_canonical": "REPLACE-WITH-EIGHT-FIELD-CANONICAL-FINGERPRINT",
+      "manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "admission_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "compact_version": "task_context/2-compact/17",
+  "token_budget": 1200,
+  "bootstrap_samples": 100000,
+  "bootstrap_seed": 1,
+  "thresholds": {
+    "min_passes": 56,
+    "min_paired_gain": 9,
+    "min_weak_strata_with_positive_gain": 2,
+    "bootstrap_confidence": 0.95,
+    "max_sidecar_rss_bytes": 2147483648,
+    "max_artifact_bytes": 1073741824,
+    "max_query_p95_millis": 1000,
+    "min_query_samples": 100,
+    "max_reindex_seconds": 600
+  },
+  "reference_machine": {
+    "os": "REPLACE-WITH-LOWERCASE-GOOS-NOT-UNAME-S",
+    "os_version": "REPLACE-WITH-EXACT-OS-VERSION",
+    "cpu": "REPLACE-WITH-EXACT-CPU-BRAND-STRING",
+    "physical_cores": 0,
+    "runtime_threads": 0,
+    "background_load": "REPLACE-WITH-LITERAL-BACKGROUND-LOAD-DECLARATION"
+  }
+}

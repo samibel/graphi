@@ -91,6 +91,11 @@ type RetrieverSummary struct {
 	RetrievalVersion string
 	Strategy         string
 	WeightsHash      string
+	// ModelFingerprint is a MODEL ID (embed.Fingerprint.ModelID), not a
+	// canonical fingerprint, while IndexFingerprint is a full canonical. The
+	// two are different kinds of value despite the parallel names; see
+	// engine/retrieval.Summary for why, and never compare one against the
+	// other.
 	ModelFingerprint string
 	IndexFingerprint string
 	Query            string

@@ -26,6 +26,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -36,6 +37,7 @@ import (
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
 	engineretrieval "github.com/samibel/graphi/engine/retrieval"
+	"github.com/samibel/graphi/engine/search"
 	cltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/mcp"
@@ -44,7 +46,11 @@ import (
 // CandidateCaptureVersion identifies the capture instrument. It travels into
 // the run directory so a later change to how bytes are captured cannot be
 // mistaken for the same measurement.
-const CandidateCaptureVersion = "sw280-candidate-mcp-capture/4"
+const (
+	CandidateCaptureVersion   = "sw280-candidate-mcp-capture/4"
+	CandidateCaptureTransport = "MCP stdio JSON-RPC 2.0 (surfaces/mcp.Server.Serve, line-delimited)"
+	CandidateCaptureSurface   = "surfaces/mcp tools/call " + mcp.ToolTaskContext
+)
 
 // candidateJSONRPCPrefix is the exact opening the stdio encoder produces for a
 // response: encoding/json writes struct fields in declaration order, and
@@ -69,9 +75,15 @@ type CapturedCandidateBundle struct {
 	FollowupRead *PreservedPayload `json:"followup_read,omitempty"`
 	// RetrievalStrategy and RetrievalState are the observed engine facts that
 	// prove this was the ready task_context/2 path and not the /1 fallback.
-	RetrievalStrategy string `json:"retrieval_strategy"`
-	RetrievalState    string `json:"retrieval_state"`
-	BundleSummary     string `json:"bundle_summary"`
+	RetrievalStrategy        string                    `json:"retrieval_strategy"`
+	RetrievalState           string                    `json:"retrieval_state"`
+	BundleSummary            string                    `json:"bundle_summary"`
+	Qualification            *QualificationObservation `json:"qualification,omitempty"`
+	QualificationQueryVector []float32                 `json:"qualification_query_vector,omitempty"`
+	// OracleControls are constructed from the one-shot, pre-compact normal
+	// contract.Result and carried only to the qualification staging writer.
+	// They are never serialized under the normal capture artifact.
+	OracleControls *OracleControls `json:"-"`
 }
 
 // ValidateCapturedTranscript preserves contract-1 captures unchanged and,
@@ -206,6 +218,7 @@ type CandidateBinding struct {
 	CandidateWorktreeClean bool   `json:"candidate_worktree_clean"`
 	CandidateMatchesFrozen bool   `json:"candidate_matches_frozen_candidate_sha"`
 	CandidateExcludedPath  string `json:"candidate_excluded_path"`
+	CandidateDiffSHA256    string `json:"candidate_diff_sha256"`
 	CheckoutSHA            string `json:"checkout_sha"`
 	CheckoutWorktreeClean  bool   `json:"checkout_worktree_clean"`
 	// DifferingPaths is empty when the candidate matches. It is recorded
@@ -221,9 +234,15 @@ type RepoProbe struct {
 	// WorktreeClean reports whether the worktree has no uncommitted change,
 	// tracked or untracked.
 	WorktreeClean func(ctx context.Context, root string) (bool, error)
+	// WorktreeCleanOutside is the candidate-side cleanliness check. The one
+	// preregistered evidence directory is excluded because capture writes it.
+	WorktreeCleanOutside func(ctx context.Context, root, exclude string) (bool, error)
 	// PathsDifferingOutside lists the paths that differ between two commits,
 	// excluding everything under exclude.
 	PathsDifferingOutside func(ctx context.Context, root, from, to, exclude string) ([]string, error)
+	// DiffOutside returns the exact canonical git diff bytes between the two
+	// commits outside exclude.
+	DiffOutside func(ctx context.Context, root, from, to, exclude string) ([]byte, error)
 }
 
 // CandidateBindingOptions is one binding observation.
@@ -236,13 +255,16 @@ type CandidateBindingOptions struct {
 	ExcludePath  string
 	CheckoutRoot string
 	CheckoutSHA  string
+	// ExpectedCandidateDiffSHA256, when present, must match the exact observed
+	// outside diff. Qualification always supplies its preregistered digest.
+	ExpectedCandidateDiffSHA256 string
 }
 
 // ObserveCandidateBinding records the binding and refuses the states that make
 // the recorded commits meaningless.
 func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBindingOptions) (CandidateBinding, error) {
 	var binding CandidateBinding
-	if probe.HeadSHA == nil || probe.WorktreeClean == nil || probe.PathsDifferingOutside == nil {
+	if probe.HeadSHA == nil || probe.WorktreeClean == nil || probe.WorktreeCleanOutside == nil || probe.PathsDifferingOutside == nil || probe.DiffOutside == nil {
 		return binding, fmt.Errorf("retrieval %s capture: the candidate binding needs a complete repository probe", QrelBlindSmokeEvaluationName)
 	}
 	if !isLowerHexDigest(o.FrozenCandidateSHA, 40) {
@@ -259,7 +281,7 @@ func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBi
 	if err != nil {
 		return binding, fmt.Errorf("retrieval %s capture: candidate HEAD: %w", QrelBlindSmokeEvaluationName, err)
 	}
-	candidateClean, err := probe.WorktreeClean(ctx, o.CandidateRoot)
+	candidateClean, err := probe.WorktreeCleanOutside(ctx, o.CandidateRoot, o.ExcludePath)
 	if err != nil {
 		return binding, fmt.Errorf("retrieval %s capture: candidate worktree state: %w", QrelBlindSmokeEvaluationName, err)
 	}
@@ -277,12 +299,23 @@ func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBi
 	if err != nil {
 		return binding, fmt.Errorf("retrieval %s capture: candidate tree comparison: %w", QrelBlindSmokeEvaluationName, err)
 	}
+	diff, err := probe.DiffOutside(ctx, o.CandidateRoot, o.FrozenCandidateSHA, head, o.ExcludePath)
+	if err != nil {
+		return binding, fmt.Errorf("retrieval %s capture: candidate exact diff: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	diffSHA := SHA256Hex(diff)
+	if o.ExpectedCandidateDiffSHA256 != "" {
+		if !isLowerHexDigest(o.ExpectedCandidateDiffSHA256, 64) || diffSHA != o.ExpectedCandidateDiffSHA256 {
+			return binding, fmt.Errorf("retrieval %s capture: candidate diff digest is %s, want preregistered %s", QrelBlindSmokeEvaluationName, diffSHA, o.ExpectedCandidateDiffSHA256)
+		}
+	}
 	binding = CandidateBinding{
 		CandidateSHA:           head,
 		FrozenCandidateSHA:     o.FrozenCandidateSHA,
 		CandidateWorktreeClean: candidateClean,
 		CandidateMatchesFrozen: len(differing) == 0,
 		CandidateExcludedPath:  o.ExcludePath,
+		CandidateDiffSHA256:    diffSHA,
 		CheckoutSHA:            o.CheckoutSHA,
 		CheckoutWorktreeClean:  checkoutClean,
 		DifferingPaths:         differing,
@@ -296,15 +329,25 @@ func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBi
 
 // CandidateCaptureProvenance records the composition the bytes came out of.
 type CandidateCaptureProvenance struct {
-	CaptureVersion    string `json:"capture_version"`
-	Transport         string `json:"transport"`
-	Surface           string `json:"surface"`
-	Boundary          string `json:"boundary"`
-	RepoName          string `json:"repo_name"`
-	RepoSHA           string `json:"repo_sha"`
-	DatasetSHA256     string `json:"dataset_sha256"`
-	EmbedderSelector  string `json:"embedder_selector"`
-	ModelFingerprint  string `json:"model_fingerprint"`
+	CaptureVersion   string `json:"capture_version"`
+	Transport        string `json:"transport"`
+	Surface          string `json:"surface"`
+	Boundary         string `json:"boundary"`
+	RepoName         string `json:"repo_name"`
+	RepoSHA          string `json:"repo_sha"`
+	DatasetSHA256    string `json:"dataset_sha256"`
+	EmbedderSelector string `json:"embedder_selector"`
+	// ModelFingerprint carries TWO different kinds of value depending on the
+	// capture mode, which is a hazard worth stating rather than discovering:
+	// a strict qualification capture writes idx.fingerprint.Canonical() here,
+	// a legacy blind capture writes idx.embedderID (a model id). Every gate
+	// that compares it (validateQualificationBuildProvenance) is on the
+	// qualification path and therefore compares canonical against canonical;
+	// a reader who assumes the blind meaning and compares against a model id
+	// gets a condition that can never hold.
+	ModelFingerprint string `json:"model_fingerprint"`
+	// IndexFingerprint is always a canonical fingerprint, or "" for the
+	// lexical arm.
 	IndexFingerprint  string `json:"index_fingerprint"`
 	GenerationID      string `json:"generation_id"`
 	PersistedVectors  int    `json:"persisted_vectors"`
@@ -314,9 +357,32 @@ type CandidateCaptureProvenance struct {
 	TokenizerID       string `json:"tokenizer_id"`
 	TokenizerVocabSHA string `json:"tokenizer_vocabulary_sha256"`
 	QueryCount        int    `json:"query_count"`
+	// QualificationCaptureRunSHA256 binds a qualification snapshot to the
+	// resolved arm work directory. It is absent from legacy blind captures.
+	QualificationCaptureRunSHA256 string `json:"qualification_capture_run_sha256,omitempty"`
 	// Binding is nil only for a capture taken before the binding existed. A
 	// nil binding is a release refusal, not a missing report row.
-	Binding *CandidateBinding `json:"candidate_binding,omitempty"`
+	Binding                  *CandidateBinding         `json:"candidate_binding,omitempty"`
+	BindingEnd               *CandidateBinding         `json:"candidate_binding_end,omitempty"`
+	QualificationBuildDigest *QualificationBuildDigest `json:"qualification_build_digest,omitempty"`
+}
+
+func observeQualificationCaptureBindingPair(ctx context.Context, probe RepoProbe, options CandidateBindingOptions, capture func(CandidateBinding) error) (CandidateBinding, CandidateBinding, error) {
+	start, err := ObserveCandidateBinding(ctx, probe, options)
+	if err != nil {
+		return CandidateBinding{}, CandidateBinding{}, err
+	}
+	if err := capture(start); err != nil {
+		return start, CandidateBinding{}, err
+	}
+	end, err := ObserveCandidateBinding(ctx, probe, options)
+	if err != nil {
+		return start, CandidateBinding{}, err
+	}
+	if !reflect.DeepEqual(start, end) {
+		return start, end, fmt.Errorf("retrieval %s capture: candidate or checkout binding changed during capture", QrelBlindSmokeEvaluationName)
+	}
+	return start, end, nil
 }
 
 // GitRepoProbe is the production RepoProbe. Each observation is one git
@@ -329,6 +395,17 @@ func GitRepoProbe() RepoProbe {
 			out, err := exec.CommandContext(ctx, "git", "-C", root, "status", "--porcelain", "--untracked-files=normal").Output()
 			if err != nil {
 				return false, fmt.Errorf("git status --porcelain in %s: %w", root, err)
+			}
+			return strings.TrimSpace(string(out)) == "", nil
+		},
+		WorktreeCleanOutside: func(ctx context.Context, root, exclude string) (bool, error) {
+			args := []string{"-C", root, "status", "--porcelain", "--untracked-files=normal", "--", "."}
+			if strings.TrimSpace(exclude) != "" {
+				args = append(args, ":(exclude)"+exclude)
+			}
+			out, err := exec.CommandContext(ctx, "git", args...).Output()
+			if err != nil {
+				return false, fmt.Errorf("git status --porcelain outside %s in %s: %w", exclude, root, err)
 			}
 			return strings.TrimSpace(string(out)) == "", nil
 		},
@@ -348,6 +425,17 @@ func GitRepoProbe() RepoProbe {
 				}
 			}
 			return paths, nil
+		},
+		DiffOutside: func(ctx context.Context, root, from, to, exclude string) ([]byte, error) {
+			args := []string{"-C", root, "diff", "--binary", "--full-index", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", from, to, "--", "."}
+			if strings.TrimSpace(exclude) != "" {
+				args = append(args, ":(exclude)"+exclude)
+			}
+			out, err := exec.CommandContext(ctx, "git", args...).Output()
+			if err != nil {
+				return nil, fmt.Errorf("git canonical diff %s %s in %s: %w", from, to, root, err)
+			}
+			return out, nil
 		},
 	}
 }
@@ -391,11 +479,23 @@ type CandidateCaptureOptions struct {
 	WorkDir          string
 	RealCounter      PayloadCounter
 	Log              io.Writer
+	// Embedder is an evaluation-only injection seam. Nil preserves the existing
+	// selector-based construction path byte-for-byte.
+	Embedder                     embed.Embedder
+	ExpectedFingerprint          *embed.Fingerprint
+	QualificationArm             QualificationArm
+	QualificationBuild           int
+	QualificationPreregistration *QualificationPreregistration
+	ManifestBytes                []byte
 	// Binding is the candidate/checkout binding this capture must observe
 	// before it runs, and Probe is how it observes them. Both are required:
 	// an unbound capture produces bytes nobody can attribute to a commit.
 	Binding CandidateBindingOptions
 	Probe   RepoProbe
+	// ObservedBinding is supplied by the qualification driver after it binds
+	// both repositories exactly once, before any staging write. Nil preserves
+	// the existing per-capture observation behavior.
+	ObservedBinding *CandidateBinding
 }
 
 // CaptureCandidateBundles builds the production index over the pinned checkout
@@ -417,8 +517,36 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	if strings.TrimSpace(o.RepoRoot) == "" || strings.TrimSpace(o.RepoSHA) == "" {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: repository root and sha are required", QrelBlindSmokeEvaluationName)
 	}
-	if strings.TrimSpace(o.EmbedderSelector) == "" {
+	if o.QualificationArm != ArmLexical && o.Embedder == nil && strings.TrimSpace(o.EmbedderSelector) == "" {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: a production embedder selector is required", QrelBlindSmokeEvaluationName)
+	}
+	strictQualification := o.ExpectedFingerprint != nil || o.QualificationPreregistration != nil || o.QualificationArm != "" || len(o.ManifestBytes) != 0
+	if strictQualification {
+		if o.QualificationPreregistration == nil || o.QualificationArm == "" {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: arm and preregistration are required")
+		}
+		if o.QualificationBuild != 1 && o.QualificationBuild != 2 {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: build ordinal must be 1 or 2")
+		}
+		if o.QualificationArm != ArmLexical && (o.Embedder == nil || o.ExpectedFingerprint == nil) {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: semantic arms require an injected embedder and expected fingerprint")
+		}
+		if err := ValidateQualificationDataset(o.Dataset); err != nil {
+			return nil, provenance, err
+		}
+		if o.Dataset.SHA256 != o.QualificationPreregistration.DatasetSHA256 {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: dataset differs from preregistration")
+		}
+		expected := embed.Fingerprint{}
+		if o.ExpectedFingerprint != nil {
+			expected = *o.ExpectedFingerprint
+		}
+		if err := validateQualificationCaptureBinding(o.QualificationArm, *o.QualificationPreregistration, expected, o.ManifestBytes); err != nil {
+			return nil, provenance, err
+		}
+		if o.QualificationArm != ArmLexical && o.Embedder.ID() != o.ExpectedFingerprint.ModelID {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: injected embedder identity differs from expected fingerprint")
+		}
 	}
 	if o.RealCounter.Count == nil || o.RealCounter.TokenizerID == "" || o.RealCounter.TokenizerID == TokenizerID {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: the pinned real tokenizer counter is required", QrelBlindSmokeEvaluationName)
@@ -437,31 +565,40 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	bindingOptions := o.Binding
 	bindingOptions.CheckoutRoot = o.RepoRoot
 	bindingOptions.CheckoutSHA = head
-	binding, err := ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
+	var binding CandidateBinding
+	if o.ObservedBinding != nil {
+		binding = *o.ObservedBinding
+		if !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean || !binding.CandidateMatchesFrozen ||
+			!strings.EqualFold(binding.CheckoutSHA, head) || !strings.EqualFold(binding.FrozenCandidateSHA, o.Binding.FrozenCandidateSHA) {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: pre-observed candidate binding does not match this capture")
+		}
+	} else {
+		binding, err = ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
+		if err != nil {
+			return nil, provenance, err
+		}
+	}
+
+	workDir, cleanupWorkDir, err := resolveQualificationCaptureWorkDir(o.WorkDir)
 	if err != nil {
 		return nil, provenance, err
 	}
-
-	workDir := o.WorkDir
-	if workDir == "" {
-		workDir, err = os.MkdirTemp("", "graphi-qrel-blind-capture")
-		if err != nil {
-			return nil, provenance, fmt.Errorf("retrieval %s capture: workdir: %w", QrelBlindSmokeEvaluationName, err)
-		}
-		defer os.RemoveAll(workDir)
-	}
-	idx, err := buildTaskContextIndex(ctx, o.RepoRoot, workDir, o.EmbedderSelector, o.Log)
+	defer cleanupWorkDir()
+	idx, err := buildCandidateCaptureIndex(ctx, o, o.RepoRoot, workDir, o.Log)
 	if err != nil {
 		return nil, provenance, err
 	}
 	defer idx.store.Close()
 
 	semanticState := idx.search.SemanticState()
-	if semanticState.State != embed.StateReady {
+	if o.QualificationArm != ArmLexical && semanticState.State != embed.StateReady {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: semantic state is %s, want ready; refusing a lexical-fallback bundle", QrelBlindSmokeEvaluationName, semanticState.State)
 	}
-	if semanticState.Requested.Canonical() != idx.fingerprint.Canonical() {
+	if o.QualificationArm != ArmLexical && semanticState.Requested.Canonical() != idx.fingerprint.Canonical() {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: the search service's requested fingerprint does not equal the independently verified generation fingerprint", QrelBlindSmokeEvaluationName)
+	}
+	if err := validateCandidateCaptureFingerprint(o, idx); err != nil {
+		return nil, provenance, err
 	}
 
 	querySvc := query.New(idx.store)
@@ -470,17 +607,25 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		return nil, provenance, fmt.Errorf("retrieval %s capture: retrieval.New returned nil", QrelBlindSmokeEvaluationName)
 	}
 
+	modelFingerprint := idx.embedderID
+	indexFingerprint := idx.fingerprint.Canonical()
+	if o.QualificationArm == ArmLexical {
+		modelFingerprint = ""
+		indexFingerprint = ""
+	} else if strictQualification {
+		modelFingerprint = idx.fingerprint.Canonical()
+	}
 	provenance = CandidateCaptureProvenance{
 		CaptureVersion:    CandidateCaptureVersion,
-		Transport:         "MCP stdio JSON-RPC 2.0 (surfaces/mcp.Server.Serve, line-delimited)",
-		Surface:           "surfaces/mcp tools/call " + mcp.ToolTaskContext,
+		Transport:         CandidateCaptureTransport,
+		Surface:           CandidateCaptureSurface,
 		Boundary:          string(PayloadBoundaryCandidate),
 		RepoName:          o.RepoName,
 		RepoSHA:           head,
 		DatasetSHA256:     o.Dataset.SHA256,
 		EmbedderSelector:  o.EmbedderSelector,
-		ModelFingerprint:  idx.embedderID,
-		IndexFingerprint:  idx.fingerprint.Canonical(),
+		ModelFingerprint:  modelFingerprint,
+		IndexFingerprint:  indexFingerprint,
 		GenerationID:      string(idx.generationID),
 		PersistedVectors:  idx.persistedVectors,
 		SemanticState:     semanticState.State.String(),
@@ -500,17 +645,229 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		}
 		captured = append(captured, bundle)
 	}
+	endBinding, err := ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
+	if err != nil {
+		return nil, provenance, fmt.Errorf("retrieval %s capture: post-capture binding: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	if !reflect.DeepEqual(binding, endBinding) {
+		return nil, provenance, fmt.Errorf("retrieval %s capture: candidate or checkout binding changed during capture", QrelBlindSmokeEvaluationName)
+	}
+	provenance.BindingEnd = &endBinding
+	if strictQualification {
+		inputs := qualificationBuildInputs{
+			Rows: idx.rows, AdmittedDocuments: idx.admittedDocuments,
+			QueryVectors: make(map[string][]float32, len(captured)), Payloads: make([]PreservedPayload, 0, len(captured)),
+			QueryDiagnostics: make(map[string]QualificationIntMetric, len(captured)), OracleControls: make(map[string]OracleControls, len(captured)),
+			Observations: make([]QualificationObservation, 0, len(captured)),
+		}
+		for _, bundle := range captured {
+			inputs.QueryVectors[bundle.QueryID] = bundle.QualificationQueryVector
+			if bundle.Qualification == nil {
+				return nil, provenance, fmt.Errorf("embedded-model qualification capture: query %s has no qualification observation", bundle.QueryID)
+			}
+			inputs.QueryDiagnostics[bundle.QueryID] = bundle.Qualification.UnknownTokens
+			inputs.Observations = append(inputs.Observations, *bundle.Qualification)
+			inputs.Payloads = append(inputs.Payloads, bundle.Payload)
+			if bundle.OracleControls == nil {
+				return nil, provenance, fmt.Errorf("embedded-model qualification capture: query %s has no one-shot oracle controls", bundle.QueryID)
+			}
+			inputs.OracleControls[bundle.QueryID] = *bundle.OracleControls
+		}
+		digest := buildQualificationDigest(o.QualificationArm, inputs)
+		digest.Build = o.QualificationBuild
+		provenanceSnapshot := provenance
+		provenanceSnapshot.QualificationBuildDigest = nil
+		captureRecord, err := newQualificationCaptureProvenanceRecord(o.QualificationArm, o.QualificationBuild, workDir, provenanceSnapshot)
+		if err != nil {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: encode build provenance: %w", err)
+		}
+		provenance.QualificationCaptureRunSHA256 = captureRecord.Provenance.QualificationCaptureRunSHA256
+		digest.CaptureProvenance = captureRecord
+		digest.Diagnostics = qualificationBuildDiagnostics(idx.rows, idx.admissionTruncations)
+		digest, err = sealQualificationBuildDigest(digest)
+		if err != nil {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: seal build digest: %w", err)
+		}
+		provenance.QualificationBuildDigest = &digest
+	}
 	return captured, provenance, nil
 }
 
+func resolveQualificationCaptureWorkDir(configured string) (string, func(), error) {
+	cleanup := func() {}
+	workDir := configured
+	if workDir == "" {
+		created, err := os.MkdirTemp("", "graphi-qrel-blind-capture")
+		if err != nil {
+			return "", cleanup, fmt.Errorf("retrieval %s capture: workdir: %w", QrelBlindSmokeEvaluationName, err)
+		}
+		workDir = created
+		cleanup = func() { _ = os.RemoveAll(created) }
+	}
+	abs, err := filepath.Abs(workDir)
+	if err != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("retrieval %s capture: resolve workdir absolute path: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	resolved, err := filepath.EvalSymlinks(filepath.Clean(abs))
+	if err != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("retrieval %s capture: resolve workdir symlinks: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	resolved = filepath.Clean(resolved)
+	info, err := os.Stat(resolved)
+	if err != nil || !info.IsDir() {
+		cleanup()
+		if err == nil {
+			err = fmt.Errorf("not a directory")
+		}
+		return "", func() {}, fmt.Errorf("retrieval %s capture: resolved workdir: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	return resolved, cleanup, nil
+}
+
+func newQualificationCaptureProvenanceRecord(arm QualificationArm, build int, resolvedWorkDir string, provenance CandidateCaptureProvenance) (QualificationCaptureProvenanceRecord, error) {
+	provenance.QualificationBuildDigest = nil
+	provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(arm, resolvedWorkDir)
+	record := QualificationCaptureProvenanceRecord{
+		Arm: arm, Build: build, WorkDir: resolvedWorkDir, Provenance: provenance,
+	}
+	identity, err := qualificationCaptureRecordIdentitySHA(record)
+	if err != nil {
+		return QualificationCaptureProvenanceRecord{}, err
+	}
+	record.CaptureIdentitySHA256 = identity
+	return sealQualificationCaptureProvenanceRecord(record)
+}
+
+func qualificationCaptureRunSHA(arm QualificationArm, resolvedWorkDir string) string {
+	raw, _ := json.Marshal(struct {
+		Arm     QualificationArm `json:"arm"`
+		WorkDir string           `json:"work_dir"`
+	}{Arm: arm, WorkDir: resolvedWorkDir})
+	return SHA256Hex(raw)
+}
+
+func qualificationCaptureRecordIdentitySHA(record QualificationCaptureProvenanceRecord) (string, error) {
+	record.Build = 0
+	record.SHA256 = ""
+	record.CaptureIdentitySHA256 = ""
+	record.Provenance.QualificationBuildDigest = nil
+	return ContentAddress(record, func(v *QualificationCaptureProvenanceRecord) {
+		v.Build = 0
+		v.SHA256 = ""
+		v.CaptureIdentitySHA256 = ""
+		v.Provenance.QualificationBuildDigest = nil
+	})
+}
+
+func sealQualificationCaptureProvenanceRecord(record QualificationCaptureProvenanceRecord) (QualificationCaptureProvenanceRecord, error) {
+	address, err := ContentAddress(record, func(v *QualificationCaptureProvenanceRecord) {
+		v.SHA256 = ""
+		v.Provenance.QualificationBuildDigest = nil
+	})
+	if err != nil {
+		return QualificationCaptureProvenanceRecord{}, err
+	}
+	record.SHA256 = address
+	return record, nil
+}
+
+func buildCandidateCaptureIndex(ctx context.Context, o CandidateCaptureOptions, root, workDir string, log io.Writer) (*taskContextIndex, error) {
+	if o.QualificationArm == ArmLexical {
+		return buildTaskContextLexicalIndex(ctx, root, workDir, log)
+	}
+	if o.Embedder != nil {
+		return buildTaskContextIndexWithEmbedder(ctx, root, workDir, o.Embedder, o.EmbedderSelector, log)
+	}
+	return buildTaskContextIndex(ctx, root, workDir, o.EmbedderSelector, log)
+}
+
+// validateCandidateCaptureFingerprint is where this capture BINDS its graph
+// generation.
+//
+// The loaded index's fingerprint is the runtime reference. Its eighth field is
+// the generation this very build just minted from crypto/rand
+// (engine/ingest.mintCommitGeneration by way of graphGenerationFromStore), so
+// the preregistration cannot name it and is compared on fields 0-6 only — see
+// model_qualification_fingerprint.go. Comparing the whole canonical against the
+// pin, as an earlier revision did, demanded a value no build can reproduce.
+//
+// The search service's requested fingerprint is a second RUNTIME value from the
+// same build, so it is compared byte for byte, graph generation included: a
+// service querying a different generation than the one that was loaded would
+// retrieve against a graph this capture did not build.
+func validateCandidateCaptureFingerprint(o CandidateCaptureOptions, idx *taskContextIndex) error {
+	if o.ExpectedFingerprint == nil {
+		return nil
+	}
+	if idx == nil {
+		return fmt.Errorf("embedded-model qualification capture: no loaded index")
+	}
+	loaded := idx.fingerprint.Canonical()
+	if err := qualificationFingerprintsAgree(loaded, o.ExpectedFingerprint.Canonical()); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: loaded generation differs from the preregistered fingerprint: %w", err)
+	}
+	if requested := idx.search.SemanticState().Requested.Canonical(); requested != loaded {
+		return fmt.Errorf("embedded-model qualification capture: the search service's requested fingerprint is not the loaded generation fingerprint, so this capture would query a different graph generation than it built")
+	}
+	return nil
+}
+
 func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q Query, querySvc *query.Service, idx *taskContextIndex, realEngine TaskContextEngine) (CapturedCandidateBundle, error) {
+	var qualificationResult engineretrieval.Result
+	var semanticHits []search.SemanticHit
+	var queryVector []float32
+	unknownTokens := QualificationIntMetric{Reason: "embedder protocol does not expose unknown-token count"}
+	strictQualification := o.QualificationPreregistration != nil
+	if strictQualification {
+		mode := engineretrieval.ModeLexicalOnly
+		if o.QualificationArm != ArmLexical {
+			var err error
+			queryVector, unknownTokens, err = captureQualificationQueryEmbedding(ctx, o.Embedder, q.Text, o.ExpectedFingerprint.Dim)
+			if err != nil {
+				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s vector capture: %w", q.ID, err)
+			}
+			semantic, err := idx.search.SemanticSearch(ctx, q.Text, 50)
+			if err != nil || !semantic.Available || semantic.State != embed.StateReady {
+				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s semantic top-50 unavailable: %v", q.ID, err)
+			}
+			semanticHits = semantic.Hits
+			mode = engineretrieval.ModeAuto
+		}
+		var err error
+		qualificationResult, err = realEngine.Retrieve(ctx, engineretrieval.Request{Query: q.Text, Limit: 50, Mode: mode})
+		if err != nil {
+			return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s post-fusion retrieval: %w", q.ID, err)
+		}
+	}
 	// One adapter per query, so "exactly one task_context/2 call" is observed
 	// per query rather than inferred from a running total.
 	adapter := NewTaskContextRetriever(realEngine)
 	direct := client.NewDirect(querySvc, idx.search).
 		WithRetrieval(adapter).
 		WithRepoRoot(o.RepoRoot)
-	server := mcp.NewServerWithClient(direct, mcp.WithLabs(), mcp.WithRepository(client.Repository{Root: o.RepoRoot}))
+	var surfaceClient client.Client = direct
+	var oracleClient *qualificationOracleCaptureClient
+	if strictQualification {
+		retrievalState := embed.StateReady.String()
+		if o.QualificationArm == ArmLexical {
+			retrievalState = string(engineretrieval.StateLexicalOnly)
+		}
+		oracleClient = &qualificationOracleCaptureClient{
+			Client: direct,
+			Input: OracleInput{
+				Query: q, Repository: os.DirFS(o.RepoRoot), RealCounter: o.RealCounter,
+				RetrievalState: retrievalState,
+			},
+		}
+		surfaceClient = oracleClient
+	}
+	serverOptions := []mcp.ServerOption{mcp.WithLabs(), mcp.WithRepository(client.Repository{Root: o.RepoRoot})}
+	if o.QualificationArm == ArmLexical {
+		serverOptions = append(serverOptions, mcp.WithEvaluationLexicalCompactControl())
+	}
+	server := mcp.NewServerWithClient(surfaceClient, serverOptions...)
 	defer server.Close()
 
 	request, err := candidateToolCallRequest(q.Text)
@@ -525,6 +882,14 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s MCP serve: %w", QrelBlindSmokeEvaluationName, q.ID, err)
 	}
 	responseBytes := out.Bytes()
+	if oracleClient != nil {
+		if oracleClient.err != nil {
+			return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s oracle controls: %w", q.ID, oracleClient.err)
+		}
+		if oracleClient.called != 1 || oracleClient.controls == nil {
+			return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s captured %d frozen candidate results for oracle controls, want exactly 1", q.ID, oracleClient.called)
+		}
+	}
 
 	if adapter.Called() != 1 {
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s called the real retrieval instance %d times, want exactly 1", QrelBlindSmokeEvaluationName, q.ID, adapter.Called())
@@ -533,14 +898,38 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s retrieval errored (%v); the bundle would be a fallback", QrelBlindSmokeEvaluationName, q.ID, adapter.LastErr())
 	}
 	last := adapter.LastResult()
-	if last.Degradation != string(engineretrieval.StateReady) {
+	if o.QualificationArm != ArmLexical && last.Degradation != string(engineretrieval.StateReady) {
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s retrieval state is %q, want ready", QrelBlindSmokeEvaluationName, q.ID, last.Degradation)
 	}
-	if last.Summary.RetrievalVersion != engineretrieval.Version || last.Summary.Strategy != "semantic_first" {
-		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s method is %s/%s, want %s/semantic_first", QrelBlindSmokeEvaluationName, q.ID, last.Summary.RetrievalVersion, last.Summary.Strategy, engineretrieval.Version)
+	wantStrategy := "semantic_first"
+	wantState := string(engineretrieval.StateReady)
+	if o.QualificationArm == ArmLexical {
+		wantStrategy = "lexical_only"
+		wantState = string(engineretrieval.StateLexicalOnly)
 	}
-
-	summary, err := ValidateCompactCandidateBundleBytes(q.ID, responseBytes)
+	if last.Summary.RetrievalVersion != engineretrieval.Version || last.Summary.Strategy != wantStrategy || last.Degradation != wantState {
+		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s method is %s/%s state %s, want %s/%s state %s", QrelBlindSmokeEvaluationName, q.ID, last.Summary.RetrievalVersion, last.Summary.Strategy, last.Degradation, engineretrieval.Version, wantStrategy, wantState)
+	}
+	if strictQualification {
+		expected := embed.Fingerprint{}
+		if o.ExpectedFingerprint != nil {
+			expected = *o.ExpectedFingerprint
+		}
+		// idx.fingerprint is the runtime reference: the generation this
+		// capture built. expected is the frozen pin, which cannot name it.
+		loaded := embed.Fingerprint{}
+		if idx != nil {
+			loaded = idx.fingerprint
+		}
+		if err := validateQualificationRetrieverSummary(o.QualificationArm, expected, loaded, last); err != nil {
+			return CapturedCandidateBundle{}, err
+		}
+	}
+	validateState := embed.StateReady.String()
+	if o.QualificationArm == ArmLexical {
+		validateState = string(engineretrieval.StateLexicalOnly)
+	}
+	summary, err := validateCompactCandidateBundleBytesState(q.ID, responseBytes, validateState)
 	if err != nil {
 		return CapturedCandidateBundle{}, err
 	}
@@ -549,14 +938,243 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 	if err != nil {
 		return CapturedCandidateBundle{}, err
 	}
-	return CapturedCandidateBundle{
-		QueryID:           q.ID,
-		RequestBytes:      request,
-		Payload:           payload,
-		RetrievalStrategy: last.Summary.Strategy,
-		RetrievalState:    last.Degradation,
-		BundleSummary:     summary,
-	}, nil
+	capturedOut := CapturedCandidateBundle{
+		QueryID:                  q.ID,
+		RequestBytes:             request,
+		Payload:                  payload,
+		RetrievalStrategy:        last.Summary.Strategy,
+		RetrievalState:           last.Degradation,
+		BundleSummary:            summary,
+		QualificationQueryVector: queryVector,
+	}
+	if oracleClient != nil {
+		capturedOut.OracleControls = oracleClient.controls
+	}
+	if strictQualification {
+		var structured taskcompact.Structured
+		structured, err = qualificationStructuredFromPayload(responseBytes)
+		if err != nil {
+			return CapturedCandidateBundle{}, err
+		}
+		expected := embed.Fingerprint{}
+		if o.ExpectedFingerprint != nil {
+			expected = *o.ExpectedFingerprint
+		}
+		modelFingerprint := idx.fingerprint.Canonical()
+		if o.QualificationArm == ArmLexical {
+			modelFingerprint = ""
+		}
+		observation, err := captureQualificationObservation(qualificationCaptureFacts{
+			Arm: o.QualificationArm, Query: q, SemanticState: idx.search.SemanticState().State,
+			ExpectedFingerprint: expected, IndexFingerprint: idx.fingerprint,
+			SearchFingerprint: idx.search.SemanticState().Requested, ModelFingerprint: modelFingerprint,
+			Retrieval: qualificationResult, SemanticHits: semanticHits, Payload: payload, Structured: structured,
+			QueryVector: queryVector, UnknownTokens: unknownTokens,
+		})
+		if err != nil {
+			return CapturedCandidateBundle{}, err
+		}
+		capturedOut.Qualification = &observation
+	}
+	return capturedOut, nil
+}
+
+func captureQualificationQueryEmbedding(ctx context.Context, emb embed.Embedder, query string, dim int) ([]float32, QualificationIntMetric, error) {
+	result, err := embed.EmbedQueryWithDiagnostics(ctx, emb, query)
+	if err != nil {
+		return nil, QualificationIntMetric{}, err
+	}
+	if len(result.Vectors) != 1 || len(result.Vectors[0]) != dim {
+		return nil, QualificationIntMetric{}, fmt.Errorf("vector shape is invalid")
+	}
+	metric := QualificationIntMetric{Reason: "embedder protocol does not expose unknown-token count"}
+	if result.UnknownTokens != nil {
+		value := *result.UnknownTokens
+		metric = QualificationIntMetric{Available: true, Value: &value}
+	}
+	return append([]float32(nil), result.Vectors[0]...), metric, nil
+}
+
+// qualificationOracleCaptureClient observes the exact canonical
+// task_context/2 contract.Result returned during the one MCP call. Embedding
+// client.Client promotes every other method unchanged; only TaskContext is
+// intercepted, so no product surface or second retrieval call is introduced.
+type qualificationOracleCaptureClient struct {
+	client.Client
+	Input    OracleInput
+	called   int
+	controls *OracleControls
+	err      error
+}
+
+func (c *qualificationOracleCaptureClient) TaskContext(ctx context.Context, p client.TaskContextParams) ([]byte, error) {
+	raw, err := c.Client.TaskContext(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	c.called++
+	if c.called != 1 {
+		c.err = fmt.Errorf("normal candidates were produced more than once")
+		return nil, c.err
+	}
+	if p.Task != c.Input.Query.Text {
+		c.err = fmt.Errorf("captured task %q differs from frozen query", p.Task)
+		return nil, c.err
+	}
+	var candidates contract.Result
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&candidates); err != nil {
+		c.err = fmt.Errorf("decode frozen normal candidates: %w", err)
+		return nil, c.err
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		if err == nil {
+			c.err = fmt.Errorf("frozen normal candidates contain a trailing JSON value")
+		} else {
+			c.err = fmt.Errorf("frozen normal candidates contain trailing bytes: %w", err)
+		}
+		return nil, c.err
+	}
+	before := SHA256Hex(raw)
+	in := c.Input
+	in.CurrentCandidates = candidates
+	controls, err := BuildOracleControls(in)
+	if err != nil {
+		c.err = err
+		return nil, err
+	}
+	if SHA256Hex(raw) != before {
+		c.err = fmt.Errorf("oracle construction mutated frozen normal candidate bytes")
+		return nil, c.err
+	}
+	c.controls = &controls
+	return raw, nil
+}
+
+// validateQualificationRetrieverSummary checks the retrieval summary the
+// payload was produced with.
+//
+// preregistered is the frozen pin and loaded is the fingerprint of the index
+// this capture actually built. The two are compared on fields 0-6 only, because
+// the eighth field is minted per build and cannot be preregistered. The summary
+// itself is a runtime observation of the SAME build as loaded, so it is
+// compared to loaded byte for byte — graph generation included. That is what
+// keeps the whole capture pinned to one graph.
+//
+// The two summary fields are NOT the same kind of value, and comparing them as
+// if they were is what made this check unsatisfiable until now:
+//
+//	Summary.IndexFingerprint is a CANONICAL fingerprint — the eight
+//	length-prefixed fields — so it is compared against loaded.Canonical().
+//	Summary.ModelFingerprint is a MODEL ID: engine/retrieval fills it from
+//	st.Requested.ModelID (engine/retrieval/service.go), i.e. field 0 of that
+//	canonical. Compared against the whole canonical it could never be equal.
+//
+// The statement the gate makes is unchanged: the payload retrieval ran against
+// exactly the generation this capture loaded. That is carried by the index
+// fingerprint, which still has to equal loaded.Canonical() byte for byte,
+// graph generation included; the model id is checked as a model id alongside it.
+func validateQualificationRetrieverSummary(arm QualificationArm, preregistered, loaded embed.Fingerprint, got resolve.RetrieverResult) error {
+	if arm == ArmLexical {
+		if got.Degradation != string(engineretrieval.StateLexicalOnly) || got.Summary.ModelFingerprint != "" || got.Summary.IndexFingerprint != "" {
+			return fmt.Errorf("embedded-model qualification capture: lexical payload retrieval carries semantic state or identity: state %q, model fingerprint %s, index fingerprint %s; want %q and two empty fingerprints",
+				got.Degradation, qualificationFingerprintValue(got.Summary.ModelFingerprint), qualificationFingerprintValue(got.Summary.IndexFingerprint),
+				string(engineretrieval.StateLexicalOnly))
+		}
+		return nil
+	}
+	if got.Degradation != string(engineretrieval.StateReady) {
+		return fmt.Errorf("embedded-model qualification capture: payload retrieval state is %q, want ready", got.Degradation)
+	}
+	if err := qualificationFingerprintsAgree(loaded.Canonical(), preregistered.Canonical()); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: loaded generation differs from the preregistered fingerprint: %w", err)
+	}
+	if want := loaded.Canonical(); got.Summary.IndexFingerprint != want {
+		return fmt.Errorf("embedded-model qualification capture: payload retrieval index fingerprint does not equal the loaded generation fingerprint: observed %s, want %s",
+			qualificationFingerprintValue(got.Summary.IndexFingerprint), qualificationFingerprintValue(want))
+	}
+	if got.Summary.ModelFingerprint != loaded.ModelID {
+		return fmt.Errorf("embedded-model qualification capture: payload retrieval model id does not equal the loaded generation's model id: observed %s, want %s",
+			qualificationFingerprintValue(got.Summary.ModelFingerprint), qualificationFingerprintValue(loaded.ModelID))
+	}
+	return nil
+}
+
+func validateQualificationLexicalBundleBytes(queryID string, raw []byte) (string, error) {
+	if len(raw) == 0 || !bytes.HasPrefix(raw, []byte(candidateJSONRPCPrefix)) || raw[len(raw)-1] != '\n' || bytes.Count(raw, []byte{'\n'}) != 1 {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s is not one exact MCP response", queryID)
+	}
+	var envelope candidateResponseEnvelope
+	if err := json.Unmarshal(raw, &envelope); err != nil || envelope.Result == nil || envelope.Result.IsError || len(envelope.Result.Content) != 1 || envelope.Result.Content[0].Type != "text" {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s is not one successful MCP result", queryID)
+	}
+	if strings.TrimSpace(envelope.Result.Content[0].Text) == "" {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s returned an empty bundle", queryID)
+	}
+	var bundle contract.Result
+	decoder := json.NewDecoder(strings.NewReader(envelope.Result.Content[0].Text))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&bundle); err != nil || contract.ValidateResult(&bundle) != nil {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s did not serialize one valid task-context bundle", queryID)
+	}
+	return envelope.Result.Content[0].Text, nil
+}
+
+func qualificationLexicalSources(raw string) ([]taskcompact.Source, error) {
+	var bundle contract.Result
+	decoder := json.NewDecoder(strings.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&bundle); err != nil {
+		return nil, fmt.Errorf("embedded-model qualification capture: decode lexical bundle sources: %w", err)
+	}
+	sources := make([]taskcompact.Source, 0)
+	for _, evidence := range bundle.Evidence {
+		if evidence.Snippet == "" {
+			continue
+		}
+		start, end := 0, 0
+		if _, err := fmt.Sscanf(evidence.Span, "%d-%d", &start, &end); err != nil {
+			start = evidence.Line
+			end = start + len(strings.Split(evidence.Snippet, "\n")) - 1
+		}
+		if start < 1 || end < start || end-start+1 != len(strings.Split(evidence.Snippet, "\n")) {
+			return nil, fmt.Errorf("embedded-model qualification capture: lexical evidence %s has inconsistent serialized span", evidence.RefID)
+		}
+		sources = append(sources, taskcompact.Source{Path: evidence.Path, StartLine: start, EndLine: end, Text: evidence.Snippet})
+	}
+	return sources, nil
+}
+
+func qualificationStructuredFromPayload(raw []byte) (taskcompact.Structured, error) {
+	var envelope candidateResponseEnvelope
+	if err := json.Unmarshal(raw, &envelope); err != nil || envelope.Result == nil {
+		return taskcompact.Structured{}, fmt.Errorf("embedded-model qualification capture: decode preserved compact payload: %v", err)
+	}
+	var structured taskcompact.Structured
+	decoder := json.NewDecoder(bytes.NewReader(envelope.Result.StructuredContent))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&structured); err != nil {
+		return taskcompact.Structured{}, fmt.Errorf("embedded-model qualification capture: decode compact structured content: %w", err)
+	}
+	return structured, nil
+}
+
+func qualificationZeroVectors(rows []embed.Row) int {
+	zero := 0
+	for _, row := range rows {
+		allZero := len(row.Vector) > 0
+		for _, value := range row.Vector {
+			if value != 0 {
+				allZero = false
+				break
+			}
+		}
+		if allZero {
+			zero++
+		}
+	}
+	return zero
 }
 
 // candidateToolCallRequest builds the one request line. token_budget and
@@ -607,6 +1225,10 @@ type candidateResponseEnvelope struct {
 // to recount preserved historical inputs whose task_context contract was JSON
 // nested in content[0].text; a new capture must use structuredContent.
 func ValidateCompactCandidateBundleBytes(queryID string, raw []byte) (string, error) {
+	return validateCompactCandidateBundleBytesState(queryID, raw, embed.StateReady.String())
+}
+
+func validateCompactCandidateBundleBytesState(queryID string, raw []byte, retrievalState string) (string, error) {
 	if len(raw) == 0 || !bytes.HasPrefix(raw, []byte(candidateJSONRPCPrefix)) || raw[len(raw)-1] != '\n' || bytes.Count(raw, []byte{'\n'}) != 1 {
 		return "", fmt.Errorf("retrieval %s capture: query %s is not one exact line-delimited MCP response", QrelBlindSmokeEvaluationName, queryID)
 	}
@@ -634,7 +1256,10 @@ func ValidateCompactCandidateBundleBytes(queryID string, raw []byte) (string, er
 	}
 	p := structured.Provenance
 	modelDigest := strings.TrimPrefix(p.Model, "sha256:")
-	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != taskctx.MethodVersionV2 || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != "ready" || p.Weights == "" || !strings.HasPrefix(p.Model, "sha256:") || !isLowerHexDigest(modelDigest, 16) || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.SourceBudget != taskcompact.DefaultSourceBudget || p.BudgetUnit != TokenizerID {
+	validModel := p.Model == "" && retrievalState == string(engineretrieval.StateLexicalOnly)
+	validModel = validModel || (strings.HasPrefix(p.Model, "sha256:") && isLowerHexDigest(modelDigest, 16))
+	validWeights := p.Weights != "" || retrievalState == string(engineretrieval.StateLexicalOnly)
+	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != taskctx.MethodVersionV2 || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != retrievalState || !validWeights || !validModel || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.SourceBudget != taskcompact.DefaultSourceBudget || p.BudgetUnit != TokenizerID {
 		return "", fmt.Errorf("retrieval %s capture: query %s compact provenance is incomplete or not ready", QrelBlindSmokeEvaluationName, queryID)
 	}
 	seen := make(map[string]bool)

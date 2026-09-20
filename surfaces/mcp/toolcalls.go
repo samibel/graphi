@@ -879,10 +879,24 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 		defer secureRoot.Close()
 		compact, err := taskcompact.Build(ctx, p.Arguments.Task, b, secureRoot.FS(), sourceBudget)
 		if err != nil {
-			if errors.Is(err, taskcompact.ErrRetrievalNotReady) {
+			if errors.Is(err, taskcompact.ErrSummaryNotAttested) {
+				// The envelope carries no audit block at all (the
+				// unavailable shell). There is nothing to project and
+				// nothing to say about retrieval; hand back the canonical
+				// bundle bytes rather than turning it into an RPC failure.
 				return textResult(b), nil
 			}
-			return nil, &rpcError{Code: -32603, Message: err.Error()}
+			if errors.Is(err, taskcompact.ErrRetrievalNotReady) {
+				if !s.evaluationLexicalCompactControl {
+					return textResult(b), nil
+				}
+				compact, err = taskcompact.BuildEvaluationControl(ctx, p.Arguments.Task, b, secureRoot.FS(), sourceBudget)
+				if err != nil {
+					return nil, &rpcError{Code: -32603, Message: err.Error()}
+				}
+			} else {
+				return nil, &rpcError{Code: -32603, Message: err.Error()}
+			}
 		}
 		return compactTaskContextToolResult{
 			Content: []struct {

@@ -76,10 +76,7 @@ func TestEqualRecallDevArtifact(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	counter, err := LoadPinnedRealPayloadCounter()
-	if err != nil {
-		t.Fatal(err)
-	}
+	counter := loadHermeticRealPayloadCounterForTest(t)
 
 	type capturedRow struct {
 		QueryID string                  `json:"query_id"`

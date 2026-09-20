@@ -283,11 +283,13 @@ func TestQrelBlindSmoke_AnOverBroadRunDirectoryIsRefused(t *testing.T) {
 	// And the capture instrument applies it before it observes anything, so an
 	// over-broad exclusion cannot be recorded in the first place.
 	probe := RepoProbe{
-		HeadSHA:       func(context.Context, string) (string, error) { return strings.Repeat("a", 40), nil },
-		WorktreeClean: func(context.Context, string) (bool, error) { return true, nil },
+		HeadSHA:              func(context.Context, string) (string, error) { return strings.Repeat("a", 40), nil },
+		WorktreeClean:        func(context.Context, string) (bool, error) { return true, nil },
+		WorktreeCleanOutside: func(context.Context, string, string) (bool, error) { return true, nil },
 		PathsDifferingOutside: func(context.Context, string, string, string, string) ([]string, error) {
 			return nil, nil
 		},
+		DiffOutside: func(context.Context, string, string, string, string) ([]byte, error) { return nil, nil },
 	}
 	_, err := ObserveCandidateBinding(context.Background(), probe, CandidateBindingOptions{
 		CandidateRoot: "/candidate", FrozenCandidateSHA: strings.Repeat("0", 40),

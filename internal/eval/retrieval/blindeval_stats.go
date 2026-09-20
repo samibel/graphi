@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 )
 
 const (
@@ -60,6 +61,21 @@ const (
 // deliberately no clamp to N and no "best available" mode: an evaluation whose
 // population cannot support the claim records RELEASE: NO instead.
 var ErrNoPassingCountReachesBound = errors.New("retrieval qrel-blind smoke evaluation: no pass count in [0, N] reaches the confidence floor")
+
+// The exact interval calculation is intentionally expensive: every endpoint
+// performs 64 rounds of rational bisection. Qualification validation rechecks
+// the same sealed populations many times, so retain immutable successful
+// results by their complete numeric input. Invalid inputs and errors are never
+// cached.
+var (
+	minimumPassCountCache       sync.Map // map[int]int
+	clopperPearsonIntervalCache sync.Map // map[binomialIntervalKey]ExactBinomialInterval
+)
+
+type binomialIntervalKey struct {
+	Successes int
+	Trials    int
+}
 
 // UnsatisfiableBoundError names the population that cannot support the floor.
 type UnsatisfiableBoundError struct {
@@ -103,15 +119,24 @@ func binomialUpperTail(successes, trials int, p *big.Rat) *big.Rat {
 	if successes == 0 {
 		return big.NewRat(1, 1)
 	}
-	q := new(big.Rat).Sub(big.NewRat(1, 1), p)
-	sum := new(big.Rat)
+
+	// Every term has the same denominator b^trials when p=a/b and
+	// 1-p=(b-a)/b. Sum the integer numerators first and normalize the rational
+	// once. Multiplying big.Rat terms directly normalizes after every
+	// multiplication, which makes the 64-round interval bisection needlessly
+	// expensive while producing the exact same fraction.
+	pNumerator := p.Num()
+	pDenominator := p.Denom()
+	qNumerator := new(big.Int).Sub(pDenominator, pNumerator)
+	sumNumerator := new(big.Int)
 	for i := successes; i <= trials; i++ {
-		term := new(big.Rat).SetInt(binomialCoefficient(trials, i))
-		term.Mul(term, ratPow(p, i))
-		term.Mul(term, ratPow(q, trials-i))
-		sum.Add(sum, term)
+		term := binomialCoefficient(trials, i)
+		term.Mul(term, new(big.Int).Exp(pNumerator, big.NewInt(int64(i)), nil))
+		term.Mul(term, new(big.Int).Exp(qNumerator, big.NewInt(int64(trials-i)), nil))
+		sumNumerator.Add(sumNumerator, term)
 	}
-	return sum
+	denominator := new(big.Int).Exp(pDenominator, big.NewInt(int64(trials)), nil)
+	return new(big.Rat).SetFrac(sumNumerator, denominator)
 }
 
 // binomialLowerTail returns the exact P(X <= successes).
@@ -124,16 +149,6 @@ func binomialLowerTail(successes, trials int, p *big.Rat) *big.Rat {
 
 func binomialCoefficient(n, k int) *big.Int {
 	return new(big.Int).Binomial(int64(n), int64(k))
-}
-
-func ratPow(base *big.Rat, exp int) *big.Rat {
-	out := big.NewRat(1, 1)
-	if exp == 0 {
-		return out
-	}
-	num := new(big.Int).Exp(base.Num(), big.NewInt(int64(exp)), nil)
-	den := new(big.Int).Exp(base.Denom(), big.NewInt(int64(exp)), nil)
-	return out.SetFrac(num, den)
 }
 
 // MeetsClopperPearsonFloor reports, exactly, whether the two-sided 95%
@@ -168,13 +183,17 @@ func MinimumPassCount(trials int) (int, error) {
 	if trials < 0 {
 		return 0, fmt.Errorf("retrieval qrel-blind smoke evaluation: trials=%d is negative", trials)
 	}
+	if cached, ok := minimumPassCountCache.Load(trials); ok {
+		return cached.(int), nil
+	}
 	for x := 0; x <= trials; x++ {
 		ok, err := MeetsClopperPearsonFloor(x, trials)
 		if err != nil {
 			return 0, err
 		}
 		if ok {
-			return x, nil
+			cached, _ := minimumPassCountCache.LoadOrStore(trials, x)
+			return cached.(int), nil
 		}
 	}
 	return 0, &UnsatisfiableBoundError{
@@ -215,13 +234,17 @@ func ClopperPearsonInterval(successes, trials int) (ExactBinomialInterval, error
 	if successes < 0 || successes > trials {
 		return ExactBinomialInterval{}, fmt.Errorf("retrieval qrel-blind smoke evaluation: successes=%d is outside [0, %d]", successes, trials)
 	}
+	key := binomialIntervalKey{Successes: successes, Trials: trials}
+	if cached, ok := clopperPearsonIntervalCache.Load(key); ok {
+		return cached.(ExactBinomialInterval), nil
+	}
 	meets, err := MeetsClopperPearsonFloor(successes, trials)
 	if err != nil {
 		return ExactBinomialInterval{}, err
 	}
 	lowLo, lowHi := lowerBoundBracket(successes, trials)
 	upLo, upHi := upperBoundBracket(successes, trials)
-	return ExactBinomialInterval{
+	interval := ExactBinomialInterval{
 		Successes:        successes,
 		Trials:           trials,
 		LevelBasisPoints: QrelBlindSmokeLevelBasisPoints,
@@ -234,7 +257,9 @@ func ClopperPearsonInterval(successes, trials int) (ExactBinomialInterval, error
 		UpperBracketHigh: renderRat(upHi),
 		MeetsFloor:       meets,
 		Floor:            FloorString(),
-	}, nil
+	}
+	cached, _ := clopperPearsonIntervalCache.LoadOrStore(key, interval)
+	return cached.(ExactBinomialInterval), nil
 }
 
 // lowerBoundBracket brackets the p solving P(X >= successes | p) = alpha/2.

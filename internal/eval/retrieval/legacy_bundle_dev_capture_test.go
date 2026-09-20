@@ -51,10 +51,7 @@ func TestLegacyBundleDevCapture(t *testing.T) {
 	if selector == "" {
 		selector = staticembed.PinnedSelector
 	}
-	counter, err := LoadPinnedRealPayloadCounter()
-	if err != nil {
-		t.Fatal(err)
-	}
+	counter := loadHermeticRealPayloadCounterForTest(t)
 	idx, err := buildTaskContextIndex(t.Context(), root, t.TempDir(), selector, io.Discard)
 	if err != nil {
 		t.Fatal(err)

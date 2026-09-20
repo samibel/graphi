@@ -60,10 +60,7 @@ func TestDraftDevForecast(t *testing.T) {
 	if err := CheckSpanCoverage(root, loaded.Dataset); err != nil {
 		t.Fatal(err)
 	}
-	counter, err := LoadPinnedRealPayloadCounter()
-	if err != nil {
-		t.Fatal(err)
-	}
+	counter := loadHermeticRealPayloadCounterForTest(t)
 	selector := os.Getenv("GRAPHI_RECOVERY_EMBEDDER")
 	if selector == "" {
 		selector = staticembed.PinnedSelector

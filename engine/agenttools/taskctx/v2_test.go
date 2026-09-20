@@ -163,8 +163,12 @@ func sources() structReader {
 // module's own retriever is a private struct, so the test seam is a hand-rolled
 // Retriever that hands back rows + a degradation label the engine consumed.
 type stubRetriever struct {
-	state     string
-	rows      []resolve.RetrieverRow
+	state string
+	rows  []resolve.RetrieverRow
+	// model is the retrieval identity a ready generation reports. It is
+	// empty in the tests that do not care; a consumer that requires a
+	// complete ready identity (the compact projector) needs it set.
+	model     string
 	strategy  string
 	calls     int
 	lastLimit int
@@ -180,6 +184,7 @@ func (s *stubRetriever) Retrieve(ctx context.Context, req resolve.RetrieverReque
 			RetrievalVersion: retrieval.Version,
 			Strategy:         s.strategy,
 			WeightsHash:      retrieval.WeightsHash(),
+			ModelFingerprint: s.model,
 		},
 	}, nil
 }

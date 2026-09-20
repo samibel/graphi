@@ -7,6 +7,11 @@ import (
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
+const (
+	PinnedRealPayloadTokenizerID               = evaltokenizer.TokenizerID
+	PinnedRealPayloadTokenizerVocabularySHA256 = evaltokenizer.PinnedVocabularySHA256
+)
+
 // NewPinnedRealPayloadCounter adapts an already verified cl100k_base
 // tokenizer to the executable SW-274 counter contract. Keeping the adapter in
 // retrieval lets the tokenizer remain a deep, reusable module with no upward
@@ -16,8 +21,8 @@ func NewPinnedRealPayloadCounter(tok *evaltokenizer.Tokenizer) (PayloadCounter, 
 		return PayloadCounter{}, errors.New("retrieval measurement contract: pinned real tokenizer is nil")
 	}
 	return PayloadCounter{
-		TokenizerID:      evaltokenizer.TokenizerID,
-		VocabularySHA256: evaltokenizer.PinnedVocabularySHA256,
+		TokenizerID:      PinnedRealPayloadTokenizerID,
+		VocabularySHA256: PinnedRealPayloadTokenizerVocabularySHA256,
 		Count:            tok.Count,
 	}, nil
 }
