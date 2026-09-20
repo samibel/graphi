@@ -1,0 +1,1 @@
+PASS: The response correctly identifies legacy Bash-script completions, including `BashCompCustom`, and `MarkFlagCustom()` as ignored by Zsh, and names their documented replacements. The cited lines 475–481 exist in the preserved bundle and support these claims.

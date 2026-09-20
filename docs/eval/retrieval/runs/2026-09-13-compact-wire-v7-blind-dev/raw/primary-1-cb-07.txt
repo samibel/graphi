@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains only truncated fragments of `flag_groups.go` (lines 1–40, 111–121, and 144–145), not the complete file or a specific question about it.

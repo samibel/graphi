@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: ae5903689d764ba62c06a7ec9aaedd737160338f14ef869841ee9825627102b1
+QUERY ID: fhv5b-c7e2-q020
+
+QUESTION:
+In zsh_completions.go, what does MarkZshCompPositionalArgumentWords now do and which alternatives are documented?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- zsh_completions.go:59-68 anchor="func (c *Command) MarkZshCompPositionalArgumentWords" reason=The deprecated method is disabled and returns nil; ValidArgs is suggested for the first argument and ValidArgsFunction for any argument.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query cef9dafa4912; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"zsh_completions.go","start_line":60,"end_line":68,"text":"// been disabled.\n// To achieve the same behavior across all shells, one can use\n// ValidArgs (for the first argument only) or ValidArgsFunction for\n// any argument (can include the first one also).\n//\n// Deprecated\nfunc (c *Command) MarkZshCompPositionalArgumentWords(argPosition int, words ...string) error {\n\treturn nil\n}"},{"path":"zsh_completions.go","start_line":59,"end_line":59,"text":"// MarkZshCompPositionalArgumentWords only worked for zsh. It has therefore"},{"path":"zsh_completions.go","start_line":49,"end_line":57,"text":"// default for every argument. One can disable file completion on a per-argument\n// basis by using ValidArgsFunction and ShellCompDirectiveNoFileComp.\n// To achieve file extension filtering, one can use ValidArgsFunction and\n// ShellCompDirectiveFilterFileExt.\n//\n// Deprecated\nfunc (c *Command) MarkZshCompPositionalArgumentFile(argPosition int, patterns ...string) error {\n\treturn nil\n}"},{"path":"command.go","start_line":241,"end_line":255,"text":"\t// will be printed by generating docs for this command.\n\tDisableAutoGenTag bool\n\n\t// DisableFlagsInUseLine will disable the addition of [flags] to the usage\n\t// line of a command when printing help or generating docs\n\tDisableFlagsInUseLine bool\n\n\t// DisableSuggestions disables the suggestions based on Levenshtein distance\n\t// that go along with 'unknown command' messages.\n\tDisableSuggestions bool\n\n\t// SuggestionsMinimumDistance defines minimum levenshtein distance to display suggestions.\n\t// Must be > 0.\n\tSuggestionsMinimumDistance int\n}"},{"path":"active_help.go","start_line":27,"end_line":32,"text":"\t// in their user documentation, and users will be using them explicitly.\n\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\"\n\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\"\n\tactiveHelpGlobalDisable = \"0\"\n)\n"},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"zsh_completions.go","start_line":1,"end_line":7,"text":"// Copyright 2013-2023 The Cobra Authors\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0"},{"path":"site/content/completions/zsh.md","start_line":16,"end_line":21,"text":"* `cmd.MarkZshCompPositionalArgumentWords()` is **deprecated** and silently ignored.\n  * Instead use `ValidArgsFunction`.\n\n### Behavioral changes\n\n**Noun completion**"},{"path":"site/content/completions/zsh.md","start_line":3,"end_line":8,"text":"Please refer to [Shell Completions](_index.md) for details.\n\n## Zsh completions standardization\n\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backwards-compatible, some small changes in behavior were introduced.\n"}],"provenance":{"input_sha256":"229a2298444f52ebd514ce5d183595867944c92a878b26be495e75ad327d88e3","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`MarkZshCompPositionalArgumentWords` is now a deprecated no-op: it ignores its arguments and returns `nil` (`zsh_completions.go:65–68`). Its comment says it was disabled because it only worked for zsh (`zsh_completions.go:59–60`).
+
+The documented cross-shell alternatives are `ValidArgs` for the first argument only, or `ValidArgsFunction` for any argument, including the first (`zsh_completions.go:61–63`). The documentation also says the method is “deprecated and silently ignored” and recommends `ValidArgsFunction` (`site/content/completions/zsh.md:16–17`).
+----- END THE RATER'S RESPONSE -----

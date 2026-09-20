@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 110,
+  "previous_sha256": "e01735307202adac775031ee1a508253c68507ae6715d14ac67b760e5d20116e",
+  "kind": "grade",
+  "query_id": "cb-21",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ea5bd4e9c6df35a197d535e43186a167edf02c5dcaf32d17f106c9966120bb49",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains the mechanism using preserved bundle evidence. `command.go:1302-1329` shows `(*Command).AddCommand`, including the self-child guard, `cmds[i].parent = c`, cached-length updates, normalization propagation, appending via `c.commands = append(c.commands, x)`, and clearing the sorted flag. `command.go:1842-1845` supports the claim that `Parent()` returns `c.parent`. The answer is concrete, sufficient, and contains no unsupported required factual claims.\n",
+  "sha256": "ba1cd18a1e9aac644ef4a5b8f23c5b1370c204892d7a2084839b0cd51e17e26b"
+}

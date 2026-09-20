@@ -1,0 +1,10 @@
+Unknown-command suggestions are computed by `(*Command).SuggestionsFor` in `command.go:831-850`:
+
+- It considers only subcommands where `cmd.IsAvailableCommand()` is true.
+- It suggests a command when either:
+  - `ld(typedName, cmd.Name(), true)`—case-insensitive Levenshtein distance—is at most `SuggestionsMinimumDistance`, or
+  - the lowercased command name starts with the lowercased input.
+- It also suggests commands whose `SuggestFor` entry equals the input case-insensitively via `strings.EqualFold`.
+- Suggested values are `cmd.Name()`, derived from the first word of `cmd.Use` (`command.go:1495-1503`).
+
+Before computing, `findSuggestions` returns nothing if `DisableSuggestions` is set and defaults a nonpositive `SuggestionsMinimumDistance` to `2` (`command.go:750-765`). Results are emitted in traversal order beneath `Did you mean this?`; the shown code performs no sorting or deduplication.

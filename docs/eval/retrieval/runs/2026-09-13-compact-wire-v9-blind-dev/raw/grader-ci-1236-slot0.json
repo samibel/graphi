@@ -1,0 +1,1 @@
+{"outcome":"pass","rationale":"The answer is concrete and directly supported by the sealed bundle: `command.go` lines 1515–1522 define `(*Command).CalledAs()` and state that it returns the command name or alias used to invoke the command, or an empty string if it has not been called. The candidate accurately cites this symbol and behavior."}

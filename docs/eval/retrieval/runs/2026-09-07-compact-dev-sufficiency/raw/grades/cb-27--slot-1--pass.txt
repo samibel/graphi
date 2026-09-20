@@ -1,0 +1,1 @@
+The answer's package-level switch and true assignment are shown at cobra.go:54-55 and command_test.go:305-306. The false default is present at cobra.go:46, and command.go:774-775 supports collecting commands based on the named prefix predicate.

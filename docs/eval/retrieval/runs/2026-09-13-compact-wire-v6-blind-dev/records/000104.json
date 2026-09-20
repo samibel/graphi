@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 104,
+  "previous_sha256": "0648687807a60646f34493f807563c4303ca0b8b2d8fbdb7ca69a43005120289",
+  "kind": "grade",
+  "query_id": "cb-15",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "5367f5d93585c3576862f34e72792ccfda3560e1fb6fc01971607e47c06c0bfa",
+  "outcome": "fail",
+  "rationale": "FAIL: It covers flag initialization only and misses the material behavior when --version is actually supplied during execution.",
+  "sha256": "4a771c2ace025bc9ddca0d479f28a6084048eaf9dad998c0993fac612c8440c8"
+}

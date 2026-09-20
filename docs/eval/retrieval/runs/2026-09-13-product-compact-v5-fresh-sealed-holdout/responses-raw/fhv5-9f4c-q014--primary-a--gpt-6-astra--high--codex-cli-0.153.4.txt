@@ -1,0 +1,1 @@
+When `c.outWriter` is nil, `getOut` recursively calls `c.parent.getOut(def)` if the command has a parent, choosing the nearest ancestor’s non-nil writer. If no ancestor supplies one, it returns the supplied default `def` (`command.go`, lines 394–402). `HasParent()` checks `c.parent != nil` (lines 1631–1634).

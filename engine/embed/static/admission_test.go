@@ -6,10 +6,12 @@ package static_test
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/engine/embed"
+	"github.com/samibel/graphi/engine/embed/static"
 )
 
 // TestStatic_AdmitHonestCount pins AC-7: the production embedder's
@@ -91,6 +93,98 @@ func TestStatic_IDContainsAdmissionProfile(t *testing.T) {
 	if len(parts[8]) != 12 {
 		t.Errorf("ID() admission segment = %q, want 12 hex chars", parts[8])
 	}
+}
+
+func TestNewForEvaluationUsesDistinct8192AdmissionProfile(t *testing.T) {
+	production := newPinnedFixtureEmbedder(t)
+	diagnostic := newPinnedFixtureEvaluationEmbedder(t, 8192)
+	if got := production.Profile().MaxTokens; got != 512 {
+		t.Fatalf("production profile max tokens = %d, want 512", got)
+	}
+	if got := diagnostic.Profile().MaxTokens; got != 8192 {
+		t.Fatalf("diagnostic profile max tokens = %d, want 8192", got)
+	}
+	if production.ID() == diagnostic.ID() {
+		t.Fatal("diagnostic profile reused production identity")
+	}
+	if !strings.Contains(diagnostic.ID(), "eval-max-8192") {
+		t.Fatalf("diagnostic ID %q does not name the evaluation admission limit", diagnostic.ID())
+	}
+	long := strings.Repeat("known ", 700)
+	a, err := diagnostic.Admit(t.Context(), long)
+	if err != nil || a.TokenCount <= 512 {
+		t.Fatalf("diagnostic admission tokens = %d, want >512; err=%v", a.TokenCount, err)
+	}
+}
+
+func TestNewForEvaluationRejectsOutOfRangeAdmissionProfile(t *testing.T) {
+	for _, maxTokens := range []int{0, 8193} {
+		if _, err := static.NewForEvaluation(pinnedModel+"@"+pinnedRevision, maxTokens); err == nil {
+			t.Errorf("NewForEvaluation accepted maxTokens=%d, want error", maxTokens)
+		}
+	}
+}
+
+func TestNewForEvaluationApplies8192AdmissionProfileAfterLazyLoad(t *testing.T) {
+	artifact := requireArtifact(t)
+	t.Setenv(envModelDir, filepath.Join(t.TempDir(), "not-installed"))
+	diagnostic, err := static.NewForEvaluation(pinnedModel+"@"+pinnedRevision, 8192)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := diagnostic.Profile().MaxTokens; got != 8192 {
+		t.Fatalf("unloaded diagnostic profile max tokens = %d, want 8192", got)
+	}
+	t.Setenv(envModelDir, artifact)
+	a, err := diagnostic.Admit(t.Context(), strings.Repeat("known ", 700))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.TokenCount <= 512 {
+		t.Fatalf("lazy-loaded diagnostic admission tokens = %d, want >512", a.TokenCount)
+	}
+}
+
+func TestStaticRegistryKeepsProductionAdmissionProfileOnly(t *testing.T) {
+	constructors := embed.DefaultConstructors()
+	makeProduction := constructors["static"]
+	if makeProduction == nil {
+		t.Fatal("the `static` scheme is not registered")
+	}
+	production, err := makeProduction(pinnedModel + "@" + pinnedRevision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, ok := production.(embed.AdmissionProfile)
+	if !ok {
+		t.Fatal("registered static embedder does not expose an admission profile")
+	}
+	if got := profile.Profile().MaxTokens; got != 512 {
+		t.Fatalf("registered static max tokens = %d, want 512", got)
+	}
+	if _, registered := constructors["static-8192"]; registered {
+		t.Fatal("evaluation-only static-8192 selector was registered")
+	}
+}
+
+func newPinnedFixtureEmbedder(t *testing.T) *static.Embedder {
+	t.Helper()
+	t.Setenv(envModelDir, requireArtifact(t))
+	emb, err := static.New(pinnedModel + "@" + pinnedRevision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return emb
+}
+
+func newPinnedFixtureEvaluationEmbedder(t *testing.T, maxTokens int) *static.Embedder {
+	t.Helper()
+	t.Setenv(envModelDir, requireArtifact(t))
+	emb, err := static.NewForEvaluation(pinnedModel+"@"+pinnedRevision, maxTokens)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return emb
 }
 
 // context is imported so the file compiles even when no test uses it

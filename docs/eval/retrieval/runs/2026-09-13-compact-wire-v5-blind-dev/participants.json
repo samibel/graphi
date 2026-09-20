@@ -1,0 +1,8 @@
+{
+  "primary": [
+    {"id":"codex-v5-primary-a-20260913","provider":"openai","model":"gpt-5.6-sol"},
+    {"id":"codex-v5-primary-b-20260913","provider":"openai","model":"gpt-5.6-sol"}
+  ],
+  "grader":{"id":"codex-v5-grader-20260913","provider":"openai","model":"gpt-5.6-sol"},
+  "adjudicator":{"id":"codex-v5-adjudicator-20260913","provider":"openai","model":"gpt-5.6-sol"}
+}

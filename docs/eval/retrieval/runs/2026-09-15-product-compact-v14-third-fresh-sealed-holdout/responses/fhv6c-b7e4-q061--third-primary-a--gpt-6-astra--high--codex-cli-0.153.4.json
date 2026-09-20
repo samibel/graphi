@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q061",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a9f4dbe673610a7975795e93eef17a0ae558f2955d4ccff135110b23bd1ac5b5",
+  "bundle_sha256": "d6685aa76611442bbf9cdb4ddc537196bd242d611ad03b0a891f46644fe7fb92",
+  "prompt_sha256": "e24075b1ae7005b69b9898b2ccb8e45c593622f1de28d9bb7f67d4c8096db779",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT\nThe response shows that `Hidden` excludes commands from availability (`command.go:1560–1565`, `IsAvailableCommand`), but omits the lookup and execution logic needed to determine whether hidden commands can still execute.",
+  "responded_at": "2026-09-15T08:31:49Z",
+  "sha256": "ac3c5c07d2aae41db4eef5c3b54a33ecc5d525016c25856e0acfbd2823caaaa3"
+}

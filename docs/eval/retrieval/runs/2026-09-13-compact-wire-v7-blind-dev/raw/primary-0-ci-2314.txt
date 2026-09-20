@@ -1,0 +1,1 @@
+No—not with the default help flag. `command.go:1183-1198` registers one boolean flag via `BoolP("help", "h", ...)`, making `-h` the shorthand for `--help`. `command.go:894-905` then reads only `GetBool("help")`, so both forms follow the same help path.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 13,
+  "previous_sha256": "fdfbb4332f94c3b3df1dac3484e2fed183a8f4f9edc6539a56848fc85a8d523f",
+  "kind": "response",
+  "query_id": "cb-16",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c70526e995acd47874b5bc9d636ed216c37dc6c58973916480d33431e03bd040",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The Levenshtein distance is computed by the private `ld(s, t, ignoreCase)` function in `cobra.go:187-222`. It optionally lowercases both strings, fills a dynamic-programming matrix with insertion/deletion/substitution costs, and returns `d[len(s)][len(t)]`. Command suggestions call it as `ld(typedName, cmd.Name(), true)` (`command.go:836-838`).\n",
+  "sha256": "280daec71b632c0f1ad7005f67e6c13216eed629af95f654cea2c7999b7e7f21"
+}

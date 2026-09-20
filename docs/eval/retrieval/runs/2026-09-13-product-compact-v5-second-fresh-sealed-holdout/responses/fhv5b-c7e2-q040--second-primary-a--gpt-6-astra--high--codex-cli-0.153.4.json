@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q040",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "a4f7ac36f8171f2b0a24205c54018035de83cccf070166ea7c71fb763f21627e",
+  "bundle_sha256": "569194971d0fd377cb2c357a3ce5e76171a880805658ed76f99acc3901f6e66a",
+  "prompt_sha256": "49dd3c3ee915d2583f60203a749575f83380764bda9f5811534ca15136639234",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows only the opening checks of `InitDefaultHelpCmd` (`command.go:1229–1234`), omitting the help command’s construction, its completion and execution handlers, and the code that reattaches it to the root.",
+  "responded_at": "2026-09-13T15:26:17Z",
+  "sha256": "ab1c1e2b1990991063c76e173971e11d54bf8fb799bad6592033fdad19ebe03f"
+}

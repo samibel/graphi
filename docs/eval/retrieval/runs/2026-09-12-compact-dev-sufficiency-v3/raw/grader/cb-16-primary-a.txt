@@ -1,0 +1,1 @@
+cobra.go:187-213 identifies ld as the distance implementation and shows lowercasing/matrix setup; command.go:836-837 preserves its suggestion call.

@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved helper: it checks version then help, requiring an existing flag, a nonempty FlagSetByCobraAnnotation, and Changed=true. Both cited ranges support the claims, and this directly answers how Cobra detects the flags.

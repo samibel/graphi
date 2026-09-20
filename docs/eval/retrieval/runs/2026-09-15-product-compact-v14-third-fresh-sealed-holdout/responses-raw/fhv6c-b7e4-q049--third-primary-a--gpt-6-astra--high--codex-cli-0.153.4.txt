@@ -1,0 +1,7 @@
+`ValidArgsFunction` replaced the position-specific Zsh noun-completion helpers:
+
+- **Word choices:** use `ValidArgsFunction` instead of `cmd.MarkZshCompPositionalArgumentWords(pos, words[])`.
+- **File completion:** now enabled for all arguments by default; use `ValidArgsFunction` with `ShellCompDirectiveNoFileComp` to disable it per argument.
+- **File filtering:** use `ValidArgsFunction` with `ShellCompDirectiveFilterFileExt` for extension filtering; it does **not** replace full glob filtering.
+
+Both `MarkZshCompPositionalArgumentFile()` and `MarkZshCompPositionalArgumentWords()` are deprecated and silently ignored. Evidence: `site/content/completions/zsh.md`, lines 24–28, in the supplied “Noun completion” table.

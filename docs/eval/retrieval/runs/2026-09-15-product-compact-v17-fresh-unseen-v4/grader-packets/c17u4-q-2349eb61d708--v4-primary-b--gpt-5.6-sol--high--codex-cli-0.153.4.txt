@@ -1,0 +1,52 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 1c52291579e2a9f170f9b82a59127c88a0e5c13f8d4673bc59050d77c7113062
+QUERY ID: c17u4-q-2349eb61d708
+
+QUESTION:
+How is help-function inheritance resolved, and where does default help output go?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:450-468 anchor="func (c *Command) HelpFunc() func(*Command, []string)" reason=The method selects local then parent behavior, otherwise merges flags and renders the help template to stdout with errors reported separately.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query f7a7cf27da64; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":449,"end_line":476,"text":"\n// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}\n\n// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"site/content/user_guide.md","start_line":535,"end_line":536,"text":"Cobra supports grouping of available commands in the help output.  To group commands, each group must be explicitly\ndefined using `AddGroup()` on the parent command.  Then a subcommand can be added to a group using the `GroupID` element"},{"path":"command.go","start_line":1182,"end_line":1198,"text":"\n// InitDefaultHelpFlag adds default help flag to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help flag, it will do nothing.\nfunc (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}\n\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)\n\t\t_ = c.Flags().SetAnnotation(\"help\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}"},{"path":"command.go","start_line":583,"end_line":585,"text":"\n// HelpTemplate return help template for the command.\nfunc (c *Command) HelpTemplate() string {"},{"path":"site/content/active_help.md","start_line":127,"end_line":127,"text":"**Note 1**: If the `<PROGRAM>_ACTIVE_HELP` environment variable is set to the string \"0\", Cobra will automatically disable all Active Help output (even if some output was specified by the program using the `cobra.AppendActiveHelp(...)` function).  Using \"0\" can simplify your code in situations where you want to blindly disable Active Help without having to call `cobra.GetActiveHelpConfig(cmd)` explicitly."},{"path":"command.go","start_line":70,"end_line":72,"text":"\t// Short is the short description shown in the 'help' output.\n\tShort string\n"},{"path":"command.go","start_line":885,"end_line":887,"text":"\tc.InitDefaultHelpFlag()\n\tc.InitDefaultVersionFlag()\n"},{"path":"doc/rest_docs.go","start_line":137,"end_line":137,"text":"// help output will be in the file `cmd-sub-third.1`."}],"provenance":{"input_sha256":"568fe87aadd68e60640f5163bfae2e25cd67e43e64d8d315a613ad80fb782e02","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`Command.HelpFunc()` resolves inheritance by:
+
+1. Returning the command’s own `c.helpFunc` when non-nil.
+2. Otherwise recursively calling `c.Parent().HelpFunc()` when the command has a parent.
+3. Otherwise using the built-in default function.
+
+Evidence: `command.go:449-466`, specifically the `c.helpFunc != nil` check, `c.Parent().HelpFunc()` recursion, and final function literal.
+
+The default function renders `c.HelpTemplate()` with `tmpl(c.OutOrStdout(), ...)`, so help goes to the command’s configured output or stdout by default. Rendering errors are sent through `c.PrintErrln(err)` (`command.go:460-464`).
+----- END THE RATER'S RESPONSE -----

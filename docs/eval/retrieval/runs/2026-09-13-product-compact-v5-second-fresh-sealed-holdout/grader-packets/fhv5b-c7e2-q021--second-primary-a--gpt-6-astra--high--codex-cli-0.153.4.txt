@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 2f845562717a73a1f4c2108c052a1c79d9d9e0948530debda724e9f8caebba04
+QUERY ID: fhv5b-c7e2-q021
+
+QUESTION:
+In doc/man_docs.go, how does GenManTreeFromOpts choose section, separator, and output filename?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/man_docs.go:46-80 anchor="filename := filepath.Join(opts.Path, basename+\".\"+section)" reason=It defaults section to 1 and separator to underscore unless options override them, replaces command-path spaces, and joins basename plus section under opts.Path after processing eligible children.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 3b3fd521db0b; read in order (317/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"doc/man_docs.go","start_line":46,"end_line":80,"text":"// GenManTreeFromOpts generates a man page for the command and all descendants.\n// The pages are written to the opts.Path directory.\nfunc GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {\n\theader := opts.Header\n\tif header == nil {\n\t\theader = &GenManHeader{}\n\t}\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenManTreeFromOpts(c, opts); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tsection := \"1\"\n\tif header.Section != \"\" {\n\t\tsection = header.Section\n\t}\n\n\tseparator := \"_\"\n\tif opts.CommandSeparator != \"\" {\n\t\tseparator = opts.CommandSeparator\n\t}\n\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", separator)\n\tfilename := filepath.Join(opts.Path, basename+\".\"+section)\n\tf, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer f.Close()\n\n\theaderCopy := *header\n\treturn GenMan(cmd, &headerCopy, f)\n}"},{"path":"doc/man_docs.go","start_line":82,"end_line":88,"text":"// GenManTreeOptions is the options for generating the man pages.\n// Used only in GenManTreeFromOpts.\ntype GenManTreeOptions struct {\n\tHeader           *GenManHeader\n\tPath             string\n\tCommandSeparator string\n}"},{"path":"doc/man_docs.go","start_line":37,"end_line":40,"text":"// it is undefined which help output will be in the file `cmd-sub-third.1`.\nfunc GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {\n\treturn GenManTreeFromOpts(cmd, GenManTreeOptions{\n\t\tHeader:           header,"},{"path":"doc/man_docs.go","start_line":223,"end_line":224,"text":"\t\t\tseealso := fmt.Sprintf(\"**%s(%s)**\", dashParentPath, header.Section)\n\t\t\tseealsos = append(seealsos, seealso)"},{"path":"doc/man_docs.go","start_line":236,"end_line":236,"text":"\t\t\t}"},{"path":"doc/md_docs.go","start_line":56,"end_line":58,"text":"// GenMarkdownCustom creates custom markdown output.\nfunc GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()"},{"path":"doc/yaml_docs.go","start_line":92,"end_line":93,"text":"// GenYamlCustom creates custom yaml output.\nfunc GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {"},{"path":"doc/yaml_docs.go","start_line":97,"end_line":97,"text":"\tyamlDoc := cmdDoc{}"},{"path":"doc/rest_docs.go","start_line":61,"end_line":62,"text":"// GenReSTCustom creates custom reStructured Text output.\nfunc GenReSTCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string, string) string) error {"},{"path":"doc/man_docs.go","start_line":103,"end_line":116,"text":"// GenMan will generate a man page for the given command and write it to\n// w. The header argument may be nil, however obviously w may not.\nfunc GenMan(cmd *cobra.Command, header *GenManHeader, w io.Writer) error {\n\tif header == nil {\n\t\theader = &GenManHeader{}\n\t}\n\tif err := fillHeader(header, cmd.CommandPath(), cmd.DisableAutoGenTag); err != nil {\n\t\treturn err\n\t}\n\n\tb := genMan(cmd, header)\n\t_, err := w.Write(md2man.Render(b))\n\treturn err\n}"},{"path":"doc/man_docs.go","start_line":48,"end_line":48,"text":"func GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {"}],"provenance":{"input_sha256":"ebfe073e51a84c82cf864f1a4644ac8c48fde6ad545d9c745125275f11125f6b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `doc/man_docs.go`, `GenManTreeFromOpts` chooses:
+
+- **Section:** defaults to `"1"`, overridden by a nonempty `header.Section` (lines 61–64). It uses `opts.Header`, substituting an empty `GenManHeader` if nil (lines 49–52).
+- **Separator:** defaults to `"_"`, overridden by a nonempty `opts.CommandSeparator` (lines 66–69).
+- **Output filename:** replaces every space in `cmd.CommandPath()` with the separator, then builds `filepath.Join(opts.Path, basename+"."+section)` and opens it with `os.Create(filename)` (lines 70–72).
+----- END THE RATER'S RESPONSE -----

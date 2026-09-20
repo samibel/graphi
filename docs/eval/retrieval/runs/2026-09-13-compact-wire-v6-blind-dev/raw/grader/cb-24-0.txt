@@ -1,0 +1,1 @@
+FAIL: It describes only mutually exclusive groups, omitting required-together and one-required completion behavior and the getCompletions call that applies enforcement.

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+where are required flags validated before a command runs
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"where are required flags validated before a command runs\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":1147,"end_line":1166,"text":"func (c *Command) ValidateRequiredFlags() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tflags := c.Flags()\n\tmissingFlagNames := []string{}\n\tflags.VisitAll(func(pflag *flag.Flag) {\n\t\trequiredAnnotation, found := pflag.Annotations[BashCompOneRequiredFlag]\n\t\tif !found {\n\t\t\treturn\n\t\t}\n\t\tif (requiredAnnotation[0] == \"true\") \u0026\u0026 !pflag.Changed {\n\t\t\tmissingFlagNames = append(missingFlagNames, pflag.Name)\n\t\t}\n\t})\n\n\tif len(missingFlagNames) \u003e 0 {\n\t\treturn fmt.Errorf(`required flag(s) \"%s\" not set`, strings.Join(missingFlagNames, `\", \"`))\n\t}"},{"path":"flag_groups.go","start_line":49,"end_line":54,"text":"func (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a one-required flag group\", v))"},{"path":"flag_groups.go","start_line":33,"end_line":35,"text":"func (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {"},{"path":"shell_completions.go","start_line":24,"end_line":24,"text":"func (c *Command) MarkFlagRequired(name string) error {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1849,"end_line":1849,"text":"func (c *Command) mergePersistentFlags() {"},{"path":"command.go","start_line":1726,"end_line":1726,"text":"func (c *Command) PersistentFlags() *flag.FlagSet {"},{"path":"command.go","start_line":1767,"end_line":1767,"text":"func (c *Command) HasInheritedFlags() bool {"}],"provenance":{"input_sha256":"28cc6b696ef1ada11754f54984ccc9d8f974dffdbc6b97dc6b26b78874867849","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

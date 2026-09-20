@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What happens when ExactArgs(2) receives three positional values?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 2c53b1ea5dba; read in order (317/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"args.go","start_line":93,"end_line":101,"text":"// ExactArgs returns an error if there are not exactly n args.\nfunc ExactArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) != n {\n\t\t\treturn fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":125,"end_line":131,"text":"// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead\nfunc ExactValidArgs(n int) PositionalArgs {\n\treturn MatchAll(ExactArgs(n), OnlyValidArgs)\n}"},{"path":"args.go","start_line":113,"end_line":123,"text":"// MatchAll allows combining several PositionalArgs to work in concert.\nfunc MatchAll(pargs ...PositionalArgs) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tfor _, parg := range pargs {\n\t\t\tif err := parg(cmd, args); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":22,"end_line":22,"text":"type PositionalArgs func(cmd *Command, args []string) error"},{"path":"site/content/user_guide.md","start_line":376,"end_line":377,"text":"  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args."},{"path":"zsh_completions.go","start_line":60,"end_line":68,"text":"// been disabled.\n// To achieve the same behavior across all shells, one can use\n// ValidArgs (for the first argument only) or ValidArgsFunction for\n// any argument (can include the first one also).\n//\n// Deprecated\nfunc (c *Command) MarkZshCompPositionalArgumentWords(argPosition int, words ...string) error {\n\treturn nil\n}"},{"path":"args.go","start_line":103,"end_line":111,"text":"// RangeArgs returns an error if the number of args is not within the expected range.\nfunc RangeArgs(min int, max int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) < min || len(args) > max {\n\t\t\treturn fmt.Errorf(\"accepts between %d and %d arg(s), received %d\", min, max, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":83,"end_line":91,"text":"// MaximumNArgs returns an error if there are more than N args.\nfunc MaximumNArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) > n {\n\t\t\treturn fmt.Errorf(\"accepts at most %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"}],"provenance":{"input_sha256":"176a32011d44942407c62e0fc10d3e093bad6c21c19baef27654937c880db695","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

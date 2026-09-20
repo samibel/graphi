@@ -1,0 +1,8 @@
+In `doc/yaml_docs.go`, `genFlagResult` uses two representations:
+
+- **Usable shorthand** (`Shorthand` nonempty and `ShorthandDeprecated` empty): creates a `cmdOption` containing `flag.Name`, `flag.Shorthand`, the unchanged `flag.DefValue`, and `forceMultiLine(flag.Usage)` (lines 156–163).
+- **Absent or deprecated shorthand**: creates a `cmdOption` without setting shorthand, using `Name`, `DefaultValue: forceMultiLine(flag.DefValue)`, and `Usage: forceMultiLine(flag.Usage)` (lines 164–170).
+
+Thus, the second branch also formats the default value. `forceMultiLine` appends a newline to strings longer than 60 characters that contain no newline (`doc/util.go`, lines 41–45).
+
+The comment notes a limitation: deprecation with an empty message is not detected by this check (`doc/yaml_docs.go`, lines 153–155).

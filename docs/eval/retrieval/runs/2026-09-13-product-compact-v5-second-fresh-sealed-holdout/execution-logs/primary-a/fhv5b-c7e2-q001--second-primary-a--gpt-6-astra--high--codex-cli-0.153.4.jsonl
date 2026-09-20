@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5a-da10-7470-82a6-9a10986edcb5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`NoArgs` returns an error when `len(args) > 0`, meaning any positional arguments are supplied. It reports the first argument, `args[0]`, using `fmt.Errorf(\"unknown command %q for %q\", args[0], cmd.CommandPath())` (`args.go`, lines 42–44)."}}
+{"type":"turn.completed","usage":{"input_tokens":17408,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":71,"reasoning_output_tokens":0}}

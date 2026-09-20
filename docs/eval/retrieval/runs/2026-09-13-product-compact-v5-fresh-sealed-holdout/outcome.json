@@ -1,0 +1,1969 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "precondition_record_sha256": "33db6a8f09ac65965f60b2a74c3cb744c64a67cac264a2d671ab42bdbaa13243",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "n": 64,
+  "k": 56,
+  "pass_count": 32,
+  "observed_interval": {
+    "successes": 32,
+    "trials": 64,
+    "level_basis_points": 9500,
+    "method": "two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64",
+    "lower_bound": "0.372322862895",
+    "upper_bound": "0.627677137104",
+    "lower_bound_bracket_low": "0.372322862895",
+    "lower_bound_bracket_high": "0.372322862895",
+    "upper_bound_bracket_low": "0.627677137104",
+    "upper_bound_bracket_high": "0.627677137104",
+    "meets_floor": false,
+    "floor": "3/4"
+  },
+  "primary_disagreement_count": 2,
+  "adjudication_count": 2,
+  "non_answered_response_count": 0,
+  "per_stratum": [
+    {
+      "stratum": "ambiguous",
+      "passed": 6,
+      "total": 10,
+      "rendered": "6/10",
+      "resolution": "1/10"
+    },
+    {
+      "stratum": "architecture_flow",
+      "passed": 3,
+      "total": 11,
+      "rendered": "3/11",
+      "resolution": "1/11"
+    },
+    {
+      "stratum": "config_docs",
+      "passed": 2,
+      "total": 10,
+      "rendered": "2/10",
+      "resolution": "1/10"
+    },
+    {
+      "stratum": "exact_identifier",
+      "passed": 11,
+      "total": 11,
+      "rendered": "11/11",
+      "resolution": "1/11"
+    },
+    {
+      "stratum": "exact_path",
+      "passed": 6,
+      "total": 11,
+      "rendered": "6/11",
+      "resolution": "1/11"
+    },
+    {
+      "stratum": "nl_behaviour",
+      "passed": 4,
+      "total": 11,
+      "rendered": "4/11",
+      "resolution": "1/11"
+    }
+  ],
+  "queries": [
+    {
+      "query_id": "fhv5-9f4c-q001",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "3c96693191b33511bf1cbc577f348f60ea008db0950dbaf673a51dc6d723a6c7",
+          "status": "answered",
+          "grade_sha256": "ed217ebc799a24083ed116dbb1217326e0bd67ecfd2ae29b0caa44a978450103",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "c106d38ef7186766876bc10d4655c0a4b3fa69f9c731ea9354d4b5a02eea136b",
+          "status": "answered",
+          "grade_sha256": "88f74baddb523ce475992ef586a5959b390c9206502e836ea9e3a4be6d3766f0",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q002",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "a4af2fb5fc7678bc434ef0de8d81482b6ec72bb82f7f51880036e5292a058eed",
+          "status": "answered",
+          "grade_sha256": "6d0ba182e0217da89afd788e2e145dd2b4d8b000869da8ef10fdbc2d63883c32",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "25b1bebf3ef043699f2d9e8796759d986a4050088f22c999160725eaaafad8d2",
+          "status": "answered",
+          "grade_sha256": "464db77177dd934c4d5e1e6277096ad18f7343079f9aec0144fcba3de4b239e2",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q003",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "1ff5357ea4f9ebd636bae2c8e1410703b80f955af496f844fa221e36f685e516",
+          "status": "answered",
+          "grade_sha256": "e0552a2c6452b11bbcef272648f73e16c8b07163ca5beb87e278f942ea618ae2",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "15e0a65cdcbb59ab879e5743ad93f966fb8fbdd11fcb0e4610feca29a9a207bb",
+          "status": "answered",
+          "grade_sha256": "ee79c62f95aa2c0316b69a1d7f06f5a310010c43abc505e980bf85ae64a82ec4",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q004",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "a9ee9ec96ff510692d24df9ddb25c5193daed76c2812a9fcafb90282cc523ddd",
+          "status": "answered",
+          "grade_sha256": "54eff0e912536bf945e7cefb7cca248f7e8d080c64a7074ebf3464b2216eb2b7",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "ff9d4166676afa8cab9a42f97cf656f91397c8fda90f9605579457a24196f6b0",
+          "status": "answered",
+          "grade_sha256": "3c387b1151da16886147a399e32ae7c6ab928eaececf4f21208a6bf69493462b",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q005",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "69e4967e2451b7b8e7563a064473502ff1126143cc486cab20281c3156aa31e5",
+          "status": "answered",
+          "grade_sha256": "ccd395520e8701b36d9b41081fa08e95379a484459080121b3eb025b1946d7bf",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "495682c142d7a3f2e2e2d167e9fdf05f001c76feb2414bedabaf32bdd5f40b7f",
+          "status": "answered",
+          "grade_sha256": "330d2114c17f7679e23a0fff15f9f266e117aac6f4c85f3ebc11c7f1ffb51c55",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q006",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "5b3ee58ced766d17305aabc1f213ec8a59f04d147d58c4b1250201541ef90c74",
+          "status": "answered",
+          "grade_sha256": "c11758ca94a5c20bf972bded320fcabf6122151d200b4811a97337095a926318",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "05457d1920e11e9ea1ed1399f4c4f0231867e0e0c1e1420bd3c26cb18160fcec",
+          "status": "answered",
+          "grade_sha256": "2e5733d7d3b0c51ca6cf37172fa7111ec29e049ea133d96448d5907723c13335",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q007",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "762b2e44a61158efdf60f7eb992faaabcfa50841a2dcd14cebbb3ee197666bdd",
+          "status": "answered",
+          "grade_sha256": "6ffdb239d32e5b99c336b356bd7454fe029edb18bb55311197112a9587e2d943",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "651c8b70f73fce64cace37b97573e1763ac2cf696fa13e7470ea5b6f8f9ed24e",
+          "status": "answered",
+          "grade_sha256": "3eb9df3ac24f8d522eb140b1573e172187898a48809d8ca0846f8fe7a13f8f01",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q008",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "fdd01507b7b9f22ac974eaa8882cc6586b146495485dce1e1284205b0cb8f470",
+          "status": "answered",
+          "grade_sha256": "ff85c524f5c9d701da13dffe42aeafefa409bdc95f1bac4495c8aeb20d7e7847",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "63be62fcea50ae0e2ad92db07464fc8bed82a2f514420e7c8c63cc9e8f707373",
+          "status": "answered",
+          "grade_sha256": "a8cdaa9e13e94e3f893bc8dc53e95b68f13aa2b7ab763dfed574e711f0f50d25",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q009",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "179ed86c151f5c8b850858a834cc2cbc24fd48aeb4b49f8ce84ac5db674bf5e7",
+          "status": "answered",
+          "grade_sha256": "ae3f2b23492fd2a94adce3a1a2400b899c09c26682874a534877cf00c7b2b254",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "91bca75044fe106db2fc132099d33146294c897cb91d9315dfe892d1fdaa87db",
+          "status": "answered",
+          "grade_sha256": "60557a20de06634f69b0f8f2f1203bfe2057882aa8ea0d4a2209e42cf463bee2",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q010",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "25cfc7cde17e849f917fbbed4270669f6789eff7d708025f2d1f8e58a5eb918b",
+          "status": "answered",
+          "grade_sha256": "3ed3f94b9d119df550e018cd871200261f8fd584c964cc460f935b56d9102030",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "77c1d2da795824dab4f9acb8664f9e2901bc3dc7f87f60defc7a322ce940cbe0",
+          "status": "answered",
+          "grade_sha256": "ade366358a9cab55f074569b542e26fff6e6cbe94d48a0892720b439ee419b2e",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q011",
+      "stratum": "exact_identifier",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "80a620f8f98c99833e7cd7c585f0d73f7774687cac9b58e01e795416146f4f2b",
+          "status": "answered",
+          "grade_sha256": "6e38694da18ba842816ac93ff7c1938b42632041cf6a521703b49386cccbd73e",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "4a9493ffae6bbc51631f81464dbceca96426a73a9568b5f0ed84ce52ee482261",
+          "status": "answered",
+          "grade_sha256": "d0c58e191151dd31a0bc9002d479ad9dca31614d3abf0e51688c80a6df845c4c",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q012",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "5e80d47e2e54aed9543158df2d469428ccf28537ccda481d56054311848d0d78",
+          "status": "answered",
+          "grade_sha256": "1f331488883baef2cc1d96e70452e2f29508676ea5181168dd47ab11162ba2ad",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "4b82cb0ff326ff1b86ede09f56fba0b042856a57f7805088d2e6381bb1856f37",
+          "status": "answered",
+          "grade_sha256": "45da7e70579fda670691723eb62223f969c424e21327acb3d29bdd85d615cc26",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q013",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d741bfcd8bdd7102cff44bb46a419317ac740b8be87ccdf6457b69bab904493e",
+          "status": "answered",
+          "grade_sha256": "c79d54b3cd0b6a078edbde3a6d4b01580b78314c88c073bd6792ba6de6c56244",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "fb5a375fb08dabe3062b3089743d006a160373fb9dae556711e47a496bbbe3c2",
+          "status": "answered",
+          "grade_sha256": "8858b66c005e1562fd399d88fb0e5ee664e63e5c7782f513722f19137e98494f",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q014",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "f2842c22503ce15ea1e22ff8b4a676b6b659910883d3c1f8e12e947162e0a19a",
+          "status": "answered",
+          "grade_sha256": "088d27a8eab18e8f2e534da4cb5a6022e1ea8794a32f6f7147254d949061653e",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "62e7ddf977a1e625ce0ebbc9a97847e2aacf33236e526c84f908f29631b8c500",
+          "status": "answered",
+          "grade_sha256": "ee4b6e193fcfd7c9e771519eb3245174833574cc28331314aee46908dc5f2b24",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q015",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "e5be269c4b6dd473d4227fd88565b70dbde18baad9f3369e927938eec7d449cd",
+          "status": "answered",
+          "grade_sha256": "dd71465a79e3f65053cfa4c78dec283fa144d4edc7e93521eb4292d5dc9dbf7e",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "9d3480b537449001fe4667e541c478e8033c25c17bc554a623b8705313d7031e",
+          "status": "answered",
+          "grade_sha256": "ade4da3da86a66fcab1bce20eb87e7b7786afa3210e0a584b143f2ce075ce55c",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q016",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "e5f1143d3bd7506f837fc48f66562eccec927a5cf492060bd3131360e3cafb0e",
+          "status": "answered",
+          "grade_sha256": "f052d514941b17de06fc33bfee047f76bdb53405332fab382efdb326109435b6",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "52c58c1c94581f59949b71525cc0dc46700aac18d44597bcc255ea27d5f53e4e",
+          "status": "answered",
+          "grade_sha256": "d0ad2797bbc7441f7382a856500e4619e9bf6975c6c293fbb7460abc9048b3a6",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": true,
+      "adjudicated": true,
+      "adjudicator": {
+        "rater_id": "adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+        "role": "adjudicator",
+        "response_sha256": "a144216b096307b10a8ec92da6f34893bc9c28c976f6d8d70d6ac30cb3bb1acc",
+        "status": "answered",
+        "grade_sha256": "676f7c360f73f01122a0618611932fa1af189b25319dc7d2a3550c3a58c49bd6",
+        "outcome": "fail",
+        "mechanical": false
+      },
+      "outcome": "fail",
+      "reason": "primary raters disagreed; majority of the three graded outcomes is 1 pass / 2 fail"
+    },
+    {
+      "query_id": "fhv5-9f4c-q017",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "caf46b2e6f2f2f9eb973b7803a16132b4a74ea7d93bd23f6e1456ea5464cd47a",
+          "status": "answered",
+          "grade_sha256": "3a37101c61fd1204a55a02825ed7291333ac710b4a37860638bd63e6302d1495",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "a679ceb4e7a175c83416b08abc827d099b4dbdef6926bf3d0d69b2e135e1effd",
+          "status": "answered",
+          "grade_sha256": "ef06a89fdedc7d2c9efa539c649aa058bb730effae0a9ac75f69aafc202a59b7",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q018",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "ab7b9da1f3b4747145077a03f134e5e77bc758a6c050e7a71bcb2584d7bf4dce",
+          "status": "answered",
+          "grade_sha256": "464c0a8888e338f4b81fb5370e9cc2690375f32ef68d03dbd605a1fcc1f275c6",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "1ed8781b6cfb759613c257f4e727b19393876b46a3458af7d45100919b23a5dc",
+          "status": "answered",
+          "grade_sha256": "af7386acc45c03bd5ddc783d62a9d6c5fda08f314ad8f030d0d9552d531ccc11",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q019",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "12250574aedaeaa1ff2a83e8944e2327571eedcf81c2351f920015898f4856db",
+          "status": "answered",
+          "grade_sha256": "266e9de33f476b02a958200a279b5a6093d8d7e02fb3c46db8df3d7063979052",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "4230dae674c83a3b98442cf56430e531959922181188f831ab339022736e83c5",
+          "status": "answered",
+          "grade_sha256": "b7edcd24473f86978a5c67e3e4f31087c3c90268de56afeddd20b1fa52761c79",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q020",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "663730efd20d6e7a8d8aa14e47ca6ce5e5143d647bf9884e7c363510d231763d",
+          "status": "answered",
+          "grade_sha256": "f0f8c83287ee4ffc3ecb76c38e28225017ef0ef736dcf20fc4648393c84c24a1",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "04200bb841736ac0c0b0ecf4ec77594b7ab160e39fd81d56e6a8418184a13228",
+          "status": "answered",
+          "grade_sha256": "fee0361ac77e2273bb555915ffcedee6d3c29b827734b1d1351977ef3cc567db",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q021",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "19e3af0f027471b153c6c94e9cb17ed648727b35a366f8df91caa327f7bc5cb1",
+          "status": "answered",
+          "grade_sha256": "ca8785732ebc3c097ecf3e65ee48d6d31ee4738272ca90ebc83f6a82675e3676",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d4d8560845b87076a561776ecd11cc52962d00fea894ce84a08b661b529b4528",
+          "status": "answered",
+          "grade_sha256": "6ae6c791afaca1208fe06e34217109937f804b681a564f456a9eccdf33856677",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q022",
+      "stratum": "exact_path",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "91b134e91be3ce49105524c307e79f6c79b255f1ad7d3eee610569e2877130f4",
+          "status": "answered",
+          "grade_sha256": "b9eb32bffd7abcdd49d3061fe4425df82db47865fb3a7b177dd83544af1b00d1",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "f4686db20da126ede3f949397a9e0aac26cdbfc605d487f68f72c3ae4a6c9db4",
+          "status": "answered",
+          "grade_sha256": "6ea9b9a003b06760085d4ce613b84366bea5f13123576f779529cf7c9cac04cd",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q023",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "9b5aae1cf50f342a6d074de1d51bf2dcddaf5ea7a4e36c1c285b074651f72144",
+          "status": "answered",
+          "grade_sha256": "c561745304e082e84dd8afd90c714cbc1229492f1b073574c0c357d96ea7e2be",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d59a6e835ebf1cbd453a886414332f4181ebc34d6a495bfe33e871d74cfca1a9",
+          "status": "answered",
+          "grade_sha256": "acb8e7f7e3db72c244952f2e5774e4fb39861c86fc994db4cd901cfaaf875b45",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q024",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "8fcc6a286e3d911d2932005e28748ab4fe5c2ab99b57b744a8cc2bf328808b79",
+          "status": "answered",
+          "grade_sha256": "55ef385e9aa93a3ea5d5126ea1f416d7b4236d88f525f015453a2c77fcfccac6",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "9b7c6f4cc72d947e9ee75f15bb47849141ff81ee00d2fb6ca72bb2b3da85320e",
+          "status": "answered",
+          "grade_sha256": "3775b46822dc2ed229144c98563856f43e57538efb98777046a2cb7f943bc5a7",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q025",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "67e53afa22a4258eb1d6a4e08435f2b6a8b41901fbcf5666c5e2643957ba408e",
+          "status": "answered",
+          "grade_sha256": "d6ed6ee50c017520e18a8215aa2d074cf8764a3f8fb3d613817ebe13e24d7c0c",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "7f61211c376281ea14e83e98efaed34989545b2baa62ef300ad5571e397de340",
+          "status": "answered",
+          "grade_sha256": "199b62dafd87eaad5391ff57cb26a7de35243b40e8363c3c863f4e8cdc1fa8ba",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q026",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "84a590c8b549f3326010cff0f912bdbc61edfbe2f255b87e0fb7781c30515ccd",
+          "status": "answered",
+          "grade_sha256": "c593ad0d69af12c84c8006e414b7ca91fe97263e95438a45b6ac14bd5aa61ae1",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "0ee81525766a2dc9a3412ed95089c8bc03b9d9a3e2e36eea2d9ffb39fb56a77e",
+          "status": "answered",
+          "grade_sha256": "54844e78275bf7bfeb0f37e5f876240d40fcac27a2d302e3e13d58aade059e6e",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q027",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d804ac9b96921950b203704d24fbe92771400bf31a60c9bc41f865087d719379",
+          "status": "answered",
+          "grade_sha256": "a028ffa00c6736fbd0cf13d9cc65885ff399a494015e291c4138bea68268a5ef",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "df53b9faa992e0e603c6eb5e7fcfe3accacdc11e48ef32c1536e3336927dd019",
+          "status": "answered",
+          "grade_sha256": "df09523460034d2312ffc7692e05075181b746404732f0d210cb18b702ef1f84",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q028",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "b3dd1e7901c7bab247533be132fd8e1e89fe566aa653dcb7659c22274cdc8f71",
+          "status": "answered",
+          "grade_sha256": "1ccff330145a4bcf66c5ffc2c8caf75ae65d3355125e4d2027528bedc4b761b9",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "48900e8c8b11b4b44d8afb75925798f9dbfb2135022a0886c1340832a37a76e0",
+          "status": "answered",
+          "grade_sha256": "c66125f92fd21aa41b03a638a93792978ab94774a601023723cb5a6ef00a1e86",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q029",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "c999960c4ef741c978134bc5851624de89baf909aa4804a26a0595918a798e83",
+          "status": "answered",
+          "grade_sha256": "5be2672649112570ec61269013c8f9f58f48a8fab01203f512a9815df13e9c2a",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "1bddcca5869bfe4fc952786ca2052109b9ae8c2cbdbff964245ab8dfb4ecd846",
+          "status": "answered",
+          "grade_sha256": "219b0c2f1a569689e1c1bda3c205572096b39d33ff4f0065dc29a3dd5b628aef",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q030",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "b22a66efac1f00578115a1b6cbb0a65bfe42a918c246922493bb74ceb80910de",
+          "status": "answered",
+          "grade_sha256": "260ea355e403b2f742bef8533da180587e506f24b77f0ff7076bef30db6456c0",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "81c080537f84c8a0f741192357e20441dc5275f8dbe42895fe20ffcd59a9f019",
+          "status": "answered",
+          "grade_sha256": "c554197fea25b8293e2f412218ee4d0aed13748fcb2b527857eb75195d3bff33",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q031",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "c273c6d852c0ea388f973b19258ae71247c0e25a6d36c4ecbd1735597d4f1a6f",
+          "status": "answered",
+          "grade_sha256": "2a00c15e52131c8aac6adbe3b335e93afbf3bbd371a38c2add35ef1f972ad956",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "75d97ad63d5b3578c5789e8578bfee734697b63f4b921500492893c1839b8d7d",
+          "status": "answered",
+          "grade_sha256": "cfd58c933379020a1b0087e9381536a05831970312bd45396ca69a88d6fab266",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q032",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "6fde69077193fe30ca651dac76a074dc521622817f88aae678c5a8aebe9729c9",
+          "status": "answered",
+          "grade_sha256": "5fb562abd68ff424c0a2f6d067e0999f65b2de0cad2d196f4730e883e83374dc",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "09ad7d5024564f7bbd369aeacece0c96856c5906adff2e27caa977e258898029",
+          "status": "answered",
+          "grade_sha256": "6c252f4f33876796666f04e19a518adc2ee5528ecd9d2bebda86f35a38152b29",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q033",
+      "stratum": "nl_behaviour",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "1d1f53396c0b7bd47d12323375006078c8d119d32b3a24dcb2b57bb826bc3ae6",
+          "status": "answered",
+          "grade_sha256": "1405568cf7d07e8e834ec9446fcd34efb61d2512e47b3d73797c9e2f5550bea0",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "bd1746abf44b17126e49226c3c40b4bc7ef8eb28111e9ea518a83dc548369ba7",
+          "status": "answered",
+          "grade_sha256": "04b3afc0a8c17a89fb8ab97ddaecc24dc42fe52baa959227ad1ede1caa75134a",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q034",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "b06dc41d4d8941795bf6e692473e2fd33319ff07f0e7d454f2635e294fd677ea",
+          "status": "answered",
+          "grade_sha256": "dc71eff876c10310b04f10bd47e67381dc034eca092e7ac8874520633c7d2e9c",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "78a1d4cc8779a24d96aaff63ab8ea3f262062465ad944e57441f0ed949c0dc9d",
+          "status": "answered",
+          "grade_sha256": "8ea7c382138db60a79477c8ecc4cf36e903d7bfa75702eae51f67a2e173a1268",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q035",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "0f39259d5bacdd0d5d90b597bf6166e705dd7423ee05cd67d71ad7900df2b7eb",
+          "status": "answered",
+          "grade_sha256": "ab69e589df5dcbe5fb0fccb834ff1dfaa7bf7414caf37dceb78abc50622a338c",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "542242e4ccdafacbca1943163116b8b85f103f516f8a13b73dffc5352678dc5a",
+          "status": "answered",
+          "grade_sha256": "f0f2199f96fee82abc12bd58e94d27f1bc8fa7a28591dd61cf5c8b8563c6c146",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q036",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "7b1e7150bacad2ff1d7010a03acb29931b292b75b445b546adf7a7316d01a9b0",
+          "status": "answered",
+          "grade_sha256": "dba34dd96760a170811d7ee0a5bbbedcb4f6aba6c2f43a9c071448775eafb534",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "e0dfaa4e5d1e324999c452a861d511862147190929f3aa3bdfd354721d0bfcc4",
+          "status": "answered",
+          "grade_sha256": "87ac2bd27347ae3d8a35d954df0a0f20f8423bb8f5ffcde0a0ed73b69c974dc6",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q037",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "bc10ba387988705393542aa53a503e64e27723f6764ddcd5de51eedea9afae6e",
+          "status": "answered",
+          "grade_sha256": "4c4f4b53ae048e06eddb5f617693cafa73e37544abb3b0912faaa57a474d41d6",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "2527fc9aefbe3fc97e7f4e318017cfc537c60a67dda2255e50202fb5a55401cb",
+          "status": "answered",
+          "grade_sha256": "674e9e5fe319bdc24bd8c65c12def3e7641cfd5c7514ab2ba449ad0b43edc28f",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q038",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "313a36055c46b35a7604f79e1f9cc03fb7e1be9f7f107e90faa07d7021fdaae2",
+          "status": "answered",
+          "grade_sha256": "77f06fbb36d62b5aa23a9f8ae1631015dc1a0809183190fad6ab44c32a8f476a",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "1d41b637d46a062a8993fdda02bb91fbba737962b5a39b6dc4539372acce1e12",
+          "status": "answered",
+          "grade_sha256": "93909529f571f6437e49cdf5ae065d056d320604001590d7951e07cc84a8c423",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q039",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "99787c61fa103d97afd7ddf79edbd10489ca6eeac9086a7874d43f05e2865228",
+          "status": "answered",
+          "grade_sha256": "28f2bca2e5bd8c629c90b72ead3a2a273f8fff1fc6e16e23f1abc5714aa8e683",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "bddc26814db43144534dd0e54333d3297f452e08a2f53fec2a829adf21bd9d1c",
+          "status": "answered",
+          "grade_sha256": "e229fffb9996cf76c20df2f923ea746d51a8160f3f6c11ab8faef73bf8fc051c",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q040",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "197863b1517dfc62ba8f4b31b06c831f1521c69d4db10c4794b3b0f22dd9925d",
+          "status": "answered",
+          "grade_sha256": "b5675c7faab2f0c1bff3cc2211e886fe34eefe6d2cf6c96337f6f790463145fa",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "721e2b8c8e7c11fe1a9d4e8e7257a88e83e1c62bf14c47c87315d41edf070abc",
+          "status": "answered",
+          "grade_sha256": "cc4271a2987a11f611a270139435e5e3f1d53758c69318fe898d6ef93522902c",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q041",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "91d84f7dd3215f9fa7aee022e3496362fe1e93f93aabcc958a1745746ba955ce",
+          "status": "answered",
+          "grade_sha256": "a4a6581ef09ea1a732d35bdb8ce9e13196bacd576441d3396e82c4992aa845af",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "67ba2a0e2eace032ae306e52145c6bc04048ad32e533669bffb289f6d0bde19c",
+          "status": "answered",
+          "grade_sha256": "111419e601a69f52b0afb1f84fe2aaaac27203adf0d87b807b2854b38b79f80d",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q042",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "be69eb5ec89b6cb754bfc5bcac7852fb6bf228df3df4595d137d96e38d8f5c19",
+          "status": "answered",
+          "grade_sha256": "967efc52e69646f64d899a922e4f322cbd3b2f812454954bf399ddff4c22eda3",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "c7e5cf877acdf5d25acc6b9b5f8d354edfa2f856b1503b6b8680859563f21653",
+          "status": "answered",
+          "grade_sha256": "09aff0c2f044a894627fc1321f5632b90dcbd89bf9d263f60a92dfa48e947690",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q043",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "3cbbceafad2018913372138eb68fa178f7fd6943fec8148c33bb25c78a68ebd6",
+          "status": "answered",
+          "grade_sha256": "6d7b3041724d5e2dd94ee4ea4980c66231869954ecfc4aa99c5bf2f3feb4086c",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "883245f51d0992c094a8dcba71623ca13ee3b78dab055511d924faa620833c4b",
+          "status": "answered",
+          "grade_sha256": "ef4a78b7e94e674a9fcdc9f5f33c9783eec085095a8d0a6ef75b353d0477cde2",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q044",
+      "stratum": "architecture_flow",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "75e2dfd0571388c0b397ea59566f13cabd999929e90eee20eb10b654212a28e7",
+          "status": "answered",
+          "grade_sha256": "e6b8df3357239d11b8ca20db25fc93d4dc9d2a6afcbad0709357c7583c31c7c4",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "7b7004ed95c2bd57b6a2b2d77ef1d35a12f6abb10d0995f9fa9296c98e114ba5",
+          "status": "answered",
+          "grade_sha256": "8b509ef24691cabca9ec454a69c433747cae1ed3b9efa6a1cafbb367f8f8cc89",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q045",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "a8145a33b94d53e9ac6322319875be93abc82d3255c3abecee2ba86df6f5a340",
+          "status": "answered",
+          "grade_sha256": "e4b4ec5695f60cc15fe7b4710c0a37b7119c33a438dc8c1b0ec7b5601f22036b",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "3945d32edd5fa38aafbe516ffac6a540abf3bacc1278f1618140973dab35b2a2",
+          "status": "answered",
+          "grade_sha256": "651b9c045ec07aaf587d110c2ee9390e497b8d6409f391c14822a94c3a2f2446",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q046",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "571ac0aaaa76156eca35ec8421cc932158a068679aed0a43bab3784bbcbf294a",
+          "status": "answered",
+          "grade_sha256": "8cf4834db110fed02b59611e7f0fc97734aeb04576c4f865a643cb72201d6027",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "7d789c7cf8a2025bf1c14ad21c0637892fbdb2c434ee5dbf50939b007ec6f4eb",
+          "status": "answered",
+          "grade_sha256": "6f5cda2ce4592fe26aa794bcf5f5d166a4ed52b2a48d91432e842f14247eb3b1",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q047",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "20a5720d07fc96ab73b4477d2e1965524c5ba616ac618cd2830e9c1e306d194c",
+          "status": "answered",
+          "grade_sha256": "e34f45c759d332573d65a8fdc704da48dc75de7e54710a38f4645a2153866f94",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "05bd2ccac51871440c0431fedd3740b0d41cb9e2d8c7ffaaea023089ad246f06",
+          "status": "answered",
+          "grade_sha256": "a04d109d8fface21f276bcbd79e445434190dd5c60bfeeef79eae4de416f2b6f",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q048",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d06ee21a68a688791011b8a4f31b01b7b89e80831aebbf09c636cb15d24b89f1",
+          "status": "answered",
+          "grade_sha256": "36d54b7a5715996cfc1c911ee90755d7a3db2f1aa1ca43b79a3ac0cb4eb1ec2c",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "9586e5b86d2429670bd0f666686e690cc3a2e1a280443d5deb5a6ee35228a309",
+          "status": "answered",
+          "grade_sha256": "596cef4eb71c62d73f4b26ade72a4dc9651d8beabd1216acf438b47646d0becd",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q049",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "7295f114a924f121badd91853ec59c83fbb79b4bbe3174f030ce57a97f820fc1",
+          "status": "answered",
+          "grade_sha256": "7185db88f7ee6c3cfacc5d8f67f353f2ea4f685cad0fcf57225fb02f49365f24",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "07efd506efd1463adbc4527e7b30e2a0f44867e2886a66fcb4830e2f1d0f6b5d",
+          "status": "answered",
+          "grade_sha256": "0d054465efe477c86abb4110adba48064d029ff446b6e745a97b8dc391fda452",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q050",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "efe409dd4402861dc6b9be26bc0d824720da175f6abf79e2953fa6efaf1d2047",
+          "status": "answered",
+          "grade_sha256": "6fb4c2b1ba070eb15b9a53672dbd4f0969c4a17e29aedd6301d9a6643c594452",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d2431bdc62403616066391345b02461642af992f38bc855f4938653ba9406585",
+          "status": "answered",
+          "grade_sha256": "b9cc3f97c8c49174620a442f5d3f4455cf0981a5d0f2ebdd7706e933227c3e62",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q051",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "3ec25e49d27f9484daa8752a7bda7885b641636626067a21da40f1078aae97e3",
+          "status": "answered",
+          "grade_sha256": "334bbc3871ae692d86e02d5a6fd2f57abe851b6596b8cf861d8fe2de69581bb9",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "b8564a64b12b9a6ee93b52381ae43fdafd1ce6ca77911b22f9bfdbeb3be74eb3",
+          "status": "answered",
+          "grade_sha256": "f451c1370ecc476b0777fd23c8fb001fa6dceba6686ac131050df47a6be2cfcd",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q052",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "577df72ec309abe534596758a634cacd5301cd0dcf8d14d21752fa79ce8c0ad9",
+          "status": "answered",
+          "grade_sha256": "7d56c4633ed11efad661dcff3f8f707db0674b00f7ceca862fd8f11bbf2bc06b",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "4c804434e0feda9e3694f64ba1170202a4edf3304e6b517a7e8a0cf96c7d7bda",
+          "status": "answered",
+          "grade_sha256": "5fea6453359d8048080cc0db18727e1f0d56f0cc4c676ff34e0c96275769505d",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q053",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "f3791056957dfda9205ac0c7bfe15e73a7733858cc3f0871920d79690f3266be",
+          "status": "answered",
+          "grade_sha256": "6e4889e275fe4fccded90932f1119986093fea55fb41373695125d1213a1955d",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "0f67fc5dfe2424b7d1d9f3e053a0800477a6b227cc341a49326a4999da6d9957",
+          "status": "answered",
+          "grade_sha256": "03485263b69feadc17468a8e2450cb2ee28366d1aed39b4d133db17b02de735c",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q054",
+      "stratum": "config_docs",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "2eae8e05064f6c5fa9d566e8a7e502b3253ae0509952485fc16f867f230e99a5",
+          "status": "answered",
+          "grade_sha256": "4d00c26bb64efe91c642155b4bc153ded086c346e9db305322f817c27298a532",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "35aebd0662d4eae9dc401dcf3c0106052da6010151c5d511af2fae918eafcf98",
+          "status": "answered",
+          "grade_sha256": "bcb019d91df7c86a6c66b9514a877f091cc69e617d44e16d33c1a6a79d045621",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q055",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "357974b4945f9462bdc2bffbfbc197fe96d752d4dfdaae17bf7d0f5d9959e9b9",
+          "status": "answered",
+          "grade_sha256": "496d77a42b49eb465640bda23fb75f7190011cb7e2713c99f350c3b789864aa4",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "9af61ef9854a59be36c4f97c577b4cb142dd1ec362a78abfd01882fde7b34f21",
+          "status": "answered",
+          "grade_sha256": "61d8258ea5ab0b1a7e6a9fab0261f88f696097bf4e766fc2563d6002fa222af2",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q056",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "08d57df581f1361cb566edd4d832f685307c2e394e88cc883ba735c7377f23c0",
+          "status": "answered",
+          "grade_sha256": "f29fdb9082d04b8feaa33fc593ecf0f97e8327fe66c10108e81d59493fbaa91e",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d7b0be7e801f0b3d73c58d06d6dc17d37bdc0b6674206149394c9a30e1b9fa3f",
+          "status": "answered",
+          "grade_sha256": "27e60c13a2cc4d14a267ac137dc438a7afa1c66ed7eb1eba57bc220ebebaefc9",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q057",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "4b43c93df946556454a5bbfc434bbb7709acc924e092308a7d624387fd555333",
+          "status": "answered",
+          "grade_sha256": "de8dac0d1c018bf71a66162331335ce95ddc6d3317e0ab0e8569fff9e4ca74d9",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "24281c341708f30b3502137a0619a307ab0df8694196f19bee0235e4f8b7e4bd",
+          "status": "answered",
+          "grade_sha256": "0fd5ce40a245b616646340c60ffabcc7b41b76b84933955e367d137e75660288",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q058",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "ab7328021fa66d034314f125439d187e74286d28f12d7e86151ad2809351c0eb",
+          "status": "answered",
+          "grade_sha256": "793a6f0992577b1dad933c98e7b252e8dd29ca8862fee495e5367b92ed91893e",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "9fe3c2a08e46af5177fed37db7c039c9e3fa5065c24587c5c02ad8f6ae0be5d9",
+          "status": "answered",
+          "grade_sha256": "ce46c937d995a19c5fabe97d361ce3eda6eed29723910d86429fef032ddb5a3c",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q059",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "2e976d4645d5f2f3b9540093bd73391c6261db6d5f95a0a0d67654062fc597cf",
+          "status": "answered",
+          "grade_sha256": "8fb77386e14d5e7cb9b9de90ba0f526022347031c88d04bdf25eb338f8c4bcbc",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "113a8cd04af292b0e2d746c6e99535235b9edb4492bdd7b44387a0879b44fcfa",
+          "status": "answered",
+          "grade_sha256": "4b9d78f789ead1816b236df6dd609139aa91a301c91140bf0c984ff24c94eeb4",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": true,
+      "adjudicated": true,
+      "adjudicator": {
+        "rater_id": "adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+        "role": "adjudicator",
+        "response_sha256": "1f4fc8675da4d1841fca80e3249e56ba88daaf3f10465de7ac200539bfe3438a",
+        "status": "answered",
+        "grade_sha256": "d9094fc055169007824c92977b28d3976b6e2c03918716b219be4877c38ddf4e",
+        "outcome": "pass",
+        "mechanical": false
+      },
+      "outcome": "pass",
+      "reason": "primary raters disagreed; majority of the three graded outcomes is 2 pass / 1 fail"
+    },
+    {
+      "query_id": "fhv5-9f4c-q060",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "7f04d6420de077f2b0bb3f9cd0960b8ee012da2e26222dfcea73678efa307406",
+          "status": "answered",
+          "grade_sha256": "9b1dc02979adcc4dee88c3e37f1a7d17e48a1b108a6ea3cd22ca8382b26694ff",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "7322512f7ffb83fac2fc981f53793760a88d6c139d7821eea6b4916d174b5225",
+          "status": "answered",
+          "grade_sha256": "07032ab4027a6ef914f8a8ac56246d8d21bc1e4dcd5336897bc794456289805d",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q061",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "bbfe069cf8dc21ee411c60f06780c6b272931a5eaef1611cbeb044f46077462e",
+          "status": "answered",
+          "grade_sha256": "849194fab270aff9085b749f30fb8e4ed41be422add50e8a0568bc0132ef9330",
+          "outcome": "pass",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "32e8bf48a1b69f8800e136a49c520ee1aba1d1bf964838ea99c3a485404909de",
+          "status": "answered",
+          "grade_sha256": "24966d135d72a936da4c2e87214ebeb219e7a5de2ef2be9cf01522b706611f86",
+          "outcome": "pass",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "pass",
+      "reason": "both primary grades passed"
+    },
+    {
+      "query_id": "fhv5-9f4c-q062",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "2428025eb13a3a5b4fb37811b45c3f7f4447f8a52b17b36b2e768896bcccffd5",
+          "status": "answered",
+          "grade_sha256": "99a380378ad228c2683db927a8bd6b97da183282b8fdb4b2d0aa49f58dc61e26",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "b8031e9afe6105b5e2babdfc10c0f9891d1f387e21ea8e2a9c9454af9903e125",
+          "status": "answered",
+          "grade_sha256": "90b417195544ec4ff80435e34d7ce5dd87d46cba68701916a7f751dff4ac4801",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q063",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d767ac8f06ca04defd2de7b5232fdab9b009683ed7511cd0cf938413527a6e92",
+          "status": "answered",
+          "grade_sha256": "0839e01c16dccd44f321ca3c1e999479d87b47c4f3d4c6280b857a7e7b1f782c",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "6bf4d1634cad1b9ec74abe21a3c2fc859f987e40ba7df45b6034d55814eb1d0a",
+          "status": "answered",
+          "grade_sha256": "1392646b66c44b33128dbae9ed81f7ed96549dcf14d0727f14fa6097856cba13",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    },
+    {
+      "query_id": "fhv5-9f4c-q064",
+      "stratum": "ambiguous",
+      "primary": [
+        {
+          "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "fcbc04e6212f8b7203f48228f6ff2cd536051f9c3968b491bc65c6f08d6986e2",
+          "status": "answered",
+          "grade_sha256": "b5afb45bdd4b45b9ef7da6a74b35d791e107bdd71ee2312024c3ea91e601dd34",
+          "outcome": "fail",
+          "mechanical": false
+        },
+        {
+          "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+          "role": "primary",
+          "response_sha256": "d420c6736d429aa633b243868ca40c804b9e410481463742fbfaf113efe81dc4",
+          "status": "answered",
+          "grade_sha256": "6027ae4b5a1e14b53f0def29b7ec5fea575f5326bb4b239ff8a60d5c944d78e0",
+          "outcome": "fail",
+          "mechanical": false
+        }
+      ],
+      "primary_disagreement": false,
+      "adjudicated": false,
+      "outcome": "fail",
+      "reason": "both primary grades failed; two primary failures are a query failure and are not adjudicated"
+    }
+  ],
+  "participants": [
+    {
+      "id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-6-astra",
+      "independence_basis": "Stable logical primary-A configuration: concrete non-alias model ID gpt-6-astra, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
+      "participated_in_track": false
+    },
+    {
+      "id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-5.6-sol",
+      "independence_basis": "Stable logical primary-B configuration: concrete non-alias model ID gpt-5.6-sol, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
+      "participated_in_track": false
+    },
+    {
+      "id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+      "role": "grader",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-6-astra",
+      "independence_basis": "Stable logical grader configuration: concrete non-alias model ID gpt-6-astra, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. It receives only one generated grader packet. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
+      "participated_in_track": false
+    },
+    {
+      "id": "adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+      "role": "adjudicator",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-5.6-sol",
+      "independence_basis": "Stable logical adjudicator configuration: concrete non-alias model ID gpt-5.6-sol, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. It receives only the original allowed prompt and no primary response or grade before its answer is sealed. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
+      "participated_in_track": false
+    }
+  ],
+  "end_of_run_hash_comparison": {
+    "compared_at": "2026-09-13T13:05:57Z",
+    "comparisons": [
+      {
+        "role": "dataset",
+        "path": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/sealed-dataset.json",
+        "frozen_sha256": "9f2289c71bbc8515bd58b0210ddcf528eb5be427896918b3e5a3d390ad10d5aa",
+        "observed_sha256": "9f2289c71bbc8515bd58b0210ddcf528eb5be427896918b3e5a3d390ad10d5aa",
+        "matches": true
+      },
+      {
+        "role": "budgets",
+        "path": "docs/eval/retrieval-budgets.json",
+        "frozen_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+        "observed_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+        "matches": true
+      },
+      {
+        "role": "targets",
+        "path": "docs/eval/retrieval-targets.json",
+        "frozen_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+        "observed_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+        "matches": true
+      },
+      {
+        "role": "grading_rubric",
+        "path": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md",
+        "frozen_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+        "observed_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+        "matches": true
+      },
+      {
+        "role": "methodology",
+        "path": "docs/eval/retrieval/methodology.md",
+        "frozen_sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+        "observed_sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+        "matches": true
+      }
+    ],
+    "all_match": true
+  },
+  "capture_binding": {
+    "bound": true,
+    "capture_version": "sw280-candidate-mcp-capture/4",
+    "candidate_sha": "fd27bc083df69913746a3f1f10fc13145733edd2",
+    "checkout_sha": "a0a6ae020bb3899ff0276067863e50523f897370"
+  },
+  "disclosed_grading_concerns": null,
+  "corrected_pass_count": 32,
+  "release": "NO",
+  "reasons": [
+    "the reviewed pass count is 32 of 64, below the pre-registered k=56 (reviewed 32, corrected 32, and the release is decided on the smaller); there is no override, exception or waiver"
+  ]
+}

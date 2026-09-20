@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-23a5-71c2-9138-fd5ad4cebb24"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).NameAndAliases()` returns the command’s name followed by all aliases, joined with `\", \"`:\n\n```go\nreturn strings.Join(append([]string{c.Name()}, c.Aliases...), \", \")\n```\n\nEvidence: `command.go:1540–1543`. The name comes from the first word of `c.Use`, per `(*Command).Name()` in `command.go:1495–1503`."}}
+{"type":"turn.completed","usage":{"input_tokens":16563,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":93,"reasoning_output_tokens":0}}

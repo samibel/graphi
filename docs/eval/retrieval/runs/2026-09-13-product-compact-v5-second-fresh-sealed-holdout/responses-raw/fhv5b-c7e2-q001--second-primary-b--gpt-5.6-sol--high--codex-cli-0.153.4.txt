@@ -1,0 +1,1 @@
+`NoArgs` returns an error when `len(args) > 0`. It reports the first argument, `args[0]`, as the unknown command: `fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())` ([`args.go`, lines 40–47]).

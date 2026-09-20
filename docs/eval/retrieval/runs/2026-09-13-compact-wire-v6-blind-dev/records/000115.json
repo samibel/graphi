@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 115,
+  "previous_sha256": "9e6dde2706e64c2d8ec9a676581a29a2aa7fa1fb8c0281b8fa68fe5fd971b2a8",
+  "kind": "grade",
+  "query_id": "cb-25",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "d311579f3636cbc318cadc620733fb9646afc31b89c41f4f31fdad8c8c1fc7e4",
+  "outcome": "fail",
+  "rationale": "FAIL: The option must be configured on the root command used for execution; saying only a generic cmd may direct the user to set it on an ineffective child.",
+  "sha256": "16348abf81e4c9cbe056eb496019c939bac77449fc5dfe15f0af73524d20b5b2"
+}

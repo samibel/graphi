@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 37,
+  "previous_sha256": "bfd3bcb087d0934a420da52313cf3a84450147414e252ba69091b6a849e8d069",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "eec612d5a7c35e514840541926f6c8e40245f162deebe480c273410637059443",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response mentions `OnInitialize` and `PersistentFlags`, but does not show when flag values are parsed relative to initialization or how to retrieve those values in an initialization callback.\n",
+  "sha256": "ddd9b8a359911ebadb54f84458e7087aebb629aaba9b61664ebffd433107915d"
+}

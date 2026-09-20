@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac5-4d0c-7172-8f79-6d0accfb229a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"- Setting `<PROGRAM>_ACTIVE_HELP=0` disables Active Help for that program: `GetActiveHelpConfig` reads the program-specific variable, and completion removes all Active Help entries when the returned value is `\"0\"` (`active_help.go:46–57`; `completions.go:216–217`).\n- Setting `COBRA_ACTIVE_HELP=0` globally disables Active Help for programs using this mechanism, overriding their program-specific settings: `GetActiveHelpConfig` is documented to always return `\"0\"` in that case (`active_help.go:49–56`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17292,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":121,"reasoning_output_tokens":0}}

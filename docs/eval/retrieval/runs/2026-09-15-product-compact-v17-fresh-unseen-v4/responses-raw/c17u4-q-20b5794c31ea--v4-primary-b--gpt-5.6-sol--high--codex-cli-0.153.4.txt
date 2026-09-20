@@ -1,0 +1,1 @@
+INSUFFICIENT The responses show `cobra.CheckErr(err)` at `site/content/user_guide.md:121` but do not include its implementation or document its nil versus non-nil behavior.

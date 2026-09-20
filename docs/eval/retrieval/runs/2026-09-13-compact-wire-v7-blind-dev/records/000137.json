@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 137,
+  "previous_sha256": "a0fd3c218df5a89c735930ca94ebef013c8d94d13f8d7bd8414452f8c05b161c",
+  "kind": "grade",
+  "query_id": "ci-2249",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "16cee8d83b13730bbce04f99ada5eac9a9b3ffab1f4bb8b6ce66c4e1f3f1f593",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, supported test strategy. `command.go:1695-1718` shows that `InheritedFlags()` calls `mergePersistentFlags()`, iterates `c.parentsPflags`, and adds a parent flag only when neither the inherited set nor `LocalFlags()` contains that name, supporting both the lookup assertion and the local-shadowing test. `command.go:1766-1769` supports asserting `HasInheritedFlags()`, and `command.go:1788-1792` supports checking availability for hidden or deprecated inherited flags via `HasAvailableInheritedFlags()`. The answer stays within the preserved bundle evidence and correctly addresses the question.\n",
+  "sha256": "f9cf679cf63ee32de44fb747e147299b0e28066d768d6712037928bb41c6541b"
+}

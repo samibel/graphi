@@ -1,0 +1,7 @@
+In the subcommand, call:
+
+```go
+f := cmd.Flag("flag-name")
+```
+
+`(*Command).Flag` “climbs up the command tree” and checks persistent parent flags when the flag is not local ([command.go:1794](command.go:1794), `persistentFlag` in [command.go:1805](command.go:1805)). Thus, a global flag should be defined as a persistent flag on a parent command.

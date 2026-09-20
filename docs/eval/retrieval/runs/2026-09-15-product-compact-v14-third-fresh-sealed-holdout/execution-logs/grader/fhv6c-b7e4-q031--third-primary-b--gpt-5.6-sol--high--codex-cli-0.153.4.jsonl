@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-a665-7c71-a690-ea0ffc440d46"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The preserved args.go:73–81 checks len(args) < n and returns the cited formatted error. With n=2 and one positional value, this supports the response’s exact error message and the reviewed too-few-arguments behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":17610,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":54,"reasoning_output_tokens":0}}

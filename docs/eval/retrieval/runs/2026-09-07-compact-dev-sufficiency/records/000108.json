@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 108,
+  "previous_sha256": "e9c50778b8129d7ad18779036541c9f6eb0804f8ba7e1569156c3c9fa6c8834b",
+  "kind": "grade",
+  "query_id": "cb-32",
+  "slot": 0,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "6d355a1cb703e2ba2ac8ea3981b57c5e2d57623bb333832a6469ff61f20852f9",
+  "outcome": "pass",
+  "rationale": "The exact Execute declaration and complete wrapper body at command.go:1038-1040 directly support discarding the command result and returning the error. The preceding comment at 1036-1037 supports command-tree matching, and 1030-1032 shows ExecuteContext setting context before delegation.\n",
+  "sha256": "845b316dc7bc1b257d4f5a59779c6d05c463c896900c2a039d2095e8bfc669e4"
+}

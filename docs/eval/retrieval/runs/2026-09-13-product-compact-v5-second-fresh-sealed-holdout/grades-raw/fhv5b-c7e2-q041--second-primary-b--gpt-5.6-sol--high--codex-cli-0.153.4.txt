@@ -1,0 +1,1 @@
+PASS: The response correctly traces the true/false description choice from all four public APIs through the file and writer helpers into genZshComp. Every cited location exists in the bundle and supports the unchanged propagation of includeDesc.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows the `commandCalledAs` fields in `command.go:207–211`, but omits the accessor implementation that determines what is returned before invocation.

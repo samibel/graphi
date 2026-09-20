@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cb-5453-7e90-99a6-d6cb20dd6e58"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that OnInitialize appends all supplied functions to the package-level initializers []func() slice. Both the declaration and append operation are preserved in the bundle, and the citations resolve to the supporting lines."}}
+{"type":"turn.completed","usage":{"input_tokens":17467,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

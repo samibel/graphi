@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-af36-7443-a6dd-f492fc0964ae"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`--version` does not work because the root command’s `Version` field is empty. Cobra only adds the flag when that field is set (`site/content/user_guide.md:590-592`); `InitDefaultVersionFlag` explicitly does nothing if `c.Version` is empty (`command.go:1200-1204`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16396,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":72,"reasoning_output_tokens":0}}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 88,
+  "previous_sha256": "55d16ed8cc1f8464361d491e1a8af1dcf63fbbddce854ead9348b387eab95e4e",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "961ba9086a1eee6a41077221babc82b5460ccbd31f811f94157c73971859f169",
+  "outcome": "pass",
+  "rationale": "The candidate accurately and concretely describes the method using only preserved bundle evidence. `completions.go:132–146` supports the callback signature, lookup via `c.Flag(flagName)`, missing-flag and duplicate-registration errors, mutex-protected map write, storage, and nil return. `completions.go:35–36` identifies the global `flagCompletionFunctions` map, `completions.go:38–39` identifies its `sync.RWMutex`, and `completions.go:148–160` supports later retrieval through `GetFlagCompletionFunc`.\n",
+  "sha256": "525adfd15ecd133798896940abf44adb8d7d9bc38f7f7456a011177a4bd6ca35"
+}

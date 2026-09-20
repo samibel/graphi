@@ -1,0 +1,1 @@
+PASS: The caller-facing recommendation, portability claim, hidden protocol command, and Zsh generator are all explicitly supported by the bundle.

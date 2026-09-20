@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 10,
+  "previous_sha256": "74618c34d3a41f210335812a3434fb03bb88dba2950b459637293815e05a86bc",
+  "kind": "response",
+  "query_id": "cb-13",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "a4d406fe96e335730b9f0b92a7a22a8988ebb11dd50ee4fe13d09d3a7ffdd989",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Unknown-command suggestions are built from available child commands. `SuggestionsFor` adds a child when its name is within `SuggestionsMinimumDistance` using case-insensitive Levenshtein distance, when its lowercase name has the lowercase input as a prefix, or when the input case-insensitively equals one of the child's explicit `SuggestFor` entries (`command.go:831-851`). `findSuggestions` returns nothing when disabled, defaults a nonpositive distance to 2, and formats matches under `Did you mean this?` (`command.go:750-766`).\n",
+  "sha256": "cbbc406e44df39becf636939f73761cc8e9e58ef56d97c872e48762f5f7f0619"
+}

@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-943:primary-b
+Outcome: pass
+Rationale: Correctly identifies nonempty Command.Version and absence of an existing version flag as default-registration conditions, and avoids claiming a confirmed application-specific cause.

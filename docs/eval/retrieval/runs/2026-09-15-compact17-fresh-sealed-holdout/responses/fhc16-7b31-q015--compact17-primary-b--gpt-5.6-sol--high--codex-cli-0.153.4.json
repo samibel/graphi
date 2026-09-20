@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q015",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "ab86a68c5918b3c984f9fa99910587b671dc2e49d80aaff97381e0cf17fab444",
+  "bundle_sha256": "6b802bb704dfe52a1c7244fef18b530c2830c0a777b90e9ecb3f256102623d37",
+  "prompt_sha256": "3528f4c7415e24ede691f586919585107ef1d4184ad41738927f02387834d0af",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `nameForVar := name` and notes that variables cannot contain `-` or `:` (`fish_completions.go:24–27`), but omits the lines that sanitize those characters.",
+  "responded_at": "2026-09-15T18:36:39Z",
+  "sha256": "ec586829f477a1ba587c741ed71d9dc8ac81688fc70c30738c6d9c997cf7190c"
+}

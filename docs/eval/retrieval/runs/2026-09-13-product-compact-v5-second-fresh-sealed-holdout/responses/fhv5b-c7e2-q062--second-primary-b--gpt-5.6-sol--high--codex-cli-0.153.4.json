@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q062",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "11088ed9589163c7ca22c6d4eb04042a95688cb0398b6b8cd03cc247b83687d1",
+  "bundle_sha256": "ccba8180304ccc5b05ba7a93c6bbffe5262b5eb614b172f3ade11dcee7ecf716",
+  "prompt_sha256": "6fabf6dab20d9ba33ce4477fd703b130745c72f3eba1c48741324cfe7e3e4700",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. `command.go:1550-1553` defines `Runnable()` as:\n\n```go\nreturn c.Run != nil || c.RunE != nil\n```\n\nThe `||` means either `Run` or `RunE` is sufficient; both are not required. This matches the field comments at `command.go:133-136`, where `RunE` is described as the error-returning variant of `Run`.",
+  "responded_at": "2026-09-13T15:28:20Z",
+  "sha256": "40b056e0025f84ba21713137d8ef45b457f123ff729da6e5fd225a8d253bdefa"
+}

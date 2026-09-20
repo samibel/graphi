@@ -127,6 +127,60 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		// task_context/2 bundles carry the pinned static selector stamp, so a
 		// rotation invalidates the bundles the 31/64 pass count describes.
 		"docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke",
+		"docs/eval/retrieval/runs/2026-09-06-architecture-dev",
+		"docs/eval/retrieval/runs/2026-09-06-bundle-selection-dev",
+		"docs/eval/retrieval/runs/2026-09-06-candidate-admission-dev",
+		"docs/eval/retrieval/runs/2026-09-06-qwen-dev",
+		// Development recovery measurements and the rejected source prior.
+		"docs/eval/retrieval/runs/2026-09-06-recovery-dev",
+		// SW-282: the three runs that recalibrate, gate and coverage-check
+		// docs/eval/retrieval-targets.json. The recalibration run is the one
+		// that matters most for a rotation — the targets file's bars are now
+		// derived from this embedder's semantic_name_only numbers, so rotating
+		// the pin requires re-deriving the file, not only re-measuring.
+		"docs/eval/retrieval/runs/2026-09-06-sw282-coverage-local",
+		"docs/eval/retrieval/runs/2026-09-06-sw282-gate-local",
+		"docs/eval/retrieval/runs/2026-09-06-sw282-recalibration-local",
+		"docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev",
+		"docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency",
+		"docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2",
+		"docs/eval/retrieval/runs/2026-09-13-candidate-path-dev",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-dev",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v2-dev",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v3-dev",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v4-dev",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev",
+		// The named-declaration completion capture, plus the per-stage
+		// answer-span loss decomposition its result reports. That
+		// decomposition reads retrieval ranks recorded by this embedder, so a
+		// rotation invalidates the stage attribution as well as the bytes.
+		"docs/eval/retrieval/runs/2026-09-14-compact10-dev",
+		"docs/eval/retrieval/runs/2026-09-14-compact11-dev",
+		"docs/eval/retrieval/runs/2026-09-14-compact12-dev",
+		"docs/eval/retrieval/runs/2026-09-14-compact13-followup-dev",
+		"docs/eval/retrieval/runs/2026-09-14-compact14-dev",
+		"docs/eval/retrieval/runs/2026-09-14-named-declaration-dev",
+		"docs/eval/retrieval/runs/2026-09-15-compact15-exact-path-dev",
+		"docs/eval/retrieval/runs/2026-09-15-compact16-coherent-flow-dev",
+		"docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout",
+		"docs/eval/retrieval/runs/2026-09-15-compact17-projection-dev",
+		"docs/eval/retrieval/runs/2026-09-15-compact17-release-coverage-dev",
+		"docs/eval/retrieval/runs/2026-09-15-compact17-release-dev",
+		"docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout",
+		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2",
+		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3",
+		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4",
+		// The embedded-model development qualification. Unlike the runs above,
+		// which merely CAPTURED evidence under this pin, two of its four arms
+		// ARE this embedder: M1_potion_512 and M2_potion_8192 preregister an
+		// embedder_id, fingerprint_canonical and admission_sha256 derived from
+		// this exact revision. Rotating the pin therefore invalidates the
+		// preregistration itself, not only the captures taken under it.
+		"docs/eval/retrieval/runs/embedded-model-qualification",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)

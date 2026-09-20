@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q057",
+  "response_sha256": "cddef3cdd5ac94619bc1e327687af3a2db15520fe39a3764ec7ecddf4ff642e8",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly states that the child inherits the root’s help template. The cited command.go:585–591 supports returning a local nonempty template or recursively calling the parent’s HelpTemplate().",
+  "graded_at": "2026-09-13T15:45:58Z",
+  "sha256": "3acc2986fec452618fa1fd69f8f6b3396c89fc33f570c538344daccda3c46b30"
+}

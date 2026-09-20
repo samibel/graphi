@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 125,
+  "previous_sha256": "45c51a1327cd688f1a842b6b8022e87d52618a1bc9500d29a2dc72fb37dd3955",
+  "kind": "grade",
+  "query_id": "cb-33",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "336db3cb1c1d866701a7d68b6176e21595d6b74cf696ba63c72a4b8f6ba8d426",
+  "outcome": "pass",
+  "rationale": "PASS: Flags, related local/inherited views, lazy initialization, and ResetFlags are accurately described from command.go:1641-1659, 1695-1701, and 1737-1749.\n",
+  "sha256": "750d52e75501a73b25ada1ec30dd45fe5ad60fa64e63905b68f45b30a8d695d4"
+}

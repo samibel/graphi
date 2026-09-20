@@ -1,0 +1,1 @@
+PASS: The response correctly states that `ArbitraryArgs` rejects none, supported by its unconditional `return nil` in `args.go:69–71`. Both citations resolve within the preserved bundle, and no unsupported claims appear.

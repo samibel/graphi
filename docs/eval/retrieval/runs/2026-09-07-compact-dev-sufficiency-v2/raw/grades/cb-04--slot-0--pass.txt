@@ -1,0 +1,1 @@
+PASS: The answer correctly identifies the development key target RegisterFlagCompletionFunc. completions.go:132–146 directly supports the callback signature, flag lookup, absent/duplicate errors, mutex-protected storage, and successful return. completions.go:36 supplies the flag-pointer map key; shell_completions.go:52–56 explicitly supports the cross-shell claim.

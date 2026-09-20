@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: a1c69d23e266fbe18ab5d22c4479ef27dec27e6d6faa05e2d22eab351a500931
+QUERY ID: fhv5b-c7e2-q044
+
+QUESTION:
+How does a command become a complete man-page byte buffer, including relationships and history?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/man_docs.go:202-245 anchor="buf.WriteString(strings.Join(seealsos, \", \") + \"\\n\")" reason=Defaults initialize, the command path is dashed, preamble and options are written, examples and sorted eligible parent/child see-also references are added, optional history is appended, and buffer bytes are returned.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"14 ranked source span(s); query eccaa7e06cea; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":87,"end_line":108,"text":"\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n\n\t// Expected arguments\n\tArgs PositionalArgs\n\n\t// ArgAliases is List of aliases for ValidArgs.\n\t// These are not suggested to the user in the shell completion,\n\t// but accepted if entered manually.\n\tArgAliases []string\n\n\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator.\n\t// For portability with other shells, it is recommended to instead use ValidArgsFunction\n\tBashCompletionFunction string\n\n\t// Deprecated defines, if this command is deprecated and should print this string when used.\n\tDeprecated string\n\n\t// Annotations are key/value pairs that can be used by applications to identify or\n\t// group commands or set special options.\n\tAnnotations map[string]string\n\n\t// Version defines the version for this command. If this value is non-empty and the command does not"},{"path":"command.go","start_line":50,"end_line":50,"text":"// definition to ensure usability."},{"path":"command.go","start_line":144,"end_line":145,"text":"\n\t// groups for subcommands"},{"path":"completions.go","start_line":193,"end_line":197,"text":"// initCompleteCmd adds a special hidden command that can be used to request custom completions.\nfunc (c *Command) initCompleteCmd(args []string) {\n\tcompleteCmd := &Command{\n\t\tUse:                   fmt.Sprintf(\"%s [command-line]\", ShellCompRequestCmd),\n\t\tAliases:               []string{ShellCompNoDescRequestCmd},"},{"path":"completions.go","start_line":234,"end_line":234,"text":"\t\t\t\t// of a trailing tab when there are no description following it."},{"path":"completions.go","start_line":450,"end_line":451,"text":"\t\t\t// Complete subcommand names, including the help command\n\t\t\tif len(finalArgs) == 0 && !foundLocalNonPersistentFlag {"},{"path":"completions.go","start_line":502,"end_line":502,"text":"\t// Find the completion function for the flag or command"},{"path":"doc/md_docs.go","start_line":32,"end_line":33,"text":"func printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error {\n\tflags := cmd.NonInheritedFlags()"},{"path":"doc/md_docs.go","start_line":51,"end_line":51,"text":"// GenMarkdown creates markdown output."},{"path":"doc/rest_docs.go","start_line":30,"end_line":31,"text":"func printOptionsReST(buf *bytes.Buffer, cmd *cobra.Command, name string) error {\n\tflags := cmd.NonInheritedFlags()"},{"path":"doc/rest_docs.go","start_line":56,"end_line":56,"text":"// GenReST creates reStructured Text output."},{"path":"zsh_completions.go","start_line":80,"end_line":85,"text":"func (c *Command) genZshCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)\n\tgenZshComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"},{"path":"bash_completionsV2.go","start_line":24,"end_line":29,"text":"func (c *Command) genBashCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)\n\tgenBashComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"},{"path":"command.go","start_line":1292,"end_line":1300,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {\n\t// do not sort commands if it already sorted or sorting was disabled\n\tif EnableCommandSorting && !c.commandsAreSorted {\n\t\tsort.Sort(commandSorterByName(c.commands))\n\t\tc.commandsAreSorted = true\n\t}\n\treturn c.commands\n}"}],"provenance":{"input_sha256":"4033311508f80270013d53a446e6604ae9bccedd6b3c3bf1ad7530ab8a52d7b9","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains only unrelated command fields, completion generators, Markdown/ReST option printers, and child-command sorting; it lacks the man-page generation symbols and snippets showing command relationships, history, and final byte-buffer construction.
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: e49ffbf61cffedc5c20075147311d4df73bb7f970dcaf00c7c3974a4f416f5fd
+QUERY ID: fhv5b-c7e2-q058
+
+QUESTION:
+What version text is produced when no command in the hierarchy supplies a custom version template?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:598-609 anchor="return `{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}" reason=After parent lookup is exhausted, the default prints an optional command name followed by 'version' and the Version value, ending with a newline.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 06833f86ef4b; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":108,"end_line":125,"text":"\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the\n\t// command does not define one.\n\tVersion string\n\n\t// The *Run functions are executed in the following order:\n\t//   * PersistentPreRun()\n\t//   * PreRun()\n\t//   * Run()\n\t//   * PostRun()\n\t//   * PersistentPostRun()\n\t// All functions get the same args, the arguments after the command name.\n\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current\n\t// command has been declared.\n\t//\n\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)"},{"path":"site/content/user_guide.md","start_line":596,"end_line":598,"text":"the version template. The template can be customized using the\n`cmd.SetVersionTemplate(s string)` function.\n"},{"path":"command.go","start_line":598,"end_line":609,"text":"// VersionTemplate return version template for the command.\nfunc (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.VersionTemplate()\n\t}\n\treturn `{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n`\n}"},{"path":"command.go","start_line":351,"end_line":355,"text":"\n// SetVersionTemplate sets version template to be used. Application can use it to set custom template.\nfunc (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":347,"end_line":347,"text":"// SetHelpTemplate sets help template to be used. Application can use it to set custom template."},{"path":"command.go","start_line":544,"end_line":547,"text":"func (c *Command) UsageTemplate() string {\n\tif c.usageTemplate != \"\" {\n\t\treturn c.usageTemplate\n\t}"},{"path":"command.go","start_line":549,"end_line":549,"text":"\tif c.HasParent() {"},{"path":"command.go","start_line":584,"end_line":596,"text":"// HelpTemplate return help template for the command.\nfunc (c *Command) HelpTemplate() string {\n\tif c.helpTemplate != \"\" {\n\t\treturn c.helpTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.HelpTemplate()\n\t}\n\treturn `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}\n\n{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`\n}"},{"path":"command.go","start_line":352,"end_line":352,"text":"// SetVersionTemplate sets version template to be used. Application can use it to set custom template."},{"path":"command.go","start_line":1204,"end_line":1205,"text":"func (c *Command) InitDefaultVersionFlag() {\n\tif c.Version == \"\" {"},{"path":"command.go","start_line":598,"end_line":598,"text":"// VersionTemplate return version template for the command."}],"provenance":{"input_sha256":"ce87a50609731ce4f76d2b7522bf1be3422d36b7a2f0285946d9a6cd96bdf865","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The default output is `<Name> version <Version>\n`. If `.Name` is empty, it is `version <Version>\n`.
+
+In `command.go:599–608`, `VersionTemplate()` checks the command’s custom template, then its parents, and finally returns:
+```gotemplate
+{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}
+```
+The template includes a trailing newline.
+----- END THE RATER'S RESPONSE -----

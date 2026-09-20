@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-9069-7552-aeac-f48cf579ed9e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`minimumNArgsWithLessArgs(err error, t *testing.T)` is a test helper in `args_test.go:66–75`. It verifies that:\n\n- `err` is non-nil; otherwise it calls `t.Fatal(\"Expected an error\")` (lines 67–69).\n- `err.Error()` exactly equals `\"requires at least 2 arg(s), only received 1\"`; otherwise it reports the expected and actual strings with `t.Fatalf` (lines 70–73)."}}
+{"type":"turn.completed","usage":{"input_tokens":16914,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":107,"reasoning_output_tokens":0}}

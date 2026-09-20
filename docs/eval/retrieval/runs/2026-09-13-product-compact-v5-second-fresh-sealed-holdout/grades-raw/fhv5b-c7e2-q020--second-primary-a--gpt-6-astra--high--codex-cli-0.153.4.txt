@@ -1,0 +1,1 @@
+PASS: The response accurately identifies the deprecated method as a no-op returning nil and names ValidArgs for the first argument and ValidArgsFunction for any argument as the documented alternatives. All cited locations exist in the supplied bundle and support the attached claims.

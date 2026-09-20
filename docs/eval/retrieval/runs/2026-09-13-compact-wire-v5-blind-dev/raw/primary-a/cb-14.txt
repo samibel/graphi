@@ -1,0 +1,1 @@
+INSUFFICIENT The response names the hidden `__complete`/`__completeNoDesc` request commands and shows PowerShell selecting one, but it omits the command handler that dispatches the request into completion calculation.

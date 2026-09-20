@@ -1,0 +1,1 @@
+FAIL: The response identifies the V1 generation APIs and V2 default, but omits essential differences: V2 drops legacy Bash dynamic completion, uses Go callbacks, and provides a smaller aligned script. These differences are also absent from the preserved bundle, so the required comparison is not substantively supported.

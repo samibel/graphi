@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5f-0beb-7363-b14b-943000f1fd26"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).ResetCommands()` sets four fields to `nil` in `command.go:1277–1283`:\n\n- `c.parent`: the parent relationship.\n- `c.commands`: the child/subcommand list.\n- `c.helpCommand`: the help-command reference.\n- `c.parentsPflags`: the parent persistent-flags cache.\n\nIt does not reset `c.commandsAreSorted`, the sorting-state flag used by `Commands()` (`command.go:1292–1300`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17401,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":104,"reasoning_output_tokens":0}}

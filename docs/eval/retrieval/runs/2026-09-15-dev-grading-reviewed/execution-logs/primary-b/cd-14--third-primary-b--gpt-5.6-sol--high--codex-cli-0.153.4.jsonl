@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-6748-7fe1-aa64-336ebba1b8e9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response is marked `\"truncated\": true` and shows only scattered excerpts from `cobra.go` (lines 18, 43, 61–81, 111–115, 173–202, and 240–243), so the file’s complete structure and declarations are missing."}}
+{"type":"turn.completed","usage":{"input_tokens":16454,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":273,"reasoning_output_tokens":203}}

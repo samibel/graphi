@@ -1,0 +1,1 @@
+PASS: The response correctly states the error `accepts 2 arg(s), received 3`, supported by the count mismatch check and error formatting at preserved args.go lines 96–97.

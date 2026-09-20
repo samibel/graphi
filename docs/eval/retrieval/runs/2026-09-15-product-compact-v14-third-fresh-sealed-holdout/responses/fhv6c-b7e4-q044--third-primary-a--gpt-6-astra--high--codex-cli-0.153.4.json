@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q044",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a0d408aa201daac68e5e782565a20392b485e79d4b9ef5f7912a5d25125fd6ee",
+  "bundle_sha256": "b08c1137c40fe10759e695097b355144e2ba5191a0fc0dc505de5d618e9cc66e",
+  "prompt_sha256": "c496e7a168cdc606fa7c3129da82f5acfb3feaffdbac4762aca1449fc244c228",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `SetContext` on the child command from the parent’s `PersistentPreRun`, then read `cmd.Context()` in the child’s `Run`:\n\n```go\nrootCmd.PersistentPreRun = func(_ *cobra.Command, _ []string) {\n    subCmd.SetContext(replacementCtx)\n}\nsubCmd.Run = func(cmd *cobra.Command, args []string) {\n    ctx := cmd.Context()\n    // Use ctx.\n}\n```\n\nEvidence:\n\n- `site/content/user_guide.md:605-613` says children inherit persistent hooks unless they declare their own, and `PersistentPreRun` executes before `Run`.\n- `command.go:268-272`: `SetContext(ctx)` assigns `c.ctx = ctx`.\n- `command.go:258-266`: `Context()` returns `c.ctx`.\n\nThis uses an explicit child reference because the supplied snippets do not establish which command is passed to the inherited hook.",
+  "responded_at": "2026-09-15T08:30:51Z",
+  "sha256": "1854c1c848fb1191020e066c81df6660d8f27f49f67466b3f227c5d932103b3b"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 39,
+  "previous_sha256": "848e798d27f1a762f6d6b35ed6536ca05c36e8bb5ecef2431d263191fafd39e5",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "c23cf486f439aa5651568f124a4b10d629156f5e0d5ebc27f14e03c23b6dc988",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `ValidArgsFunction` for custom argument completion and `RegisterFlagCompletionFunc()` for custom flag completion: the documentation explicitly recommends them as portable across Bash, Zsh, Fish, and PowerShell (`site/content/completions/_index.md:477–478`). Those are also the listed shell-generation targets (`site/content/user_guide.md:742–743`). For an additional, unlisted shell, the response identifies the `__complete` request command (`completions.go:28–29`) but does not provide enough protocol or shell-integration detail to implement its adapter.\n",
+  "sha256": "432b33f6e603c45ffdf041f24a72d4ece9d6fb0ce1fb2c62bb9a1b424bef3cc2"
+}

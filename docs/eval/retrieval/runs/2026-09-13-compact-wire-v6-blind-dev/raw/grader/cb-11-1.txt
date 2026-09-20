@@ -1,0 +1,1 @@
+FAIL: It describes the validator's scan but omits the execution call site and timing requested by the question.

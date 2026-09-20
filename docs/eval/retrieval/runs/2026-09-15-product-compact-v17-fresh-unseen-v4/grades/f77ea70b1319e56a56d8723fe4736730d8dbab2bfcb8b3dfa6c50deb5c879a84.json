@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-1ac4936e71f8",
+  "response_sha256": "f77ea70b1319e56a56d8723fe4736730d8dbab2bfcb8b3dfa6c50deb5c879a84",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies `COBRA_ACTIVE_HELP=0` as overriding `\u003cPROGRAM\u003e_ACTIVE_HELP` and explains that other global values defer to the program-specific setting. Both cited passages resolve within the bundle and support the required behavior.",
+  "graded_at": "2026-09-15T20:42:16Z",
+  "sha256": "54785b847ed77f938da5db605f49845288dba609aadddfb26b008aadb96b989b"
+}

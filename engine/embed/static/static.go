@@ -168,9 +168,10 @@ const poolingID = "mean"
 // warm cache is fast (~100ms per the SW-259 record), a cold cache
 // surfaces a typed error naming the exact repair command.
 type Embedder struct {
-	model    string
-	revision string
-	dim      int // discovered on first embed; 0 before that
+	model              string
+	revision           string
+	dim                int // discovered on first embed; 0 before that
+	admissionMaxTokens int
 
 	mu      sync.Mutex
 	loaded  bool
@@ -193,6 +194,26 @@ type Embedder struct {
 // the first Embed / ProbeDim call.
 func New(arg string) (*Embedder, error) {
 	return NewWithPinnedModel(arg, ModelID, defaultRevision())
+}
+
+// NewForEvaluation constructs the pinned static embedder with an evaluation-
+// only admission limit. It is deliberately not registered as a selector: the
+// production static constructor always retains DefaultMaxLength.
+func NewForEvaluation(arg string, maxTokens int) (*Embedder, error) {
+	if maxTokens <= 0 || maxTokens > 8192 {
+		return nil, fmt.Errorf("static: evaluation max tokens %d outside 1..8192", maxTokens)
+	}
+	e, err := New(arg)
+	if err != nil {
+		return nil, err
+	}
+	e.mu.Lock()
+	e.admissionMaxTokens = maxTokens
+	if e.loadedM != nil {
+		applyAdmissionMaxTokens(e.loadedM, maxTokens)
+	}
+	e.mu.Unlock()
+	return e, nil
 }
 
 // NewWithPinnedModel is New with the pinned (model, revision) pair
@@ -218,8 +239,9 @@ func NewWithPinnedModel(arg, pinnedModel, pinnedRevision string) (*Embedder, err
 		return nil, &SelectorError{Kind: SelectorUnknownRevision, Input: rev, Revision: pinnedRevision}
 	}
 	e := &Embedder{
-		model:    pinnedModel,
-		revision: pinnedRevision,
+		model:              pinnedModel,
+		revision:           pinnedRevision,
+		admissionMaxTokens: DefaultMaxLength,
 	}
 	// Try to load + verify pins right now so ID() carries the real
 	// identity. A missing artifact is fine: the lazy load path will
@@ -229,6 +251,7 @@ func NewWithPinnedModel(arg, pinnedModel, pinnedRevision string) (*Embedder, err
 		return e, nil
 	}
 	if m, err := LoadModel(dir); err == nil {
+		applyAdmissionMaxTokens(m, e.admissionMaxTokens)
 		e.loadedM = m
 		e.loaded = true
 	}
@@ -304,7 +327,11 @@ func (e *Embedder) ID() string {
 	}
 	profile := e.Profile()
 	profileHash := shortHash(profile.String(), 12)
-	return Scheme + ":" + e.model + "@" + e.revision + ":" + modelHash + ":" + poolingID + ":" + strconv.FormatBool(normalize) + ":" + tokHash + ":" + configHash + ":" + inferenceContractID + ":" + profileHash
+	contractID := inferenceContractID
+	if profile.MaxTokens != DefaultMaxLength {
+		contractID += "-eval-max-" + strconv.Itoa(profile.MaxTokens)
+	}
+	return Scheme + ":" + e.model + "@" + e.revision + ":" + modelHash + ":" + poolingID + ":" + strconv.FormatBool(normalize) + ":" + tokHash + ":" + configHash + ":" + contractID + ":" + profileHash
 }
 
 // shortHash returns the first n hex characters of sha256(s). Used by
@@ -389,12 +416,23 @@ func (e *Embedder) load(ctx context.Context) (*Model, error) {
 	}
 	e.loadErr = err
 	if err == nil {
+		applyAdmissionMaxTokens(m, e.admissionMaxTokens)
 		e.loadedM = m
 		e.dim = m.dim
 	}
 	e.loaded = true
 	e.mu.Unlock()
 	return m, err
+}
+
+func applyAdmissionMaxTokens(m *Model, maxTokens int) {
+	if m == nil {
+		return
+	}
+	m.maxLength = maxTokens
+	if m.tok != nil {
+		m.tok.maxLength = maxTokens
+	}
 }
 
 // Embed implements embed.Embedder. The first call loads the artifact; every
@@ -405,6 +443,16 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 		return nil, err
 	}
 	return m.Embed(ctx, texts)
+}
+
+// EmbedQueryWithDiagnostics loads the pinned model once and obtains the query
+// vector plus UNK count from its single preparation pass.
+func (e *Embedder) EmbedQueryWithDiagnostics(ctx context.Context, text string) (embed.QueryEmbedding, error) {
+	m, err := e.load(ctx)
+	if err != nil {
+		return embed.QueryEmbedding{}, err
+	}
+	return m.EmbedQueryWithDiagnostics(ctx, text)
 }
 
 // loadAbsentError is the typed error load surfaces when the artifact is
@@ -652,12 +700,13 @@ func LoadModel(dir string) (*Model, error) {
 
 // Compile-time interface assertions.
 var (
-	_ embed.Embedder            = (*Embedder)(nil)
-	_ embed.DimDiscoverer       = (*Embedder)(nil)
-	_ embed.AvailabilityChecker = (*Embedder)(nil)
-	_ embed.TokenizingEmbedder  = (*Embedder)(nil)
-	_ embed.Admission           = (*Embedder)(nil)
-	_ embed.AdmissionProfile    = (*Embedder)(nil)
+	_ embed.Embedder                = (*Embedder)(nil)
+	_ embed.DiagnosticQueryEmbedder = (*Embedder)(nil)
+	_ embed.DimDiscoverer           = (*Embedder)(nil)
+	_ embed.AvailabilityChecker     = (*Embedder)(nil)
+	_ embed.TokenizingEmbedder      = (*Embedder)(nil)
+	_ embed.Admission               = (*Embedder)(nil)
+	_ embed.AdmissionProfile        = (*Embedder)(nil)
 )
 
 // Tokenizer returns the active tokenizer so the production embedder
@@ -709,6 +758,10 @@ func (e *Embedder) Admit(ctx context.Context, text string) (embed.Admitted, erro
 func (e *Embedder) Profile() embed.AdmissionSpec {
 	e.mu.Lock()
 	m := e.loadedM
+	maxTokens := e.admissionMaxTokens
+	if m != nil {
+		maxTokens = m.maxLength
+	}
 	e.mu.Unlock()
 	hash := ""
 	ver := ""
@@ -725,7 +778,7 @@ func (e *Embedder) Profile() embed.AdmissionSpec {
 		TokenizerID:      "model2vec-wordpiece",
 		TokenizerSHA256:  hash,
 		TokenizerVersion: ver,
-		MaxTokens:        MaxAdmissionTokens,
+		MaxTokens:        maxTokens,
 		Reserve:          SpecialTokenReserve,
 		Algorithm:        "first-n-tokens",
 		AlgorithmVersion: "1",

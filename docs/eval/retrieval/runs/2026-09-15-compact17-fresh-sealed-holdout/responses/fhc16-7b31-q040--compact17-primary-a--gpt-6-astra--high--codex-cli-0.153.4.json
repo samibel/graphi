@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q040",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "691c8c3d1c285404e59b36e2cf2da9d4d4638c485f6c788ce25db35d662eeb98",
+  "bundle_sha256": "0cee31384c3f9c592f9512c6d3edf24479027f7ce9366b97925052eceb80cb0d",
+  "prompt_sha256": "bea31299997215af4ff3f00be2404b98bbe6a7359b014427c6989d4caadaefda",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows flag-name suggestions in `completions.go:534–565`, but omits the logic distinguishing values after `=` from separate values following a flag; `completions.go:308` and `command.go:796` provide only comments.",
+  "responded_at": "2026-09-15T18:41:38Z",
+  "sha256": "2fc4f6709dadb695211aae5664a1be5b6255e4b2bb59c3e2915b370582189b0f"
+}

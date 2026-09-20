@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 48eab53419af8972ad46c607f465d8dffd4decedaabb200b92ee46376fe2ba71
+QUERY ID: fhv6c-b7e4-q064
+
+QUESTION:
+sibling parse whitelist
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:2437-2466 anchor="func TestFParseErrWhitelistSiblingCommand(" reason=The test is the canonical boundary case showing that one child's unknown-flag whitelist does not apply to its sibling.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query de65b7343854; read in order (255/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":38,"end_line":39,"text":"// FParseErrWhitelist configures Flag parse errors to be ignored\ntype FParseErrWhitelist flag.ParseErrorsWhitelist"},{"path":"command.go","start_line":1818,"end_line":1840,"text":"// ParseFlags parses persistent flag tree and local flags.\nfunc (c *Command) ParseFlags(args []string) error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tif c.flagErrorBuf == nil {\n\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t}\n\tbeforeErrorBufLen := c.flagErrorBuf.Len()\n\tc.mergePersistentFlags()\n\n\t// do it here after merging all flags and just before parse\n\tc.Flags().ParseErrorsWhitelist = flag.ParseErrorsWhitelist(c.FParseErrWhitelist)\n\n\terr := c.Flags().Parse(args)\n\t// Print warnings if they occurred (e.g. deprecated flag messages).\n\tif c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {\n\t\tc.Print(c.flagErrorBuf.String())\n\t}\n\n\treturn err\n}"},{"path":"command.go","start_line":1395,"end_line":1398,"text":"// Print is a convenience method to Print to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Print(i ...interface{}) {\n\tfmt.Fprint(c.OutOrStderr(), i...)\n}"},{"path":"command.go","start_line":1847,"end_line":1853,"text":"// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"},{"path":".github/workflows/test.yml","start_line":5,"end_line":17,"text":"  pull_request:\n  workflow_dispatch:\n\nenv:\n  GO111MODULE: on\n\npermissions:\n  contents: read\n\njobs:\n\n\n  lic-headers:"},{"path":".github/workflows/labeler.yml","start_line":1,"end_line":11,"text":"name: \"Pull Request Labeler\"\non:\n- pull_request_target\n\npermissions:\n  contents: read\n\njobs:\n  triage:\n    permissions:\n      contents: read  # for actions/labeler to determine modified files"},{"path":"command.go","start_line":197,"end_line":202,"text":"\terrWriter io.Writer\n\n\t// FParseErrWhitelist flag parse errors to be ignored\n\tFParseErrWhitelist FParseErrWhitelist\n\n\t// CompletionOptions is a set of options to control the handling of shell completion"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command_test.go","start_line":2437,"end_line":2452,"text":"func TestFParseErrWhitelistSiblingCommand(t *testing.T) {\n\troot := &Command{\n\t\tUse: \"root\",\n\t\tRun: emptyRun,\n\t}\n\n\tc := &Command{\n\t\tUse: \"child\",\n\t\tRun: emptyRun,\n\t\tFParseErrWhitelist: FParseErrWhitelist{\n\t\t\tUnknownFlags: true,\n\t\t},\n\t}\n\tc.Flags().BoolP(\"boola\", \"a\", false, \"a boolean flag\")\n\n\ts := &Command{"}],"provenance":{"input_sha256":"5a71a00350f3cb12202c6932aa6998a260ca46ad3e92fc91899b8cd53eeffb16","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The sibling test is truncated at `command_test.go:2452`, before sibling configuration, execution, and assertions reveal the intended whitelist behavior.
+----- END THE RATER'S RESPONSE -----

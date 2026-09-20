@@ -1,0 +1,1 @@
+On the currently executing command object, use cmd.Flag("flag-name") or cmd.Flags().Lookup("flag-name") to obtain the flag. Flag begins with exactly that lookup in command.go:1795-1798, and Flags returns a *flag.FlagSet (command.go:1643). The supplied snippet does not show a typed value getter.

@@ -1,0 +1,1 @@
+PASS: The response accurately identifies the BashCompCustom annotation with []string{f}, the Bash-only limitation, and the recommendation to use c.RegisterFlagCompletionFunc for cross-shell Go completion, all supported by shell_completions.go:71–79 in the preserved bundle.

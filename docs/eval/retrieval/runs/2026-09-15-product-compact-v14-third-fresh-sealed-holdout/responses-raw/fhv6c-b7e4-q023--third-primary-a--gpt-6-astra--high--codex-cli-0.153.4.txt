@@ -1,0 +1,3 @@
+`SetOutput(nil)` clears **both the output and error writers**: it assigns `nil` to `c.outWriter` and `c.errWriter` (`command.go:283–285`).
+
+For output, this restores parent inheritance, falling back to stdout when accessed through `OutOrStdout()` (`command.go:374–377, 394–402`). The `SetOutput` comment says nil uses stderr (`command.go:280–282`), but the response does not include the error-writer fallback implementation.

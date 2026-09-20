@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 42,
+  "previous_sha256": "f866c210ffae93128f905a123709eb671780f8b747937c2a05643629d3250293",
+  "kind": "response",
+  "query_id": "cb-02",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "7950b15da3351bafa3a83f95668da97a0e52d4870924c46ba51d6164f984e63b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` is defined in `flag_groups.go:65`; its preceding comment identifies invocation with more than one flag from the set as the condition it addresses (`flag_groups.go:64`). It first merges persistent flags (`flag_groups.go:66`); that helper adds the command's and parents' persistent flags to `c.Flags()` (`command.go:1849–1852`). The mutual-exclusion annotation key is `cobra_annotation_mutually_exclusive` (`flag_groups.go:28`).\n",
+  "sha256": "a345fdb41e23f5ce6a6d17f13e808dbda7d1817b69473c27908f8d0ba47cb954"
+}

@@ -1,0 +1,1 @@
+FAIL: The response does not answer which flag the inherited-only view exposes. The bundle omits the decisive `InheritedFlags` filtering condition, `local.Lookup(f.Name) == nil`, so the required behavior cannot be verified.

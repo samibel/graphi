@@ -1,0 +1,1 @@
+PASS: The response correctly identifies hidden flags and flags with nonempty Deprecated strings as excluded, matching bash_completions.go:699-701. The cited flag-processing code at lines 567-592 supports skipping those flags before writing completions.

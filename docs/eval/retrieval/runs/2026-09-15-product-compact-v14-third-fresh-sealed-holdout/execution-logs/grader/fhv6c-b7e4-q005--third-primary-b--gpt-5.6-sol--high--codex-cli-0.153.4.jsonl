@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-8827-72b3-b100-d7bae8b728f6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the helper at args_test.go:66–75, including the nil-error failure, exact expected error string, and t.Fatalf call on mismatch, all supported by the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17642,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":46,"reasoning_output_tokens":0}}

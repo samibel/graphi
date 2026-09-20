@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved test at lines 23–33, including completion generation and the check that output omits the Active Help disabling assignment. Its package declaration, cited lines, and truncation caveat are supported by the supplied transcript.

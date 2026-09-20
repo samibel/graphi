@@ -1,0 +1,7 @@
+`Parent()` returns a command’s parent as a `*Command`. It directly returns `c.parent` (`command.go`, lines 1842–1845):
+
+```go
+func (c *Command) Parent() *Command {
+    return c.parent
+}
+```

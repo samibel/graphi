@@ -1,0 +1,16 @@
+Call either public setter on the command:
+
+```go
+cmd.SetUsageFunc(func(cmd *Command) error {
+    // custom usage behavior
+    return nil
+})
+```
+
+Or install a custom usage template:
+
+```go
+cmd.SetUsageTemplate("...")
+```
+
+Evidence: `site/content/user_guide.md:584-591` documents both override methods; `command.go:305-309` shows that `SetUsageFunc` stores the callback in `c.usageFunc`; and `command.go:442-448` shows `Usage()` invoking it through `c.UsageFunc()(c)`.

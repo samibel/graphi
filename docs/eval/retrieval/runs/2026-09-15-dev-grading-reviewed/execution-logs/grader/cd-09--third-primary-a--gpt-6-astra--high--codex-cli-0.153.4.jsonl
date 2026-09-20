@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-e063-7fd3-8f1a-a80789ae27cc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript supports the callback signature, flag lookup, `nil, false` result for an absent flag, and mutex-protected map lookup returning the callback and presence boolean. The response identifies the essential behavior of `GetFlagCompletionFunc`."}}
+{"type":"turn.completed","usage":{"input_tokens":17917,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":220,"reasoning_output_tokens":165}}

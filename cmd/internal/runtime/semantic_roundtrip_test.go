@@ -59,6 +59,12 @@ func newLateDimEmbedder(t *testing.T, sealed *atomic.Bool, dim int) *lateDimEmbe
 
 func (e *lateDimEmbedder) ID() string { return "late-dim:test" }
 
+// Exercise the complete provider fingerprint, not only name and dimension.
+func (e *lateDimEmbedder) Revision() string        { return "fixture-runtime-v1" }
+func (e *lateDimEmbedder) ModelSHA256() string     { return "fixture-model-sha" }
+func (e *lateDimEmbedder) TokenizerSHA256() string { return "fixture-tokenizer-sha" }
+func (e *lateDimEmbedder) ChunkerConfig() string   { return "fixture-preparation-v1" }
+
 // Dim reports 0 until ProbeDim has run on this instance — the Ollama shape.
 func (e *lateDimEmbedder) Dim() int {
 	if !e.probed {

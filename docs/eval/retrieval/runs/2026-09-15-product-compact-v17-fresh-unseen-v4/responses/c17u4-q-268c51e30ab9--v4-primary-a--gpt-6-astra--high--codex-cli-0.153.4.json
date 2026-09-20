@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-268c51e30ab9",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "5dffb91de2a5071d9664e88fc39ed7dd6a6c11565a0ed9111ab4f56df3425ee6",
+  "bundle_sha256": "f67c6b939bdf43bc7517bb038fd878dd52dee58d448a5bb2cd239080c41e0022",
+  "prompt_sha256": "25c84d39669e1a63f6014c45f496e0e0479b866c462299540affbf360e756b2e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra’s `(*Command).IsAdditionalHelpTopicCommand()` classifies a command recursively:\n\n1. Returns `false` if the command is runnable, deprecated (`len(c.Deprecated) != 0`), or hidden.\n2. Checks every child in `c.commands` using `sub.IsAdditionalHelpTopicCommand()`; if any child returns `false`, the parent returns `false`.\n3. Otherwise returns `true`, including for a command with no children.\n\nThus, the command and every descendant must be non-runnable, non-deprecated, and non-hidden (`command.go`, lines 1583–1598). “Runnable” means `c.Run != nil || c.RunE != nil` (`command.go`, lines 1551–1553).",
+  "responded_at": "2026-09-15T20:28:02Z",
+  "sha256": "bab407434fce20b12fcb7eec66f300ad9bbe84a470ea256e2568d5c8cc701846"
+}

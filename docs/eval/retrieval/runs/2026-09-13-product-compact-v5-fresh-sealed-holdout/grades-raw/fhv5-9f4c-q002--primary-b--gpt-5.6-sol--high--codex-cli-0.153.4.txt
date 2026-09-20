@@ -1,0 +1,1 @@
+PASS: The response accurately states that global COBRA_ACTIVE_HELP="0" overrides the program-specific setting; otherwise, GetActiveHelpConfig returns the program-specific value derived from the root command’s name. The cited active_help.go:51-57 and 24-31 exist in the bundle and support these claims.

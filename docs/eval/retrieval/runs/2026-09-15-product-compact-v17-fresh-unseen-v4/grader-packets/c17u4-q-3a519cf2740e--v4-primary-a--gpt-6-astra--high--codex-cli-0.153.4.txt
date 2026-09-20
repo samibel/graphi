@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: e06d939179067c212beaee22129d0a4ef4f180fb1a532151dae30dea46ad280d
+QUERY ID: c17u4-q-3a519cf2740e
+
+QUESTION:
+How does the plugin test ensure help displays the invocation name rather than the executable's own command name?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:369-397 anchor="func TestPlugin(t *testing.T)" reason=The test supplies a display-name annotation and verifies it in both root and child help usage.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 9f1063f500a3; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command_test.go","start_line":963,"end_line":984,"text":"func TestSetHelpCommand(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\tc.AddCommand(&Command{Use: \"empty\", Run: emptyRun})\n\n\texpected := \"WORKS\"\n\tc.SetHelpCommand(&Command{\n\t\tUse:   \"help [command]\",\n\t\tShort: \"Help about any command\",\n\t\tLong: `Help provides help for any command in the application.\n\tSimply type ` + c.Name() + ` help [path to command] for full details.`,\n\t\tRun: func(c *Command, _ []string) { c.Print(expected) },\n\t})\n\n\tgot, err := executeCommand(c, \"help\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\tif got != expected {\n\t\tt.Errorf(\"Expected to contain %q, got %q\", expected, got)\n\t}\n}"},{"path":"command_test.go","start_line":369,"end_line":381,"text":"// TestPlugin checks usage as plugin for another command such as kubectl.  The\n// executable is `kubectl-plugin`, but we run it as `kubectl plugin`. The help\n// text should reflect the way we run the command.\nfunc TestPlugin(t *testing.T) {\n\trootCmd := &Command{\n\t\tUse:  \"plugin\",\n\t\tArgs: NoArgs,\n\t\tAnnotations: map[string]string{\n\t\t\tCommandDisplayNameAnnotation: \"kubectl plugin\",\n\t\t},\n\t}\n\n\tsubCmd := &Command{Use: \"sub [flags]\", Args: NoArgs, Run: emptyRun}"},{"path":"command_test.go","start_line":1010,"end_line":1026,"text":"// TestHelpFlagInHelp checks,\n// if '--help' flag is shown in help for child (executing `parent help child`),\n// that has no other flags.\n// Related to https://github.com/spf13/cobra/issues/302.\nfunc TestHelpFlagInHelp(t *testing.T) {\n\tparentCmd := &Command{Use: \"parent\", Run: func(*Command, []string) {}}\n\n\tchildCmd := &Command{Use: \"child\", Run: func(*Command, []string) {}}\n\tparentCmd.AddCommand(childCmd)\n\n\toutput, err := executeCommand(parentCmd, \"help\", \"child\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\tcheckStringContains(t, output, \"[flags]\")\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command_test.go","start_line":32,"end_line":35,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {\n\t_, output, err = executeCommandC(root, args...)\n\treturn output, err\n}"},{"path":"command.go","start_line":1315,"end_line":1320,"text":"\t\tif commandPathLen > c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(x.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen"},{"path":"command.go","start_line":1186,"end_line":1186,"text":"func (c *Command) InitDefaultHelpFlag() {"},{"path":"command.go","start_line":1525,"end_line":1526,"text":"// with prefix\nfunc (c *Command) hasNameOrAliasPrefix(prefix string) bool {"},{"path":"cobra.go","start_line":84,"end_line":85,"text":"// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {"}],"provenance":{"input_sha256":"bfc7f343247134508d5f58c6f5c334e803f7ab90f809afc4670cd5cfc80facbb","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The `TestPlugin` snippet (`command_test.go:369–381`) sets `CommandDisplayNameAnnotation` to `"kubectl plugin"` with `Use: "plugin"`, but omits the help execution and assertions needed to show how the test verifies the displayed name.
+----- END THE RATER'S RESPONSE -----

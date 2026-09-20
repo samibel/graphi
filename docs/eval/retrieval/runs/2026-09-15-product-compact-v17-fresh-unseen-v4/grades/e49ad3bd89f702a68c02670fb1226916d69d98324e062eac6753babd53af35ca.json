@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-0275d3a9b18f",
+  "response_sha256": "e49ad3bd89f702a68c02670fb1226916d69d98324e062eac6753babd53af35ca",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly explains that OnlyValidArgs strips tab-separated descriptions, builds a separate slice without changing cmd.ValidArgs, and validates positional arguments using exact equality. All claims and citations are supported by the preserved args.go and cobra.go spans.",
+  "graded_at": "2026-09-15T20:36:06Z",
+  "sha256": "457fe92a11d7a3568084141f602a920e192375c29018969ff4f1137e63ae1fff"
+}

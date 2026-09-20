@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 17,
+  "previous_sha256": "5e6cfd98beca5d9bd3b3a9bf0b452a6b95055cf19fc22bf77c5f7fb9c285446d",
+  "kind": "response",
+  "query_id": "cb-22",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "373848d904413d086430b71827746cb309a9938c9217ba2137bdf5390e0ff296",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The shown man-page generator uses recursive depth-first traversal: `GenManTreeFromOpts` iterates `cmd.Commands()`, skips unavailable commands and additional help topic commands, and recursively calls itself on each remaining child with the same options, returning immediately on error (`doc/man_docs.go:48–60`). It resumes the current command's page setup after the child loop (`61–69`). The response also shows Markdown and YAML tree generators beginning with `cmd.Commands()` loops (`doc/md_docs.go:133–134`, `doc/yaml_docs.go:60–61`), but their traversal bodies are omitted.\n",
+  "sha256": "f9d8b08067e580e42e90d29a32b77631eade0fb3e2e1bda6b5194099d505058a"
+}

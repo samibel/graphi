@@ -1,0 +1,1 @@
+FAIL: The response omits the essential exit with status 1 behavior identified by the reviewed spans. The preserved bundle lacks that exit behavior, so it cannot support a complete answer.

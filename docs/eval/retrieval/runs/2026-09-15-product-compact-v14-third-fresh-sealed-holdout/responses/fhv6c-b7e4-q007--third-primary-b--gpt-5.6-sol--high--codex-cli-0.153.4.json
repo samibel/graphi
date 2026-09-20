@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q007",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "ab6d1e573e946713d075d6f937820ecbc5cdd6f35d735095f2bc40c604155065",
+  "bundle_sha256": "12124b9ee2c5a613b87c2902bb7a8789e861de71813b3d68d4231507f6df6176",
+  "prompt_sha256": "e83ff07d6abb3d0fdd04136f5da85eaaa62f45a0296802f2bf193e0fc1c8a214",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`exactArgsWithInvalidCount` is a test helper in `args_test.go:88–97`. It asserts that:\n\n- `err` is non-nil, otherwise it calls `t.Fatal(\"Expected an error\")`.\n- `err.Error()` equals exactly `\"accepts 2 arg(s), received 3\"`.\n- On mismatch, it calls `t.Fatalf(\"Expected %q, got %q\", expected, got)`.",
+  "responded_at": "2026-09-15T08:28:43Z",
+  "sha256": "ca558bcbd2760042521f7d8e7d036176081ce2ca72b4142bef0ae38ba427d14b"
+}

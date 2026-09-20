@@ -1,0 +1,9 @@
+Call `SetErrPrefix` on the command:
+
+```go
+cmd.SetErrPrefix("MyError:")
+```
+
+Cobra stores this in `Command.errPrefix` ([`command.go:357–360`](command.go)) and prints it via `c.PrintErrln(c.ErrPrefix(), err.Error())` ([`command.go:1095–1101`](command.go)). Child commands inherit their parent’s prefix unless they define their own; otherwise the default is `"Error:"` ([`command.go:611–621`](command.go)).
+
+Note: `CheckErr` separately hard-codes `"Error:"` ([`cobra.go:232–238`](cobra.go)), so `SetErrPrefix` does not customize errors printed through `CheckErr`.

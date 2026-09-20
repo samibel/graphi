@@ -1,0 +1,1 @@
+PASS: The response correctly explains that OnlyValidArgs strips tab-separated descriptions, builds a separate slice without changing cmd.ValidArgs, and validates positional arguments using exact equality. All claims and citations are supported by the preserved args.go and cobra.go spans.

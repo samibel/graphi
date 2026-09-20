@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q034",
+  "response_sha256": "4f64019e916db46428a22fbefaf634e8edd89af840906f0b7cc183c3a6b4fc3d",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not trace command lookup. It correctly identifies that the bundle omits the descent implementation, but recursive command-token removal, preservation of flags and remaining arguments, deepest-match stopping, and legacy validation cannot be verified from the supplied spans.",
+  "graded_at": "2026-09-13T15:40:07Z",
+  "sha256": "59eb86c62ad17746b4a41450adbf813e81988719718cb8c1de4eb2072d767564"
+}

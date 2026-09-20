@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-e3a7-7a12-831f-b1df11547508"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`trimRightSpace` removes trailing characters classified as whitespace by `unicode.IsSpace`. In `cobra.go`, lines 159–161, it calls `strings.TrimRightFunc(s, unicode.IsSpace)`."}}
+{"type":"turn.completed","usage":{"input_tokens":17269,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":46,"reasoning_output_tokens":0}}

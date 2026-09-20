@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q054",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "f3402672cc20c16101a7293ea09d057fff253a596a9bf83b5e234f00c42512c0",
+  "bundle_sha256": "30fff047037b3fc1fa3cb327450389462a546fa1343132b0deded878048e7fde",
+  "prompt_sha256": "a4e03ed1db189d7edec427a81c372414c9448ea630d5faf69034495ad7d7c6e7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains neither a Viper binding example nor the backing-variable caveat; `site/content/user_guide.md` lines 270–273 only describe persistent flags’ availability to descendant commands.",
+  "responded_at": "2026-09-13T15:28:17Z",
+  "sha256": "7c645ef49ab578595043b5915ea21f2aaa8d7a9756dd90705949bf0530222cbb"
+}

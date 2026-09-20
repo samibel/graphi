@@ -1,0 +1,1 @@
+Cobra stores functions passed to `OnInitialize` in the package-level `initializers` slice (`cobra.go:42, 97–101`). During command execution, after confirming the command is runnable, it calls `c.preRun()` (`command.go:921–933`), which iterates over every registered initializer and invokes it in registration order (`command.go:1015–1019`).

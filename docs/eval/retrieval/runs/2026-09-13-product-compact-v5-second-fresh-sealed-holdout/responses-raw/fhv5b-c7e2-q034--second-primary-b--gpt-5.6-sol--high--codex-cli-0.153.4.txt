@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `stripFlags` (`command.go:643–679`) and `ParseFlags` (`command.go:1818–1838`), but omits the traversal implementation after `command.go:788`, so tree descent and argument preservation cannot be traced.

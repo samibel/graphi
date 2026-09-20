@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved package declaration and both example functions, including ExampleGenManTree’s command, header, and generation call targeting "/tmp". Its citations match the supplied spans, and it appropriately limits completeness because the bundle is truncated.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only the opening of `UsageTemplate()` (`command.go:544–545`), omitting the template sections and conditions that separate grouped commands, ungrouped commands, local flags, global flags, and additional help topics.

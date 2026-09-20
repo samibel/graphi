@@ -1,0 +1,7 @@
+`NoFileCompletions` returns no candidates (`nil`) together with the `ShellCompDirectiveNoFileComp` directive:
+
+```go
+return nil, ShellCompDirectiveNoFileComp
+```
+
+([completions.go, lines 118–122]). That directive explicitly means the shell “should not provide file completion even when no completion is provided” ([completions.go, lines 62–65]). The Bash completion generator also embeds `ShellCompDirectiveNoFileComp` into its generated script ([bash_completions.go, lines 389–402]).

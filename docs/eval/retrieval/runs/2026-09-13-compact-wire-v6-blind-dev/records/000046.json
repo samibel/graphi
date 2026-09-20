@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 46,
+  "previous_sha256": "cd6854523511edd91ac35e3d1252edfaaa7f6edc1a3c7074ffa8839e8c5be84c",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "6d73284d988d6018053bce6f79c164c0a9d4dba629cc1db3543b29a9424832f3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `doc.GenManTree(cmd, header, dir)`. It generates a man page for the command and every descendant by delegating to `GenManTreeFromOpts` with the supplied header and directory and `\"-\"` as the command separator (`doc/man_docs.go:33-45`). For customization, `GenManTreeOptions` exposes `Header`, `Path`, and `CommandSeparator` (`doc/man_docs.go:82-88`).",
+  "sha256": "33dc661cc2a508eaa2499ee7a89778be3782f31e10d98b223a1aa37282d41ae7"
+}

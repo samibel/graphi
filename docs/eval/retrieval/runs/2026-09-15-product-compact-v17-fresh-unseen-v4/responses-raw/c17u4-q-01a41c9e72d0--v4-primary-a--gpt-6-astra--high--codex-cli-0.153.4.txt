@@ -1,0 +1,12 @@
+`legacyArgs` accepts (returns `nil`):
+
+- Any arguments when the command has no subcommands.
+- Any arguments for a child command, even if it has subcommands.
+- Zero arguments for a root command with subcommands.
+
+These cases follow from `args.go:23–39`: the early `!cmd.HasSubCommands()` return and the error condition `!cmd.HasParent() && len(args) > 0`.
+
+It returns an error whenever a root command has subcommands and receives at least one argument:
+`unknown command %q for %q%s`, using `args[0]`, `cmd.CommandPath()`, and `cmd.findSuggestions(args[0])`. This function itself performs no argument-name lookup (`args.go:34–36`).
+
+Suggestions are appended only when `DisableSuggestions` is false and `SuggestionsFor(arg)` returns results. They appear under “Did you mean this?”, one per line. A nonpositive `SuggestionsMinimumDistance` is set to `2` (`command.go:749–765`).

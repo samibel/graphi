@@ -1,0 +1,1 @@
+Levenshtein distance is computed by ld(s, t string, ignoreCase bool) int in cobra.go:187–197; the comment explicitly states its purpose, and the shown body optionally lowercases inputs and allocates a distance matrix. command.go:836 calls ld(typedName, cmd.Name(), true) for command suggestions and compares its result with SuggestionsMinimumDistance.

@@ -1,0 +1,7 @@
+Set `DisableSuggestions` to `true` on your command:
+
+```go
+command.DisableSuggestions = true
+```
+
+The user guide explicitly documents this in `site/content/user_guide.md:710–714`. In `command.go:750–753`, `(*Command).findSuggestions` checks `c.DisableSuggestions` and immediately returns an empty string when enabled.

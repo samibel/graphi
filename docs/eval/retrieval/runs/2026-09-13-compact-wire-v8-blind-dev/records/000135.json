@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 135,
+  "previous_sha256": "3e17a624f0eb8ba3d3861bb77d62bd6851fe9af71aac79762514f1336e1acd65",
+  "kind": "grade",
+  "query_id": "ci-1236",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "13e6bc5078933959ce631567b77d708bc84403d4fed9e5e4c1a8533f4dd7f3b1",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and supported by the sealed bundle: command.go:1515–1522 explicitly defines `CalledAs()` as returning the command name or alias used to invoke the command, or an empty string if it was not called. The cited assignments to `commandCalledAs.name` at command.go:771–773 and 1527–1538 support the explanation that the invoked name or alias is recorded during matching.\n",
+  "sha256": "c6d1b7180bfab2792a3d62aac7a77df193b25914a08729812ffc2b3ea725b772"
+}

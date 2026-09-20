@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-d667-7213-81ba-ecc2a51da40c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When `cmd.ValidArgs` is nonempty, `OnlyValidArgs` returns immediately on the first invalid value with an error formatted as `invalid argument %q for %q%s`, containing the value, full command path, and any suggestions (`args.go:59–62`).\n\nMatching uses exact string equality after stripping tab-separated descriptions from valid entries (`args.go:53–57`; `cobra.go:223–230`). Suggestions are based on `args[0]`, even if a later argument is invalid (`args.go:61`; `command.go:750–765`).\n\nIf `cmd.ValidArgs` is empty, validation is skipped and it returns `nil` (`args.go:52–65`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17167,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":148,"reasoning_output_tokens":0}}

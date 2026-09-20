@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-28:primary-a
+Outcome: fail
+Rationale: Response begins exactly INSUFFICIENT; setters and group-list helpers omit GroupID's help-presentation purpose and behavioral contract.

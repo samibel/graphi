@@ -1,0 +1,1 @@
+PASS: The response correctly explains local-first, recursive parent inheritance and the default fallback. It includes merging persistent flags, rendering the help template through OutOrStdout(), and reporting rendering errors via PrintErrln. All claims and citations are supported by the preserved command.go span.

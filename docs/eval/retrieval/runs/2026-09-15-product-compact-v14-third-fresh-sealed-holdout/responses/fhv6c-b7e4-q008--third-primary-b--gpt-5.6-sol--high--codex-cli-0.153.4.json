@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q008",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "e8569c229d05315971bd0ce3f03bf260bc62c59576418dedbec1e4f336715fe5",
+  "bundle_sha256": "59b92c58e28bc398b862148b1bcbd640497ecce4c3fc99fff396d0289cedbfd8",
+  "prompt_sha256": "fc928e3dbd8d448088c452b27724b2a6963f60f372e6eb72be0bc10882e675ae",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`rangeArgsWithInvalidCount` is a test helper in `args_test.go:99–108`. It:\n\n- Fails with `t.Fatal(\"Expected an error\")` if `err == nil`.\n- Otherwise requires `err.Error()` to equal `\"accepts between 2 and 4 arg(s), received 1\"`.\n- Reports a mismatch with `t.Fatalf(\"Expected %q, got %q\", expected, got)`.",
+  "responded_at": "2026-09-15T08:28:45Z",
+  "sha256": "e635e6d3e5a8cc1d93796b071717d08c05bb5f51bdc8939cd7ea4ca0d43f7dd6"
+}

@@ -1,0 +1,5 @@
+`minimumNArgsWithLessArgs` is a test helper in `args_test.go` (lines 66–75). It verifies that:
+
+- `err` is non-nil, otherwise calls `t.Fatal("Expected an error")`.
+- `err.Error()` exactly equals `"requires at least 2 arg(s), only received 1"`.
+- A mismatch calls `t.Fatalf("Expected %q, got %q", expected, got)`.

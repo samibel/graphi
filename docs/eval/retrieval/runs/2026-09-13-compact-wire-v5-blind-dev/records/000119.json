@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 119,
+  "previous_sha256": "b13bb5dbbd386994e4d84b42a12d186c2bb56534ec07048f5a03d607992f402f",
+  "kind": "grade",
+  "query_id": "cb-28",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "b51e36ea5637703237ff9b14ad282cf00b5374f4f42aed47d46eadfdea448bd8",
+  "outcome": "fail",
+  "rationale": "FAIL: The bundle shows group registration and special help/completion group setters but omits Command.GroupID and the fact that it groups a subcommand in its parent's help output. The response's central explanation is therefore not established by the exact prompt bytes.\n",
+  "sha256": "d7d7b25cafc4b8377223dcf3c3c71b748e29a0180377675aeb9459950813becd"
+}

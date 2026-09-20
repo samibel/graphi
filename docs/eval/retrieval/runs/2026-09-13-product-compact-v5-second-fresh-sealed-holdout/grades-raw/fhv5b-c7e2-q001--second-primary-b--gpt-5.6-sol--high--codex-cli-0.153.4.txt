@@ -1,0 +1,1 @@
+PASS: The response correctly states that any nonempty argument slice causes an error and that the first argument, args[0], is reported with the command path. The cited args.go lines 40–47 exist in the bundle and directly support these claims.

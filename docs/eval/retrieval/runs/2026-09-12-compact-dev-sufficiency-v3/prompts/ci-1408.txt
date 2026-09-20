@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how to access Global Flag in subCommand?
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"how to access Global Flag in subCommand?\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"command.go","start_line":1637,"end_line":1664,"text":"func (c *Command) GlobalNormalizationFunc() func(f *flag.FlagSet, name string) flag.NormalizedName {\n\treturn c.globNormFunc\n}\n\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}\n\n// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands.\nfunc (c *Command) LocalNonPersistentFlags() *flag.FlagSet {\n\tpersistentFlags := c.PersistentFlags()\n\n\tout := flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.LocalFlags().VisitAll(func(f *flag.Flag) {\n\t\tif persistentFlags.Lookup(f.Name) == nil {\n\t\t\tout.AddFlag(f)\n\t\t}\n\t})"},{"path":"command.go","start_line":364,"end_line":366,"text":"func (c *Command) SetGlobalNormalizationFunc(n func(f *flag.FlagSet, name string) flag.NormalizedName) {\n\tc.Flags().SetNormalizeFunc(n)\n\tc.PersistentFlags().SetNormalizeFunc(n)"},{"path":"command.go","start_line":109,"end_line":110,"text":"\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the"},{"path":"completions.go","start_line":51,"end_line":52,"text":"\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"bash_completions.go","start_line":574,"end_line":575,"text":"\t\t// localNonPersistentFlags are used to stop the completion of subcommands when one is set\n\t\t// if TraverseChildren is true we should allow to complete subcommands"},{"path":"command.go","start_line":1655,"end_line":1656,"text":"// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands.\nfunc (c *Command) LocalNonPersistentFlags() *flag.FlagSet {"},{"path":"completions.go","start_line":45,"end_line":46,"text":"type flagCompError struct {\n\tsubCommand string"},{"path":"command.go","start_line":1795,"end_line":1796,"text":"func (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)"},{"path":"command.go","start_line":1643,"end_line":1644,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {"},{"path":"command.go","start_line":1806,"end_line":1807,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {"}],"provenance":{"input_sha256":"ffb2c4cf6b54d180a9695e297b1f8876a91e1971ab41e02c5a5ad9cdaf451f88","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

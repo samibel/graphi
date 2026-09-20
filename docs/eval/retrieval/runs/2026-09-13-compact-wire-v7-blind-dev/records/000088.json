@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 88,
+  "previous_sha256": "c4dac87caebc9d066b6c7158e7701d5901be93768a500ae31dba5a8126d134c0",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "10cf9c41285ce4315dd0b8da0304c66d0673b414a25c3e4e174d15072e8b400b",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly describes the declaration and behavior supported by `completions.go:132-146`: flag lookup via `c.Flag(flagName)`, errors for nonexistent and already-registered flags, mutex-protected insertion into `flagCompletionFunctions`, and `nil` on success. Its additional claims are also supported by the preserved bundle: the global map at `completions.go:35-36`, the `sync.RWMutex` at `completions.go:38-39`, and retrieval through `GetFlagCompletionFunc` at `completions.go:148-160`.\n",
+  "sha256": "efaa8024172607f36a2f125256e51242185549dce158655637d0e1cf37eb165b"
+}

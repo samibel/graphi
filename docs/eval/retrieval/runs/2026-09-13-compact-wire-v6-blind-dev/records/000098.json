@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 98,
+  "previous_sha256": "f8efec69c0a59118f15f405960c15f99fd0651caf637385fa128fb5748c10b86",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "7cb73512a3cca62674b9966b70a23c4d2f3109448c943f3a93fcec22cf52a9ab",
+  "outcome": "fail",
+  "rationale": "FAIL: It covers Find's outer walk but omits the matching rules inside findNext, so the command-selection mechanism is incomplete.",
+  "sha256": "fdc5dd481863abb441186ba7851c81493d79718fba5f68074b187227b8123153"
+}

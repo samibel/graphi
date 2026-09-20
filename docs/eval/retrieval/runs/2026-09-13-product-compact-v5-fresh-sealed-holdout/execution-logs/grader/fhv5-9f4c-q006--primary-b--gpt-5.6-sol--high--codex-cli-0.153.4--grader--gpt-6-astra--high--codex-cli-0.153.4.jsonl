@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acb-9f1c-7591-94ca-9d90c562f80a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the preserved implementation at completions.go:162-191: enabled names are joined with comma-space in the stated order, no recognized flags yields ShellCompDirectiveDefault, and values >= shellCompDirectiveMaxValue return the explicit decimal-valued error string, overriding collected names."}}
+{"type":"turn.completed","usage":{"input_tokens":18216,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":64,"reasoning_output_tokens":0}}

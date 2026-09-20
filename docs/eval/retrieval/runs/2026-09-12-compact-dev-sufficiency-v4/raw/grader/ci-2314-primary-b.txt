@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-2314:primary-b
+Outcome: fail
+Rationale: Response begins exactly INSUFFICIENT; bundle omits help shorthand registration and boolean help dispatch needed to explain separate -h and --help behavior.

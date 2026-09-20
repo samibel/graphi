@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-3aa1-7140-acbb-7469a42a5299"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Before ordinary execution, `Command.Context()` returns `nil`. After `Execute()` or `ExecuteC()`, it returns `context.Background()`, because those methods replace a nil context with a background context (`command.go:258–266`, `Command.Context`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16423,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":93,"reasoning_output_tokens":35}}

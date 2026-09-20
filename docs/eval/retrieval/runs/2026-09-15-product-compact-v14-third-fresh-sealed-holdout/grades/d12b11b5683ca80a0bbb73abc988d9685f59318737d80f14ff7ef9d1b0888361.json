@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q048",
+  "response_sha256": "d12b11b5683ca80a0bbb73abc988d9685f59318737d80f14ff7ef9d1b0888361",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response does not answer the required root-command attachment or fallback invocation behavior. Neither the preserved bundle nor the follow-up shows that the custom processor runs when built-in completion cannot resolve a completion.",
+  "graded_at": "2026-09-15T08:34:55Z",
+  "sha256": "3cba8968dbef303bcc1f408472661404ffb28f2ba1fbf8f85c0c11efb2d11aa9"
+}

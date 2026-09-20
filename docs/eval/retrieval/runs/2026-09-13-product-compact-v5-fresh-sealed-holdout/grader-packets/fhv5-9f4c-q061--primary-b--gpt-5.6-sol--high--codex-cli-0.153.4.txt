@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 32e8bf48a1b69f8800e136a49c520ee1aba1d1bf964838ea99c3a485404909de
+QUERY ID: fhv5-9f4c-q061
+
+QUESTION:
+If only an ancestor defines a custom help function, will a descendant use it or fall back immediately to Cobra's default?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:450-468 anchor="return c.Parent().HelpFunc()" reason=The descendant recursively inherits the ancestor's custom function; the default is created only when no command in the chain defines one.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query e45995abca84; read in order (244/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/user_guide.md","start_line":495,"end_line":496,"text":"This will be called when a user runs 'app help'. Additionally, help will also\nsupport all other commands as input. Say, for instance, you have a command called"},{"path":"command.go","start_line":450,"end_line":468,"text":"// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}"},{"path":"command.go","start_line":322,"end_line":323,"text":"// SetHelpFunc sets help function. Can be defined by Application.\nfunc (c *Command) SetHelpFunc(f func(*Command, []string)) {"},{"path":"command.go","start_line":336,"end_line":336,"text":"\t}"},{"path":"command.go","start_line":121,"end_line":122,"text":"\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current\n\t// command has been declared."},{"path":"command.go","start_line":131,"end_line":131,"text":"\tPreRunE func(cmd *Command, args []string) error"},{"path":"command.go","start_line":1228,"end_line":1229,"text":"// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {"},{"path":"command.go","start_line":86,"end_line":87,"text":"\t// Only one of ValidArgs and ValidArgsFunction can be used for a command.\n\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)"},{"path":"doc/yaml_docs.go","start_line":52,"end_line":53,"text":"// it is undefined which help output will be in the file `cmd-sub-third.1`.\nfunc GenYamlTree(cmd *cobra.Command, dir string) error {"},{"path":"doc/yaml_docs.go","start_line":59,"end_line":59,"text":"// GenYamlTreeCustom creates yaml structured ref files."},{"path":"doc/man_docs.go","start_line":37,"end_line":38,"text":"// it is undefined which help output will be in the file `cmd-sub-third.1`.\nfunc GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {"}],"provenance":{"input_sha256":"79fd4e2b80782ad5a2e4e115c39fe0878874b282cf337dd5e1226a6ff51d5c11","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+A descendant will use the ancestor’s custom help function. In `command.go:450-468`, `HelpFunc()` checks `c.helpFunc`, then recursively calls `c.Parent().HelpFunc()` when a parent exists; Cobra’s default help function is returned only after reaching a command with no parent and no custom function.
+----- END THE RATER'S RESPONSE -----

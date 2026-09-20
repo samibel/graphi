@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+MarkFlagsMutuallyExclusive
+
+----- BEGIN task_context/compact-dev/5 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"MarkFlagsMutuallyExclusive\"; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/5","sources":[{"path":"flag_groups.go","start_line":63,"end_line":78,"text":"// MarkFlagsMutuallyExclusive marks the given flags with annotations so that Cobra errors\n// if the command is invoked with more than one flag from the given set of flags.\nfunc (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a mutually exclusive flag group\", v))\n\t\t}\n\t\t// Each time this is called is a single new entry; this allows it to be a member of multiple groups if needed.\n\t\tif err := c.Flags().SetAnnotation(v, mutuallyExclusive, append(f.Annotations[mutuallyExclusive], strings.Join(flagNames, \" \"))); err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t}\n}\n"},{"path":"flag_groups.go","start_line":47,"end_line":61,"text":"// MarkFlagsOneRequired marks the given flags with annotations so that Cobra errors\n// if the command is invoked without at least one flag from the given set of flags.\nfunc (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a one-required flag group\", v))\n\t\t}\n\t\tif err := c.Flags().SetAnnotation(v, oneRequired, append(f.Annotations[oneRequired], strings.Join(flagNames, \" \"))); err != nil {\n\t\t\t// Only errs if the flag isn't found.\n\t\t\tpanic(err)\n\t\t}\n\t}\n}"},{"path":"flag_groups.go","start_line":31,"end_line":34,"text":"// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors\n// if the command is invoked with a subset (but not all) of the given flags.\nfunc (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"flag_groups.go","start_line":25,"end_line":29,"text":"const (\n\trequiredAsGroup   = \"cobra_annotation_required_if_others_set\"\n\toneRequired       = \"cobra_annotation_one_required\"\n\tmutuallyExclusive = \"cobra_annotation_mutually_exclusive\"\n)"}],"provenance":{"input_sha256":"84f04896344031feff3d68eef5f33f4bb105f08eb319760d338b05aeed853418","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/5 RESPONSE BYTES -----

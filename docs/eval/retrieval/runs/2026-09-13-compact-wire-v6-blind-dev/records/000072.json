@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 72,
+  "previous_sha256": "5b102770dd7d4311efba49ffa6b9d902e05f31768956ddf32bc3216487f962de",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f0a3620c2cd0b8df091717f53686b6dc0da35ee6892a5772bb422a3c6da039f0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the global option as a persistent flag on the root/parent, then access it from the subcommand with `cmd.Flag(\"long-name\")`. `Command.Flag` searches the command and then inherited persistent flags (`command.go:1794-1803`), while `persistentFlag` builds and searches the parent persistent-flag set (`command.go:1805-1816`).",
+  "sha256": "a893f859db78031d5287156c5212d975d7361443d65407fc995161cb2e9a8c2f"
+}

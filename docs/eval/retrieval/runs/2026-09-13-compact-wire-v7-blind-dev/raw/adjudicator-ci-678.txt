@@ -1,0 +1,7 @@
+In tests, pass flags as command arguments with `SetArgs`, for example:
+
+```go
+cmd.SetArgs([]string{"--flag", "value"})
+```
+
+Evidence: [`command.go:275-278`] defines `func (c *Command) SetArgs(a []string)` and explicitly says it is “particularly useful when testing.” The response does not include an execution example, but `SetArgs` is the test-facing API shown.

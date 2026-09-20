@@ -1,0 +1,1 @@
+INSUFFICIENT The response only shows `command.go:515-521` defining `UsagePadding()` as the greater of `minUsagePadding` and the parent’s `commandsMaxUseLen`; it omits how `CommandPathPadding` and name padding are chosen.

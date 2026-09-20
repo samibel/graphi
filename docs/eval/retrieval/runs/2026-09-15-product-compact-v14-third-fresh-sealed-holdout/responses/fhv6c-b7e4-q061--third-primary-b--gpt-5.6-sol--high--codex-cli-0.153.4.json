@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q061",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a9f4dbe673610a7975795e93eef17a0ae558f2955d4ccff135110b23bd1ac5b5",
+  "bundle_sha256": "d6685aa76611442bbf9cdb4ddc537196bd242d611ad03b0a891f46644fe7fb92",
+  "prompt_sha256": "e24075b1ae7005b69b9898b2ccb8e45c593622f1de28d9bb7f67d4c8096db779",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows hidden commands are excluded from availability listings (`command.go:1560–1576`) but omits the command-resolution and execution logic needed to determine whether they can still be executed.",
+  "responded_at": "2026-09-15T08:31:48Z",
+  "sha256": "e8699631d2603593f83951d4b27f7e769f8c14315a3bc356ad1009b713c29b79"
+}

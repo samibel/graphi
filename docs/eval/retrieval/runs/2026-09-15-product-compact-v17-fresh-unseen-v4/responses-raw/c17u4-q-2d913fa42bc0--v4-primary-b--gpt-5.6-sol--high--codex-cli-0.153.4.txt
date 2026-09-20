@@ -1,0 +1,1 @@
+`SetOutput` is a deprecated compatibility method equivalent to calling both `SetOut` and `SetErr` with the same writer. It changes the command’s usage-output destination (`c.outWriter`) and error-message destination (`c.errWriter`) (`command.go:279-286`). If passed `nil`, their documented fallback is `os.Stderr` (`command.go:280-281`).

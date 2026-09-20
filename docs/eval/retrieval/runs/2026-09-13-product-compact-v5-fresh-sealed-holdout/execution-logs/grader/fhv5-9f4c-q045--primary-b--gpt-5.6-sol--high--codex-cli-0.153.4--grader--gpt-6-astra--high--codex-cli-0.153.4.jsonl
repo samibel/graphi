@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad4-cf2c-7ce2-bcc2-09d65c20fcbd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not identify the supported shells or Bash version constraint. The preserved bundle includes only the introductory heading at site/content/active_help.md:20, omitting the essential shell list and version requirement."}}
+{"type":"turn.completed","usage":{"input_tokens":17965,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

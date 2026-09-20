@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q050",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "c00c96473eb3d295b2b714f1c6d4692268c69e018ade668d01ecd8e8fc9c7b7a",
+  "bundle_sha256": "ac1c26984c72dbea59a03c3b1ad9663266a4b7c003019b3dfaebeb1eafb83a26",
+  "prompt_sha256": "ffb4db415c7087cd4d97c6070a41c8ee1d37857c28de3c5f724cde4acd8e659f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response names `BashCompSubdirsInDir`, `ValidArgsFunction`, `ShellCompDirectiveFilterFileExt`, and `ShellCompDirectiveFilterDirs`, but contains no lines identifying which annotations, helpers, or directives Fish completion does not support.",
+  "responded_at": "2026-09-13T12:37:24Z",
+  "sha256": "d2431bdc62403616066391345b02461642af992f38bc855f4938653ba9406585"
+}

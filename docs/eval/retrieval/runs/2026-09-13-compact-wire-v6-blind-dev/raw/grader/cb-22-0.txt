@@ -1,0 +1,1 @@
+PASS: It correctly identifies the depth-first post-order walk, filtering conditions, and per-command output behavior demonstrated by the man generator.

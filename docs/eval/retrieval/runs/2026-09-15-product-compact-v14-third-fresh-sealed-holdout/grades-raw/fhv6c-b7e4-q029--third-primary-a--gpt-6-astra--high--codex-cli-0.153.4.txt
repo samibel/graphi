@@ -1,0 +1,1 @@
+PASS: The response correctly states that NoArgs rejects a single positional value, supported by its documentation and len(args) > 0 check at args.go:41–43. The separate ValidArgs check in OnlyValidArgs is supported by args.go:49–66.

@@ -1,0 +1,93 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: e1b962c41077fcbe26cf077273009c10737ee4dd8f15b25dae1a67afff4a323b
+FOLLOW-UP READ CONTENT ADDRESS: 2cece7746008c0e0ece009a76b8c9fe596f90c2902a6ee46e960642f69358bd8
+QUERY ID: fhv6c-b7e4-q050
+
+QUESTION:
+Which flag-value completion behaviors changed when Cobra standardized Zsh completion across shells?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/completions/zsh.md:30-39 anchor="Flag-value completion" reason=The table covers default file completion, filename filtering syntax, directory completion, repeated flags, and equals-form flags.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 3a38f92216ef; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/completions/zsh.md","start_line":5,"end_line":26,"text":"## Zsh completions standardization\n\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backwards-compatible, some small changes in behavior were introduced.\n\n### Deprecation summary\n\nSee further below for more details on these deprecations.\n\n* `cmd.MarkZshCompPositionalArgumentFile(pos, []string{})` is no longer needed.  It is therefore **deprecated** and silently ignored.\n* `cmd.MarkZshCompPositionalArgumentFile(pos, glob[])` is **deprecated** and silently ignored.\n  * Instead use `ValidArgsFunction` with `ShellCompDirectiveFilterFileExt`.\n* `cmd.MarkZshCompPositionalArgumentWords()` is **deprecated** and silently ignored.\n  * Instead use `ValidArgsFunction`.\n\n### Behavioral changes\n\n**Noun completion**\n|Old behavior|New behavior|\n|---|---|\n|No file completion by default (opposite of bash)|File completion by default; use `ValidArgsFunction` with `ShellCompDirectiveNoFileComp` to turn off file completion on a per-argument basis|\n|Completion of flag names without the `-` prefix having been typed|Flag names are only completed if the user has typed the first `-`|\n`cmd.MarkZshCompPositionalArgumentFile(pos, []string{})` used to turn on file completion on a per-argument position basis|File completion for all arguments by default; `cmd.MarkZshCompPositionalArgumentFile()` is **deprecated** and silently ignored|"},{"path":"site/content/completions/_index.md","start_line":482,"end_line":486,"text":"### Zsh completions standardization\n\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backward-compatible, some small changes in behavior were introduced.\nPlease refer to [Zsh Completions](zsh.md) for details.\n"},{"path":"site/content/completions/_index.md","start_line":27,"end_line":35,"text":"(writing the shell script to stdout allows the most flexible use):\n\n```go\nvar completionCmd = &cobra.Command{\n\tUse:   \"completion [bash|zsh|fish|powershell]\",\n\tShort: \"Generate completion script\",\n\tLong: fmt.Sprintf(`To load completions:\n\nBash:"},{"path":"completions.go","start_line":695,"end_line":698,"text":"\thaveNoDescFlag := !c.CompletionOptions.DisableNoDescFlag && !c.CompletionOptions.DisableDescriptions\n\n\tcompletionCmd := &Command{\n\t\tUse:   compCmdName,"},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"powershell_completions.go","start_line":321,"end_line":325,"text":"// GenPowerShellCompletionWithDesc generates powershell completion file with descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, true)\n}"},{"path":"zsh_completions.go","start_line":42,"end_line":43,"text":"func (c *Command) GenZshCompletionNoDesc(w io.Writer) error {\n\treturn c.genZshCompletion(w, false)"},{"path":"zsh_completions.go","start_line":80,"end_line":81,"text":"func (c *Command) genZshCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)"},{"path":"zsh_completions.go","start_line":25,"end_line":25,"text":"func (c *Command) GenZshCompletionFile(filename string) error {"}],"provenance":{"input_sha256":"0634a86e87115fb05c40a5a051133752ec5aa8ca24930e25cce23b2ad9f65cbb","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/completions/zsh.md:5-48"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/completions/zsh.md","start_line":5,"end_line":48,"text":"## Zsh completions standardization\n\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backwards-compatible, some small changes in behavior were introduced.\n\n### Deprecation summary\n\nSee further below for more details on these deprecations.\n\n* `cmd.MarkZshCompPositionalArgumentFile(pos, []string{})` is no longer needed.  It is therefore **deprecated** and silently ignored.\n* `cmd.MarkZshCompPositionalArgumentFile(pos, glob[])` is **deprecated** and silently ignored.\n  * Instead use `ValidArgsFunction` with `ShellCompDirectiveFilterFileExt`.\n* `cmd.MarkZshCompPositionalArgumentWords()` is **deprecated** and silently ignored.\n  * Instead use `ValidArgsFunction`.\n\n### Behavioral changes\n\n**Noun completion**\n|Old behavior|New behavior|\n|---|---|\n|No file completion by default (opposite of bash)|File completion by default; use `ValidArgsFunction` with `ShellCompDirectiveNoFileComp` to turn off file completion on a per-argument basis|\n|Completion of flag names without the `-` prefix having been typed|Flag names are only completed if the user has typed the first `-`|\n`cmd.MarkZshCompPositionalArgumentFile(pos, []string{})` used to turn on file completion on a per-argument position basis|File completion for all arguments by default; `cmd.MarkZshCompPositionalArgumentFile()` is **deprecated** and silently ignored|\n|`cmd.MarkZshCompPositionalArgumentFile(pos, glob[])` used to turn on file completion **with glob filtering** on a per-argument position basis (zsh-specific)|`cmd.MarkZshCompPositionalArgumentFile()` is **deprecated** and silently ignored; use `ValidArgsFunction` with `ShellCompDirectiveFilterFileExt` for file **extension** filtering (not full glob filtering)|\n|`cmd.MarkZshCompPositionalArgumentWords(pos, words[])` used to provide completion choices on a per-argument position basis (zsh-specific)|`cmd.MarkZshCompPositionalArgumentWords()` is **deprecated** and silently ignored; use `ValidArgsFunction` to achieve the same behavior|\n\n**Flag-value completion**\n\n|Old behavior|New behavior|\n|---|---|\n|No file completion by default (opposite of bash)|File completion by default; use `RegisterFlagCompletionFunc()` with `ShellCompDirectiveNoFileComp` to turn off file completion|\n|`cmd.MarkFlagFilename(flag, []string{})` and similar used to turn on file completion|File completion by default; `cmd.MarkFlagFilename(flag, []string{})` no longer needed in this context and silently ignored|\n|`cmd.MarkFlagFilename(flag, glob[])`  used to turn on file completion **with glob filtering** (syntax of `[]string{\"*.yaml\", \"*.yml\"}` incompatible with bash)|Will continue to work, however, support for bash syntax is added and should be used instead so as to work for all shells (`[]string{\"yaml\", \"yml\"}`)|\n|`cmd.MarkFlagDirname(flag)` only completes directories (zsh-specific)|Has been added for all shells|\n|Completion of a flag name does not repeat, unless flag is of type `*Array` or `*Slice` (not supported by bash)|Retained for `zsh` and added to `fish`|\n|Completion of a flag name does not provide the `=` form (unlike bash)|Retained for `zsh` and added to `fish`|\n\n**Improvements**\n\n* Custom completion support (`ValidArgsFunction` and `RegisterFlagCompletionFunc()`)\n* File completion by default if no other completions found\n* Handling of required flags\n* File extension filtering no longer mutually exclusive with bash usage\n* Completion of directory names *within* another directory\n* Support for `=` form of flags"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Cobra 1.1’s Zsh standardization changed or preserved these flag-value behaviors, documented in `site/content/completions/zsh.md`:
+
+- **File completion became the default.** Disable it with `RegisterFlagCompletionFunc()` and `ShellCompDirectiveNoFileComp` (line 34).
+- **Explicitly enabling file completion became unnecessary.** `cmd.MarkFlagFilename(flag, []string{})` is silently ignored in this context (line 35).
+- **Filename filtering gained cross-shell syntax.** Existing glob patterns such as `[]string{"*.yaml", "*.yml"}` still work, but the recommended syntax is `[]string{"yaml", "yml"}` for compatibility across shells (line 36).
+- **Directory-only completion became available in all shells** through `cmd.MarkFlagDirname(flag)` (line 37).
+- **Flag-name non-repetition stayed in Zsh and was added to Fish:** flag names are offered only once unless their type is `*Array` or `*Slice` (line 38).
+- **Omitting the `=` form from flag-name suggestions stayed in Zsh and was added to Fish** (line 39). Separately, the improvements list records support for using the `=` form of flags (line 48).
+----- END THE RATER'S RESPONSE -----

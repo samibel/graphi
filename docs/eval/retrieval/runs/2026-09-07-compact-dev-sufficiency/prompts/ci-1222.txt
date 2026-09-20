@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to write shell completion function in Go
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s) for \"How to write shell completion function in Go\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"completions.go","start_line":133,"end_line":133,"text":"func (c *Command) RegisterFlagCompletionFunc(flagName string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error {"},{"path":"powershell_completions.go","start_line":312,"end_line":312,"text":"func (c *Command) GenPowerShellCompletion(w io.Writer) error {"},{"path":"powershell_completions.go","start_line":288,"end_line":288,"text":"func (c *Command) genPowerShellCompletion(w io.Writer, includeDesc bool) error {"},{"path":"powershell_completions.go","start_line":323,"end_line":323,"text":"func (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {"},{"path":"bash_completions.go","start_line":690,"end_line":691,"text":"\t\tbuf.WriteString(c.BashCompletionFunction + \"\\n\")\n\t}"},{"path":"bash_completions.go","start_line":37,"end_line":37,"text":"\tWriteStringAndCheck(buf, fmt.Sprintf(\"# bash completion for %-36s -*- shell-script -*-\\n\", name))"},{"path":"site/content/completions/_index.md","start_line":518,"end_line":520,"text":"\nCobra supports native PowerShell completions generated from the root `cobra.Command`. You can use the `command.GenPowerShellCompletion()` or `command.GenPowerShellCompletionFile()` functions. To include descriptions use `command.GenPowerShellCompletionWithDesc()` and `command.GenPowerShellCompletionFileWithDesc()`. Cobra will provide the description automatically based on usage information. You can choose to make this option configurable by your users.\n"},{"path":"powershell_completions.go","start_line":295,"end_line":295,"text":"func (c *Command) genPowerShellCompletionFile(filename string, includeDesc bool) error {"},{"path":"site/content/completions/_index.md","start_line":1,"end_line":2,"text":"# Generating shell completions\n"},{"path":"site/content/completions/_index.md","start_line":9,"end_line":10,"text":"\nCobra will automatically provide your program with a fully functional `completion` command,"},{"path":"bash_completions.go","start_line":428,"end_line":428,"text":"    local has_completion_function=\"\""},{"path":"site/content/completions/_index.md","start_line":351,"end_line":351,"text":"cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {"},{"path":"site/content/user_guide.md","start_line":739,"end_line":741,"text":"\n## Generating shell completions\n"}],"provenance":{"input_sha256":"97a120eebcc195cade0f96ff84c033ad140c16db9f9c53eb6dc254c4789e9c71","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

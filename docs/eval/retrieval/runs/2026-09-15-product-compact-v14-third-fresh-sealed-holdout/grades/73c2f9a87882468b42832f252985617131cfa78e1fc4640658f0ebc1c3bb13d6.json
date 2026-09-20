@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q060",
+  "response_sha256": "73c2f9a87882468b42832f252985617131cfa78e1fc4640658f0ebc1c3bb13d6",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response explains positional-argument validation but omits the essential behavior of blank argument strings surrounding a valid flag. The transcript preserves only the `TestEmptyInputs` declaration, not its body, and the follow-up guide does not supply that missing behavior.",
+  "graded_at": "2026-09-15T08:35:23Z",
+  "sha256": "bc60ff7006a0c0b2157364c8bd875e65e3769a407f7757d8cf97e9f148d3c624"
+}

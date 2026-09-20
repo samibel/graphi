@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5f-49b4-7032-ba7f-93eea1ebb89f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response omits the `writeFlagHandler` logic that maps filename, custom-handler, and subdirectory annotation keys to legacy Bash completion handlers."}}
+{"type":"turn.completed","usage":{"input_tokens":16673,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":107,"reasoning_output_tokens":68}}

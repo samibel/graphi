@@ -1,0 +1,4 @@
+An empty positional-argument list is accepted by default: `Command.ValidateArgs` calls `ArbitraryArgs` when `Args == nil` (`command.go:1139–1144`), and `ArbitraryArgs` always returns `nil` (`args.go:68–71`).
+
+- To **require input**, set `Args: cobra.MinimumNArgs(1)`. The guide documents this validator and demonstrates it before accessing `args[0]` (`site/content/user_guide.md:367–421`).
+- To **allow only zero arguments**, use `NoArgs`; it rejects only when `len(args) > 0` (`args.go:41–47`). Thus, `[]string{""}` is rejected by `NoArgs`: it contains one argument, despite that argument being an empty string.

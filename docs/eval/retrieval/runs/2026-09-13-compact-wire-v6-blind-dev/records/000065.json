@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 65,
+  "previous_sha256": "2412db9341808e179eec6f22fa7310fedbec128e76cb3e7d8fa0eb12ab2235d5",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "54d5f53a0fbd68d47016d96702398251f3fd461c48a4641a787b58e509824c56",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a flag, call `cmd.RegisterFlagCompletionFunc(\"flag-name\", func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) { ... })` and return candidate strings plus a completion directive. The required callback signature is shown in `completions.go:133-134`; registrations are stored per `*pflag.Flag` (`completions.go:36`).",
+  "sha256": "9aeae2a85f7d721d7c117968655bc9a2b78e8e56f8fcc580012e979b5af16ffc"
+}

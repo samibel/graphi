@@ -1,0 +1,1 @@
+FAIL: The response correctly explains when shorthand is included or omitted, but misses the essential normalization behavior: both branches apply `forceMultiLine` to `Usage`, while only the absent/deprecated branch applies it to `DefaultValue`, as shown in `doc/yaml_docs.go:148-175`.

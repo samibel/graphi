@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-21:primary-b
+Outcome: fail
+Rationale: Identifies AddCommand and the parent-pointer assignment, but omits adding the child to the parent's command collection, an essential part of the requested addition mechanism in the development key; the bundle stops before that operation.

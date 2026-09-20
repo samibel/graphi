@@ -1,0 +1,1 @@
+Set `cmd.CompletionOptions.DisableDefaultCmd = true`. That field explicitly prevents Cobra from creating the default `completion` command (`completions.go:103-117`), and `InitDefaultCompletionCmd` returns immediately when it is set (`completions.go:683-687`).

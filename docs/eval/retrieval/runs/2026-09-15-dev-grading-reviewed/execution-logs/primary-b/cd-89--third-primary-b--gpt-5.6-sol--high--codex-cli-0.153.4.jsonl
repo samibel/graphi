@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-3624-7102-b9d4-259963b7933c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Set `HiddenDefaultCmd` on the root command:\n\n```go\nrootCmd.CompletionOptions.HiddenDefaultCmd = true\n```\n\nThis preserves the default completion command but marks it hidden, as documented in `site/content/completions/_index.md` lines 92–107 and defined by `CompletionOptions.HiddenDefaultCmd` in `completions.go` lines 104–116. Do not set `DisableDefaultCmd`, which prevents Cobra from creating the command (`completions.go` lines 678–685)."}}
+{"type":"turn.completed","usage":{"input_tokens":16521,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":110,"reasoning_output_tokens":0}}

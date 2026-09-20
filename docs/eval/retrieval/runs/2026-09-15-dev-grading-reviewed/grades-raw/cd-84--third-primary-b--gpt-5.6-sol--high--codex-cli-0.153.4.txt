@@ -1,0 +1,1 @@
+PASS: The follow-up transcript supports the cited split: find `=`, extract the long flag name or final shorthand character, take everything after `=` as the value, and set `flagWithEqual = true` while leaving `trimmedArgs` unchanged.

@@ -1,0 +1,88 @@
+{
+  "contract_version": "fresh-holdout-operator-attestation/2",
+  "status": "completed_release_no_attested",
+  "operator": {
+    "stages_1_to_2_first_capture": {
+      "id": "codex-independent-third-holdout-operator",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "GPT-5 Codex agent (session-declared)",
+      "model_build": "not exposed by provider",
+      "sandbox": "codex exec -s workspace-write; could not run git commit or git worktree add"
+    },
+    "stages_2_second_build_to_7": {
+      "id": "root-orchestration-agent-mechanical-operator",
+      "provider": "Anthropic Claude Code",
+      "model": "claude-fable-5-1",
+      "model_build": "not exposed by provider",
+      "basis": "Executed the second independent build, the per-item rater, grader and adjudicator processes, the seal and decide phases and every commit through scripts that print only OK/REFUSAL lines and counts. The scripts and their outputs are committed under execution-logs; the operator read no prompt, bundle, follow-up read, response, packet, grade or adjudication, and read outcome.json and the generated README only at their aggregate sections."
+    }
+  },
+  "independence": {
+    "curator_implemented_candidate": false,
+    "curator_saw_candidate_output": false,
+    "root_agent_implemented_candidate": true,
+    "root_agent_annotated_dataset": false,
+    "root_agent_read_holdout_content": false,
+    "root_agent_excluded_from_holdout_content": true,
+    "raters_and_grader_implemented_candidate": false,
+    "rater_and_grader_configurations_served_in_earlier_holdouts": true,
+    "basis": "The candidate's author operated stages 3-7 mechanically because the sandboxed Codex operator could not commit or create worktrees. Blindness is enforced by the per-item discipline (an empty git repository, read-only, one input file, one new process) and by the operator's scripts never printing content, not by a separate person. This is weaker than the second holdout's fully separate operator and is recorded rather than claimed away."
+  },
+  "curator": {
+    "status": "independent_curator_handoff_complete",
+    "id": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+    "curation_commit": "76752a6e3de0c3c95c78f41e86eb2f32c72c2a45",
+    "curation_pre_registration_sha256": "bd104cd726b6d65b2d4a845ec0f7f3cd99b10fa33b90df151a07eb26bfdf91f8",
+    "independence_attestation_sha256": "a87cb95658c66b6acfa1255602e7007a8c0a8847eff80fb710831e600ba4bf86",
+    "sealed_dataset_sha256": "a96cfa7d002dad127ff0a1fe7bdffed2515615c7e4cd14fb66dba45fffcf0190",
+    "grading_rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918"
+  },
+  "frozen_identities": {
+    "contract_versions": ["sw280-qrel-blind-smoke-evaluation/2", "sw266-measurement-contract/2"],
+    "followup_max_lines": 120,
+    "product_candidate_sha": "76752a6e3de0c3c95c78f41e86eb2f32c72c2a45",
+    "candidate_projection": "task_context/2-compact/14",
+    "freeze_commit": "8b80523a10e281dd9edaf36f45c0cc62dfccfa34",
+    "precondition_record_sha256": "e247d584b8dcaf15ec11c00281789060da8fc1f0fa40a7af127b2892ba2b85b4",
+    "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+    "corpus_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "embedder": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+    "tokenizer_id": "tiktoken:cl100k_base:ordinary"
+  },
+  "phase_commits": {
+    "curation": "76752a6e3de0c3c95c78f41e86eb2f32c72c2a45",
+    "freeze": "8b80523a10e281dd9edaf36f45c0cc62dfccfa34",
+    "capture": "1badec4d",
+    "primary_responses": "f736baf3",
+    "seal_primaries": "389c1245",
+    "blind_grades": "fd3e973c",
+    "seal_grades": "946a83c5",
+    "adjudications": "b7edd966",
+    "seal_adjudications": "e6b3e2c2",
+    "adjudication_grades": "5060c16f",
+    "seal_adjudication_grades": "44eb0886",
+    "decision": "5b416151"
+  },
+  "execution": {
+    "per_item_command": "codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only -m <model> -c model_reasoning_effort=\"high\" -C <empty git repository> --json -o <output> - < <only allowed input>",
+    "event_check": "thread.started, turn.started, item.completed(agent_message), turn.completed — any other event is a mechanical refusal without retry",
+    "parallelism": 6,
+    "primary_items": 128,
+    "grader_items": 132,
+    "adjudicator_items": 4,
+    "mechanical_refusals": 0,
+    "retries": 0,
+    "two_build_capture_reproducibility": "PASS: 64/64 responses, token counts, prompts and 11/11 designated follow-up reads byte-identical across distinct index generations; maximum response 1179 and maximum follow-up read 1013 cl100k tokens"
+  },
+  "decision": {
+    "release": "NO",
+    "pass_count": 38,
+    "k": 56,
+    "n": 64,
+    "per_stratum": {"ambiguous": "1/10", "architecture_flow": "2/11", "config_docs": "7/10", "exact_identifier": "11/11", "exact_path": "6/11", "nl_behaviour": "11/11"},
+    "primary_disagreements": 4,
+    "adjudications": 4,
+    "all_frozen_input_hashes_match": true
+  },
+  "declaration": "No k, N, population member, grade or outcome was changed, retried, waived or overridden at any stage. The dataset, prompts, bundles, follow-up reads, responses, packets, grades and adjudications were never read by the candidate's author."
+}

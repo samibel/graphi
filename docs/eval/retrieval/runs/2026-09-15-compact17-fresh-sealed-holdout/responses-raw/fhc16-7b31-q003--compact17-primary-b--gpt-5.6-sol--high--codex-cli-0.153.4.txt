@@ -1,0 +1,1 @@
+`hasNoOptDefVal` calls `fs.Lookup(name)` to find the named long flag. It returns `false` if no flag exists; otherwise, it returns whether `flag.NoOptDefVal` is non-empty (`flag.NoOptDefVal != ""`). Evidence: `command.go`, lines 622–629, function `hasNoOptDefVal`.

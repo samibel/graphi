@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 66,
+  "previous_sha256": "5bdda8aa856e842fea7f757748cd7a3d5ec80e47359f30452017caff12406060",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "425e75ac2e350647c84f9d260b561b103d22dc583c6ad0811d3fd3f32daca66c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Completion is a default Cobra command named `\"completion\"` (`completions.go:95-102`). `Command.InitDefaultCompletionCmd` adds it unless completion is disabled, the command has no subcommands, or a program-defined completion command already exists (`completions.go:678-685`).\n\nGenerated scripts complete commands and flags; noun and flag-value completion can be customized, including static noun choices through `ValidArgs` (`site/content/completions/_index.md:115-127`). Descriptions can be disabled with:\n\n```go\nrootCmd.CompletionOptions.DisableDescriptions = true\n```\n\n(`site/content/completions/_index.md:112-120`).",
+  "sha256": "f7b27119cf872e7666e7a61feb0f2ad1516d26adf8dafaca81f7cfd4b1f4d65e"
+}

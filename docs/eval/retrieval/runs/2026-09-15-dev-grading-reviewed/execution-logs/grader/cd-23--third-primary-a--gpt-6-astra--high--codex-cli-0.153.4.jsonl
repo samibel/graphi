@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-37e0-7622-bdd1-491eea030534"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the nonempty `c.Deprecated` check and the `c.Printf` warning containing the quoted command name and deprecation message, directly supported by command.go lines 879–881 in the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":18086,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

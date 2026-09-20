@@ -1,0 +1,3 @@
+`Command.Flag(name)` first searches the command’s applicable flag set with `c.Flags().Lookup(name)`. If that returns `nil`, it calls `c.persistentFlag(name)` to search persistent flags up the command tree (`command.go:1794–1803`).
+
+`Flags()` is documented as including local flags plus persistent flags declared by the command and all parents (`command.go:1641–1643`), and the command stores its direct parent in `c.parent`, exposed by `Parent()` (`command.go:1842–1845`). The response does not include `persistentFlag`’s implementation, so the exact parent-iteration loop is not shown.

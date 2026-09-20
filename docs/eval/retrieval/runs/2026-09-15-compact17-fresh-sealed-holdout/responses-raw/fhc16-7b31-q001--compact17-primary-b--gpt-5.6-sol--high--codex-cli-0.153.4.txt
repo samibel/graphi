@@ -1,0 +1,11 @@
+`flagCompError.Error` constructs:
+
+```text
+Subcommand '<subCommand>' does not support flag '<flagName>'
+```
+
+Specifically, [completions.go, lines 50–51] concatenates `e.subCommand` and `e.flagName`:
+
+```go
+return "Subcommand '" + e.subCommand + "' does not support flag '" + e.flagName + "'"
+```

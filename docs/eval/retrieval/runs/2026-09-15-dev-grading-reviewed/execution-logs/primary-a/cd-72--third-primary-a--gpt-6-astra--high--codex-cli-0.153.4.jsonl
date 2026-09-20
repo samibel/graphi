@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-5459-7fd1-af45-a9f65491d49d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`AddGroup` adds one or more groups to a parent command:\n\n```go\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}\n```\n\nIn `command.go:1356–1359`, it accepts variadic `*Group` arguments and appends them to the existing `c.commandgroups` slice without validation or deduplication.\n\nEach `Group` has string fields `ID` and `Title` (`command.go:41–45`). A subcommand’s `GroupID` identifies its group in the parent’s help output (`command.go:73–74`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17103,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":136,"reasoning_output_tokens":0}}

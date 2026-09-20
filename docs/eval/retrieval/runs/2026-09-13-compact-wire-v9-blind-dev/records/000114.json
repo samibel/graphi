@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 114,
+  "previous_sha256": "1ab69d6a3c9070498097bf2eac8c2b2aee33aa1477e958660b97ee36c1f3a519",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "971cfd65fd640cfef4a93d368b88dcbe422ccabaa116eb22a9a28a9109fc7f6a",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete and fully bundle-supported account of the man-page tree walk. In `doc/man_docs.go:46-80`, `GenManTreeFromOpts` iterates through `cmd.Commands()`, skips children for which `!c.IsAvailableCommand()` or `c.IsAdditionalHelpTopicCommand()` holds, recursively processes each remaining child with immediate error propagation, and calls `GenMan` for the current command only after that loop. This supports the stated depth-first, post-order traversal and the conclusion that eligible descendants are generated before their parent. The candidate also correctly notes that the response only names the Markdown functions at `doc/md_docs.go:125,133` without preserving their implementations, so it does not make unsupported claims about them.\n",
+  "sha256": "13e09b19d42e1467a441f3e459ab5d0a97d480031985e520a76f9f52906d68ad"
+}

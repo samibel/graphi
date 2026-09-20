@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 132,
+  "previous_sha256": "ea12690ef8e637aa0afde7c9c52c6fe15d7a4ca4361b1caabefe762f5c24f761",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6b92aa926b8fdc79e5a55492a2d4e0508bc9afe229c8b3f8c00289667e7c3c89",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and each substantive claim is supported by the preserved bundle: `completions.go:678–685` documents all three conditions under which `InitDefaultCompletionCmd` does nothing; `completions.go:95–102` gives the command name, `no-descriptions` flag name, and `false` default; and `site/content/completions/_index.md:112–127` states that generated scripts complete commands and flags, shows `DisableDescriptions = true`, and identifies `ValidArgs` for static noun completion.\n",
+  "sha256": "aa2ddb249dcc50e0112f162fadbf4130c044a2cf611e38f7314529c9d5fb6ffd"
+}

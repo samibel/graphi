@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-bd35-79b3-8b6c-e91ed6e8aa7e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra appends `\" [flags]\"` in `(*Command).UseLine()` when all three conditions hold:\n\n- `c.DisableFlagsInUseLine` is false.\n- `c.HasAvailableFlags()` returns true.\n- The assembled use line does not already contain `\"[flags]\"`.\n\nThe use line is `c.Use`, prefixed with `c.parent.CommandPath() + \" \"` if the command has a parent. These conditions and the append appear in `command.go:1436–1451`."}}
+{"type":"turn.completed","usage":{"input_tokens":17239,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":107,"reasoning_output_tokens":0}}

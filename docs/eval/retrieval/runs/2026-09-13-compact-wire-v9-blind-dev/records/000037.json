@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 37,
+  "previous_sha256": "669cbc1941920af9e89060345731697d63675e99c92809389404924ebfcacaf9",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "46a8c08d85867e92969f4135c3d8c66773e3aa4ca30af010acf2fe206c788126",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Register a closure with `OnInitialize` and capture the command:\n\n```go\nOnInitialize(func() {\n    f := cmd.Flag(\"name\")\n    // use f.Value here\n})\n```\n\nThis works because flags are parsed before initialization (`command.go:888` calls `c.ParseFlags(a)`), while initializers run later through `c.preRun()` (`command.go:926`, `command.go:1015-1019`). `Command.Flag` checks ordinary flags and then searches persistent flags up the command tree (`command.go:1794-1803`).",
+  "sha256": "1e73d74b728b4aa5a00969aa293e09b5d259b114c9ce2a9b24ad9c3bbe6804b5"
+}

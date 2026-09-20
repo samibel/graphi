@@ -1,0 +1,10 @@
+`ShellCompDirective` is an `int` bit map controlling shell-completion behavior (`completions.go:41–43`). Its recognized flags are:
+
+- `ShellCompDirectiveError`
+- `ShellCompDirectiveNoSpace`
+- `ShellCompDirectiveNoFileComp`
+- `ShellCompDirectiveFilterFileExt`
+- `ShellCompDirectiveFilterDirs`
+- `ShellCompDirectiveKeepOrder`
+
+The `string()` method lists active flags, returns `ShellCompDirectiveDefault` when none are set, and reports values at or above `shellCompDirectiveMaxValue` as errors (`completions.go:162–191`). The comments specifically say `Error` discards completions and `NoSpace` prevents adding a trailing space (`completions.go:54–63`).

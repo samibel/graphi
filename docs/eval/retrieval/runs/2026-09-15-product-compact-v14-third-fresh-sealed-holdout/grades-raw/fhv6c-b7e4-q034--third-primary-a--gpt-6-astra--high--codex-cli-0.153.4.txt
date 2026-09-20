@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer how propagation is verified. It identifies recursive propagation in command.go:362–372, but the preserved transcript lacks the test’s child-first setup and function-identity comparisons needed to answer the question.

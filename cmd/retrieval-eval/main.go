@@ -50,6 +50,8 @@
 //	    -export-raw <dir> -checkout <dir> -embedder <selector>
 //	go run ./cmd/retrieval-eval -aggregate <dir>
 //	go run ./cmd/retrieval-eval -check-claim '<candidate sentence>'
+//	go run ./cmd/retrieval-eval -check-targets <report.json>
+//	go run ./cmd/retrieval-eval -answer-span-ceiling -dataset <path> -checkout <dir> [-out <report.json>] [-answer-span-detail <path>]
 //	go run ./cmd/retrieval-eval -setup-tokenizer [-tokenizer-local <dir>] [-tokenizer-dir <dir>]
 //	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
 //	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
@@ -130,8 +132,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
 	embedder := fs.String("embedder", "", "embedder selector — one of: empty (lexical-only by intent; fusion/semantic baselines report unavailable with the typed reason), `ollama:host:port` (loopback only), `static:<model>@<revision>` (production), or `onnx:<model>` (under //go:build embed_onnx). A non-empty selector that fails to construct, register, generate, reload or serve causes exit 1 and NO publishable report")
 
+	checkTargets := fs.String("check-targets", "", "evaluate every target in "+retrieval.TargetsFilePath+" against this report and the committed coverage and smoke-evaluation artifacts; exit non-zero on the first miss and name it. A target this file states but no command evaluates is a note, not a target")
 	blindEval := fs.String("blind-eval", "", "SW-280 qrel-blind smoke evaluation phase: freeze | capture | decide. There is no phase, flag or value that lowers k, waives a query, excludes a query from N, retries a graded response or forces a pass")
+	blindEvalContract := fs.String("blind-eval-contract", "1", "qrel-blind smoke evaluation contract version: 1 | 2 (selects a version only; never a threshold, waiver or retry)")
 	blindEvalDir := fs.String("blind-eval-dir", "", "qrel-blind smoke evaluation run directory (must be inside the repository)")
+
+	answerSpanCeiling := fs.Bool("answer-span-ceiling", false, "price every reviewed grade-3 answer span in -dataset against the frozen 1,200-token candidate budget over -checkout and report, as counts only, how many questions can ever carry a complete answer span; the report names no query, path or line")
+	answerSpanDetail := fs.String("answer-span-detail", "", "answer-span-ceiling mode: additionally write per-query detail (query ids, paths, lines, costs) to this separate file; for a sealed split it must stay in the curator's custody")
 
 	derive := fs.Bool("derive", false, "derive docs/eval/retrieval-targets.json and -budgets.json from finished reports")
 	targetsReport := fs.String("targets-report", "", "derive mode: the report the targets are taken from")
@@ -177,6 +184,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return exitOK
 	case *aggregate != "":
 		return runAggregate(*aggregate, *out, stderr)
+	case *checkTargets != "":
+		root, err := repositoryRoot()
+		if err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		return runCheckTargets(root, *checkTargets, stdout, stderr)
 	case *blindEval != "":
 		root, err := repositoryRoot()
 		if err != nil {
@@ -195,13 +209,27 @@ func run(args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		return runBlindEval(blindEvalOptions{
-			phase:    *blindEval,
-			dir:      dir,
-			root:     root,
-			dataset:  *dataset,
-			repoName: *repo,
-			checkout: checkoutDir,
-			embedder: *embedder,
+			phase:           *blindEval,
+			contractVersion: *blindEvalContract,
+			dir:             dir,
+			root:            root,
+			dataset:         *dataset,
+			repoName:        *repo,
+			checkout:        checkoutDir,
+			embedder:        *embedder,
+		}, stdout, stderr)
+	case *answerSpanCeiling:
+		checkoutDir := *checkout
+		if checkoutDir == "" && *repo == FixtureRepoName {
+			checkoutDir = filepath.FromSlash(fixtureRepoPath)
+		}
+		if checkoutDir == "" && *repo != "" {
+			if home, herr := os.UserHomeDir(); herr == nil {
+				checkoutDir = filepath.Join(home, ".cache", "graphi", "corpus", *repo)
+			}
+		}
+		return runAnswerSpanCeiling(answerSpanOptions{
+			dataset: *dataset, checkout: checkoutDir, out: *out, detail: *answerSpanDetail,
 		}, stdout, stderr)
 	case *derive:
 		var budgets []budgetReport

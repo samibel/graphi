@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7be148952e782ffc2c51b276759cd661c93e934b9825819c40bc5bcc37570391
+QUERY ID: fhv6c-b7e4-q046
+
+QUESTION:
+Where does Cobra direct developers for the full Fish completion setup instructions?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/completions/fish.md:1-3 anchor="Please refer to [Shell Completions](_index.md)" reason=The Fish-specific page directs developers to the central shell-completions guide for configuration details.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 2b26bee768b7; read in order (279/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"CONDUCT.md","start_line":12,"end_line":14,"text":"### CVE\nMaintainers will make every effort to release security patches in the case of a medium to high severity CVE directly impacting the library. The speed in which these patches reach a release is up to the discretion of the maintainers. A low severity CVE may be a lower priority than a high severity one.\n"},{"path":"site/content/user_guide.md","start_line":24,"end_line":36,"text":"\nfunc main() {\n  cmd.Execute()\n}\n```\n\n## Using the Cobra Generator\n\nCobra-CLI is its own program that will create your application and add any commands you want.\nIt's the easiest way to incorporate Cobra into your application.\n\nFor complete details on using the Cobra generator, please refer to [The Cobra-CLI Generator README](https://github.com/spf13/cobra-cli/blob/main/README.md)\n"},{"path":"site/content/completions/fish.md","start_line":1,"end_line":4,"text":"## Generating Fish Completions For Your cobra.Command\n\nPlease refer to [Shell Completions](_index.md) for details.\n"},{"path":"completions.go","start_line":124,"end_line":130,"text":"// FixedCompletions can be used to create a completion function which always\n// returns the same results.\nfunc FixedCompletions(choices []string, directive ShellCompDirective) func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\treturn func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\t\treturn choices, directive\n\t}\n}"},{"path":"completions.go","start_line":54,"end_line":56,"text":"const (\n\t// ShellCompDirectiveError indicates an error occurred and completions should be ignored.\n\tShellCompDirectiveError ShellCompDirective = 1 << iota"},{"path":"site/content/completions/_index.md","start_line":295,"end_line":298,"text":"flagName := \"output\"\ncmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\treturn []string{\"json\", \"table\", \"yaml\"}, cobra.ShellCompDirectiveDefault\n})"},{"path":"completions.go","start_line":266,"end_line":267,"text":"func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error) {\n\t// The last argument, which is not completely typed by the user,"},{"path":"bash_completionsV2.go","start_line":91,"end_line":95,"text":"        # There is not directive specified\n        directive=0\n    fi\n    __%[1]s_debug \"The completion directive is: ${directive}\"\n    __%[1]s_debug \"The completions are: ${out}\""},{"path":"completions.go","start_line":35,"end_line":36,"text":"// Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it.\nvar flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}"}],"provenance":{"input_sha256":"f9490ae2d2033e50cb1e21c4510d7fc0df9fbb395ccd082a46542276d5171ac9","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Cobra directs developers to **Shell Completions** at `site/content/completions/_index.md`. The Fish page, `site/content/completions/fish.md`, lines 1–4, states: “Please refer to [Shell Completions](_index.md) for details.”
+----- END THE RATER'S RESPONSE -----

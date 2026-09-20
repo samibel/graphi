@@ -1,0 +1,8 @@
+The generated shell scripts dispatch completion by invoking a hidden command:
+
+- `ShellCompRequestCmd = "__complete"` and the no-description variant is `ShellCompNoDescRequestCmd = "__completeNoDesc"` (`completions.go:26-33`).
+- Bash, Zsh, Fish, and PowerShell generators select `ShellCompRequestCmd` (`bash_completionsV2.go:32`, `zsh_completions.go:88`, `fish_completions.go:31`, `powershell_completions.go:34-35`).
+- The hidden command’s `Run` handler calls `cmd.getCompletions(args)`, receiving the resolved command, completion candidates, directive, and error (`completions.go:205-215`).
+- It determines whether descriptions were suppressed by checking `cmd.CalledAs() == ShellCompNoDescRequestCmd` (`completions.go:205-215`).
+
+So the dispatch path is: shell script → hidden `__complete`/`__completeNoDesc` command → its `Run` handler → `cmd.getCompletions(args)`.

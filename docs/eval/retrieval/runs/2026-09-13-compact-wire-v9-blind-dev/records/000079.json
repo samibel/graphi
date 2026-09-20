@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 79,
+  "previous_sha256": "bd7fcfd9025cb4f2a9336ba9b88d5beb3c28103fa91eb9b9b323123fe09d84fe",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "50186b379eae0427a9b8996c47e39d8d6f7fe55feb8fb5a7e7a036ec1953d65c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Create a shell-specific adapter that:\n\n1. Invokes the program’s hidden `__complete [command-line]` command (`completions.go:26-33`, `194-205`).\n2. Reads completion candidates from stdout, one per line (`completions.go:240-242`).\n3. Treats the final stdout line as `:\u003cdirective\u003e` and maps that directive to the target shell’s completion behavior (`completions.go:244-247`).\n4. Ignores stderr (`completions.go:249-251`).\n5. Optionally invokes `__completeNoDesc` when descriptions are unwanted (`completions.go:30-33`).\n\nThe response does not include the directive values or their full semantics, so the exact shell-specific mappings cannot be derived from it.",
+  "sha256": "04f5257acf0fc6149559b76c7536a769bbf8133738d97d93e6195bb1a8d03518"
+}

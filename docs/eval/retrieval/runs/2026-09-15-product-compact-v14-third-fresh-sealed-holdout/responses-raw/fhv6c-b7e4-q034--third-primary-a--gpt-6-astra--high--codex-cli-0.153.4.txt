@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows recursive propagation in `command.go:362–372` (`SetGlobalNormalizationFunc`), but no test or assertions verifying propagation from a root command to an existing child.

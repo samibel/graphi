@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-112a-7e00-b07e-57aa1fc6c729"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately summarizes the completion command constants, directive-related declarations, synchronized flag-completion map, and completion helpers. All cited ranges exist and support the attached claims, including argument separation and the documented conditions for adding the default completion command."}}
+{"type":"turn.completed","usage":{"input_tokens":18235,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":116,"reasoning_output_tokens":61}}

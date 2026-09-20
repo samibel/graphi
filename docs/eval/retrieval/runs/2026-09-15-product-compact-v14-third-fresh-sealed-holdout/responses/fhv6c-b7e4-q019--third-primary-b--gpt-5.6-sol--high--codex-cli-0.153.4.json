@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q019",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "5acfae2dd73d93a849b53f0ec7861f67962b4c43d6dafb8b99ac3c8e53435f5f",
+  "bundle_sha256": "ed1ae7b5f8043edc5f8db6ba4dc3bcc0d4f6372766022e5a06939b3a5c1d75db",
+  "prompt_sha256": "8e17398b793a427b4d0f38a584759805cbd130e121f81de070d5ba5b56f9e9be",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`doc/man_docs_test.go` is a Go test file in package `doc` (`line 15`). Its visible declarations are:\n\n- Helpers:\n  - `assertNoErr(t *testing.T, e error)` reports non-nil errors (`lines 30–34`).\n  - `translate(in string) string` escapes hyphens as `\\-` using `strings.ReplaceAll` (`lines 36–38`).\n  - `assertLineFound(scanner *bufio.Scanner, expectedLine string) error` scans for an exact line (`lines 190–194`).\n\n- Tests:\n  - `TestGenManDoc` generates a man page for `echoCmd` with title `Project` and section `2` (`lines 40–49`).\n  - `TestGenManNoHiddenParents` tests generation involving subcommands and parents (`lines 70–76`).\n  - `TestGenManNoGenTag` temporarily enables `echoCmd.DisableAutoGenTag` (`lines 106–111`).\n  - `TestGenManSeeAlso` constructs a root command with visible and hidden subcommands (`lines 128–132`).\n  - `TestManPrintFlagsHidesShortDeprecated` verifies a deprecated shorthand is omitted from rendered flags (`lines 153–166`).\n  - `TestGenManTree` creates a temporary directory and invokes `GenManTree` (`lines 168–177`).\n\nThe response is truncated, so additional declarations or the complete bodies of these tests are not visible.",
+  "responded_at": "2026-09-15T08:29:35Z",
+  "sha256": "ef1f4f22a73037604c6b04f614e1c9b68d1e14d14eddd63e8bac87f4c3722cfc"
+}

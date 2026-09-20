@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 161,
+  "previous_sha256": "27967f970f8cf6a7c207144633047db03fe928d2b2deb1a74374648f0bf32f69",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "0506c62c3c36b384412f2d3d1c2df9fcad2bc5938e61d62ef64e8e974d02b0d8",
+  "outcome": "fail",
+  "rationale": "The candidate correctly explains that the default `BoolP(\"help\", \"h\", ...)` in `command.go:1183-1198` aliases both spellings and that `command.go:894-905` checks only the `help` boolean. However, it does not concretely answer how handling them differently is possible. The bundle states that `InitDefaultHelpFlag` does nothing when a flag named `help` already exists (`command.go:1183-1198`), supporting the specific solution: predeclare a custom `--help` without shorthand and a separate `-h` flag. Saying only that “custom flag handling would be required” omits this essential mechanism.\n",
+  "sha256": "80a49b42dab4c361f9aaf73e7dfe8f96fab4da2587a0be22b869ad5d493bc02c"
+}

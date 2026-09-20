@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 75,
+  "previous_sha256": "d51d678bcae735ddec6bc3231800b0afe8336516b1bf213b87c808dd3a3f1659",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "29a1fe74eb70dd5dc75de67da85ec5be22f629d4355f422ec6f308aa7538dc21",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes, but not with the default flag: `command.go:1195` defines `--help` and `-h` as one boolean via `BoolP(\"help\", \"h\", ...)`, and execution reads only `\"help\"` (`command.go:894`). To distinguish them, define your own `\"help\"` flag before execution—`InitDefaultHelpFlag` does nothing if it already exists (`command.go:1186-1189`)—and register `-h` separately.",
+  "sha256": "ba2f39923b69aee504ed42a1fe37fed0684546e86f4c31090354301b2014e52e"
+}

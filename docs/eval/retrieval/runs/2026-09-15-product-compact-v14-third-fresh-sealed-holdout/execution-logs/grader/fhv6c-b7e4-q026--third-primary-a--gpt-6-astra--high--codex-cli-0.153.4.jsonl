@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-6be8-7ad0-beb7-ff5a38364714"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript shows SetErr(nil) clears c.errWriter, and ErrOrStderr calls getErr(os.Stderr), which recursively checks parents for a non-nil error writer before falling back to os.Stderr. All cited ranges exist and support the response."}}
+{"type":"turn.completed","usage":{"input_tokens":17854,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":58,"reasoning_output_tokens":0}}

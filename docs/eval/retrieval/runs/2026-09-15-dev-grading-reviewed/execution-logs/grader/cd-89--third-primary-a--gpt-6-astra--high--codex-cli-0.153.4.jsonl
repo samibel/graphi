@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a484-3aaf-70c2-8b1c-0bca92b9202b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly sets `rootCmd.CompletionOptions.HiddenDefaultCmd = true` while leaving `DisableDefaultCmd` false to preserve the command. The cited documentation and struct comments exist in the transcript and support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18033,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":48}}

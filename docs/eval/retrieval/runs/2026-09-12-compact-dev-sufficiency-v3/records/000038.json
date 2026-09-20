@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 38,
+  "previous_sha256": "f92a3c27911a420fd42d2c0858826f3e9b0958eec2e3b6045f4e34456e80478f",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "49be5884752dda545ff8d08ceee4b1418efdfcb8caec8be35b0f15856e7acbdc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Supply the test's command-line arguments with `cmd.SetArgs([]string{\"--your-flag=value\"})`, substituting a flag your command defines. `SetArgs` stores the supplied slice as `c.args` (`command.go:276–278`). To capture test output, the same excerpt provides `SetOut` and `SetErr` (`command.go:288–298`).\n",
+  "sha256": "848e798d27f1a762f6d6b35ed6536ca05c36e8bb5ecef2431d263191fafd39e5"
+}

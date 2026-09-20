@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Command.Flag(name)` searches parent persistent flags (`command.go:1794-1803`, `1805-1816`) but does not show how to extract the matched `flag.Flag`’s value.

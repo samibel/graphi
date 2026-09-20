@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+completion
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"completion\"; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"completions.go","start_line":683,"end_line":728,"text":"func (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tfor _, cmd := range c.commands {\n\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {\n\t\t\t// A completion command is already available\n\t\t\treturn\n\t\t}\n\t}\n\n\thaveNoDescFlag := !c.CompletionOptions.DisableNoDescFlag \u0026\u0026 !c.CompletionOptions.DisableDescriptions\n\n\tcompletionCmd := \u0026Command{\n\t\tUse:   compCmdName,\n\t\tShort: \"Generate the autocompletion script for the specified shell\",\n\t\tLong: fmt.Sprintf(`Generate the autocompletion script for %[1]s for the specified shell.\nSee each sub-command's help for details on how to use the generated script.\n`, c.Root().Name()),\n\t\tArgs:              NoArgs,\n\t\tValidArgsFunction: NoFileCompletions,\n\t\tHidden:            c.CompletionOptions.HiddenDefaultCmd,\n\t\tGroupID:           c.completionCommandGroupID,\n\t}\n\tc.AddCommand(completionCmd)\n\n\tout := c.OutOrStdout()\n\tnoDesc := c.CompletionOptions.DisableDescriptions\n\tshortDesc := \"Generate the autocompletion script for %s\"\n\tbash := \u0026Command{\n\t\tUse:   \"bash\",\n\t\tShort: fmt.Sprintf(shortDesc, \"bash\"),\n\t\tLong: fmt.Sprintf(`Generate the autocompletion script for the bash shell.\n\nThis script depends on the 'bash-completion' package.\nIf it is not installed already, you can install it via your OS's package manager.\n\nTo load completions in your current shell session:\n\n\tsource \u003c(%[1]s completion bash)\n\nTo load completions for every new session, execute once:\n\n#### Linux:\n"},{"path":"bash_completions.go","start_line":686,"end_line":703,"text":"func (c *Command) GenBashCompletion(w io.Writer) error {\n\tbuf := new(bytes.Buffer)\n\twritePreamble(buf, c.Name())\n\tif len(c.BashCompletionFunction) \u003e 0 {\n\t\tbuf.WriteString(c.BashCompletionFunction + \"\\n\")\n\t}\n\tgen(buf, c)\n\twritePostscript(buf, c.Name())\n\n\t_, err := buf.WriteTo(w)\n\treturn err\n}\n\nfunc nonCompletableFlag(flag *pflag.Flag) bool {\n\treturn flag.Hidden || len(flag.Deprecated) \u003e 0\n}\n\n// GenBashCompletionFile generates bash completion file."},{"path":"bash_completionsV2.go","start_line":382,"end_line":386,"text":"func (c *Command) GenBashCompletionFileV2(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}"},{"path":"completions.go","start_line":36,"end_line":37,"text":"var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}\n"}],"provenance":{"input_sha256":"a0db8c45a8326b846e14c6710befe6283102e80db8901d31d8b14ada7f0d7f7d","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

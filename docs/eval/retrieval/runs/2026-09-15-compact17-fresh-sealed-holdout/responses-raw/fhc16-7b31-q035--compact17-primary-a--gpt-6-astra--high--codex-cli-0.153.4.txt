@@ -1,0 +1,6 @@
+`InheritedFlags()` builds its result in four steps:
+
+1. **Merge persistent flags.** It calls `mergePersistentFlags()`, which updates `c.parentsPflags`, then adds the current command’s persistent flags and parent persistent flags to `c.Flags()` (`command.go:1697`, `1849–1853`).
+2. **Prepare the result.** It lazily creates `c.iflags` with `flag.ContinueOnError`, sets its output buffer, and applies `c.globNormFunc` when present (`command.go:1699–1709`).
+3. **Identify local flags.** `local := c.LocalFlags()` builds a set from `c.Flags()` and `c.PersistentFlags()`. Its condition `f != c.parentsPflags.Lookup(f.Name)` excludes the actual parent flag object while allowing a distinct local flag with the same name (`command.go:1684–1691`, `1707`).
+4. **Add only unshadowed parent flags.** It visits `c.parentsPflags` and adds a flag only when both `c.iflags.Lookup(f.Name) == nil` and `local.Lookup(f.Name) == nil`. The first check prevents duplicates; the second excludes parent flags whose names are already local. It then returns `c.iflags` (`command.go:1712–1717`).

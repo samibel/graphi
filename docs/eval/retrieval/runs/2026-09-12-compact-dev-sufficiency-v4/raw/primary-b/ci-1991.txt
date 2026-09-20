@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows how `Flag`, `persistentFlag`, and `Parent` locate a parent flag object (`command.go:1794–1816` and `1842–1845`), but contains no flag-value accessor or value-reading example needed to retrieve its value.

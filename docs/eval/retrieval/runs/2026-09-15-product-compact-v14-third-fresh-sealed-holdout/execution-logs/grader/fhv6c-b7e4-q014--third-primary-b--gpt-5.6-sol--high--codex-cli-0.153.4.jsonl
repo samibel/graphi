@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-d597-7393-ae1c-61d37698952b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The transcript supports checking that generated completion does not disable Active Help by emitting `<activeHelpEnvVar>=0`. It does not establish that Active Help is enabled during generation, as the response claims."}}
+{"type":"turn.completed","usage":{"input_tokens":17382,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":148,"reasoning_output_tokens":101}}

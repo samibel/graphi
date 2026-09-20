@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 133,
+  "previous_sha256": "8156f325a364081a825ec3b091e6f7669cf7f601f6670c9cada9b3816acfa2b5",
+  "kind": "grade",
+  "query_id": "ci-943",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "967cbce0e4dc452e95f87ddbf212dbfb4291413984fcee5c52854454eb06dbc0",
+  "outcome": "pass",
+  "rationale": "PASS: The response correctly identifies the non-empty Version/no-existing-flag conditions and the configurable/default version template from the bundled command.go spans.\n",
+  "sha256": "18ad61358a9054b34ebc20ab131b1baf5dea12df283ea3c558e395b48395ef37"
+}

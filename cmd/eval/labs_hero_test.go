@@ -495,7 +495,6 @@ func assertLabsHeroRun(s scenario.Scenario, p labsHeroProvenance, q evalretrieva
 	}{
 		{"weights", retrieved.Summary.WeightsHash},
 		{"model", retrieved.Summary.ModelFingerprint},
-		{"index", retrieved.Summary.IndexFingerprint},
 	}
 	for _, fingerprint := range fingerprints {
 		if fingerprint.value == "" {
@@ -504,6 +503,12 @@ func assertLabsHeroRun(s scenario.Scenario, p labsHeroProvenance, q evalretrieva
 		if !strings.Contains(eng.bundle.Summary, fingerprint.value) {
 			return fmt.Errorf("labs hero bundle summary omits %s fingerprint %q: %q", fingerprint.name, fingerprint.value, eng.bundle.Summary)
 		}
+	}
+	if retrieved.Summary.IndexFingerprint == "" {
+		return fmt.Errorf("labs hero index fingerprint is empty")
+	}
+	if strings.Contains(eng.bundle.Summary, retrieved.Summary.IndexFingerprint) {
+		return fmt.Errorf("labs hero bundle summary leaks operational index fingerprint %q: %q", retrieved.Summary.IndexFingerprint, eng.bundle.Summary)
 	}
 	if retrieved.Summary.WeightsHash != engineretrieval.WeightsHash() {
 		return fmt.Errorf("labs hero weights fingerprint=%q, want %q", retrieved.Summary.WeightsHash, engineretrieval.WeightsHash())

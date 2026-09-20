@@ -1,0 +1,8 @@
+Inspect it through Cobra’s hidden `__complete` command (`site/content/active_help.md:141–142`), running it under different environment settings:
+
+```sh
+<PROGRAM> __complete <args...>
+<PROGRAM>_ACTIVE_HELP=0 <PROGRAM> __complete <args...>
+```
+
+The second command disables all Active Help output (`site/content/active_help.md:127–128`). For enabled or program-specific levels, set `<PROGRAM>_ACTIVE_HELP` to a supported value such as `on` or `local`; leaving it unset yields the default empty configuration (`site/content/active_help.md:95–101, 131`). Set `COBRA_ACTIVE_HELP=0` to disable Active Help globally for every Cobra program (`site/content/active_help.md:129`).

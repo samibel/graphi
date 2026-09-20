@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-b4b9-7361-be74-ab235ef58bd0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It uppercases the program name, replaces characters outside `A–Z`, `0–9`, and `_` with `_`, then appends `_ACTIVE_HELP` (documented in `active_help.go:46–48`; replacement regex at line 33; suffix at lines 24–31).\n\nThe caller supplies `cmd.Root().Name()` (`active_help.go:54`), and `Command.Name()` takes the part of `Use` before the first space (`command.go:1495–1503`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17308,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":108,"reasoning_output_tokens":0}}

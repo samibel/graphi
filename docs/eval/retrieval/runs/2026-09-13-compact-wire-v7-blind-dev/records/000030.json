@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 30,
+  "previous_sha256": "d2552dc163a3ae5423531810728619c33aada05f3aaf2c1a611f9196618c9314",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "b8c0fd8a4968d5af35a7210e7690847d996ca505977700b14e568a5bbcee9504",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the flags normally, then pass their names to the command’s `MarkFlagsMutuallyExclusive` method:\n\n```go\ncmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")\n```\n\n`flag_groups.go:62-77` defines `func (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string)`. It looks up every name with `c.Flags().Lookup(v)`, panics if a flag is undefined, and annotates the group so Cobra errors when more than one member is supplied. Each call creates a separate group, and a flag may belong to multiple groups.",
+  "sha256": "47500502f886438e076da531e576a833e62ec2c5ad8e38de2fa587d6d812bace"
+}

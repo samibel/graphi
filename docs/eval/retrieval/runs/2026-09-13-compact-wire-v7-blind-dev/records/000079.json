@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 79,
+  "previous_sha256": "183e905a8e65207940e89146dbe9ebbdd45a1b2d2ee04bc014fbae34301f5d55",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "7e99b6a9411dc7665acc873305db5e49e245d86616ce8b5fdc45d0fafb5973ba",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows the hidden `__complete`/`__completeNoDesc` protocol and output framing (`completions.go:25-33, 240-251`), but omits the shell-specific script implementation and directive semantics needed to support another shell.",
+  "sha256": "2107fb560dacbb4ce9844531a7da84dfaf43bdee0a5580a2f755e552926080fe"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-9016-7401-a511-a3593f5c45a3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer how getCompletions selects the completion function. The preserved transcript contains only its signature and opening comment at completions.go:266–267, omitting the required selection logic."}}
+{"type":"turn.completed","usage":{"input_tokens":17929,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":68,"reasoning_output_tokens":19}}

@@ -1,0 +1,7 @@
+Use `Command.SetArgs` to provide flags as command-line arguments in tests:
+
+```go
+cmd.SetArgs([]string{"--flag", "value"})
+```
+
+Evidence: `command.go:275-278` says `SetArgs` is “particularly useful when testing” and assigns the slice to `c.args`. Flags are then resolved through `Command.Flags()` (`command.go:1641-1653`), including persistent and inherited flags via `mergePersistentFlags()` (`command.go:1847-1853`).

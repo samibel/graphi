@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+where are required flags validated before a command runs
+
+----- BEGIN task_context/compact-dev/5 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"where are required flags validated before a command runs\"; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/5","sources":[{"path":"command.go","start_line":1146,"end_line":1169,"text":"// ValidateRequiredFlags validates all required flags are present and returns an error otherwise\nfunc (c *Command) ValidateRequiredFlags() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tflags := c.Flags()\n\tmissingFlagNames := []string{}\n\tflags.VisitAll(func(pflag *flag.Flag) {\n\t\trequiredAnnotation, found := pflag.Annotations[BashCompOneRequiredFlag]\n\t\tif !found {\n\t\t\treturn\n\t\t}\n\t\tif (requiredAnnotation[0] == \"true\") \u0026\u0026 !pflag.Changed {\n\t\t\tmissingFlagNames = append(missingFlagNames, pflag.Name)\n\t\t}\n\t})\n\n\tif len(missingFlagNames) \u003e 0 {\n\t\treturn fmt.Errorf(`required flag(s) \"%s\" not set`, strings.Join(missingFlagNames, `\", \"`))\n\t}\n\treturn nil\n}\n"},{"path":"flag_groups.go","start_line":47,"end_line":62,"text":"// MarkFlagsOneRequired marks the given flags with annotations so that Cobra errors\n// if the command is invoked without at least one flag from the given set of flags.\nfunc (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a one-required flag group\", v))\n\t\t}\n\t\tif err := c.Flags().SetAnnotation(v, oneRequired, append(f.Annotations[oneRequired], strings.Join(flagNames, \" \"))); err != nil {\n\t\t\t// Only errs if the flag isn't found.\n\t\t\tpanic(err)\n\t\t}\n\t}\n}\n"},{"path":"flag_groups.go","start_line":80,"end_line":80,"text":"// first error encountered."},{"path":"flag_groups.go","start_line":33,"end_line":34,"text":"func (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"flag_groups.go","start_line":48,"end_line":48,"text":"// if the command is invoked without at least one flag from the given set of flags."},{"path":"shell_completions.go","start_line":21,"end_line":26,"text":"// MarkFlagRequired instructs the various shell completion implementations to\n// prioritize the named flag when performing completion,\n// and causes your command to report an error if invoked without the flag.\nfunc (c *Command) MarkFlagRequired(name string) error {\n\treturn MarkFlagRequired(c.Flags(), name)\n}"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1849,"end_line":1849,"text":"func (c *Command) mergePersistentFlags() {"}],"provenance":{"input_sha256":"89f6fba9bbff96bd052be3a59776dc8c923b865eafc65d9180d1289c609f5770","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/5 RESPONSE BYTES -----

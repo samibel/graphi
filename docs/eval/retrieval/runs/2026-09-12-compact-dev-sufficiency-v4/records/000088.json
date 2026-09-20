@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 88,
+  "previous_sha256": "ede63a78b3d9c5db88b5ba9754442e7adee683184764fdc5ed3acc9c4154a59b",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "f674e4df5c15af11a49f05b553d4ab4340a21cc87be183076f7b818ad5d16d44",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-04:primary-b\nOutcome: pass\nRationale: Correctly explains callback signature, missing/duplicate flag rejection, mutex-protected registration, and accessor, all shown in completions.go:132-161.\n",
+  "sha256": "02fc842399ca73fdae0411c6509a2283ea4d077db792bded2db9f49ef54a2133"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-359bd6140aec",
+  "response_sha256": "5486bc7eaf4a5dbcc038277cf9f2955d00efe7b4ae45d208b4741731b38921c2",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response directly states that DisableFlagParsing disables parsing and passes all flags to the command as arguments, exactly supported by the cited command.go:236–237 span in the bundle.",
+  "graded_at": "2026-09-15T20:48:58Z",
+  "sha256": "39e18f1b6279148f6801d3869b5eed5af06f3094f24b2e4cabe6df6a314cae39"
+}

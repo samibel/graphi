@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q061",
+  "response_sha256": "56528cdbf77e9fcc14684d93cfe538cd2d32c64252999f8b1c9c2ce754813be2",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly states that whitespace-only text counts as an example because `HasExample()` checks only `len(c.Example) \u003e 0` without trimming, as supported by the supplied `command.go:1545–1548` span.",
+  "graded_at": "2026-09-13T15:46:53Z",
+  "sha256": "fd416ad0121eb8ef31310d17f8acec1100cc33ba53f37513f496577e45336cf2"
+}

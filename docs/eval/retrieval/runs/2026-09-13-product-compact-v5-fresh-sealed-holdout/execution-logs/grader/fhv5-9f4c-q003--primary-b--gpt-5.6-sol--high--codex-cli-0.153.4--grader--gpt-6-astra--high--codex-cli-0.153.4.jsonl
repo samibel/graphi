@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09aca-fde8-7a72-a1e3-e062366bb16e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle supports uppercasing the root command’s name, replacing characters outside `A-Z`, `0-9`, and `_` with underscores, and adding `_ACTIVE_HELP`. All cited locations exist and support the explanation; the stated operation order yields the same name."}}
+{"type":"turn.completed","usage":{"input_tokens":18050,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":101,"reasoning_output_tokens":39}}

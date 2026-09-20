@@ -1,0 +1,1 @@
+PASS: The response identifies `SetHelpFunc` with the required command-and-arguments callback, explains that it stores the replacement in `c.helpFunc`, and accurately describes parent inheritance and default behavior. All claims and citations are supported by the preserved bundle.

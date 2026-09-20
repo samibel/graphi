@@ -1,0 +1,64 @@
+Reading prompt from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp/graphi-v6-adjudicator-grader.al8oao
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a09808-d463-79a0-8728-d8f08d2d69ae
+--------
+user
+You are the independent grader for one answer in a blind code-retrieval evaluation.
+
+Judge whether the RESPONSE correctly and sufficiently answers the QUESTION, using the frozen answer key and pinned source excerpts below. Return exactly one line in this form:
+PASS: concise rationale
+or
+FAIL: concise rationale
+
+Do not reward claims that are not supported by the answerer's bundle. The answer must name the effective setting and where it must be set. This is a development-set grading task; you are not an answerer and may use the answer key.
+
+QUESTION:
+how do I disable the default completion command
+
+ANSWER KEY:
+- completions.go:104-116, CompletionOptions.DisableDefaultCmd is the switch (grade 3).
+- site/content/completions/_index.md:92-116 says completion options must be set on the root command and shows rootCmd.CompletionOptions.DisableDefaultCmd = true (grade 3).
+
+PINNED SOURCE EXCERPTS:
+site/content/completions/_index.md:92-101:
+## Adapting the default completion command
+
+Cobra provides a few options for the default `completion` command. To configure such options you must set the `CompletionOptions` field on the *root* command.
+
+To tell Cobra *not* to provide the default `completion` command:
+```
+rootCmd.CompletionOptions.DisableDefaultCmd = true
+```
+
+completions.go:103-108:
+// CompletionOptions are the options to control shell completion
+type CompletionOptions struct {
+	// DisableDefaultCmd prevents Cobra from creating a default 'completion' command
+	DisableDefaultCmd bool
+}
+
+ANSWERER'S EXACT BUNDLE EVIDENCE INCLUDED:
+- completions.go:103-117 defines DisableDefaultCmd and says it prevents the default completion command.
+- completions.go:683-686 shows InitDefaultCompletionCmd returning early when c.CompletionOptions.DisableDefaultCmd is true.
+
+RESPONSE TO GRADE:
+Set the root command's completion option:
+
+```go
+rootCmd.CompletionOptions.DisableDefaultCmd = true
+```
+
+Evidence: `completions.go:103-117` defines `CompletionOptions.DisableDefaultCmd` as preventing creation of the default `completion` command, and `completions.go:683-686` shows `InitDefaultCompletionCmd` returning early when it is `true`.
+
+codex
+PASS: Correctly names `CompletionOptions.DisableDefaultCmd`, sets it to `true`, and specifies that it must be set on the root command.
+tokens used
+6.273

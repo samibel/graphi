@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `enforceFlagGroupsForCompletion` and its early return when `DisableFlagParsing` is set (`flag_groups.go:224–227`), but omits how it modifies flags or completion candidates to enforce group constraints.

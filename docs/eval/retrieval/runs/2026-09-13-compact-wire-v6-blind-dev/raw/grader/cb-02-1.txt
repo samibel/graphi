@@ -1,0 +1,1 @@
+FAIL: It accurately describes registration and panic conditions but omits the resulting enforcement that rejects invocation with multiple group members.

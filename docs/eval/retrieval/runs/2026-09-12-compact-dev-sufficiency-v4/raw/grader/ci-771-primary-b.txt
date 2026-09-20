@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-771:primary-b
+Outcome: fail
+Rationale: Names __complete and acknowledges that a new-shell adapter is not shown, but still omits the completion-line/final-directive protocol and directive handling required by the development key.

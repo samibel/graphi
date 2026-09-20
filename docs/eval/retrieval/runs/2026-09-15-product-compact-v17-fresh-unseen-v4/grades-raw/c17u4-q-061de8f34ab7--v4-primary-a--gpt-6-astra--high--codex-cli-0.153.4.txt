@@ -1,0 +1,1 @@
+PASS: The response accurately states the inclusive bounds check, the error reporting both bounds and actual count, and the nil return for accepted counts. All claims and citations are supported by the preserved args.go span.

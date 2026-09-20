@@ -1,0 +1,1 @@
+FAIL: The cited locations do not support their attached claims: command.go:819 checks for a nil child, :824 returns an error, and :827 is a closing brace. The described lookup, flag parsing, and recursive descent occur at :818, :823, and :826, respectively.

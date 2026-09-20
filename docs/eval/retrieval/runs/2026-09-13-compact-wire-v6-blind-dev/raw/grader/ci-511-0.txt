@@ -1,0 +1,1 @@
+PASS: It gives the intended OnInitialize substitute for package-init-time reads and correctly locates execution of those callbacks during command processing.

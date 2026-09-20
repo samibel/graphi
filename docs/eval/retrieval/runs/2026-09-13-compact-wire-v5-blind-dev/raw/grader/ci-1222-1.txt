@@ -1,0 +1,1 @@
+FAIL: The bundle supports a flag callback signature only; it does not contain ValidArgsFunction or the cited portability documentation. The response therefore supplies a material part of its generic Go completion procedure from outside the exact bundle bytes.

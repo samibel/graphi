@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: dcbbd48dc97246e67602104e30ad9ffdd7ee791ceb2b64a40954be5abebb307c
+QUERY ID: c17u4-q-0f5ca7904bd1
+
+QUESTION:
+In cobra.go, when does appendIfNotPresent leave a string unchanged, and how does it append otherwise?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:163-171 anchor="func appendIfNotPresent(s, stringToAppend string) string" reason=It returns early when the substring exists; otherwise it adds a separating space and the requested text.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query db6bea58096f; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":164,"end_line":177,"text":"\n// appendIfNotPresent will append stringToAppend to the end of s, but only if it's not yet present in s.\nfunc appendIfNotPresent(s, stringToAppend string) string {\n\tif strings.Contains(s, stringToAppend) {\n\t\treturn s\n\t}\n\treturn s + \" \" + stringToAppend\n}\n\n// rpad adds padding to the right of a string.\nfunc rpad(s string, padding int) string {\n\tformattedString := fmt.Sprintf(\"%%-%ds\", padding)\n\treturn fmt.Sprintf(formattedString, s)\n}"},{"path":"cobra.go","start_line":222,"end_line":230,"text":"\nfunc stringInSlice(a string, list []string) bool {\n\tfor _, b := range list {\n\t\tif b == a {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"doc/man_docs.go","start_line":142,"end_line":157,"text":"\nfunc manPreamble(buf io.StringWriter, header *GenManHeader, cmd *cobra.Command, dashedName string) {\n\tdescription := cmd.Long\n\tif len(description) == 0 {\n\t\tdescription = cmd.Short\n\t}\n\n\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(`%% \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n# NAME\n`, header.Title, header.Section, header.date, header.Source, header.Manual))\n\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(\"%s \\\\- %s\\n\\n\", dashedName, cmd.Short))\n\tcobra.WriteStringAndCheck(buf, \"# SYNOPSIS\\n\")\n\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(\"**%s**\\n\\n\", cmd.UseLine()))\n\tcobra.WriteStringAndCheck(buf, \"# DESCRIPTION\\n\")\n\tcobra.WriteStringAndCheck(buf, description+\"\\n\\n\")\n}"},{"path":"cobra.go","start_line":239,"end_line":244,"text":"\n// WriteStringAndCheck writes a string into a buffer, and checks if the error is not nil.\nfunc WriteStringAndCheck(b io.StringWriter, s string) {\n\t_, err := b.WriteString(s)\n\tCheckErr(err)\n}"},{"path":"command.go","start_line":1435,"end_line":1451,"text":"\n// UseLine puts out the full usage for a given command (including parents).\nfunc (c *Command) UseLine() string {\n\tvar useline string\n\tif c.HasParent() {\n\t\tuseline = c.parent.CommandPath() + \" \" + c.Use\n\t} else {\n\t\tuseline = c.Use\n\t}\n\tif c.DisableFlagsInUseLine {\n\t\treturn useline\n\t}\n\tif c.HasAvailableFlags() && !strings.Contains(useline, \"[flags]\") {\n\t\tuseline += \" [flags]\"\n\t}\n\treturn useline\n}"},{"path":"command.go","start_line":48,"end_line":51,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {"},{"path":"doc/md_docs.go","start_line":55,"end_line":61,"text":"\n// GenMarkdownCustom creates custom markdown output.\nfunc GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tbuf := new(bytes.Buffer)"},{"path":"command.go","start_line":1146,"end_line":1154,"text":"// ValidateRequiredFlags validates all required flags are present and returns an error otherwise\nfunc (c *Command) ValidateRequiredFlags() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tflags := c.Flags()\n\tmissingFlagNames := []string{}\n\tflags.VisitAll(func(pflag *flag.Flag) {"}],"provenance":{"input_sha256":"e7a9313d73ce8c135ae4b1cbc2ab21388b68100aed1afce18114a25f3f2ae99a","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `cobra.go:166–172`, `appendIfNotPresent` returns `s` unchanged when `strings.Contains(s, stringToAppend)` is true. Otherwise, it returns `s + " " + stringToAppend`, inserting one space before the appended string.
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 74,
+  "previous_sha256": "b7312f17a53dfd837fd9f58a37d45c425665a8a0306bb0b4b59a9ceeb665c919",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v2-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "a5e96eae31f092677171ee65a7654c5fc84cf602b70f06583921a3524487428a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To test whether a command has inherited flags, call `cmd.HasInheritedFlags()`: it returns `c.InheritedFlags().HasFlags()` (`command.go:1766–1769`). To restrict the check to inherited flags that are neither hidden nor deprecated, use `cmd.HasAvailableInheritedFlags()` (`command.go:1788–1792`). The `InheritedFlags()` implementation begins by merging persistent flags (`command.go:1696–1697`).\n",
+  "sha256": "7ac54c42f7e46506ba1fc8b334b80321f652646c7b748176d0ccec5ffe9d5f04"
+}

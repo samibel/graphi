@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2d913fa42bc0",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "ca691b9bcc26bbbedacbd7cdae466b15774ecb95bd31465b8ec46e9b2fe89098",
+  "bundle_sha256": "30ba6a47ecadf11ecf3f905de70f113bf566bb8b2df0f02d75cf7694aa130380",
+  "prompt_sha256": "eab59b2b7c98588f4d7475e682f8bb0412ae20b5f54b140490a6187d97595201",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetOutput` is a deprecated compatibility method equivalent to calling both `SetOut` and `SetErr` with the same writer. It changes the command’s usage-output destination (`c.outWriter`) and error-message destination (`c.errWriter`) (`command.go:279-286`). If passed `nil`, their documented fallback is `os.Stderr` (`command.go:280-281`).",
+  "responded_at": "2026-09-15T20:28:00Z",
+  "sha256": "32bac65d9539cab67999f20dddb7837f004c031bfb8fa882e2c45ff8b0035591"
+}

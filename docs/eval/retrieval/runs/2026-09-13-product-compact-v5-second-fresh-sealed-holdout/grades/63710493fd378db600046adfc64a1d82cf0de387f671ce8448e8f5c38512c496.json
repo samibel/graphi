@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q033",
+  "response_sha256": "63710493fd378db600046adfc64a1d82cf0de387f671ce8448e8f5c38512c496",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly describes nearest-ancestor inheritance, precedence of a nonempty local prefix, and the default `\"Error:\"`, supported by command.go:611–621. Its explanation that an empty setter value preserves inheritance is supported by command.go:357–360 and the lookup logic.",
+  "graded_at": "2026-09-13T15:39:48Z",
+  "sha256": "d8f35eeccb2774332c4363221097835f5b5d54dea2c0013e7dc30049540570a9"
+}

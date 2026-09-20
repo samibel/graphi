@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-d51e-7542-b4bd-3baf7d08b65b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. `args.go:41-43` states, “NoArgs returns an error if any args are included,” and its implementation checks `len(args) > 0`. This is independent of `ValidArgs`, so a single positional value is rejected even when `ValidArgs` is not configured."}}
+{"type":"turn.completed","usage":{"input_tokens":16542,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":65,"reasoning_output_tokens":0}}

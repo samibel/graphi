@@ -1,0 +1,11 @@
+`Command.ValidateFlagGroups` builds three separate `map[string]map[string]bool` state tables: one each for `requiredAsGroup`, `oneRequired`, and `mutuallyExclusive`. The outer key is a group’s flag-list ID; the inner map records each flag name and whether it is set (`flag_groups.go:89-94`).
+
+It visits every flag from `c.Flags()` and calls `processFlagForGroupAnnotation` once per rule annotation, populating the corresponding table (`flag_groups.go:95-99`; helper declaration at `flag_groups.go:121-122`).
+
+Validation is then fail-fast in this order:
+
+1. `validateRequiredFlagGroups(groupStatus)`
+2. `validateOneRequiredFlagGroups(oneRequiredGroupStatus)`
+3. `validateExclusiveFlagGroups(mutuallyExclusiveGroupStatus)`
+
+Each error is returned immediately, so later validators do not run after a failure (`flag_groups.go:101-109`). If flag parsing is disabled, validation returns `nil` before building state (`flag_groups.go:82-84`).

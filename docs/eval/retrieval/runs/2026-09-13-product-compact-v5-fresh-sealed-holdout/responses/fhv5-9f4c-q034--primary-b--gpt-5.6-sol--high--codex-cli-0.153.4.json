@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q034",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "fc8e3c80544a61784f1425455d64ab021818929ddbc5b75f3a9229cb3363842a",
+  "bundle_sha256": "2aac6603d688069e8ac6603dc3c08e698da921adce44ef3e555856c57c36490b",
+  "prompt_sha256": "c44d4a90096d781689baa0d7365ab394351d706f413af10aca7c06d35ff8a31d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows delegation to `c.Root().ExecuteC()` (`command.go:1059–1060`) and context assignment (`command.go:1043–1049`), but omits the command-selection, execution, and error/help-handling portions of `ExecuteC`.",
+  "responded_at": "2026-09-13T12:35:07Z",
+  "sha256": "78a1d4cc8779a24d96aaff63ab8ea3f262062465ad944e57441f0ed949c0dc9d"
+}

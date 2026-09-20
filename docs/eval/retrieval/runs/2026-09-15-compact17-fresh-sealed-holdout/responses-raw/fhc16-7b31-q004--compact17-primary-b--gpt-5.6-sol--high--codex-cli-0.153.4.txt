@@ -1,0 +1,1 @@
+It uses the **first byte/character** of `name`: `fs.ShorthandLookup(name[:1])` in `command.go:636`, after checking that `name` is non-empty at lines 632–634.

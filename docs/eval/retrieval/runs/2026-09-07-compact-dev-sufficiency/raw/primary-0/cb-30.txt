@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `GenManTree` and `GenManTreeFromOpts` as generating man pages for a command and its descendants (`doc/man_docs.go:33`, `doc/man_docs.go:46`), but omits their signatures, required options, and usage examples needed to give a concrete invocation.

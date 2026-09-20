@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-9a38-7c33-9525-118ee60868b8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes all four preserved declarations, including the essential writer path at lines 24–29 that buffers the generated script, writes it to the caller’s writer, and returns the write error. Its cited locations and additional behavior are supported by the transcript, and it correctly acknowledges truncation."}}
+{"type":"turn.completed","usage":{"input_tokens":18356,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":65,"reasoning_output_tokens":0}}

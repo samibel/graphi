@@ -1,0 +1,1 @@
+INSUFFICIENT The response explains persistent-flag lookup but contains no Viper binding example or caveat about the backing variable.

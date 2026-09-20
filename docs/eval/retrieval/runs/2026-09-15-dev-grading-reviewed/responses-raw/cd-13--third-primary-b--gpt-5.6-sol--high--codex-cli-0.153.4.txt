@@ -1,0 +1,11 @@
+`active_help.go` is in package `cobra` (`active_help.go:15`) and defines ActiveHelp markers, environment-variable configuration, and three helpers:
+
+- Constants (`active_help.go:24-31`):
+  - `activeHelpMarker = "_activeHelp_ "`
+  - `activeHelpEnvVarSuffix = "_ACTIVE_HELP"`
+  - `activeHelpGlobalEnvVar = "COBRA_ACTIVE_HELP"`
+  - `activeHelpGlobalDisable = "0"`
+- Regex variable `activeHelpEnvVarPrefixSubstRegexp`, matching characters outside `[A-Z0-9_]` (`active_help.go:33`).
+- `AppendActiveHelp(compArray, activeHelpStr)`, which appends the marker-prefixed help text to a completion array (`active_help.go:35-44`).
+- `GetActiveHelpConfig(cmd *Command)`, which reads `COBRA_ACTIVE_HELP`; unless it equals `"0"`, it reads the root-command-specific ActiveHelp variable (`active_help.go:46-57`).
+- `activeHelpEnvVar(name)`, which constructs `<PROGRAM>_ACTIVE_HELP`, uppercases it, and replaces invalid characters with underscores (`active_help.go:59-67`).

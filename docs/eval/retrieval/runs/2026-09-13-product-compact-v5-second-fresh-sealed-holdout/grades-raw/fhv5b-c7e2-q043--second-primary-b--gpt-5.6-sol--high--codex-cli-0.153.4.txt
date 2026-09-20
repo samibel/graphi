@@ -1,0 +1,1 @@
+FAIL: The response does not substantively explain the API routing. It correctly identifies that the bundle omits the `GenPowerShellCompletionFileWithDesc` implementation, leaving the fourth API’s delegation unverifiable, but does not describe the supported writer and file helper behavior.

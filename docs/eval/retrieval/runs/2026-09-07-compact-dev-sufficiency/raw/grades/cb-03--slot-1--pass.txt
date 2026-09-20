@@ -1,0 +1,1 @@
+The response concretely identifies GenMarkdownTree at doc/md_docs.go:125. The tree-versus-single-command distinction is explicit in the preserved guide sentence at site/content/docgen/md.md:60. Custom callback parameters and the io.Writer alternative are supported by doc/md_docs.go:132-134 and 51-53.

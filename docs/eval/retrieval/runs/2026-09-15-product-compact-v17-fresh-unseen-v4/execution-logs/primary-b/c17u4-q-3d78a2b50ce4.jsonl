@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-f416-78e1-9635-631bfcd2df3f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The test establishes that `parent help child` targets the **child command**, not the parent: its usage is `parent child [flags]`, it includes the child’s flags (`--baz`, child-shadowing `--foo`, and `--help`), and retains only the unshadowed parent persistent flag `--bar` under “Global Flags” (`command_test.go:931–961`, `TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16501,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":0}}

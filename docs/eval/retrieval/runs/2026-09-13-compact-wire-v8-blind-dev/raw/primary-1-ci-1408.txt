@@ -1,0 +1,7 @@
+Use the subcommand’s `Command.Flag` method:
+
+```go
+f := cmd.Flag("flagName")
+```
+
+`command.go:1794-1803` says `Flag` “climbs up the command tree” and falls back to `persistentFlag`. That method searches the command and its parents’ persistent flags (`command.go:1805-1816`). Therefore, define the global option as a persistent flag on a parent/root command, then access it from the subcommand via `cmd.Flag("flagName")`.

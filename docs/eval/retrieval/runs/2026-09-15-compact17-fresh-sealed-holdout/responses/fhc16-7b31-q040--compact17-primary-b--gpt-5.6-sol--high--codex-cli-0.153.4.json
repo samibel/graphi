@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q040",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "691c8c3d1c285404e59b36e2cf2da9d4d4638c485f6c788ce25db35d662eeb98",
+  "bundle_sha256": "0cee31384c3f9c592f9512c6d3edf24479027f7ce9366b97925052eceb80cb0d",
+  "prompt_sha256": "bea31299997215af4ff3f00be2404b98bbe6a7359b014427c6989d4caadaefda",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows flag-name suggestions in `getFlagNameCompletions`, but omits the completion logic around `completions.go:308` needed to distinguish `--flag=value` from a separate value after `--flag`.",
+  "responded_at": "2026-09-15T18:40:06Z",
+  "sha256": "ddf1a455ae49798b36b16655ebae823dc7b94aac2c5f6b53ef2c4168296f2d2d"
+}

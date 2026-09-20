@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+completion
+
+----- BEGIN task_context/compact-dev/6 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"completion\"; read in order (244/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/6","sources":[{"path":"completions.go","start_line":678,"end_line":715,"text":"// InitDefaultCompletionCmd adds a default 'completion' command to c.\n// This function will do nothing if any of the following is true:\n// 1- the feature has been explicitly disabled by the program,\n// 2- c has no subcommands (to avoid creating one),\n// 3- c already has a 'completion' command provided by the program.\nfunc (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tfor _, cmd := range c.commands {\n\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {\n\t\t\t// A completion command is already available\n\t\t\treturn\n\t\t}\n\t}\n\n\thaveNoDescFlag := !c.CompletionOptions.DisableNoDescFlag \u0026\u0026 !c.CompletionOptions.DisableDescriptions\n\n\tcompletionCmd := \u0026Command{\n\t\tUse:   compCmdName,\n\t\tShort: \"Generate the autocompletion script for the specified shell\",\n\t\tLong: fmt.Sprintf(`Generate the autocompletion script for %[1]s for the specified shell.\nSee each sub-command's help for details on how to use the generated script.\n`, c.Root().Name()),\n\t\tArgs:              NoArgs,\n\t\tValidArgsFunction: NoFileCompletions,\n\t\tHidden:            c.CompletionOptions.HiddenDefaultCmd,\n\t\tGroupID:           c.completionCommandGroupID,\n\t}\n\tc.AddCommand(completionCmd)\n\n\tout := c.OutOrStdout()\n\tnoDesc := c.CompletionOptions.DisableDescriptions\n\tshortDesc := \"Generate the autocompletion script for %s\"\n\tbash := \u0026Command{\n\t\tUse:   \"bash\",\n\t\tShort: fmt.Sprintf(shortDesc, \"bash\"),"},{"path":"completions.go","start_line":92,"end_line":104,"text":"\t// This one must be last to avoid messing up the iota count.\n\tShellCompDirectiveDefault ShellCompDirective = 0\n)\n\nconst (\n\t// Constants for the completion command\n\tcompCmdName              = \"completion\"\n\tcompCmdNoDescFlagName    = \"no-descriptions\"\n\tcompCmdNoDescFlagDesc    = \"disable completion descriptions\"\n\tcompCmdNoDescFlagDefault = false\n)\n\n// CompletionOptions are the options to control shell completion"},{"path":"completions.go","start_line":96,"end_line":102,"text":"const (\n\t// Constants for the completion command\n\tcompCmdName              = \"completion\"\n\tcompCmdNoDescFlagName    = \"no-descriptions\"\n\tcompCmdNoDescFlagDesc    = \"disable completion descriptions\"\n\tcompCmdNoDescFlagDefault = false\n)"},{"path":"site/content/completions/_index.md","start_line":117,"end_line":118,"text":"# Customizing completions\n"}],"provenance":{"input_sha256":"a594a69ab7145fda4908939e27c098252fabc7c63fa76ad4881614b08ea9d894","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/6 RESPONSE BYTES -----

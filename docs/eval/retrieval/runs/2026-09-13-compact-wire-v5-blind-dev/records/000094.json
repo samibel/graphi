@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 94,
+  "previous_sha256": "d28f0d63cf1e179656a5d7acfd4889b0afb3647e645ce8400688289cc45461a8",
+  "kind": "grade",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1549ab77bf2cf847cd4219be410e194d53da028c4cfe164d7d219e7c549d5391",
+  "outcome": "pass",
+  "rationale": "PASS: The named-file summary is accurate and directly grounded in shell_completions.go:21-23, 35-46, and 58-63.\n",
+  "sha256": "4b07bc0bda094e80e00979cc841878db501a2ce60ff4dbf610685a5e89072d99"
+}

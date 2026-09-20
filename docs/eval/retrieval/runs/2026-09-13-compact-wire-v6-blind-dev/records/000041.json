@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 41,
+  "previous_sha256": "75eb26e3bdf56652d73b6e8854d14300b021906e30a494df07010d4b893ef034",
+  "kind": "response",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "7652585b0997e7382e0e56969f8885522d59728c2d68e9c2cd164bd0dbd6f895",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the package-level variable `cobra.EnablePrefixMatching = true`; its declaration says this enables automatic prefix matching (`cobra.go:51-56`). Command matching then accepts `hasNameOrAliasPrefix(next)` when the setting is enabled (`command.go:774-775`).",
+  "sha256": "f17f44835b7b4a5d9dc964fa7c8a3571a057138af78104282d27ca1eff15c33d"
+}

@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7ffae396c15f1eb5873403a3a65dc9840090b36a7763d753d2482c69506f3fad
+QUERY ID: c17u4-q-40c63ea817f5
+
+QUESTION:
+What observable behavior proves that using a deprecated shorthand flag emits its deprecation notice?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:2172-2185 anchor="func TestUseDeprecatedFlags(t *testing.T)" reason=The test marks the flag deprecated, executes its shorthand, and asserts the configured warning text is printed.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query daacd3e9bfd7; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"README.md","start_line":68,"end_line":80,"text":"## Flags\n\nA flag is a way to modify the behavior of a command. Cobra supports\nfully POSIX-compliant flags as well as the Go [flag package](https://golang.org/pkg/flag/).\nA Cobra command can define flags that persist through to children commands\nand flags that are only available to that command.\n\nIn the example above, 'port' is the flag.\n\nFlag functionality is provided by the [pflag\nlibrary](https://github.com/spf13/pflag), a fork of the flag standard library\nwhich maintains the same interface while adding POSIX compliance.\n"},{"path":"CONDUCT.md","start_line":9,"end_line":11,"text":"### Deprecation\nDeprecation of Go versions or dependent packages will only occur in major releases. To reduce the change of this taking users by surprise, any large deprecation will be preceded by an announcement in the [#cobra slack channel](https://gophers.slack.com/archives/CD3LP1199) and an Issue on Github.\n"},{"path":"doc/util.go","start_line":38,"end_line":46,"text":"\n// Temporary workaround for yaml lib generating incorrect yaml with long strings\n// that do not contain \\n.\nfunc forceMultiLine(s string) string {\n\tif len(s) > 60 && !strings.Contains(s, \"\\n\") {\n\t\ts = s + \"\\n\"\n\t}\n\treturn s\n}"},{"path":"site/content/completions/zsh.md","start_line":9,"end_line":18,"text":"### Deprecation summary\n\nSee further below for more details on these deprecations.\n\n* `cmd.MarkZshCompPositionalArgumentFile(pos, []string{})` is no longer needed.  It is therefore **deprecated** and silently ignored.\n* `cmd.MarkZshCompPositionalArgumentFile(pos, glob[])` is **deprecated** and silently ignored.\n  * Instead use `ValidArgsFunction` with `ShellCompDirectiveFilterFileExt`.\n* `cmd.MarkZshCompPositionalArgumentWords()` is **deprecated** and silently ignored.\n  * Instead use `ValidArgsFunction`.\n"},{"path":"doc/man_docs.go","start_line":163,"end_line":166,"text":"\t\t}\n\t\tformat := \"\"\n\t\tif len(flag.Shorthand) > 0 && len(flag.ShorthandDeprecated) == 0 {\n\t\t\tformat = fmt.Sprintf(\"**-%s**, **--%s**\", flag.Shorthand, flag.Name)"},{"path":"command.go","start_line":1833,"end_line":1835,"text":"\terr := c.Flags().Parse(args)\n\t// Print warnings if they occurred (e.g. deprecated flag messages).\n\tif c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {"},{"path":"command.go","start_line":1217,"end_line":1217,"text":"\t\tif c.Flags().ShorthandLookup(\"v\") == nil {"},{"path":"command.go","start_line":1777,"end_line":1777,"text":"// HasAvailablePersistentFlags checks if the command contains persistent flags which are not hidden or deprecated."}],"provenance":{"input_sha256":"710703ae8b17416cd03b39b6a77bf7363fb4a0f86bfa1ec7853bcba105a5703b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response lacks a test or output showing that invoking a deprecated shorthand emits its notice; `command.go:1833–1835` only shows parsing and a condition for handling buffered warnings.
+----- END THE RATER'S RESPONSE -----

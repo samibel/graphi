@@ -1,0 +1,1 @@
+None. `ArbitraryArgs` rejects no positional arguments: `args.go:67-71` says it “never returns an error” and its implementation unconditionally returns `nil`. The guide likewise says it “accept[s] any number of args” (`site/content/user_guide.md:374`).

@@ -1,0 +1,12 @@
+`(*Command).ExecuteC` executes a command from the root:
+
+- Initializes a background context if none exists (`command.go:1053-1055`).
+- Redirects execution to `c.Root().ExecuteC()` when called on a child (`command.go:1058-1060`).
+- Runs the Windows pre-execution hook and initializes default help, completion, and command groups (`command.go:1063-1073`).
+- Uses configured arguments, otherwise `os.Args[1:]` except for `cobra.test` (`command.go:1075-1080`).
+- Initializes the hidden completion command (`command.go:1083`).
+- Resolves the target with `Traverse` when `TraverseChildren` is enabled, otherwise `Find` (`command.go:1085-1091`).
+- On resolution failure, optionally prints the error and help hint, then returns the relevant command and error (`command.go:1092-1103`).
+- Marks the resolved command as called, propagates the root context if needed, and invokes `cmd.execute(flags)` (`command.go:1106-1116`).
+
+The response is truncated immediately after `if err != nil {`, so its final execution-error handling and return logic are not shown.

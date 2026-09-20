@@ -872,11 +872,7 @@ func LoadSemanticStateForTest(ctx context.Context, store graphstore.Graphstore, 
 }
 
 func loadSemanticState(ctx context.Context, store graphstore.Graphstore, metaDir string, emb embed.Embedder) search.SemanticState {
-	fp := embed.Fingerprint{
-		ModelID:        emb.ID(),
-		Dim:            emb.Dim(),
-		DocumentSchema: embed.DocumentSchema,
-	}
+	fp := embed.FingerprintFor(emb, "")
 	graphGen, gerr := graphGenerationFromStore(ctx, store)
 	if gerr != nil || graphGen == "" {
 		// The fingerprint's graph_generation field falls back to the

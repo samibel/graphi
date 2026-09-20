@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q062",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "e0c1675d2112533d5c32654488f4f4ab0322eff6404915f548255bd546642c41",
+  "bundle_sha256": "65556aca6617bc426ec2888007471acb3b5d87726e2cc35d9058a269aac8883d",
+  "prompt_sha256": "7b1cecf9f568488a83021712367150555b624261c21db8f738d3b6ba87829277",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. In `command.go:1354-1358`, `AddGroup(groups ...*Group)` immediately appends every supplied definition via `append(c.commandgroups, groups...)`, with no duplicate-ID or empty-field validation. `Group` merely exposes `ID` and `Title` strings (`command.go:41-45`). The later `checkCommandGroups` validation (`command.go:1169-1181`) only rejects subcommands referencing a nonempty, undefined `GroupID`; it does not validate group definitions themselves.",
+  "responded_at": "2026-09-15T18:43:05Z",
+  "sha256": "c2de831fe6b2a95d7c8332f9da246f7ef8bc9d95bba62621c56ca221cdd8a779"
+}

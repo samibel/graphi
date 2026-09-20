@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows that `Execute` delegates to `ExecuteC`, that a command is runnable when `Run` or `RunE` is set, and comments about persistent-hook traversal, but it omits the execution body that orders parsing, validation, pre-run, run, and post-run hooks.

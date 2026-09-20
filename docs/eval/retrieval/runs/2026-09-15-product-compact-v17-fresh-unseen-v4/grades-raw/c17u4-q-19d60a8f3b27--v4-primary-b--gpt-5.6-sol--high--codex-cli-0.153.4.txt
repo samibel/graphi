@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the message is encoded. The preserved bundle shows AppendActiveHelp usage but lacks the marker-prefix implementation required for the essential reviewed behavior.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q012",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "6737ad498a6769f6222ff01983eaf730117b98ce7d4267706f0ebdc91f3046cc",
+  "bundle_sha256": "4b0e2ba9c23cba2c5a2a17fcd32084e6634c711ca9613e6346dedaf5f865d157",
+  "prompt_sha256": "60dc484f40d6674fb336f081250122864a4d92a83bae098d78379f0cc0761279",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The provided spans show these declarations in `cobra_test.go`:\n\n- **Package:** `cobra` (line 15).\n- **Helper:** `assertNoErr(t *testing.T, e error)` reports non-nil errors with `t.Error(e)` (lines 22–26).\n- **Test:** `TestAddTemplateFunctions(t *testing.T)` registers template functions through `AddTemplateFunc` and `AddTemplateFuncs`, sets a `Command` usage template, and checks that `UsageString()` returns `\"Hello, world.\"` (lines 28–42).\n\nThe response is marked `truncated: true`, so it does not establish the file’s complete structure or all declarations.",
+  "responded_at": "2026-09-15T08:28:58Z",
+  "sha256": "eace4c3b96f6be44d164ca8c4242127c94a4cbb602ba14db5ee891346c822c67"
+}

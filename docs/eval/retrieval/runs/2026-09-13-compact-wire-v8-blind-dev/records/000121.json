@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 121,
+  "previous_sha256": "8c68b8dee978692bf84d1bfa556508c974f93fdc124f8e4ae9957788229d7b57",
+  "kind": "grade",
+  "query_id": "cb-28",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "97ab7a3e7da58e7a169b1761a2df841a8a6f5b4a72ce32bff73a28acce743f4e",
+  "outcome": "pass",
+  "rationale": "The answer correctly states the documented purpose: command.go:73-75 explicitly says GroupID groups a subcommand in its parent’s help output. Its supporting details are also present in the sealed bundle: Group contains ID and Title at command.go:41-45, AddGroup registers groups on the parent at command.go:1356-1359, and the help/completion group-ID setters appear at command.go:332-345. The response is concrete and sufficiently answers the question without relying on unsupported facts.\n",
+  "sha256": "493b11cae2f1384bccf82fbe1385bd597996d2d6fe70e060fd875f9e41270eb1"
+}

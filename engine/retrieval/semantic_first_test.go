@@ -497,7 +497,14 @@ func TestSemanticFirst_BackfillCapUsesNormalizedPath(t *testing.T) {
 		{NodeID: "accepted", Path: "pkg/y.go", Line: 1},
 	}}
 	e := newEngine(lex, sem, nil)
-	res, err := e.Retrieve(context.Background(), Request{Query: "how does this work", Limit: 5})
+	// SW-282: a multi-word question now runs through naturalLanguageRows,
+	// which scores the union directly and has no maxPerFile backfill
+	// concept (that AC-5 cap belongs to the semantic-first prefix/backfill
+	// strategy this fixture is exercising). An identifier-shaped query with
+	// no matching qualified name still falls through exactNameFirstRows to
+	// semanticFirstRows unchanged, so it keeps testing the intended
+	// normalized-path cap.
+	res, err := e.Retrieve(context.Background(), Request{Query: "NoSuchIdentifier", Limit: 5})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1050,8 +1057,8 @@ func TestSemanticFirst_StrategyAndProvenanceStamped(t *testing.T) {
 	if res.Summary.RetrievalVersion != retrievalVersion {
 		t.Errorf("Summary.RetrievalVersion = %q, want %q (the bump that says shipped behaviour moved)", res.Summary.RetrievalVersion, retrievalVersion)
 	}
-	if retrievalVersion != "retrieval/2" {
-		t.Errorf("retrievalVersion = %q, want retrieval/2", retrievalVersion)
+	if retrievalVersion != "retrieval/7" {
+		t.Errorf("retrievalVersion = %q, want retrieval/7", retrievalVersion)
 	}
 	// Provenance on rows.
 	wantRegion := map[string]string{

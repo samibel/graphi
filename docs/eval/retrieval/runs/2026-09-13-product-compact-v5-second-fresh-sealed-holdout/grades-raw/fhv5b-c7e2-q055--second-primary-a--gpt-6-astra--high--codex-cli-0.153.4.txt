@@ -1,0 +1,1 @@
+PASS: The response correctly explains that SetHelpCommandGroupID preserves the choice in c.helpCommandGroupID even when no help command exists. Both citations are present and support the claim, including the comment describing later use when no user-defined help command exists.

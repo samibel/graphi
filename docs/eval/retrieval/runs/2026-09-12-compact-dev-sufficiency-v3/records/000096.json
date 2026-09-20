@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 96,
+  "previous_sha256": "21f93a065b891ec5bf11b3e2836f234ec7497af3b9e4cd24f604fc785993971d",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "f70ec6e6dbaa5948ae68b549696662c42cbbd9990294d26df7711a82bd541f4e",
+  "outcome": "pass",
+  "rationale": "The complete ValidateRequiredFlags excerpt supports the validator location and missing-flag error mechanism; the answer correctly limits its call-site claim.\n",
+  "sha256": "35c1e3adef8f68242e5c7636e42b7641d6b7a7e797cdf8dc11b03e60f965d435"
+}

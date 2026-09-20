@@ -1,0 +1,1 @@
+FAIL: The transcript supports hook ordering and the context setter/getter APIs, but does not establish that the parent’s inherited PersistentPreRun receives the child’s Command instance. That missing fact is necessary to verify that calling cmd.SetContext in the hook changes the context observed by the child’s Run.

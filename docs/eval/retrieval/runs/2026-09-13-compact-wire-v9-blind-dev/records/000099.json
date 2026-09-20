@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 99,
+  "previous_sha256": "2b44761491c31fb5ac44bb8501085bdcc092d3096b4c2e2506c80da58cd4d037",
+  "kind": "grade",
+  "query_id": "cb-13",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ed050997a13eee3a28d5f97b2543e21a5885a6e5dded6e4f711f9c09a09e6406",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and supported by the preserved bundle. `command.go:831–850` shows iteration over `c.commands`, filtering with `cmd.IsAvailableCommand()`, and appending `cmd.Name()` when the case-ignoring `ld(typedName, cmd.Name(), true)` is within `c.SuggestionsMinimumDistance`, when the lowercased command name has the lowercased input as a prefix, or when the input equals a `cmd.SuggestFor` entry via `strings.EqualFold`. `command.go:750–765` supports disabling suggestions, defaulting a non-positive distance to 2, and rendering matches in returned order. `command.go:1495–1503` supports the explanation of `cmd.Name()`. The observations that the shown code sorts neither nor deduplicates suggestions are also supported by the direct append-and-return implementation.\n",
+  "sha256": "dce4f0122367022bef87495ec9b62ee0247580857f41702fdc9c99934ea5e808"
+}

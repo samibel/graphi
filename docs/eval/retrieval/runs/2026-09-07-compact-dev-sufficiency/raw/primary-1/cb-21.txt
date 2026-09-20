@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `parent.AddCommand(child)` (`command_test.go:933–934`), the `AddCommand` signature (`command.go:1302–1303`), and `Parent()` returning `c.parent` (`command.go:1843–1844`), but omits the addition implementation and parent-pointer assignment.

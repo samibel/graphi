@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Command.args` and the start of `ParseFlags` in `command.go`, but not the code or symbol that reports the number of arguments before `--`.

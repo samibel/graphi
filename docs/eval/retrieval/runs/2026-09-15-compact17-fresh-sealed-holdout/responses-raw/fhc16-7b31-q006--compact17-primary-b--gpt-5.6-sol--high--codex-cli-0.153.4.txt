@@ -1,0 +1,9 @@
+In `completions.go:840-858`, `findFlag` handles a one-character `name` by:
+
+1. Calling `cmd.Flags().ShorthandLookup(name)`.
+2. If found, replacing `name` with `short.Name` (the long flag name).
+3. Otherwise, calling `cmd.InheritedFlags().ShorthandLookup(name)`.
+4. If that succeeds, again replacing `name` with `short.Name`; if not, returning `nil`.
+5. Finally, calling `cmd.Flag(name)` with the resolved long name.
+
+The comment at `completions.go:844-845` explains why: `cmd.Flag()` only searches using long flag names.

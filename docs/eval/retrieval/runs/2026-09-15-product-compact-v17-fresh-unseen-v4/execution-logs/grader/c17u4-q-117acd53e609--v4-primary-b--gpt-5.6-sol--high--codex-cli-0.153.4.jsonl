@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cc-50c5-7d80-9393-07090aa2607a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly gives the local non-nil outWriter → recursive parent lookup → supplied default order. Both cited spans resolve within the bundle and support all claims."}}
+{"type":"turn.completed","usage":{"input_tokens":17725,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":38,"reasoning_output_tokens":0}}

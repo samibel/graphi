@@ -1,0 +1,7 @@
+`legacyArgs` accepts:
+
+- Any arguments for a command with no subcommands (`args.go:28-31`).
+- Any arguments for a subcommand, even if it has its own subcommands (`args.go:34-38`, guarded by `!cmd.HasParent()`).
+- No arguments for a root command with subcommands (`args.go:34-38`).
+
+It returns `unknown command "<first arg>" for "<command path>"` only when the command is a root, has subcommands, and receives at least one argument (`args.go:34-35`). It appends suggestions from `cmd.findSuggestions(args[0])`; `command.go:749-764` shows these are omitted when suggestions are disabled or none exist, otherwise formatted under `Did you mean this?`.

@@ -132,6 +132,16 @@ var outboundDialAllowlist = []string{
 	"github.com/samibel/graphi/cmd/graphi/staticfetch",
 }
 
+// outboundDialExactAllowlist contains reviewed leaf packages whose exception
+// must not be inherited by future descendants. CodeRank is evaluation-only and
+// explicitly constructed; it accepts only a literal loopback origin (mapping
+// localhost directly to 127.0.0.1), installs a no-proxy/no-DNS dialer, rejects
+// redirects, and has no registry init or default selector path. Its adapter
+// tests pin those properties. Keeping it exact means a future
+// engine/embed/coderank/* transport is scanned normally instead of silently
+// inheriting this local-IPC exception.
+const outboundDialExactCodeRank = "github.com/samibel/graphi/engine/embed/coderank"
+
 // outboundDialCallDenylist names the dial constructors the AST scan flags when
 // found outside the allowlist. It targets the ACTUAL egress mechanisms, not
 // non-I/O constructors:
@@ -589,6 +599,9 @@ func dirToPkgPath(root, dir string) string {
 // isAllowlistedPkg reports whether pkgPath is permitted to dial (loopback
 // surfaces + the canary itself).
 func isAllowlistedPkg(pkgPath string) bool {
+	if pkgPath == outboundDialExactCodeRank {
+		return true
+	}
 	for _, a := range outboundDialAllowlist {
 		if pkgPath == a || strings.HasPrefix(pkgPath, a+"/") {
 			return true

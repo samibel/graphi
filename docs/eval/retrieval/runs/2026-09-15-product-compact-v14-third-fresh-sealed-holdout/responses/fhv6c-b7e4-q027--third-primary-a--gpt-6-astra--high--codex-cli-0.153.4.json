@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q027",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "e4fc0049fa70111723dea188500ef098f80b98e4b757fa1a35eb0a7d35618c9f",
+  "bundle_sha256": "60b6309b0f7eb1b508b12e7198626afd2320cf99e0cacd991bf26a5b051f4868",
+  "prompt_sha256": "0079e7a214d9c8092536ade01cb011cc28c016fcec479e8aceeb31902c2efba8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetIn(nil)` makes `InOrStdin()` return the nearest ancestor’s non-nil input reader, or `os.Stdin` if none exists.\n\nEvidence in `command.go`: `SetIn` assigns nil to `c.inReader` (lines 300–304); `InOrStdin` calls `c.getIn(os.Stdin)` (389–392); `getIn` checks the local reader, recursively checks parents, then returns the default (414–422).",
+  "responded_at": "2026-09-15T08:29:53Z",
+  "sha256": "96ede6e545bcee3638f620ee8aa523324f2dabe166cbca168bb0272b50b3d514"
+}

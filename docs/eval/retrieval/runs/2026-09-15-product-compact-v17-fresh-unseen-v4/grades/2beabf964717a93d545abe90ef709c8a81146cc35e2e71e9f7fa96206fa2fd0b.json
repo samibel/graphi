@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-38db105ec742",
+  "response_sha256": "2beabf964717a93d545abe90ef709c8a81146cc35e2e71e9f7fa96206fa2fd0b",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies `TestEnablePrefixMatching` at `command_test.go:305–332` and accurately describes enabling prefix matching, executing `\"a\"` with `\"one\", \"two\"`, checking successful execution, and verifying the selected command receives both arguments. All claims and the citation are supported by the bundle.",
+  "graded_at": "2026-09-15T20:49:53Z",
+  "sha256": "429f8b465ec0925316337f63e8f9f91ddfa8c82c05c96d01a8f56a4327c0f29b"
+}

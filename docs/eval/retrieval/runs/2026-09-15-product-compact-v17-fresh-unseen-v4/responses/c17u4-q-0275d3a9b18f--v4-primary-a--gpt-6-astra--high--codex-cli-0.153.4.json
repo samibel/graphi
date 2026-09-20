@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0275d3a9b18f",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "ba87b1405b12ceeb0cb17bc2dc1b598d1bbfb7dd4eacac2daa7882570df85daa",
+  "bundle_sha256": "ba342fefde4ef0f0da6c8013f4af3fc20c37a6a074fb45560a62d4c64761213a",
+  "prompt_sha256": "c3e55f81986711f0985b06e34ca9eea60354d95726d57ef7368f933e0bd74dbe",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnlyValidArgs` strips descriptions by keeping only the text before the first tab in each `ValidArgs` entry: `strings.Split(v, \"\\t\")[0]`. It builds a separate `validArgs` slice, leaving `cmd.ValidArgs` unchanged, then checks positional arguments against that slice (`args.go`, lines 53–60). Matching uses exact string equality (`stringInSlice`, `cobra.go`, lines 223–226).",
+  "responded_at": "2026-09-15T20:22:20Z",
+  "sha256": "e49ad3bd89f702a68c02670fb1226916d69d98324e062eac6753babd53af35ca"
+}

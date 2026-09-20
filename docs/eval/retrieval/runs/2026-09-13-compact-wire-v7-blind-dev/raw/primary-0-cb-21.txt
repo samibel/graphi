@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `command.go:1302-1304` starting `AddCommand`, but omits its body where children would be added and `x.parent` set.

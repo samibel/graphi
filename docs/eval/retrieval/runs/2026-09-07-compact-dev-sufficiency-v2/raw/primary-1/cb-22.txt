@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows the start of a `cmd.Commands()` loop in `GenManTreeFromOpts` (`doc/man_docs.go:48–54`) but omits its body and recursion, so traversal order and command filtering cannot be established.

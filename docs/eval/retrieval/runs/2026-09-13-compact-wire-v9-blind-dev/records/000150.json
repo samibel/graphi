@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 150,
+  "previous_sha256": "902315690fd015ae100f165ea9da72ffd0c1fd81c7f01bc74570d9e81a72ee93",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "b86082d50cac5e282134da526a53f94565120ef4bdb99f98fdd591a5f635be63",
+  "outcome": "pass",
+  "rationale": "The answer is correct and supported by the sealed bundle. It cites `command.go:1183–1198`, where `BoolP(\"help\", \"h\", ...)` makes the default `--help` and `-h` one boolean flag, and where `InitDefaultHelpFlag` does nothing if a `help` flag already exists. It also cites `command.go:883–886`, which explicitly says initialization is delayed to allow user overriding. Together, those bytes support the concrete conclusion that declaring a custom `--help` and a separate `-h` before execution can preserve distinct handling.\n",
+  "sha256": "3efe820b3d3cc8debbd118d0fb0607411228c42ac51fa6a44217f14183ffc398"
+}

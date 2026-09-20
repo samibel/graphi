@@ -1,0 +1,95 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 83e644c0d078943d864af1b393efa018ebb1e2909ab67e06849e2c691ada83c0
+FOLLOW-UP READ CONTENT ADDRESS: 806c78f891ea3388bc91e32a95d00b49c876e44e7d1c8879453fc84bbd7ec662
+QUERY ID: fhv6c-b7e4-q062
+
+QUESTION:
+command aliases in Bash
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- bash_completions.go:632-646 anchor="func writeCmdAliases(" reason=writeCmdAliases is the canonical legacy Bash emission logic among alias fields, matching methods, and argument aliases.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 063375b0f8c3; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/completions/bash.md","start_line":5,"end_line":18,"text":"## Bash legacy dynamic completions\n\nFor backward compatibility, Cobra still supports its legacy dynamic completion solution (described below).  Unlike the `ValidArgsFunction` solution, the legacy solution will only work for Bash shell-completion and not for other shells. This legacy solution can be used along-side `ValidArgsFunction` and `RegisterFlagCompletionFunc()`, as long as both solutions are not used for the same command.  This provides a path to gradually migrate from the legacy solution to the new solution.\n\n**Note**: Cobra's default `completion` command uses bash completion V2.  If you are currently using Cobra's legacy dynamic completion solution, you should not use the default `completion` command but continue using your own.\n\nThe legacy solution allows you to inject bash functions into the bash completion script.  Those bash functions are responsible for providing the completion choices for your own completions.\n\nSome code that works in kubernetes:\n\n```bash\nconst (\n        bash_completion_func = `__kubectl_parse_get()\n{"},{"path":"site/content/completions/_index.md","start_line":402,"end_line":408,"text":"### Aliases\n\nYou can also configure `bash` aliases for your program and they will also support completions.\n\n```bash\nalias aliasname=origcommand\ncomplete -o default -F __start_origcommand aliasname"},{"path":"command.go","start_line":1505,"end_line":1513,"text":"// HasAlias determines if a given string is an alias of the command.\nfunc (c *Command) HasAlias(s string) bool {\n\tfor _, a := range c.Aliases {\n\t\tif commandNameMatches(a, s) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1876,"end_line":1885,"text":"// commandNameMatches checks if two command names are equal\n// taking into account case sensitivity according to\n// EnableCaseInsensitive global configuration.\nfunc commandNameMatches(s string, t string) bool {\n\tif EnableCaseInsensitive {\n\t\treturn strings.EqualFold(s, t)\n\t}\n\n\treturn s == t\n}"},{"path":"bash_completions.go","start_line":647,"end_line":653,"text":"func writeArgAliases(buf io.StringWriter, cmd *Command) {\n\tWriteStringAndCheck(buf, \"    noun_aliases=()\\n\")\n\tsort.Strings(cmd.ArgAliases)\n\tfor _, value := range cmd.ArgAliases {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    noun_aliases+=(%q)\\n\", value))\n\t}\n}"},{"path":"command.go","start_line":1540,"end_line":1543,"text":"// NameAndAliases returns a list of the command name and all aliases\nfunc (c *Command) NameAndAliases() string {\n\treturn strings.Join(append([]string{c.Name()}, c.Aliases...), \", \")\n}"},{"path":"completions.go","start_line":713,"end_line":713,"text":"\tbash := &Command{"},{"path":"command.go","start_line":63,"end_line":63,"text":"\t// Aliases is an array of aliases that can be used instead of the first word in Use."},{"path":"bash_completions.go","start_line":632,"end_line":632,"text":"func writeCmdAliases(buf io.StringWriter, cmd *Command) {"}],"provenance":{"input_sha256":"35e517fef6339f51f4264f065fc155779b0d85ab77a05963000f2e687242c150","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/completions/bash.md:5-93"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/completions/bash.md","start_line":5,"end_line":93,"text":"## Bash legacy dynamic completions\n\nFor backward compatibility, Cobra still supports its legacy dynamic completion solution (described below).  Unlike the `ValidArgsFunction` solution, the legacy solution will only work for Bash shell-completion and not for other shells. This legacy solution can be used along-side `ValidArgsFunction` and `RegisterFlagCompletionFunc()`, as long as both solutions are not used for the same command.  This provides a path to gradually migrate from the legacy solution to the new solution.\n\n**Note**: Cobra's default `completion` command uses bash completion V2.  If you are currently using Cobra's legacy dynamic completion solution, you should not use the default `completion` command but continue using your own.\n\nThe legacy solution allows you to inject bash functions into the bash completion script.  Those bash functions are responsible for providing the completion choices for your own completions.\n\nSome code that works in kubernetes:\n\n```bash\nconst (\n        bash_completion_func = `__kubectl_parse_get()\n{\n    local kubectl_output out\n    if kubectl_output=$(kubectl get --no-headers \"$1\" 2\u003e/dev/null); then\n        out=($(echo \"${kubectl_output}\" | awk '{print $1}'))\n        COMPREPLY=( $( compgen -W \"${out[*]}\" -- \"$cur\" ) )\n    fi\n}\n\n__kubectl_get_resource()\n{\n    if [[ ${#nouns[@]} -eq 0 ]]; then\n        return 1\n    fi\n    __kubectl_parse_get ${nouns[${#nouns[@]} -1]}\n    if [[ $? -eq 0 ]]; then\n        return 0\n    fi\n}\n\n__kubectl_custom_func() {\n    case ${last_command} in\n        kubectl_get | kubectl_describe | kubectl_delete | kubectl_stop)\n            __kubectl_get_resource\n            return\n            ;;\n        *)\n            ;;\n    esac\n}\n`)\n```\n\nAnd then I set that in my command definition:\n\n```go\ncmds := \u0026cobra.Command{\n\tUse:   \"kubectl\",\n\tShort: \"kubectl controls the Kubernetes cluster manager\",\n\tLong: `kubectl controls the Kubernetes cluster manager.\n\nFind more information at https://github.com/GoogleCloudPlatform/kubernetes.`,\n\tRun: runHelp,\n\tBashCompletionFunction: bash_completion_func,\n}\n```\n\nThe `BashCompletionFunction` option is really only valid/useful on the root command. Doing the above will cause `__kubectl_custom_func()` (`__\u003ccommand-use\u003e_custom_func()`) to be called when the built in processor was unable to find a solution. In the case of kubernetes a valid command might look something like `kubectl get pod [mypod]`. If you type `kubectl get pod [tab][tab]` the `__kubectl_customc_func()` will run because the cobra.Command only understood \"kubectl\" and \"get.\" `__kubectl_custom_func()` will see that the cobra.Command is \"kubectl_get\" and will thus call another helper `__kubectl_get_resource()`.  `__kubectl_get_resource` will look at the 'nouns' collected. In our example the only noun will be `pod`.  So it will call `__kubectl_parse_get pod`.  `__kubectl_parse_get` will actually call out to kubernetes and get any pods.  It will then set `COMPREPLY` to valid pods!\n\nSimilarly, for flags:\n\n```go\n\tannotation := make(map[string][]string)\n\tannotation[cobra.BashCompCustom] = []string{\"__kubectl_get_namespaces\"}\n\n\tflag := \u0026pflag.Flag{\n\t\tName:        \"namespace\",\n\t\tUsage:       usage,\n\t\tAnnotations: annotation,\n\t}\n\tcmd.Flags().AddFlag(flag)\n```\n\nIn addition add the `__kubectl_get_namespaces` implementation in the `BashCompletionFunction`\nvalue, e.g.:\n\n```bash\n__kubectl_get_namespaces()\n{\n    local template\n    template=\"{{ range .items  }}{{ .metadata.name }} {{ end }}\"\n    local kubectl_out\n    if kubectl_out=$(kubectl get -o template --template=\"${template}\" namespace 2\u003e/dev/null); then\n        COMPREPLY=( $( compgen -W \"${kubectl_out}[*]\" -- \"$cur\" ) )\n    fi\n}\n```"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+For a Bash alias with Cobra completion, define the alias and register the original command’s generated completion function:
+
+```bash
+alias aliasname=origcommand
+complete -o default -F __start_origcommand aliasname
+```
+
+This is documented in `site/content/completions/_index.md:402-408`.
+
+Separately, Cobra command aliases are stored in `Command.Aliases`, described as substitutes for the first word in `Use` (`command.go:63`). `Command.HasAlias` checks them using `commandNameMatches` (`command.go:1505-1513`), respecting `EnableCaseInsensitive` (`command.go:1876-1885`).
+----- END THE RATER'S RESPONSE -----

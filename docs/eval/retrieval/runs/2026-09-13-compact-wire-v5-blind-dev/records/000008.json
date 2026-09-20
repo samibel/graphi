@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 8,
+  "previous_sha256": "4b338d71aa5e2b52509bd163fc8c149acd89c54e35af77703a683a669d10a572",
+  "kind": "response",
+  "query_id": "cb-11",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "2e61b9ce33dd9b400139b7fe64eb92586764e593a109dcc8528696a0f8a0e070",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Required flags are checked by `(*Command).ValidateRequiredFlags` in `command.go`. Unless flag parsing is disabled, it scans `c.Flags()` for `BashCompOneRequiredFlag` annotations whose flag was not changed, then returns `required flag(s) ... not set` listing all missing names (`command.go:1146-1169`). Flags become required through `MarkFlagRequired`, which applies that annotation (`shell_completions.go:21-26`).\n",
+  "sha256": "01802fddf5698118839fac7ccd52fc2064961114bb7351668f2584d0753d9a6f"
+}

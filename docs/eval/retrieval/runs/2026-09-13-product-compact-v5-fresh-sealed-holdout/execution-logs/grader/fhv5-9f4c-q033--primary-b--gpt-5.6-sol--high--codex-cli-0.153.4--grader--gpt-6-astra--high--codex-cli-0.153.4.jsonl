@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad2-10fb-7270-9409-579b0d0c2faa"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies that warnings print only when the buffer gained content and parsing succeeded (`err == nil`), supported by the cited `command.go:1834–1835` in the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18072,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":40}}

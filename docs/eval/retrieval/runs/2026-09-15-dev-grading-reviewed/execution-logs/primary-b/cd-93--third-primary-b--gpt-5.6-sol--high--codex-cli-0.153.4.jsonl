@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-6dcb-79f1-b9a1-8dba08f56423"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`PostRun` is a command hook executed after `Run` and before `PersistentPostRun`. It runs only when the current command declares `Run` (`site/content/user_guide.md:605-616`; `command.go:136-138`).\n\nFor a subcommand, its own `PostRun` executes after its `Run`. By default, only the first persistent post-run hook found in the command chain executes; set `EnableTraverseRunHooks = true` to execute all parents’ persistent hooks (`site/content/user_guide.md:684-693`; `cobra.go:64-65`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17408,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":191,"reasoning_output_tokens":63}}

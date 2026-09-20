@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6b-d30c-74b0-9eec-7b1671c9ddca"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that initialization merges persistent flags and adds the default help flag only when `Lookup(\"help\")` is nil, preserving application-defined help flags. The cited command.go:1183–1198 span supports these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18202,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

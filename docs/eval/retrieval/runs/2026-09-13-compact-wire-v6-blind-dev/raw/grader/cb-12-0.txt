@@ -1,0 +1,1 @@
+FAIL: It explains Find's recursion but not how findNext actually matches command names, aliases, and unique prefixes, a material part of how the subcommand is chosen.

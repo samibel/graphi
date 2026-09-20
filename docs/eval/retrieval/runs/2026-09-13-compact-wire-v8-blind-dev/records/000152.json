@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 152,
+  "previous_sha256": "2b7c66120e0b47944c414341e27719eb880e56741aaac2e1fc93592891975aaf",
+  "kind": "grade",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "c58c1872d00f24e306d0b9b6ee637912f6899f19f63825dacaaca430307805bb",
+  "outcome": "fail",
+  "rationale": "The callback timing is supported: `OnInitialize` registers functions (`cobra.go:97-101`), flags are parsed first (`command.go:883-890`), and `preRun` later invokes the initializers (`command.go:926`, `command.go:1015-1019`). However, the concrete access expression `cmd.Flags().GetBool(\"flag-name\")` is not supported for a persistent/inherited flag by the preserved bytes. The bundle only shows `Flags().GetBool` reading the locally declared help flag (`command.go:883-898`), while persistent lookup is specifically demonstrated through `Command.Flag(name)`, which falls back to `persistentFlag(name)` (`command.go:1794-1803`). The answer also should explicitly clarify that parsed values cannot be read during Go package initialization itself; only the registered callback runs later during `Execute`.\n",
+  "sha256": "6f410f58347782002204c7aa653d32e88d539964bc2d27d9ffe3ca171812d733"
+}

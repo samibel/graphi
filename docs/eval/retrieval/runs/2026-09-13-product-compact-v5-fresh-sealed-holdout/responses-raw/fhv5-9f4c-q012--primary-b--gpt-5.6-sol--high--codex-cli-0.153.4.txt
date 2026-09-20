@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains no `args.go` excerpts or legacy argument-validation logic for comparing a root with subcommands against a subcommand.

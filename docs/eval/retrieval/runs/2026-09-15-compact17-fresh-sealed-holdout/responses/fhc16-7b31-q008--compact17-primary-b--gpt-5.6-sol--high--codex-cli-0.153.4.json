@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q008",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "bfffb837fcc44fab3faf3b85dc737f3e232dd2716d89c3fb8a8abc8a26c18e8e",
+  "bundle_sha256": "9c13d384b13ed1d3e18412b9728799d40fb97c58d2e27400aba47de40eec71c2",
+  "prompt_sha256": "735a2d77f39f3c90a0cbcf5f0a26641f2a244c0dedf7223ce263dd9f60cef6f7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`CompError` prefixes the diagnostic with `[Error] ` and routes it to standard error by calling `CompDebug(msg, true)` (`completions.go`, lines 892–896).",
+  "responded_at": "2026-09-15T18:35:55Z",
+  "sha256": "de35911f8b347ee13c2a583571cbffb056ad28debc7ff70dec89e1a37ff3edc5"
+}

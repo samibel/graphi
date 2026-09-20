@@ -1,0 +1,6 @@
+`VisitParents` walks upward recursively, starting with the command’s immediate parent:
+
+1. It checks `c.HasParent()`, which tests `c.parent != nil` (`command.go:1631–1634`).
+2. It invokes `fn(c.Parent())` on that parent, then calls `c.Parent().VisitParents(fn)` to continue upward (`command.go:852–858`). `Parent()` returns `c.parent` (`command.go:1842–1845`).
+
+The callback runs in order: **parent → grandparent → … → root**. It does not run on the starting command. Traversal stops when a command has no parent; calling `VisitParents` on the root invokes no callbacks.

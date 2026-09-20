@@ -1,0 +1,1 @@
+PASS: The answer correctly uses Command.Flag for an ancestor persistent flag and accurately explains the shorthand-resolution helper from the exact supplied spans.

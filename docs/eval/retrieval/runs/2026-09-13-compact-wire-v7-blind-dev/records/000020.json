@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 20,
+  "previous_sha256": "9457698bc6c2183316b5829058e61ff141b02326de0a5bc9775f20b6645fe353",
+  "kind": "response",
+  "query_id": "cb-26",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "260a790b903ef8e856b52a2778703d7916fa24d88400de8ae38eeb454fa0ef2f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Active Help is controlled by the program-specific `\u003cPROGRAM\u003e_ACTIVE_HELP` environment variable (`active_help.go:45-52`). `\u003cPROGRAM\u003e` is the uppercase root command name, with non-alphanumeric characters replaced by `_` (`active_help.go:59-67`).\n\nSetting the global `COBRA_ACTIVE_HELP=0` disables Active Help regardless of the program-specific value (`active_help.go:49-50`, `active_help.go:29-30`).",
+  "sha256": "3858b1fd562c7581d1ff761c7bcd13f6d59fc6a31e520070c87bce06205c10f2"
+}

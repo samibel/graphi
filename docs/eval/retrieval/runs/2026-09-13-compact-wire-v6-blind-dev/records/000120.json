@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 120,
+  "previous_sha256": "c5ae259a3dc946a1d1acd78dc0632b960fa6d78e680426b3703593da25def55f",
+  "kind": "grade",
+  "query_id": "cb-28",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "9224518679315d401115878289c766123dc7a2d66ddea273c964fcf822d3bd35",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly explains that GroupID places a subcommand under a registered ID/title group in its parent's help output.",
+  "sha256": "b4cf404a5d41255342882f43cc7dd8f0813f3146442b4fa36fc149e1cab8c8a6"
+}

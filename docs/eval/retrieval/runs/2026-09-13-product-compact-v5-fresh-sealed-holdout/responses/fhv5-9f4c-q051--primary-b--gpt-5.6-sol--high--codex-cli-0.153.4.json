@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q051",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "a2f33ef73936b96799badc3878efdf92e89c672fa13b5429608d27966d3fc165",
+  "bundle_sha256": "0c4768fa1f30081aeba1f39f64216e55ff48258cb2f1a79eda7750bb53b394bc",
+  "prompt_sha256": "b9155cb474693560ee76e4e73f0900ab2e11fd3c927bfd3c90a0363fa8ffd9c0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response names only `TabCompleteNext` and omits the other two modes and the minimum PowerShell version.",
+  "responded_at": "2026-09-13T12:37:30Z",
+  "sha256": "b8564a64b12b9a6ee93b52381ae43fdafd1ce6ca77911b22f9bfdbeb3be74eb3"
+}

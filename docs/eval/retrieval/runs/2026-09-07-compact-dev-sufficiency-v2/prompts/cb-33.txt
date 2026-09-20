@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Flags
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"Flags\"; read in order (138/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1737,"end_line":1749,"text":"// ResetFlags deletes all flags from command.\nfunc (c *Command) ResetFlags() {\n\tc.flagErrorBuf = new(bytes.Buffer)\n\tc.flagErrorBuf.Reset()\n\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.flags.SetOutput(c.flagErrorBuf)\n\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.pflags.SetOutput(c.flagErrorBuf)\n\n\tc.lflags = nil\n\tc.iflags = nil\n\tc.parentsPflags = nil\n}"},{"path":"bash_completions.go","start_line":551,"end_line":564,"text":"func writeFlags(buf io.StringWriter, cmd *Command) {\n\tprepareCustomAnnotationsForFlags(cmd)\n\tWriteStringAndCheck(buf, `    flags=()\n    two_word_flags=()\n    local_nonpersistent_flags=()\n    flags_with_completion=()\n    flags_completion=()\n\n`)\n\n\tif cmd.DisableFlagParsing {\n\t\tWriteStringAndCheck(buf, \"    flag_parsing_disabled=1\\n\")\n\t}\n"},{"path":"command.go","start_line":1696,"end_line":1707,"text":"func (c *Command) InheritedFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n\n\tif c.iflags == nil {\n\t\tc.iflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.iflags.SetOutput(c.flagErrorBuf)\n\t}\n\n\tlocal := c.LocalFlags()"}],"provenance":{"input_sha256":"7204b8c61c17c891fa9da95cb299d1f398ed86585fdfc1b231c5b9568eb4813c","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

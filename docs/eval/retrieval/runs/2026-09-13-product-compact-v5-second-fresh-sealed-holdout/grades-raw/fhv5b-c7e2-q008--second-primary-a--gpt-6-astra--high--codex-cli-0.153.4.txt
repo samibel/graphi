@@ -1,0 +1,1 @@
+PASS: The response correctly identifies registration in `templateFuncs` under the supplied `name` via `templateFuncs[name] = tmplFunc`. Its citations to cobra.go:83–86 support both the assignment and availability for Usage and Help template generation.

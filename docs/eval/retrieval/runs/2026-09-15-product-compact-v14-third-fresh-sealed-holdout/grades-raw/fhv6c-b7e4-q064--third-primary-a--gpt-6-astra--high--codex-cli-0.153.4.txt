@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer the sibling whitelist question. It correctly notes that command_test.go:2437–2452 ends at the sibling’s declaration, leaving the configuration and assertions needed to establish that one child’s unknown-flag whitelist does not apply to its sibling unsupported.

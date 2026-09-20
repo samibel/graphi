@@ -38,12 +38,24 @@ file containing all of the following:
    round-trip recorded.
 5. A fresh SW-264 `task_context/2` AC-9 measurement equivalent to
    `docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local/`.
-   Record the grade-3 coverage and full provenance before SW-266 (or a later
-   release gate) calibrates a threshold from it. Any threshold or baseline
-   derived from an invalidated run must be recalibrated from the replacement;
-   `docs/eval/retrieval-targets.json` stays untouched until SW-266.
+   Record the grade-3 coverage and full provenance before a release gate
+   calibrates a threshold from it. Any threshold or baseline derived from an
+   invalidated run must be recalibrated from the replacement.
+6. A fresh derivation of `docs/eval/retrieval-targets.json`. This instruction
+   used to read "`docs/eval/retrieval-targets.json` stays untouched until
+   SW-266"; SW-266 is spent and SW-282 rewrote the file. Its bars are now
+   DERIVED from this pinned embedder's `semantic_name_only` numbers on the
+   development split (see the SW-282 runs enumerated below), so a rotation
+   invalidates them: re-measure the comparator-only development slice, re-derive
+   the file, re-run the gate, and record the new per-target verdict in
+   `docs/eval/retrieval/targets-gate-expectations.json`. Re-measuring without
+   re-deriving leaves a bar the rotated model was never compared against.
 
 ## Records made stale by the next rotation
+
+- `docs/eval/retrieval/runs/2026-09-06-qwen-dev/` — opt-in alternative-model
+  experiment; its Potion reference captures depend on the current static pin.
+  Qwen attempts are separately labeled and do not rotate this pin or its gates.
 
 The following checked-in artifacts were produced by the current pinned model
 and become stale when `PinnedRevision` changes:
@@ -84,8 +96,149 @@ and become stale when `PinnedRevision` changes:
   real-tokenizer counts, which `internal/eval/tokenizer/PIN_ROTATION.md` governs
   separately. Added when this governance gate caught the run's absence — the
   second time the gate has bitten on a genuinely new production-static run.
+- `docs/eval/retrieval/runs/2026-09-06-sw282-recalibration-local/` — SW-282's
+  comparator-only development report. `docs/eval/retrieval-targets.json` is
+  DERIVED from it: on both conceptual strata the best single baseline is now
+  `semantic_name_only`, produced by this pinned embedder, so a rotation moves
+  `architecture_flow`'s bar (0.4578575262772977) and `nl_behaviour`'s
+  (0.544970253069991) and invalidates the `exact_identifier` Top-1 floor of 1.
+  Rotating the pin therefore requires re-deriving the targets file, not only
+  re-measuring.
+- `docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/` — SW-282's gating
+  report over the same development slice with the full default baseline set.
+  The recorded per-target verdict in
+  `docs/eval/retrieval/targets-gate-expectations.json` (and the release-line
+  `retrieval-targets` gate) is a statement about these numbers, so a rotation
+  invalidates the recorded MISS on `architecture_flow` and on the
+  `exact_identifier` floor as well as the PASS on `nl_behaviour`.
+- `docs/eval/retrieval/runs/2026-09-06-sw282-coverage-local/` — SW-282's 6/6
+  grade-3 `task_context/2` coverage re-measurement over `cobra-v2`'s dev
+  `nl_behaviour` queries, which the `bundle_coverage` target is enforced
+  against. A rotation changes the bundles and therefore the coverage count.
 - `docs/eval/static-embedder-cross-arch/2026-09-03-sw271/` — the byte-exact
   `darwin/arm64` versus `darwin/amd64` vector record for this revision.
+- `docs/eval/retrieval/runs/2026-09-06-recovery-dev/` — development-only
+  before/after retrieval and MCP source-retention diagnostics, including a
+  rejected implementation-priority experiment. All three ranking runs and
+  the preserved MCP payloads become stale on model rotation. This records
+  their dependency on the unchanged pin; it authorizes no release claim.
+- `docs/eval/retrieval/runs/2026-09-06-architecture-dev/` — development-only
+  candidate-ranking experiment and independent MCP captures.
+- `docs/eval/retrieval/runs/2026-09-06-bundle-selection-dev/` — development-only
+  source-selection ablations, final ranking and exact MCP payload captures.
+- `docs/eval/retrieval/runs/2026-09-06-candidate-admission-dev/` — development-only
+  term-balanced candidate admission and non-displacing grouped-declaration
+  context measurement, including exact MCP payload captures from two indexes.
+- `docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/` — development-only
+  lifecycle-focus and exact referenced-definition recovery measurement. Its
+  ranking report and two-index MCP payload capture use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-13-candidate-path-dev/` — the candidate-bound
+  exact-basename retention development capture. Its two independent indexes,
+  retrieval rows, MCP bytes, and reproducibility result use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-compact14-dev/` — the candidate-bound
+  exact-file, field-declaration and bare-term projection (compact/14)
+  development capture. Its two independent indexes, retrieval rows, MCP
+  bytes and reproducibility result use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-15-compact15-exact-path-dev/` — the
+  compact/15 coherent exact-path outline development measurement. Its
+  production MCP forecast and recorded ranking gates use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-15-compact16-coherent-flow-dev/` — the
+  compact/16 coherent flow and depth development measurement. Its 64-query
+  production MCP forecast and original 40-query cost comparison use this
+  pinned model.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout/` — the
+  consumed compact/17 holdout attempt that was refused at the first seal step.
+  Its preserved two-index capture and primary-response packets use this pinned
+  model even though the missing required seal argument prevents a release
+  verdict.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-projection-dev/` — the
+  compact/17 answer-span projection development measurement. Its 64-query
+  production MCP capture, reviewed completeness result, cost comparison and
+  two-index byte-reproducibility proof use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-release-coverage-dev/` — the
+  exact compact/17 release-candidate recapture of the six-query grade-3 bundle
+  coverage gate. Its persisted vectors and MCP bundles use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-release-dev/` — the exact
+  compact/17 release-candidate ranking recapture. Its seven baselines and raw
+  44-query development series use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-compact13-followup-dev/` — the
+  candidate-bound follow-up designation (compact/13) development capture. Its
+  two independent indexes, retrieval rows, MCP bytes and reproducibility
+  result use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-compact12-dev/` — the candidate-bound
+  bare-term projection (compact/12) development capture. Its two independent
+  indexes, retrieval rows, MCP bytes and reproducibility result use this
+  pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-compact11-dev/` — the candidate-bound
+  documentation-section hydration (compact/11) development capture. Its two
+  independent indexes, retrieval rows, MCP bytes and reproducibility result
+  use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-compact10-dev/` — the candidate-bound
+  retrieval-ordered projection (compact/10) development capture. Its two
+  independent indexes, retrieval rows, MCP bytes and reproducibility result
+  use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-named-declaration-dev/` — the
+  candidate-bound named-declaration completion development capture. Its two
+  independent indexes, retrieval rows and ranks, MCP bytes, reproducibility
+  result and the per-stage answer-span loss decomposition in its result all use
+  this pinned model.
+- `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency/` and
+  `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2/` — the first
+  two registered compact development sufficiency runs. Their frozen inputs and
+  blind answers are bound to bundles produced by this pinned model.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-dev/` — the first
+  development-only double capture through the production compact MCP path.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v2-dev/` — the reserved
+  candidate-bound development recapture after the fail-closed audit fixes.
+  Both product runs use the pinned production model and become stale if its
+  revision changes.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v3-dev/` — the final-audit
+  candidate-bound development recapture after source discovery and reference
+  hydration were placed under one shared bounded snapshot.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v4-dev/` — the sealed-source
+  snapshot candidate recapture after empty-snapshot, Markdown, cancellation and
+  partial-read accounting boundaries were closed.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev/` — the
+  public-version-bound candidate recapture after the facade identity was tied
+  directly to the selector identity.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev/` — the
+  presealed-rubric successor recapture after the release harness became
+  fail-closed on rubric-byte drift.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev/` — the exact
+  fresh-holdout capture-candidate recapture and clean development ranking
+  report. Both use this pinned production embedder.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
+  — the completed independent fresh-holdout run. Its 64 captured bundles and
+  resulting blind decision are invalidated by rotating this production
+  embedder.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/`
+  — the completed second independent fresh-holdout run. Its captured bundles
+  and blind decision are likewise bound to this production embedder.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/`
+  — the third independent fresh-holdout run under contract version 2. Its
+  captured bundles, designated follow-up reads and blind decision are bound
+  to this production embedder.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/`
+  — the candidate-bound compact-v17 holdout attempt. Its capture and
+  reproducibility evidence remain pin-dependent even though the primary phase
+  failed closed before any rater response and produced no performance verdict.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3/`
+  — the next compact-v17 holdout attempt, refused before capture because its
+  evidence checkout was not tree-equivalent to the declared product candidate.
+  Its sealed dataset remains tied to this production embedder revision.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/`
+  — the valid candidate-bound compact-v17 holdout run. Its captured bundles,
+  follow-up reads and blind release decision depend on this production
+  embedder revision.
+- `docs/eval/retrieval/runs/embedded-model-qualification/`
+  — the embedded-model development qualification. Two of its four arms
+  (`M1_potion_512`, `M2_potion_8192`) ARE this production embedder, so their
+  preregistered `fingerprint_canonical` and `admission_sha256` are functions of
+  this pinned revision. Rotating the pin invalidates the preregistration itself,
+  not merely the captures taken under it: the arm pins would no longer describe
+  the embedder the run would construct, and `capture` fails closed on that
+  mismatch. A rotation therefore requires a fresh preregistration and a fresh
+  capture, not a re-run against the existing one.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

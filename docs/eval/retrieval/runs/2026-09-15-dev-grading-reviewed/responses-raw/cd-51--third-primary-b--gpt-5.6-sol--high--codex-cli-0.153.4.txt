@@ -1,0 +1,10 @@
+Append the description to each completion value, separated by a tab (`\t`). This works with `ValidArgs`, `ValidArgsFunction`, and `RegisterFlagCompletionFunc()` (`site/content/completions/_index.md:371-372`).
+
+```go
+ValidArgs: []string{
+    "bash\tCompletions for bash",
+    "zsh\tCompletions for zsh",
+}
+```
+
+A dynamic example returns values such as `"harbor\tAn image registry"` from `ValidArgsFunction` (`site/content/completions/_index.md:374-381`). Note that descriptions in Bash require completion V2 (`site/content/completions/_index.md:357-358`).

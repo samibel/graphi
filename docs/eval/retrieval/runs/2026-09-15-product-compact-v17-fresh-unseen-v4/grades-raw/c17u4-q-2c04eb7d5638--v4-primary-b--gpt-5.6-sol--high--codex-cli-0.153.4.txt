@@ -1,0 +1,1 @@
+FAIL: The response does not answer how functions are named or populated. The bundle shows only the call to `gen(buf, c)` and omits its implementation, leaving the required recursion, path normalization, root naming, and metadata writers unsupported.

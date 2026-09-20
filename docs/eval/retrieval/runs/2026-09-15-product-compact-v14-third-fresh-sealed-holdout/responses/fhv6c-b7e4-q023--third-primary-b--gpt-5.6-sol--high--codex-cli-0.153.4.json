@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q023",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "5a9dfbbec93e2b9766e59f2e083622bfd698c374bf2f3b92642091794e21b48c",
+  "bundle_sha256": "f80c7cad99fcf481b6c8e0c05daa821ffecf54a08bb3711016e3f74a1564015b",
+  "prompt_sha256": "5369a30903ed6d01fb8929d1124be9195551dff2341c527bb8edeffb01404d55",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Both streams: it resets both the command’s output and error destinations. In `command.go:283-286`, `SetOutput` assigns `output` to both `c.outWriter` and `c.errWriter`; when nil, they fall back to their defaults (stdout for output, stderr for errors).",
+  "responded_at": "2026-09-15T08:29:44Z",
+  "sha256": "bd1a535fc1c8e80194c6f349634de2119f4f33ba700bb3b27022bb363e71a141"
+}

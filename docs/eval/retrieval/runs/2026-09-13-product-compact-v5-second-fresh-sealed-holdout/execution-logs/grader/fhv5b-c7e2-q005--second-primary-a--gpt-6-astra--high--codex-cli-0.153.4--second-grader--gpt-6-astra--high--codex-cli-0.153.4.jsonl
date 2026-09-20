@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b65-bd56-7690-adee-7ea1c8560c23"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that MaximumNArgs rejects only when len(args) > n, reports the limit and received count, and otherwise returns nil. The cited args.go lines 84–89 support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18114,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

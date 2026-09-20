@@ -1,0 +1,1 @@
+PASS: The answer correctly locates the requested ExecuteC declaration, satisfying the exact-identifier development key. command.go:1052–1076 supplies its receiver, return types, nil-context default, root delegation, hook and initialization calls; command.go:1044–1049 supports ExecuteContextC delegation. All stated behavior is present in the exact bundle.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q002",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "7f27a03f14c9ffffeb50db74832d0b5e3d44c03c1cf9f94b9c73a807c0733f9f",
+  "bundle_sha256": "0a8492d4f72841f916203f14b3958bbdce69c776d03ca72aba2dfa3ddc079b42",
+  "prompt_sha256": "0933b2f33c5099572a0770c2ac341b98451e40cde1c08f2a384ff9bbcb3dcd6d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GetActiveHelpConfig` first reads `COBRA_ACTIVE_HELP`. If it equals `\"0\"`, it returns `\"0\"`, overriding the program-specific setting. Otherwise, it returns the program-specific environment value; other global values are not used as a fallback (`active_help.go:51–57`; constants at lines 29–30).\n\nThe program-specific variable is `\u003cPROGRAM\u003e_ACTIVE_HELP`, using the root command’s name uppercased, with non-ASCII-alphanumeric characters replaced by `_` (`active_help.go:46–48`, lookup at line 54).",
+  "responded_at": "2026-09-13T12:30:49Z",
+  "sha256": "a4af2fb5fc7678bc434ef0de8d81482b6ec72bb82f7f51880036e5292a058eed"
+}

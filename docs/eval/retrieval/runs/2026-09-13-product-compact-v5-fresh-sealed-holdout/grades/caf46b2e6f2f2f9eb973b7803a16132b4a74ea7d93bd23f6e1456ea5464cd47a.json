@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q017",
+  "response_sha256": "caf46b2e6f2f2f9eb973b7803a16132b4a74ea7d93bd23f6e1456ea5464cd47a",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The bundle confirms that MarkFlagCustom installs BashCompCustom with value []string{f} and warns it works only for Bash completion, recommending c.RegisterFlagCompletionFunc for cross-shell Go callbacks. Both cited line ranges support the claims.",
+  "graded_at": "2026-09-13T12:46:35Z",
+  "sha256": "3a37101c61fd1204a55a02825ed7291333ac710b4a37860638bd63e6302d1495"
+}

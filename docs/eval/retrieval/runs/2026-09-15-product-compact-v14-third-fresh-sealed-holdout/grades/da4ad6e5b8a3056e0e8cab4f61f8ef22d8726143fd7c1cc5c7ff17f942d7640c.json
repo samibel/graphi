@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q056",
+  "response_sha256": "da4ad6e5b8a3056e0e8cab4f61f8ef22d8726143fd7c1cc5c7ff17f942d7640c",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response describes supported setter, inheritance, and usage-capture behavior, but omits the essential public output accessor interface anchored by OutOrStdout at command.go:374–387. That interface is absent from the preserved transcript, so the bundle cannot support the required behavior.",
+  "graded_at": "2026-09-15T08:35:16Z",
+  "sha256": "510d467cf970d6905b8ac66fd0dfa7de8a5d0a3564a2e26eead268d9a20c3c2a"
+}

@@ -1,0 +1,3 @@
+`(*Command).MarkPersistentFlagRequired(name string) error` marks a named persistent flag as required. Its documentation says shell completions prioritize the flag and the command reports an error if invoked without it (`shell_completions.go:28–33`).
+
+It delegates to `MarkFlagRequired(c.PersistentFlags(), name)`, which sets the flag’s `BashCompOneRequiredFlag` annotation to `[]string{"true"}` and returns the annotation operation’s error (`shell_completions.go:31–40`). `PersistentFlags()` returns the persistent flag set specifically defined on the current command (`command.go:1725–1735`).

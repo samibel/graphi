@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 21,
+  "previous_sha256": "a33d655c5d96f028e46525c6e754f5e1348ebed2dae541c61c4dd85698a0fc40",
+  "kind": "response",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "356435e2af40d7a1040f8b0e9791dbe8f61396b1d817c29ff88a3be0d62922b9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set `cobra.EnablePrefixMatching = true` before resolving commands (`cobra.go:52–55`). Command lookup first accepts an exact name or alias; otherwise, when prefix matching is enabled, it collects commands satisfying `hasNameOrAliasPrefix(next)` and returns a match only if exactly one command qualifies (`command.go:770–785`).\n",
+  "sha256": "f55eb8475cfb8c696e4f7e1c5afb90cc64f7dccb19e0f54f6feca899d282af34"
+}

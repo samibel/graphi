@@ -1,0 +1,1 @@
+PASS: The transcript supports the response’s parent-first depth-first traversal, recursion through commands without flags, and exact flag-set checks producing [L], [LP], and [P] while avoiding duplicate persistent-flag output. The cited command.go:1453–1493 span exists and supports these behaviors and the described output fields.

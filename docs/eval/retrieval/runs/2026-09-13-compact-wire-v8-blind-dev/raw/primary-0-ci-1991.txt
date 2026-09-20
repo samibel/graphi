@@ -1,0 +1,10 @@
+Call `cmd.Flag(name)` and read the returned flag’s `Value`:
+
+```go
+f := cmd.Flag("flag-name")
+if f != nil {
+    value := f.Value
+}
+```
+
+Evidence: [`command.go:1794`](command.go:1794) states that `Flag` “climbs up the command tree” and looks up persistent flags when needed; [`command.go:1641`](command.go:1641) says `Flags()` includes flags declared by all parents.

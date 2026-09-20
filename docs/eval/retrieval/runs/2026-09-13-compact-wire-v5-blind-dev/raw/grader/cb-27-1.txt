@@ -1,0 +1,1 @@
+PASS: The response directly answers how to enable prefix matching and grounds the behavior in the bundled switch and lookup condition.

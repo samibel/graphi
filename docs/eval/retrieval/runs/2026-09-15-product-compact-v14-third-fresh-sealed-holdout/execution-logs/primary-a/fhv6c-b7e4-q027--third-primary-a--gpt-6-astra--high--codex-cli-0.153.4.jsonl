@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-b91c-7f42-be3f-197f79255803"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetIn(nil)` makes `InOrStdin()` return the nearest ancestor’s non-nil input reader, or `os.Stdin` if none exists.\n\nEvidence in `command.go`: `SetIn` assigns nil to `c.inReader` (lines 300–304); `InOrStdin` calls `c.getIn(os.Stdin)` (389–392); `getIn` checks the local reader, recursively checks parents, then returns the default (414–422)."}}
+{"type":"turn.completed","usage":{"input_tokens":17063,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":104,"reasoning_output_tokens":0}}

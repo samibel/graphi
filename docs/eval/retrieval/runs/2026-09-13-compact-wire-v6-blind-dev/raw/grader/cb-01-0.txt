@@ -1,0 +1,1 @@
+FAIL: It summarizes only the visible initialization portion and omits the core Find/Traverse, execution, and error-handling behavior of ExecuteC; calling the returned command “selected” is also unsupported by the truncated bundle.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 47,
+  "previous_sha256": "9748d71f54b4269c2f755beb3847dbd0cc1b62b35cbb53867ed4387c939a6e50",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "a559277d4e87c0921f082f7689271f3936ec7067aa536da631313b34a99b735c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "shell_completions.go provides flag helpers for shell completion. MarkFlagRequired delegates to the FlagSet helper and its documentation says the flag is prioritized in completion and required when invoking the command (lines 21-27). MarkPersistentFlagRequired documents the corresponding persistent-flag behavior (lines 29-30). MarkFlagFilename restricts completion to specified extensions, and MarkPersistentFlagFilename applies that helper to PersistentFlags() (lines 42-43 and 58-62).\n",
+  "sha256": "45cda0daf6ce39856dd3caf63699f609c5c1a593668b16cb93175113368740d8"
+}

@@ -1,0 +1,1 @@
+PASS: The response gives the exact installation command preserved in README.md:95–104, and its citation supports both the generator’s purpose and the command.

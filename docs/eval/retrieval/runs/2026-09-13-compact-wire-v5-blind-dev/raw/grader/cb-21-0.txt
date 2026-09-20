@@ -1,0 +1,1 @@
+PASS: Every stated AddCommand bookkeeping step and Parent behavior is explicit in command.go:1302-1330 and 1842-1845.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 11,
+  "previous_sha256": "0855bfebaf8b22ccc46480422f1ddadb6f53bccdae32062519740630324057ca",
+  "kind": "response",
+  "query_id": "cb-14",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "81f83885b1559139e4c57efa6b2e590e711439a0ce96c394d9cc333349c2b872",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Shell scripts dispatch completion by invoking the program’s hidden `__complete` command, defined as `ShellCompRequestCmd` in `completions.go:26-33`. Bash, Zsh, Fish, and PowerShell generators select that command (`bash_completionsV2.go:32`, `zsh_completions.go:88`, `fish_completions.go:31`, `powershell_completions.go:34-35`).\n\nThe hidden command’s `Run` handler then calls:\n\n```go\nfinalCmd, completions, directive, err := cmd.getCompletions(args)\n```\n\nThis is the handoff to completion logic (`completions.go:205-215`). For requests without descriptions, the alternate hidden command `__completeNoDesc` is used, and the handler detects it through `cmd.CalledAs() == ShellCompNoDescRequestCmd`.",
+  "sha256": "2e53e1ad5fc306f07fc58cc595a466488c18f8ba7a5ead89013e02062a089303"
+}

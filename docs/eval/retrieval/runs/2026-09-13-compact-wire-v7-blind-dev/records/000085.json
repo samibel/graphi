@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 85,
+  "previous_sha256": "aa4bba7f7825c65197e017a7d4d86cd28f1a02b886feebf8e885944934b7dbbe",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "051b123cff265c014fdadc23d34dc42ddf9c681d543429d947ffbdc6b8f770ad",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `doc/md_docs.go:119-129` provides the signature, tree-generation purpose, empty prepender, identity link handler, and hyphen warning. `doc/md_docs.go:131-158` supports recursive traversal, skipping unavailable commands and additional help topics, filename construction by replacing spaces with underscores, file creation, and delegation to `GenMarkdownCustom`; `doc/md_docs.go:30` confirms the `.md` extension.\n",
+  "sha256": "47bfbe085e044b3f21ac66fb3e96622cc4d7b2df3c21d2b9d7e013183ddf98f2"
+}

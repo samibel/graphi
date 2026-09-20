@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cb-1c04-76e1-9c16-bfd6ad499674"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes iterating over every supplied map entry and assigning it to the shared `templateFuncs` registry. The code and supporting registry/template-use claims are preserved in the bundle, and citations resolve within its spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17688,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":133,"reasoning_output_tokens":81}}

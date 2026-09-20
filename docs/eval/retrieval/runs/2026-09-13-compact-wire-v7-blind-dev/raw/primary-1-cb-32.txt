@@ -1,0 +1,3 @@
+`(*Command).Execute()` executes the command tree using `os.Args[1:]` by default, delegates to `c.ExecuteC()`, discards the returned command, and returns its error (`command.go:1035-1041`).
+
+`ExecuteC()` initializes a missing context with `context.Background()` and, if invoked on a child command, redirects execution to `c.Root().ExecuteC()` (`command.go:1051-1062`). The run lifecycle order is `PersistentPreRun`, `PreRun`, `Run`, `PostRun`, then `PersistentPostRun` (`command.go:114-123`).

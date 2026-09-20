@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-1133:primary-a
+Outcome: pass
+Rationale: Gives the supported Flag(name) and Flags().Lookup(name) operations on the executing command object and accurately explains the shown own/persistent-parent lookup evidence.

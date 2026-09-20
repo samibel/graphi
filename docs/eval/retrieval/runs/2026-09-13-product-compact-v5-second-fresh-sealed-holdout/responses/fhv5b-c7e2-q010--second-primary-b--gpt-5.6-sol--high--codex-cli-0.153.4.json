@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q010",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "1c5e3077e831b2d5d802f14b0dd03b3cad07098c4a4fb5594415716e022e4ab0",
+  "bundle_sha256": "29decdfd215afd740af31bbd038527a886b7feeced597fbb72ac9119123fa00f",
+  "prompt_sha256": "47c2c2e66423e253d02d3a3f4cfd7cf862add251c3bf68c8559e8f9869ae9b2b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnInitialize` appends every supplied callback to the package-level `initializers []func()` slice, preserving registration order rather than replacing prior callbacks (`cobra.go:41, 96–101`). Later, `(*Command).preRun` iterates over that slice and invokes each callback in order (`command.go:1015–1019`).",
+  "responded_at": "2026-09-13T15:21:19Z",
+  "sha256": "62144406884c89368318dbaaa2493b73479a9d63dbf0b5b334e5ad7e7f0f873e"
+}

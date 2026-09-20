@@ -1,0 +1,254 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "scope": "development_diagnostic_not_release",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "record_head_sha256": "a813d88560b0bf836e75082ec1cf6932b3118d8adef4f153543fe1d24c6e3e8b",
+  "n": 40,
+  "k": 36,
+  "passed": 37,
+  "complete": true,
+  "diagnostic_pass": true,
+  "queries": [
+    {
+      "query_id": "cb-01",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-02",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-03",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-04",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-07",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-08",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-09",
+      "pass": true,
+      "complete": true,
+      "reason": "independent blind adjudication"
+    },
+    {
+      "query_id": "cb-11",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-12",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-13",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-14",
+      "pass": true,
+      "complete": true,
+      "reason": "independent blind adjudication"
+    },
+    {
+      "query_id": "cb-15",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-16",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-19",
+      "pass": true,
+      "complete": true,
+      "reason": "independent blind adjudication"
+    },
+    {
+      "query_id": "cb-20",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-21",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-22",
+      "pass": true,
+      "complete": true,
+      "reason": "independent blind adjudication"
+    },
+    {
+      "query_id": "cb-24",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-25",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-26",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-27",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-28",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-30",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-32",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-33",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "cb-35",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-467",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-511",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-678",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-771",
+      "pass": false,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-943",
+      "pass": false,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1133",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1222",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1236",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1358",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1408",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1970",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-1991",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-2249",
+      "pass": true,
+      "complete": true,
+      "reason": "primary agreement"
+    },
+    {
+      "query_id": "ci-2314",
+      "pass": false,
+      "complete": true,
+      "reason": "independent blind adjudication"
+    }
+  ],
+  "sha256": "c5a952f743d8f0227cee4239f121b1ab4299399885cf473302f6a68f7da02f7d"
+}

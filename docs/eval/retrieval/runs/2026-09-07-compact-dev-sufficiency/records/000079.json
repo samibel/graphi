@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 79,
+  "previous_sha256": "572981e0641fc3fce2a68d60ea98ea05cfc70fd7376eed809eab5c918edb11c4",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "4f4df55a8c9435cf9de6fe6f7e3834fff3d512ab165dddafd4a4ff44e6dfcbef",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows a flag-completion callback registration (`site/content/completions/_index.md:351`) and lists bash, zsh, fish, and PowerShell as supported shells (`site/content/user_guide.md:742`), but omits the integration or protocol needed to create completion support for another shell.\n",
+  "sha256": "fa634e1bcd096446b050653e2247335b825d6a440d79a9a93dabb62e390436c5"
+}

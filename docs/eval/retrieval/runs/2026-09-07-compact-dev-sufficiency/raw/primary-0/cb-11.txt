@@ -1,0 +1,1 @@
+Required flags are validated by `(*Command).ValidateRequiredFlags()` in `command.go:1146–1148`; its comment says it checks that all required flags are present and returns an error otherwise. The shown body starts with a `c.DisableFlagParsing` check. The response does not show its execution call site, so it does not establish the precise ordering relative to command callbacks.

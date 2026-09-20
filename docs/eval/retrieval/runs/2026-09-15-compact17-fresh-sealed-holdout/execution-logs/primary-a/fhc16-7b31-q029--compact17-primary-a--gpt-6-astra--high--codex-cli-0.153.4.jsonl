@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65d-95d0-7c72-a02f-466634e7e9ac"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ArgsLenAtDash()` exposes the length of `c.Flags().Args` at the moment parsing encountered `--`. In `command.go:868–872`, its comment states this behavior, and the method delegates directly to `c.Flags().ArgsLenAtDash()`."}}
+{"type":"turn.completed","usage":{"input_tokens":17363,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

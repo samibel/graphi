@@ -1,0 +1,1 @@
+FAIL: The response does not answer the same-name child question. The transcript includes only the TestChildSameName comment and declaration at command_test.go:399-402, omitting the test body and assertions needed to establish the expected behavior.

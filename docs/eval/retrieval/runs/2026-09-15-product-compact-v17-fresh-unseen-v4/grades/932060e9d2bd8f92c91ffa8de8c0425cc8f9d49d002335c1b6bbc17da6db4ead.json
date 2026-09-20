@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-178ab4315fe0",
+  "response_sha256": "932060e9d2bd8f92c91ffa8de8c0425cc8f9d49d002335c1b6bbc17da6db4ead",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response does not answer how the argument is reported. The bundle lacks the essential behavior: reporting the first unexpected argument and command path, and succeeding when no arguments are supplied.",
+  "graded_at": "2026-09-15T20:41:34Z",
+  "sha256": "c66ccf115693a64b5980e22f639edaafd1858df0d850c14783702e6aa1adc3d7"
+}

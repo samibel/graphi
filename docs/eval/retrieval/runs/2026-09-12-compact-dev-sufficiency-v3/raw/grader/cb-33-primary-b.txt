@@ -1,0 +1,1 @@
+command.go:1641-1680 and 1696-1712 support Flags initialization/output, documented scope and the narrower local/inherited accessor descriptions.

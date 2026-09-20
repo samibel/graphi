@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Is it possible to handle -h and --help differently?
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"Is it possible to handle -h and --help differently?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":875,"end_line":889,"text":"\tif c == nil {\n\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")\n\t}\n\n\tif len(c.Deprecated) \u003e 0 {\n\t\tc.Printf(\"Command %q is deprecated, %s\\n\", c.Name(), c.Deprecated)\n\t}\n\n\t// initialize help and version flag at the last point possible to allow for user\n\t// overriding\n\tc.InitDefaultHelpFlag()\n\tc.InitDefaultVersionFlag()\n\n\terr = c.ParseFlags(a)\n\tif err != nil {"},{"path":"command.go","start_line":1264,"end_line":1275,"text":"\t\t\t\t} else {\n\t\t\t\t\tcmd.InitDefaultHelpFlag()    // make possible 'help' flag to be shown\n\t\t\t\t\tcmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown\n\t\t\t\t\tCheckErr(cmd.Help())\n\t\t\t\t}\n\t\t\t},\n\t\t\tGroupID: c.helpCommandGroupID,\n\t\t}\n\t}\n\tc.RemoveCommand(c.helpCommand)\n\tc.AddCommand(c.helpCommand)\n}"},{"path":"command.go","start_line":472,"end_line":476,"text":"// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"command.go","start_line":452,"end_line":453,"text":"func (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {"},{"path":"command.go","start_line":1186,"end_line":1187,"text":"func (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()"},{"path":"command.go","start_line":1603,"end_line":1603,"text":"func (c *Command) HasHelpSubCommands() bool {"},{"path":"command.go","start_line":1583,"end_line":1583,"text":"func (c *Command) IsAdditionalHelpTopicCommand() bool {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"}],"provenance":{"input_sha256":"b242a60de0c2ac3ab1438c07a369f06441f3df83a0d8cf71895eaa70c17cdf24","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

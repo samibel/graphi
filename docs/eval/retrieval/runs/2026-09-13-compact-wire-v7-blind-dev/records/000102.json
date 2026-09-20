@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 102,
+  "previous_sha256": "42f12dc061b9da870b67726a8376d7f5924de7d099eedfe63fcc23b274016a3b",
+  "kind": "grade",
+  "query_id": "cb-16",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "67d4934bd205d004c19271ebdba4f00c7e060ff0950276d8d1ab14c3803ad1eb",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `cobra.go:187-221` identifies `func ld` as the Levenshtein implementation, shows construction and filling of matrix `d`, and returns `d[len(s)][len(t)]`. `command.go:836` shows the invocation `ld(typedName, cmd.Name(), true)`, and `command.go:837` shows comparison against `c.SuggestionsMinimumDistance`. These align with both development-key locations.\n",
+  "sha256": "a7b20d605e4240e9e5a8671e4364e5f6e881dac156f9c03d65aa6e9f4f6663c9"
+}

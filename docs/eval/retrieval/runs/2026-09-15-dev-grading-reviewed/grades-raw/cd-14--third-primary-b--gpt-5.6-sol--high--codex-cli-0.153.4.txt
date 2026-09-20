@@ -1,0 +1,1 @@
+FAIL: The response only reports truncation and does not substantively describe the file’s declarations, including the transcript-supported defaults of case-sensitive command names and disabled parent-hook traversal.

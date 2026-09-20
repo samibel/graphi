@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 28,
+  "previous_sha256": "0ad9fe043291874df60d0c0236d1ccd7a15f9feaf1c640c7418f3636ba0d31b6",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "1c2e6cd814f6fcdc9a42ac40d387f4154018904becc078aeb8517b2b173a6aec",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a flag, call `cmd.RegisterFlagCompletionFunc(\"flag\", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) { ... })`; the required callback signature is shown in `completions.go:133-134`. Cobra stores these functions per flag (`completions.go:36`). For argument completion, use `ValidArgsFunction`; both it and `RegisterFlagCompletionFunc` are portable across bash, zsh, fish, and PowerShell (`site/content/completions/_index.md:477-478`).\n",
+  "sha256": "e532cb6a66c267945aef9bf6d3797da9812c0e486d95a3c3bfa68d0415043cce"
+}

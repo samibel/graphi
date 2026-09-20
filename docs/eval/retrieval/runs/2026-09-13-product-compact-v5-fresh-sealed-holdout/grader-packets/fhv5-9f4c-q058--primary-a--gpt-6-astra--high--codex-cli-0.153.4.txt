@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: ab7328021fa66d034314f125439d187e74286d28f12d7e86151ad2809351c0eb
+QUERY ID: fhv5-9f4c-q058
+
+QUESTION:
+Does requesting a command's children always sort them, or can their current order be returned unchanged?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1292-1300 anchor="if EnableCommandSorting && !c.commandsAreSorted" reason=Sorting happens only when globally enabled and the cached order is stale; otherwise the current slice is returned unchanged.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query be0e1f71a293; read in order (246/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":124,"end_line":125,"text":"\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)"},{"path":"command.go","start_line":139,"end_line":150,"text":"\tPostRunE func(cmd *Command, args []string) error\n\t// PersistentPostRun: children of this command will inherit and execute after PostRun.\n\tPersistentPostRun func(cmd *Command, args []string)\n\t// PersistentPostRunE: PersistentPostRun but returns an error.\n\tPersistentPostRunE func(cmd *Command, args []string) error\n\n\t// groups for subcommands\n\tcommandgroups []*Group\n\n\t// args is actual args parsed from flags.\n\targs []string\n\t// flagErrorBuf contains all error messages from pflag."},{"path":"completions.go","start_line":193,"end_line":195,"text":"// initCompleteCmd adds a special hidden command that can be used to request custom completions.\nfunc (c *Command) initCompleteCmd(args []string) {\n\tcompleteCmd := &Command{"},{"path":"completions.go","start_line":201,"end_line":201,"text":"\t\tArgs:                  MinimumNArgs(1),"},{"path":"site/content/user_guide.md","start_line":291,"end_line":294,"text":"parent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will\nparse local flags on each command before executing the target command.\n\n```go"},{"path":"bash_completionsV2.go","start_line":59,"end_line":61,"text":"    # Prepare the command to request completions for the program.\n    # Calling ${words[0]} instead of directly %[1]s allows handling aliases\n    args=(\"${words[@]:1}\")"},{"path":"bash_completionsV2.go","start_line":31,"end_line":31,"text":"func genBashComp(buf io.StringWriter, name string, includeDesc bool) {"},{"path":"completions.go","start_line":282,"end_line":282,"text":"\t\t// However, because we have added the __complete sub-command in the current code path, the"},{"path":"completions.go","start_line":346,"end_line":346,"text":"\t// We only remove the flags from the arguments if DisableFlagParsing is not set."},{"path":"command.go","start_line":1285,"end_line":1288,"text":"// Sorts commands by their names.\ntype commandSorterByName []*Command\n\nfunc (c commandSorterByName) Len() int           { return len(c) }"},{"path":"cobra.go","start_line":59,"end_line":59,"text":"var EnableCommandSorting = defaultCommandSorting"},{"path":"doc/man_docs.go","start_line":35,"end_line":35,"text":"// correctly if your command names have `-` in them. If you have `cmd` with two"},{"path":"command.go","start_line":1292,"end_line":1294,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {\n\t// do not sort commands if it already sorted or sorting was disabled"}],"provenance":{"input_sha256":"d8ef7c3ced9bfdaf0e96cd4a2e01499cfd7cff6d9927f124876c993c856c2056","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Requesting children does **not always sort them**. In `command.go:1292–1294`, `(*Command).Commands()` explicitly comments: “do not sort commands if it already sorted or sorting was disabled.” Thus their current order can be returned unchanged when sorting is disabled or they are already sorted.
+----- END THE RATER'S RESPONSE -----

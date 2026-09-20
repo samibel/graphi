@@ -1,0 +1,1 @@
+The exact requested accessor is visible at command.go:1641-1645, including its documented scope and lazy FlagSet initialization. The LocalFlags and InheritedFlags descriptions are expressly supported by the preserved comments and declarations at 1668-1670 and 1695-1697.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q002",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "dd06c8aa0e31273b3aba79d1f0ea03093153ecddc2c462d8011e8bb621b750ed",
+  "bundle_sha256": "41bf18966721f25bafd650ecee6242173a45ce360ecc59a7b48ebb422975e7d6",
+  "prompt_sha256": "1d82645fc6b149e8e171fe2c1500e1cb2988c87e9079d0f8e7c8bd0514ea04f6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`expectSuccess` is a test helper in `args_test.go` (lines 35–42). It verifies that a command succeeded silently:\n\n- If `output` is non-empty, it records `t.Errorf(\"Unexpected output: %v\", output)`.\n- If `err` is non-nil, it immediately fails with `t.Fatalf(\"Unexpected error: %v\", err)`.\n\nFor example, `TestMaximumNArgs_WithValid_WithInvalidArgs` calls it after `executeCommand(c, \"a\", \"b\")` (`args_test.go`, lines 246–250).",
+  "responded_at": "2026-09-15T08:28:29Z",
+  "sha256": "2be2f325b8f05131537468be6a119744a79ea2b91167b4d374775228266cc8ba"
+}

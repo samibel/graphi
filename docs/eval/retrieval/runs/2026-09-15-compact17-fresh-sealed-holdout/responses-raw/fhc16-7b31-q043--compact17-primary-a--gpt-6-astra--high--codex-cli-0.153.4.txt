@@ -1,0 +1,13 @@
+In `doc/rest_docs.go`, `GenReSTCustom` follows this flow:
+
+1. **Select descriptions:** It reads `cmd.Short` and `cmd.Long`, falling back to `Short` when `Long` is empty. It prints the short description below the command title and the long description under “Synopsis” (lines 69–82).
+
+2. **Build the command reference:** It takes `name := cmd.CommandPath()`, replaces spaces with underscores, and emits the reStructuredText target `.. _<ref>:` before the title (lines 67–78).
+
+3. **Emit the parent link:** Within `if hasSeeAlso(cmd)`, it creates “SEE ALSO.” If `cmd.HasParent()`, it uses the parent’s `CommandPath()`, replaces spaces with underscores for its reference, and emits `* <linkHandler(pname, ref)> \t - <parent.Short>` (lines 97–104).
+
+4. **Emit child links:** It gets `cmd.Commands()`, sorts with `byName`, and skips children that are unavailable or additional help topics. For each remaining child, it builds `cname := name + " " + child.Name()`, replaces spaces with underscores, and emits `* <linkHandler(cname, ref)> \t - <child.Short>` (lines 112–121).
+
+5. **Write the output:** The accumulated buffer is written to `w` with `buf.WriteTo(w)`, and its error is returned (lines 128–129).
+
+The snippet shows where `hasSeeAlso` and `linkHandler` are called, but does not define the former’s condition or the latter’s link formatting.

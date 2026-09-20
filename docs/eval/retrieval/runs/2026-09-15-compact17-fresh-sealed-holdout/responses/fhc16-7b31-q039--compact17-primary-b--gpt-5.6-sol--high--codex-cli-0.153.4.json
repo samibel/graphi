@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q039",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "2a88d107871cc4c8dc49122b0b3410fab8464bf1e926a1018caf8240bbf8d30d",
+  "bundle_sha256": "f1e3a419d6fda533ab9f1957d58ea76a230c45520abdd4475b33bdf81b25c314",
+  "prompt_sha256": "4a9152f18d4b62bf1393f4f96ca1e9304f22b8f303bd6d68275e4a11d2eaedfa",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ErrOrStderr` starts resolution with `os.Stderr` as the default:\n\n- `command.go:384-386`: `ErrOrStderr()` calls `c.getErr(os.Stderr)`.\n- `command.go:403-412`: `getErr` returns the current command’s `c.errWriter` when non-nil. Otherwise, if `c.HasParent()`, it recursively calls `c.parent.getErr(def)`. At the hierarchy root, it returns `def`, which is `os.Stderr`.\n- `command.go:1630-1634`: `HasParent()` means `c.parent != nil`.\n- `command.go:293-298`: `SetErr(newErr)` assigns `c.errWriter`; setting it to `nil` leaves resolution to ancestors and ultimately stderr.\n\nThus, the nearest error writer found while walking from the command toward its ancestors wins; if none exists, stderr is used.",
+  "responded_at": "2026-09-15T18:39:59Z",
+  "sha256": "27953933e9f2f3be3f1fa91d3dc380df689b540ea05394e5d847fd95bb9b3a44"
+}

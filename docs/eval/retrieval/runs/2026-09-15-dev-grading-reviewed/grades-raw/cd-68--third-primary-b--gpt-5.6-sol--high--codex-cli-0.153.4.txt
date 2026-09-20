@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that CompErrorln appends a newline and delegates to CompError. Its explanation of the [Error] and [Debug] prefixes, stderr output, and optional debug-file append is supported by the preserved transcript and cited line ranges.

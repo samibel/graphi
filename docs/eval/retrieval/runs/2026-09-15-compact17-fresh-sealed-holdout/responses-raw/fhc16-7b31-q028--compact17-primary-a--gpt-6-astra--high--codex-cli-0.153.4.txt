@@ -1,0 +1,3 @@
+`VisitParents` invokes the callback from the nearest ancestor upward: **parent → grandparent → … → root**, excluding the starting command.
+
+In `command.go:853–857`, it calls `fn(c.Parent())` before recursively calling `c.Parent().VisitParents(fn)`. Recursion stops when `HasParent()` is false, meaning `c.parent == nil` (`command.go:1632–1634`).

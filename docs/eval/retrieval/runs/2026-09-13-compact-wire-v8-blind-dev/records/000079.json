@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 79,
+  "previous_sha256": "7889e3680bbcbdf0e30ced2280044c5d0700330a0c180e29e90f7d54b5b71a6b",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "4f3f06f713f20101291de83c885d50365da721936c94c6b7c4030c789b517340",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Create a shell-specific completion script that:\n\n1. Invokes your program’s hidden `__complete [command-line]` command (`completions.go:26-33, 194-205`).\n2. Reads completion candidates from stdout, one per line (`completions.go:240-242`).\n3. Treats the final stdout line as `:\u003cdirective\u003e` and parses that directive (`completions.go:244-247`).\n4. Ignores stderr, which contains diagnostics (`completions.go:249-251`).\n\nUse `__completeNoDesc` instead if the target shell should receive candidates without descriptions (`completions.go:29-33`). The shell adapter must then translate candidates and directives—such as file-extension filtering indicated by `ShellCompDirectiveFilterFileExt` (`completions.go:65-67`)—into that shell’s native completion mechanism.",
+  "sha256": "8c2eed0e06ce08dd24083668522d1613522f6fe268b3f04eb42580ae718b62ba"
+}

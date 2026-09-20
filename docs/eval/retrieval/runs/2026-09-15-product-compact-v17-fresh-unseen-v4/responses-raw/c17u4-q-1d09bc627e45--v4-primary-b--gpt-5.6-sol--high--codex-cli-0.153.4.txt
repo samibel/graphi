@@ -1,0 +1,6 @@
+Cobra’s template functions remove:
+
+- Leading and trailing whitespace with `trim`, mapped to `strings.TrimSpace` ([`cobra.go`, lines 31–40]).
+- Trailing Unicode whitespace with `trimRightSpace` and `trimTrailingWhitespaces`; both call `strings.TrimRightFunc(s, unicode.IsSpace)` ([`cobra.go`, lines 158–161]).
+
+The help template specifically uses `trimTrailingWhitespaces` on `.Long` or `.Short`, so it removes all trailing runes recognized by `unicode.IsSpace` ([`command.go`, lines 583–596]).

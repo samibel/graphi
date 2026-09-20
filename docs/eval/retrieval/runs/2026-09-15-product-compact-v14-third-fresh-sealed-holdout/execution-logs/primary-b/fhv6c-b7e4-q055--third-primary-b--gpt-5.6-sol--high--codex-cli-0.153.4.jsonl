@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-3397-7531-ae1b-a71795e0ba20"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Alias invocation is handled during child-command lookup: `command.go:768-772` checks whether the input matches `cmd.Name()` or `cmd.HasAlias(next)`. On a match, it records the exact invoked token in `cmd.commandCalledAs.name = next` and returns that command.\n\n`HasAlias` iterates over `Command.Aliases` (`command.go:1505-1513`), using `commandNameMatches`, which performs case-insensitive matching when `EnableCaseInsensitive` is enabled and exact matching otherwise (`command.go:1876-1885`). Prefix matching similarly records whether the command was selected by its canonical name or alias (`command.go:1524-1538`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16483,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":213,"reasoning_output_tokens":65}}

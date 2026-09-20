@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the generator collects child commands and aliases. The bundle lacks `writeCommands` and does not support the essential filtering, command-name emission, and delegated alias emission behavior.

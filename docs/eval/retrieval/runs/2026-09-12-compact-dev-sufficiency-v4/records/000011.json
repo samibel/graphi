@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 11,
+  "previous_sha256": "3d6b752e92d683f2ef1dceecc9962659f5b7bf6b000845c38d903c8ddf81396c",
+  "kind": "response",
+  "query_id": "cb-14",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "2827a1352d63614d641628cfb2f39454c865d596f686e764a6bbb47564a57385",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Shell scripts request completion through the hidden `__complete` command (`ShellCompRequestCmd`, `completions.go:27–29`). `initCompleteCmd` constructs that command with `ShellCompNoDescRequestCmd` as an alias, `Hidden: true`, `DisableFlagParsing: true`, and `Args: MinimumNArgs(1)` (`completions.go:193–201`). Its `Run` callback forwards the supplied command-line arguments to `cmd.getCompletions(args)`, receiving the final command, completions, directive, and error; a returned error is reported through `CompErrorln(err.Error())` (`completions.go:202–208`).\n",
+  "sha256": "26ac5797800d9b3b172a41f5d8d5aba23eabc7d284854568dcb6eb28efe59f4e"
+}

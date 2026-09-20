@@ -1,0 +1,1 @@
+PASS: The response correctly explains that SetErr(nil) clears the command’s error writer, so ErrOrStderr returns the nearest ancestor’s non-nil error writer or falls back to os.Stderr. All cited ranges exist in the transcript and support this behavior.

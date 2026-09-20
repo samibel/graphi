@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 110,
+  "previous_sha256": "41faa18f58f1904c27baf4176d7cb6cb38dbe5bd4264ff151baf0dc6519b953e",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "c4af271180acdde4d8b7fdd243137e67e859c6f15bb8d05dbe3db75beea0505a",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and fully supported by the preserved response. `command.go:1847-1853` explicitly says `mergePersistentFlags` adds missing persistent flags of all parents and shows the calls to `updateParentsPflags()`, `AddFlagSet(c.PersistentFlags())`, and `AddFlagSet(c.parentsPflags)`. The lookup description matches `persistentFlag` at `command.go:1805-1816`, and the statement that local non-persistent flags do not propagate is supported by the comment and filtering logic at `command.go:1654-1666`.\n",
+  "sha256": "675fadfff6c22e8d0aa307f16d77fac34b226c4c7c8afac87789503748a20727"
+}

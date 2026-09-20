@@ -1,0 +1,154 @@
+{
+  "schema": "graphi-fresh-holdout-curator-attestation/1",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v2",
+  "status": "curation_complete_pre_capture",
+  "curator": {
+    "identity": "Codex independent holdout curator",
+    "task_path": "/root/fresh_holdout_curator",
+    "provider": "OpenAI",
+    "resolved_model_identity": "GPT-5",
+    "immutable_backend_snapshot_exposed": false
+  },
+  "utc_times": {
+    "isolated_branch_created_at": "2026-09-15T18:48:04Z",
+    "curation_artifacts_committed_at_or_before": "2026-09-15T19:02:09Z",
+    "attestation_completed_at": "2026-09-15T19:02:09Z"
+  },
+  "candidate_binding": {
+    "product_source_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "product_source_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+    "candidate_method": "task_context/2-compact/17",
+    "token_budget": 1200,
+    "curation_artifacts_commit": "a02fa9d8f6adc9bfcfd6ed2a5eda449bda00610a",
+    "product_tree_outside_run_directory_identical": true
+  },
+  "corpus": {
+    "repo": "spf13/cobra",
+    "commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "tree": "8590b318bb54874bf1f0c597ff503f8c3b9ace75",
+    "checkout_clean": true
+  },
+  "dataset": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/sealed-dataset.json",
+    "sha256": "fb7737442cd251c30f6800d557e3b89c600dd0a66374daf53837aa0144d8936c",
+    "n": 64,
+    "k": 56,
+    "families": 64,
+    "grade3_spans": 64,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "nl_behaviour": 11,
+      "architecture_flow": 11,
+      "config_docs": 10,
+      "ambiguous": 10
+    }
+  },
+  "preregistration": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/curator-preregistration.json",
+    "sha256": "9ab484266eb3657cdadb60848d0cc78c852efa6b6cf269463cb1185e3478cd4e",
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "measurement_contract_version": "sw266-measurement-contract/2",
+    "capture_must_precede_any_rater_execution": true
+  },
+  "allowed_inputs": [
+    "clean pinned spf13/cobra checkout at the attested commit",
+    "public retrieval methodology versions 1 and 2",
+    "public retrieval budgets and targets",
+    "public candidate-neutral grading rubric",
+    "Go dataset, blind-evaluation, tokenizer, ceiling, and validation schema code"
+  ],
+  "independence_declarations": {
+    "implemented_or_tuned_candidate": false,
+    "inspected_candidate_outputs": false,
+    "started_candidate_capture": false,
+    "performed_rating_or_grading": false,
+    "inspected_development_dataset_or_outputs": false,
+    "inspected_any_consumed_holdout_or_outputs": false,
+    "reused_prior_questions_families_answers_or_spans": false,
+    "disclosed_holdout_content_to_root": false,
+    "forbidden_file_accessed": false
+  },
+  "audits": [
+    {
+      "name": "dataset_json_schema_and_answerable_population",
+      "status": "PASS",
+      "result": "64 holdout rows; every row non-no-hit with exactly one grade-3 judgement"
+    },
+    {
+      "name": "stratification",
+      "status": "PASS",
+      "result": "counts match preregistered 11/11/11/11/10/10 allocation"
+    },
+    {
+      "name": "identifier_family_and_exact_duplicate",
+      "status": "PASS",
+      "result": "64 unique query ids, 64 unique family ids, and 64 unique normalized query strings"
+    },
+    {
+      "name": "within_dataset_near_duplicate_screen",
+      "status": "PASS",
+      "result": "maximum pairwise normalized token-set Jaccard similarity 0.310"
+    },
+    {
+      "name": "cross_dataset_leakage_boundary",
+      "status": "PASS_BY_INDEPENDENT_NO_PEEK_CONSTRUCTION",
+      "result": "fresh source-only authorship; no prior or development dataset was opened or queried"
+    },
+    {
+      "name": "span_anchor_and_pinned_source_coverage",
+      "status": "PASS",
+      "result": "64 of 64 grade-3 spans and anchors resolve exactly at the pinned corpus commit"
+    },
+    {
+      "name": "answer_span_ceiling",
+      "status": "PASS",
+      "result": "64 of 64 queries have a complete feasible span; zero spans exceed the frozen ceiling"
+    },
+    {
+      "name": "threshold_derivation",
+      "status": "PASS",
+      "result": "existing exact-binomial derivation remains k=56 for N=64"
+    },
+    {
+      "name": "corpus_binding_and_cleanliness",
+      "status": "PASS",
+      "result": "pinned commit and tree match; checkout has no tracked or untracked changes"
+    },
+    {
+      "name": "candidate_binding",
+      "status": "PASS",
+      "result": "candidate commit resolves to the preregistered tree and the curation commit changes nothing outside the run directory"
+    },
+    {
+      "name": "public_method_and_rubric_identity",
+      "status": "PASS",
+      "result": "method contracts are unchanged and the run-local rubric is byte-identical to the candidate-neutral frozen scaffold"
+    },
+    {
+      "name": "curation_commit_cleanliness",
+      "status": "PASS",
+      "result": "curation artifacts commit contains exactly six files in the new run directory and its worktree was clean immediately after commit"
+    },
+    {
+      "name": "pre_capture_state",
+      "status": "PASS",
+      "result": "no harness precondition, capture, prompt, bundle, response, grade, adjudication, or outcome artifact exists"
+    }
+  ],
+  "validation_commands": [
+    "jq structural and aggregate-only uniqueness checks over the sealed dataset",
+    "go run ./cmd/retrieval-eval -answer-span-ceiling -dataset <sealed dataset> -checkout <pinned Cobra checkout>",
+    "go test ./internal/eval/retrieval -run ^TestQrelBlindSmoke_MinimumPassCountGoldenTable$ -count=1",
+    "git rev-parse and git show commit/tree identity checks",
+    "git status --porcelain --untracked-files=normal for corpus and isolated curation worktrees",
+    "git diff candidate..curation-commit with the new run directory excluded",
+    "SHA-256 recomputation for the dataset, preregistration, public method inputs, rubric, and handoff"
+  ],
+  "limitations": [
+    "The provider does not expose an immutable backend model snapshot or weights digest for the curator session.",
+    "No content-to-content comparison with consumed or development datasets was performed because doing so would violate the no-peek independence boundary; freshness was enforced by isolated source-only curation and an intra-dataset duplicate screen.",
+    "The curator performed an independent second review pass equivalent to human span review, but no separate human reviewer participated.",
+    "Final worktree cleanliness after the attestation commit is necessarily verified after these bytes are sealed and is reported in the content-free handoff."
+  ]
+}

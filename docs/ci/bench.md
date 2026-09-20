@@ -99,7 +99,10 @@ the budget is the gate. The 2026-08-28 decision (SW-243) re-pinned the baseline
 to the measured `main` and left the budget at 36,100,000 B, and wrote four
 standing refusals into
 [`bench/bench-budget.yml`](../../bench/bench-budget.yml) so the budget cannot be
-moved by feel:
+moved by feel. The latest application of those same rules, on 2026-09-17,
+re-pinned the measured default binary to 37,014,355 B and the gate to
+37,800,000 B after the preceding 37,000,000 B gate had only 3,954 B of headroom
+on the PR merge-base—below even the measured 8,854 B toolchain-noise event:
 
 1. **No raise without attribution** — a same-method before/after build, a
    `go tool nm -size` package rollup, and a `go.mod`/`go.sum`/grammar-tag diff

@@ -1,0 +1,1 @@
+INSUFFICIENT — `bash_completions.go:688-693` shows it is attached to `Command.BashCompletionFunction` and emitted by `GenBashCompletion()`, but the responses do not show where or when the generated Bash function is invoked.

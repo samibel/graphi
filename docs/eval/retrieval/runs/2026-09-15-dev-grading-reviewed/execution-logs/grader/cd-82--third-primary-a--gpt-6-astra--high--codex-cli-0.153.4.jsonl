@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-ee14-7b20-90e5-f6f59ad4d1f9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately states that HasAvailableSubCommands returns true when any direct child passes IsAvailableCommand and false otherwise. Its eligibility conditions and connection to help output are fully supported by the cited command.go spans."}}
+{"type":"turn.completed","usage":{"input_tokens":18034,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

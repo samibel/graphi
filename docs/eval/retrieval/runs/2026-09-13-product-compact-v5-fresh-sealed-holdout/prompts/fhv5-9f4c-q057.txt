@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What is the practical distinction between the generic Print methods and the PrintErr methods when custom writers are configured?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 79535fea1fb0; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1409,"end_line":1413,"text":"\n// PrintErr is a convenience method to Print to the defined Err output, fallback to Stderr if not set.\nfunc (c *Command) PrintErr(i ...interface{}) {\n\tfmt.Fprint(c.ErrOrStderr(), i...)\n}"},{"path":"command.go","start_line":1395,"end_line":1398,"text":"// Print is a convenience method to Print to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Print(i ...interface{}) {\n\tfmt.Fprint(c.OutOrStderr(), i...)\n}"},{"path":"command.go","start_line":1420,"end_line":1423,"text":"// PrintErrf is a convenience method to Printf to the defined Err output, fallback to Stderr if not set.\nfunc (c *Command) PrintErrf(format string, i ...interface{}) {\n\tc.PrintErr(fmt.Sprintf(format, i...))\n}"},{"path":"command.go","start_line":1415,"end_line":1418,"text":"// PrintErrln is a convenience method to Println to the defined Err output, fallback to Stderr if not set.\nfunc (c *Command) PrintErrln(i ...interface{}) {\n\tc.PrintErr(fmt.Sprintln(i...))\n}"},{"path":"command.go","start_line":384,"end_line":387,"text":"// ErrOrStderr returns output to stderr\nfunc (c *Command) ErrOrStderr() io.Writer {\n\treturn c.getErr(os.Stderr)\n}"},{"path":"command.go","start_line":1400,"end_line":1403,"text":"// Println is a convenience method to Println to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Println(i ...interface{}) {\n\tc.Print(fmt.Sprintln(i...))\n}"},{"path":"command.go","start_line":1405,"end_line":1408,"text":"// Printf is a convenience method to Printf to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Printf(format string, i ...interface{}) {\n\tc.Print(fmt.Sprintf(format, i...))\n}"},{"path":"command.go","start_line":1411,"end_line":1411,"text":"func (c *Command) PrintErr(i ...interface{}) {"},{"path":"command.go","start_line":1416,"end_line":1416,"text":"func (c *Command) PrintErrln(i ...interface{}) {"},{"path":"command.go","start_line":1098,"end_line":1115,"text":"\t\t\tc.PrintErrln(c.ErrPrefix(), err.Error())\n\t\t\tc.PrintErrf(\"Run '%v --help' for usage.\\n\", c.CommandPath())\n\t\t}\n\t\treturn c, err\n\t}\n\n\tcmd.commandCalledAs.called = true\n\tif cmd.commandCalledAs.name == \"\" {\n\t\tcmd.commandCalledAs.name = cmd.Name()\n\t}\n\n\t// We have to pass global context to children command\n\t// if context is present on the parent command.\n\tif cmd.ctx == nil {\n\t\tcmd.ctx = c.ctx\n\t}\n\n\terr = cmd.execute(flags)"}],"provenance":{"input_sha256":"599a2588da4f28b5dcfcbb640c798016f080b0081a4cf4ad3d60df4cd27cb517","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

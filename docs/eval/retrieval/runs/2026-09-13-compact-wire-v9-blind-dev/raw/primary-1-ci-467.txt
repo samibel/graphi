@@ -1,0 +1,3 @@
+Flags: **yes**. `Traverse` collects flags and their values before locating the subcommand, parses them on the parent with `c.ParseFlags(flags)`, then descends (`command.go:793-828`).
+
+Positional args: **no**. The first non-flag is treated as the prospective subcommand (`stripFlags` and `argsWOflags[0]` in `command.go:643-659, 730-736`); in `Traverse`, a non-flag that is not a child command stops traversal (`command.go:817-821`).

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 131,
+  "previous_sha256": "2ec45e85ca94f2393411f4c8a78d4c0ee7e7fd14fc70c3472914971b9a811b1b",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2412db9341808e179eec6f22fa7310fedbec128e76cb3e7d8fa0eb12ab2235d5",
+  "outcome": "pass",
+  "rationale": "PASS: It directly answers how to retrieve a named flag from the executing command and correctly notes the nil result when absent.",
+  "sha256": "906d72f35b3cd08581b462e37f935778a9110cfa0f88d1ec7c5bd5a145b621cc"
+}

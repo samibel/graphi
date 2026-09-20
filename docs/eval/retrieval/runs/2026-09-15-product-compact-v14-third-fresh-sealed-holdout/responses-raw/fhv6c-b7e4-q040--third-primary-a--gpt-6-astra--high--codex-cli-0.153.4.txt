@@ -1,0 +1,1 @@
+INSUFFICIENT The response lacks the `Traverse` implementation or a test showing child resolution without parent flags; `command.go:224–225` only describes `TraverseChildren`, and `command_test.go:2187` only names `TestTraverseWithParentFlags`.

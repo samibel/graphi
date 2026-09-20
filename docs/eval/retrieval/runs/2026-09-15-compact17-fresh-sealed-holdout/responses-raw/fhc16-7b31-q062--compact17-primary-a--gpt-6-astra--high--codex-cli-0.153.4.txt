@@ -1,0 +1,7 @@
+No. In `command.go:1356–1359`, `AddGroup` only executes:
+
+```go
+c.commandgroups = append(c.commandgroups, groups...)
+```
+
+It performs no duplicate check or validation of empty `ID` or `Title` fields (defined in `Group` at `command.go:42–45`). The separate `checkCommandGroups` function at `command.go:1172–1181` checks for subcommands referencing undefined, nonempty group IDs; it does not reject duplicate or empty group definitions.

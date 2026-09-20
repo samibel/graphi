@@ -1,0 +1,1 @@
+FAIL: The response does not answer what the test establishes: initializing help on a child preserves the parent’s custom persistent help usage. The bundle supports this behavior through merging persistent flags before checking whether a help flag already exists.

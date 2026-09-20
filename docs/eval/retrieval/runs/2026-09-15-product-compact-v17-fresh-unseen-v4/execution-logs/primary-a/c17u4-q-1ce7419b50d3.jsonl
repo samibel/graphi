@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-a28c-7e90-9ea0-1b8c8fa27f14"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The template helper `\"eq\"` maps to `Eq` (`cobra.go:39`). It supports signed integer kinds—`Int`, `Int8`, `Int16`, `Int32`, `Int64`—and `String`, comparing via `av.Int() == bv.Int()` or `av.String() == bv.String()` (`cobra.go:151–154`).\n\nFor `Array`, `Chan`, `Map`, or `Slice`, it panics with `\"Eq called on unsupported type\"` (`cobra.go:149–150`). The switch checks the first operand’s kind; other unhandled kinds return `false` (`cobra.go:148–156`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17454,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":137,"reasoning_output_tokens":0}}

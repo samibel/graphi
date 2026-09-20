@@ -1,0 +1,7 @@
+`getOut` checks writers in this order:
+
+1. The command’s own `c.outWriter`, if non-nil.
+2. The parent command’s writer recursively via `c.parent.getOut(def)`, if a parent exists.
+3. The supplied default writer `def`.
+
+Evidence: `command.go:393–402`, symbol `(*Command).getOut`. `HasParent` means `c.parent != nil` (`command.go:1630–1634`).

@@ -1,0 +1,1 @@
+PASS: The transcript confirms that GenYamlTreeCustom accepts both filePrepender and linkHandler, writes the prepended content, and forwards linkHandler to GenYamlCustom. GenYamlCustom accepts only linkHandler. All cited line ranges exist and support the attached claims.

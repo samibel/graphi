@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 141,
+  "previous_sha256": "b5e3f68b0fc684a4d4956656758a5523ea2b403e470543e4098e151be3c22794",
+  "kind": "grade",
+  "query_id": "ci-1970",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "b80c45ec4d43447571d0333ad73155ae9d37b8e0070c900ae04310e81f3998b8",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly gives Flags for the applicable set and the narrower LocalFlags and InheritedFlags alternatives.",
+  "sha256": "ebf95467964fe6216afeccca1650a59d184b13068808eed899a3ab2cf9e8b3e6"
+}

@@ -1,0 +1,55 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: c8d7ab9450330a46ddeb550dd934e3762b920ec2a6f95afd38913c0bfef6a530
+QUERY ID: c17u4-q-01a41c9e72d0
+
+QUESTION:
+What argument cases does legacyArgs accept, and when does it return an unknown-command error with suggestions?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:24-39 anchor="func legacyArgs(cmd *Command, args []string) error" reason=The function and its comments enumerate acceptance and the root-with-subcommands rejection path.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 6638aa528fda; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"args.go","start_line":23,"end_line":39,"text":"\n// legacyArgs validation has the following behaviour:\n// - root commands with no subcommands can take arbitrary arguments\n// - root commands with subcommands will do subcommand validity checking\n// - subcommands will always accept arbitrary arguments\nfunc legacyArgs(cmd *Command, args []string) error {\n\t// no subcommand, always take args\n\tif !cmd.HasSubCommands() {\n\t\treturn nil\n\t}\n\n\t// root command with subcommands, do subcommand checking.\n\tif !cmd.HasParent() && len(args) > 0 {\n\t\treturn fmt.Errorf(\"unknown command %q for %q%s\", args[0], cmd.CommandPath(), cmd.findSuggestions(args[0]))\n\t}\n\treturn nil\n}"},{"path":"command.go","start_line":82,"end_line":87,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.\n\t// It is a dynamic version of using ValidArgs.\n\t// Only one of ValidArgs and ValidArgsFunction can be used for a command.\n\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)"},{"path":"command.go","start_line":1424,"end_line":1434,"text":"\n// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":749,"end_line":765,"text":"\nfunc (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance <= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}"},{"path":"args.go","start_line":67,"end_line":71,"text":"\n// ArbitraryArgs never returns an error.\nfunc ArbitraryArgs(cmd *Command, args []string) error {\n\treturn nil\n}"},{"path":"args.go","start_line":49,"end_line":50,"text":"// OnlyValidArgs returns an error if there are any positional args that are not in\n// the `ValidArgs` field of `Command`"},{"path":"command.go","start_line":1050,"end_line":1053,"text":"\n// ExecuteC executes the command.\nfunc (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {"},{"path":"command.go","start_line":1139,"end_line":1139,"text":"func (c *Command) ValidateArgs(args []string) error {"}],"provenance":{"input_sha256":"ca3caa7bc455fbab5c13cb9a46039671b3d0f673e5cc9ce08e8f1277ed3057a5","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`legacyArgs` accepts (returns `nil`):
+
+- Any arguments when the command has no subcommands.
+- Any arguments for a child command, even if it has subcommands.
+- Zero arguments for a root command with subcommands.
+
+These cases follow from `args.go:23–39`: the early `!cmd.HasSubCommands()` return and the error condition `!cmd.HasParent() && len(args) > 0`.
+
+It returns an error whenever a root command has subcommands and receives at least one argument:
+`unknown command %q for %q%s`, using `args[0]`, `cmd.CommandPath()`, and `cmd.findSuggestions(args[0])`. This function itself performs no argument-name lookup (`args.go:34–36`).
+
+Suggestions are appended only when `DisableSuggestions` is false and `SuggestionsFor(arg)` returns results. They appear under “Did you mean this?”, one per line. A nonpositive `SuggestionsMinimumDistance` is set to `2` (`command.go:749–765`).
+----- END THE RATER'S RESPONSE -----

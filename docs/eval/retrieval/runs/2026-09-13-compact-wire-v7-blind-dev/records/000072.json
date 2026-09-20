@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 72,
+  "previous_sha256": "735bb2c6c47230c2ab562cb0dc4edb24b2e8562fbde379fd45a32be9d978ebab",
+  "kind": "response",
+  "query_id": "ci-1970",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "595a7b9cc5f552d3ac4366f22c759ddb0a855fb8ffae1be36e3559092461a893",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `cmd.Flags()` to obtain the complete `*flag.FlagSet` applicable to that command, including local and persistent flags declared by it and its parents (`command.go:1641-1653`, `Command.Flags`).\n\nFor subsets, use `cmd.LocalFlags()` (`command.go:1669-1672`) or `cmd.InheritedFlags()` (`command.go:1695-1698`). The response does not show the `FlagSet` iteration API.",
+  "sha256": "112ae4908ce47c9b5f2ea7486c6389d1aee1001d49aabe866aa2eec5d4388456"
+}

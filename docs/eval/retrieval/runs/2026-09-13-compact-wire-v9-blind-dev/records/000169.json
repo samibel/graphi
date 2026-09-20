@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 169,
+  "previous_sha256": "ef3bb91003a32abaf6407082b8a6dba08bf5105ca07c0591e7d3449050599759",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1e93b33482c71a27b0b980f88a190f86b41ba6132e2b52fc0e7394a703aee122",
+  "outcome": "pass",
+  "rationale": "The candidate accurately describes the traversal supported by the preserved bundle: `doc/man_docs.go:46-80` iterates through `cmd.Commands()`, excludes unavailable and additional-help-topic children, recursively invokes `GenManTreeFromOpts` on each eligible child with immediate error propagation, and only afterward generates the current command’s page via `GenMan(cmd, \u0026headerCopy, f)`. Calling this depth-first post-order is correct. It also correctly notes that the bundle contains only declarations for the Markdown generators at `doc/md_docs.go:125,133`, so it does not invent their unseen traversal behavior.\n",
+  "sha256": "18dbfca3ead2509909d044d45d8ced773dd3e7f9240ee76e695acd53dec44f50"
+}

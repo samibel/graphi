@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q018",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "00c5597ff0b5e85ba33b2f4214ea239846e4ad19c29bdf24f6e6b574c0c3f647",
+  "bundle_sha256": "b303f641dfb98960c5afd1d111195fb52d097cbaa87c26456b4fb631b8685ef3",
+  "prompt_sha256": "8f4fca2fbfdb8daf817f959dc2fbbdc42be62a9217a4e9a6389b436fdec0476d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`doc/cmd_test.go` is in package `doc` (line 15) and defines Cobra command fixtures plus test helpers:\n\n- `emptyRun` is a no-op Cobra command handler (line 24).\n- `init` configures persistent/local string, integer, and boolean flags on `rootCmd`, `echoCmd`, `timesCmd`, and `printCmd` (lines 26–40).\n- Command variables:\n  - `rootCmd`: root command with short/long descriptions and `emptyRun` (lines 47–52).\n  - `echoCmd`: `echo` command, alias `say`, with description and example (lines 54–60).\n  - `echoSubCmd`: `echosub` subcommand using `emptyRun` (lines 62–67).\n  - `timesCmd`: repeat-echo command, suggested for `counts`, using `emptyRun` (lines 69–75).\n  - `deprecatedCmd`: deprecated command directing users to `echo` (lines 77–82).\n  - `printCmd`: print command with short/long descriptions (lines 84–88).\n- `checkStringOmits` fails a test when `got` contains the supposedly omitted string (lines 101–105).",
+  "responded_at": "2026-09-15T08:29:24Z",
+  "sha256": "994ab7c97c49c584126f7a73437566399587633c80b306a1bdaa2623f6af1712"
+}

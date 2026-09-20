@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What does SetErr(nil) make ErrOrStderr return?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 578a3ff26a57; read in order (219/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":384,"end_line":387,"text":"// ErrOrStderr returns output to stderr\nfunc (c *Command) ErrOrStderr() io.Writer {\n\treturn c.getErr(os.Stderr)\n}"},{"path":"command.go","start_line":404,"end_line":412,"text":"func (c *Command) getErr(def io.Writer) io.Writer {\n\tif c.errWriter != nil {\n\t\treturn c.errWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getErr(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":294,"end_line":298,"text":"// SetErr sets the destination for error messages.\n// If newErr is nil, os.Stderr is used.\nfunc (c *Command) SetErr(newErr io.Writer) {\n\tc.errWriter = newErr\n}"},{"path":"command.go","start_line":379,"end_line":382,"text":"// OutOrStderr returns output to stderr\nfunc (c *Command) OutOrStderr() io.Writer {\n\treturn c.getOut(os.Stderr)\n}"},{"path":"command.go","start_line":394,"end_line":402,"text":"func (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":1631,"end_line":1634,"text":"// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":424,"end_line":441,"text":"// UsageFunc returns either the function set by SetUsageFunc for this command\n// or a parent, or it returns a default usage function.\nfunc (c *Command) UsageFunc() (f func(*Command) error) {\n\tif c.usageFunc != nil {\n\t\treturn c.usageFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().UsageFunc()\n\t}\n\treturn func(c *Command) error {\n\t\tc.mergePersistentFlags()\n\t\terr := tmpl(c.OutOrStderr(), c.UsageTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t\treturn err\n\t}\n}"},{"path":"command.go","start_line":125,"end_line":128,"text":"\tPersistentPreRun func(cmd *Command, args []string)\n\t// PersistentPreRunE: PersistentPreRun but returns an error.\n\tPersistentPreRunE func(cmd *Command, args []string) error\n\t// PreRun: children of this command will not inherit."}],"provenance":{"input_sha256":"175e99526be1ff45a12e58bf24a5472d5c8067187fa582b50ed72b8874825d39","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

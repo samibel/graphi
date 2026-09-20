@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 86,
+  "previous_sha256": "b29089ce0965aff28b24e5b5a4a30893cb1ba2ce44a8ecb6731d3cf25d60d05f",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "1f188ed2e31b5a641a16c52a9a891b7ac7d8b4a6e1f2e7eba381cd659315c666",
+  "outcome": "pass",
+  "rationale": "The response concretely identifies GenMarkdownTree at doc/md_docs.go:125. The tree-versus-single-command distinction is explicit in the preserved guide sentence at site/content/docgen/md.md:60. Custom callback parameters and the io.Writer alternative are supported by doc/md_docs.go:132-134 and 51-53.\n",
+  "sha256": "6668de03a908500e4454f1cc0844f1463adc66fce7b662638160ecd4d0854ecd"
+}

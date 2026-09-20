@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "story": "SW-282",
+  "definition": "SW-266 AC-2: a query is answerable when it is in the requested split, its stratum is not no_hit, and it carries at least one judgement at grade 3 (retrieval.GradeMax). no_hit queries are counted separately and satisfy no minimum.",
+  "dataset_id": "cobra-v2",
+  "dataset_file": "internal/eval/retrieval/testdata/datasets/cobra-v2.json",
+  "dataset_sha256": "7de5ce6eef0e58d952b64ea7beaa0b09d158724b1eaa52bbd064ceebf53f35fc",
+  "dev": {
+    "answerable": 40,
+    "no_hit": 3,
+    "answerable_by_stratum": {
+      "ambiguous": 3,
+      "architecture_flow": 5,
+      "config_docs": 19,
+      "exact_identifier": 4,
+      "exact_path": 3,
+      "nl_behaviour": 6
+    },
+    "config_docs": 19,
+    "config_docs_fraction": "19/40",
+    "config_docs_rendered": "48%"
+  },
+  "holdout": {
+    "answerable": 64,
+    "no_hit": 2,
+    "answerable_by_stratum": {
+      "ambiguous": 1,
+      "architecture_flow": 1,
+      "config_docs": 57,
+      "exact_identifier": 1,
+      "exact_path": 1,
+      "nl_behaviour": 3
+    },
+    "config_docs": 57,
+    "config_docs_fraction": "57/64",
+    "config_docs_rendered": "89%"
+  },
+  "savings_population": 104,
+  "savings_config_docs": 76,
+  "savings_config_docs_fraction": "76/104",
+  "savings_config_docs_rendered": "73%",
+  "superseded_dev_count": 41,
+  "superseded_dev_count_recorded_in": "projects/graphi/stories/SW-279/approval.md recorded 41 answerable development queries under the looser \"not no_hit\" reading; SW-282 corrects it to the contractual count.",
+  "excluded": [
+    {
+      "query_id": "cb-31",
+      "split": "dev",
+      "stratum": "ambiguous",
+      "judgement_grades": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "reason": "not no_hit but carries no grade-3 answer span, so it is not answerable under SW-266 AC-2: a query is answerable when it is in the requested split, its stratum is not no_hit, and it carries at least one judgement at grade 3 (retrieval.GradeMax). no_hit queries are counted separately and satisfy no minimum."
+    }
+  ],
+  "binding_constraint": "The answerable holdout is dominated by one stratum: 57 of its 64 queries are config_docs. Any future claim resting on this holdout is either narrowed to config_docs or requires a fresh holdout stratified before it is sealed. A mostly-config_docs sample may not be presented as generic developer questions. This constraint is recorded, not executed: expressing it inside the claim grammar would change allowedClaimShape and therefore the frozen contract version, so it is left to the claim story.",
+  "notes": "Recomputed from the dataset bytes by TestAnswerablePopulation_RecordMatchesDataset. Counts are exact integers; percentages are rendered at whole percentage points because one query moves the holdout share by 1/64 and the savings share by 1/104."
+}

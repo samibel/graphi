@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+completion
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"completion\"; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"completions.go","start_line":678,"end_line":715,"text":"// InitDefaultCompletionCmd adds a default 'completion' command to c.\n// This function will do nothing if any of the following is true:\n// 1- the feature has been explicitly disabled by the program,\n// 2- c has no subcommands (to avoid creating one),\n// 3- c already has a 'completion' command provided by the program.\nfunc (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tfor _, cmd := range c.commands {\n\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {\n\t\t\t// A completion command is already available\n\t\t\treturn\n\t\t}\n\t}\n\n\thaveNoDescFlag := !c.CompletionOptions.DisableNoDescFlag \u0026\u0026 !c.CompletionOptions.DisableDescriptions\n\n\tcompletionCmd := \u0026Command{\n\t\tUse:   compCmdName,\n\t\tShort: \"Generate the autocompletion script for the specified shell\",\n\t\tLong: fmt.Sprintf(`Generate the autocompletion script for %[1]s for the specified shell.\nSee each sub-command's help for details on how to use the generated script.\n`, c.Root().Name()),\n\t\tArgs:              NoArgs,\n\t\tValidArgsFunction: NoFileCompletions,\n\t\tHidden:            c.CompletionOptions.HiddenDefaultCmd,\n\t\tGroupID:           c.completionCommandGroupID,\n\t}\n\tc.AddCommand(completionCmd)\n\n\tout := c.OutOrStdout()\n\tnoDesc := c.CompletionOptions.DisableDescriptions\n\tshortDesc := \"Generate the autocompletion script for %s\"\n\tbash := \u0026Command{\n\t\tUse:   \"bash\",\n\t\tShort: fmt.Sprintf(shortDesc, \"bash\"),"},{"path":"completions.go","start_line":91,"end_line":99,"text":"\t// behavior after completions have been provided.\n\t// This one must be last to avoid messing up the iota count.\n\tShellCompDirectiveDefault ShellCompDirective = 0\n)\n\nconst (\n\t// Constants for the completion command\n\tcompCmdName              = \"completion\"\n\tcompCmdNoDescFlagName    = \"no-descriptions\""},{"path":"bash_completions.go","start_line":685,"end_line":687,"text":"// GenBashCompletion generates bash completion file and writes to the passed writer.\nfunc (c *Command) GenBashCompletion(w io.Writer) error {\n\tbuf := new(bytes.Buffer)"},{"path":"bash_completionsV2.go","start_line":381,"end_line":383,"text":"// GenBashCompletionFileV2 generates Bash completion version 2.\nfunc (c *Command) GenBashCompletionFileV2(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)"}],"provenance":{"input_sha256":"a0db8c45a8326b846e14c6710befe6283102e80db8901d31d8b14ada7f0d7f7d","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

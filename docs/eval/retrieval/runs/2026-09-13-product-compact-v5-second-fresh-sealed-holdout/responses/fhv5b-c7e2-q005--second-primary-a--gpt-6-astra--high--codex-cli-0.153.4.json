@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q005",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "0e93310c45710cb9574f7f8527b7b308931ee87c47102c05dcb56718b6d8b425",
+  "bundle_sha256": "336caca82ffdeb6dc36e120abfee6506ba736ff8509ba2f94442efe2f907e707",
+  "prompt_sha256": "5026d0021871e47443dc94369a3597f7037c44acadd6f1b2ec25c79f554ba4d5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`MaximumNArgs(n)` rejects a positional-argument list when `len(args) \u003e n`, returning `accepts at most %d arg(s), received %d` with the limit and actual count. Otherwise, it returns `nil` (`args.go`, lines 84–89).",
+  "responded_at": "2026-09-13T15:21:05Z",
+  "sha256": "4c724ba26b4c6d47206ae08f13a177a80add59e5009d70b761ced0c85e4bd3ab"
+}

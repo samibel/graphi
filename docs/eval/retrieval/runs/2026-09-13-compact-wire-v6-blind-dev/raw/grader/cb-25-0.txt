@@ -1,0 +1,1 @@
+PASS: It gives the correct root-command setting and corroborates it with InitDefaultCompletionCmd's early return.

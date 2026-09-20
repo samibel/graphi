@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 34,
+  "previous_sha256": "153f9f796138438fae6201328cae7e499b98adf834ef6087e7637437ca468146",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "9c38271c13a12423acdce9a24d4643c6b4c8b13435743d1c3c92d1040bae010e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For an already-configured parent/child command hierarchy, test the child by asserting:\n\n- `child.InheritedFlags().Lookup(name) != nil` for a parent flag. `InheritedFlags` collects flags from `parentsPflags` unless a same-named inherited or local flag exists ([command.go:1695–1718](command.go)).\n- `child.HasInheritedFlags()` is true; it delegates to `InheritedFlags().HasFlags()` ([command.go:1766–1769](command.go)).\n- A child-local flag is not inherited, since local-name collisions are excluded ([command.go:1712–1716](command.go)).\n- `child.HasAvailableInheritedFlags()` reflects only inherited flags that are neither hidden nor deprecated ([command.go:1788–1792](command.go)).\n- `child.NonInheritedFlags()` returns the child’s local flags ([command.go:1720–1723](command.go)).",
+  "sha256": "0b0444e4122bc31788cf113b0b841937b046f0289fc37110434bc9e57291ea75"
+}

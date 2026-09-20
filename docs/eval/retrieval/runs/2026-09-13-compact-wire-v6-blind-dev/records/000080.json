@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 80,
+  "previous_sha256": "6f2d1cd301b7620355342631b4609cf836d18a22744c71214126c6c91e8a9f90",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "206ca7e34522eb0a1f1f019065901a3ec4368fde1aa79fdef3a5d920b02ed739",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The default setup does not distinguish them: `InitDefaultHelpFlag` creates one boolean `help` flag with shorthand `h`, so `-h` and `--help` address the same flag (`command.go:1183-1201`). To customize help, replace the default setup: Cobra skips creating it if a `help` flag already exists, and the help behavior itself can be overridden through `HelpFunc` (`command.go:1183-1187,470-476`).",
+  "sha256": "5c0106621f6fd25866a3169b01521bd374bf15c357a3d94dbcdab1f66e042563"
+}

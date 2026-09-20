@@ -1,0 +1,1 @@
+INSUFFICIENT The response names `SuggestionsFor` and mentions Levenshtein-based suggestions (`command.go:831–833` and `248–249`), but omits the candidate selection, distance threshold, and suggestion-building logic needed to explain how suggestions are computed.

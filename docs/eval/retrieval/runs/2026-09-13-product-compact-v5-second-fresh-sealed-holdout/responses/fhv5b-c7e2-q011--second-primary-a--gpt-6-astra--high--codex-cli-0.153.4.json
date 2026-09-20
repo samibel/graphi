@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q011",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "7289c0a3b6f8989579cf72c3aad648cf21a3ec6451368951776325d7171a4b95",
+  "bundle_sha256": "f3dc02652afff536aefd7f87b6be13983e88f39c4348c1cf13563c6c59e637af",
+  "prompt_sha256": "665d1a64aba28636762986669c793571a24f1dbfb73f636a6008f2dde409db1c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnFinalize` retains callbacks by appending the supplied `func()` values to `finalizers`: `finalizers = append(finalizers, y...)` (`cobra.go`, lines 105–106). This preserves existing entries and adds callbacks in the order passed.",
+  "responded_at": "2026-09-13T15:22:08Z",
+  "sha256": "976c055e031a181ae8671e9d9cfbc17165f47a374b43fdc4260bf28c48cc7a74"
+}

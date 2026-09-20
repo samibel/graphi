@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 78,
+  "previous_sha256": "cdcf97e4f0380c8adc1c6e460bf85830ce51df194871351fffb67ed25f98e029",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "2ca7d4e96544dd2d80cb2008953336dad7103a7f6e1d575b42e03b8db69ecbdc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In a test, pass flags as command-line arguments with `SetArgs`:\n\n```go\ncmd.SetArgs([]string{\"--flag-name\", \"value\"})\nerr := cmd.Execute()\n```\n\nEvidence: `command.go:275-279` says `SetArgs` is “particularly useful when testing” and stores the slice in `c.args`. Execution reads `args := c.args` at `command.go:1075-1084`, and flags are parsed via `c.ParseFlags(a)` at `command.go:888-890`.",
+  "sha256": "bd7fcfd9025cb4f2a9336ba9b88d5beb3c28103fa91eb9b9b323123fe09d84fe"
+}

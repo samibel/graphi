@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 48,
+  "previous_sha256": "74078e39bbdf7702453bce9f6bd1802494c4e7e9cd014d99bdc5694ea2028859",
+  "kind": "response",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e05893eb8ebbc661af555fa10361ba3fa6ed38a0c33dc5744bd42733b9a889b3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Required flags are validated in `(*Command).ValidateRequiredFlags` at `command.go:1147`. It scans `c.Flags()`, checks each flag’s `BashCompOneRequiredFlag` annotation and `pflag.Changed`, then returns an error listing missing flags (`command.go:1152-1167`).\n\nThis validation is invoked before execution at `command.go:975-977`:\n\n```go\nif err := c.ValidateRequiredFlags(); err != nil {\n    return err\n}\n```",
+  "sha256": "9e4e3b60fd8aeff6bf45ee7a47ffd2e8adbc19ac196ccbca36964424f1917885"
+}

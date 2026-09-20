@@ -1,0 +1,1 @@
+INSUFFICIENT The response explains collection of parents' persistent flags and documents InheritedFlags, but omits the lookup and value-access operations needed to retrieve a parent flag's value.

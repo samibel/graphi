@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 162,
+  "previous_sha256": "8d965a23a02ae90b543c449dd03a785def53aabbab5a1ddcf400ed5ef3de6989",
+  "kind": "response",
+  "query_id": "cb-14",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "deaea59c3b02e7e7a2ce266c9c486f7055509814372d1136d0484c4c27996625",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Shell completion scripts invoke a hidden command:\n\n- `completions.go:26-33` defines `ShellCompRequestCmd` as `__complete` and `ShellCompNoDescRequestCmd` as `__completeNoDesc`.\n- The Bash, Zsh, Fish, and PowerShell generators select `ShellCompRequestCmd` (`bash_completionsV2.go:32`, `zsh_completions.go:88`, `fish_completions.go:31`, `powershell_completions.go:34-35`).\n- The hidden command’s `Run` handler dispatches the supplied arguments into the completion engine with `cmd.getCompletions(args)` (`completions.go:205-215`), receiving the final command, completion candidates, directive, and error.\n- It detects the no-description variant through `cmd.CalledAs() == ShellCompNoDescRequestCmd` (`completions.go:214`).",
+  "sha256": "23f36c8e750cbca440b377a53aabe601701df72accf6e3a91876249d754a466c"
+}

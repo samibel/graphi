@@ -1,0 +1,1 @@
+No. `SetHelpCommandGroupID` always saves the choice in `c.helpCommandGroupID`, even when `c.helpCommand` is nil (`command.go:332–339`). The comment explicitly says this stored value “is used if no helpCommand is defined by the user” (`command.go:337–338`).

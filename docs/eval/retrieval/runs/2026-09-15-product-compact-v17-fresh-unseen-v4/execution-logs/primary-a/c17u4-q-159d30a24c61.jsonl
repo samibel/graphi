@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-90b0-7e02-8c52-475b859a37b2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`UseLine` appends `\" [flags]\"` only when:\n\n- `c.DisableFlagsInUseLine` is false.\n- `c.HasAvailableFlags()` is true.\n- The usage text does not already contain `\"[flags]\"`.\n\nThese checks and the append appear in `command.go:1443–1447`. `HasAvailableFlags` is documented as checking for flags that are neither hidden nor deprecated (`command.go:1771–1774`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17338,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":97,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-72dc-74d3-abd3-52ad922abd78"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`getCommand` is a test helper defined in `args_test.go:23–33`:\n\n```go\nfunc getCommand(args PositionalArgs, withValid bool) *Command\n```\n\nIt creates and returns a `*Command` with `Use: \"c\"`, `Args: args`, and `Run: emptyRun` (lines 24–28). When `withValid` is true, it sets `ValidArgs` to `[]string{\"one\", \"two\", \"three\"}` (lines 29–31)."}}
+{"type":"turn.completed","usage":{"input_tokens":17265,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":115,"reasoning_output_tokens":0}}

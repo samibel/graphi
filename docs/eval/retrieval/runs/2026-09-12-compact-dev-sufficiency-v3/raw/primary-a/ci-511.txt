@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `OnInitialize` registration but omits flag-value access and the ordering of flag parsing relative to initialization callbacks.

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+RegisterFlagCompletionFunc
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"RegisterFlagCompletionFunc\"; read in order (139/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"completions.go","start_line":132,"end_line":146,"text":"// RegisterFlagCompletionFunc should be called to register a function to provide completion for a flag.\nfunc (c *Command) RegisterFlagCompletionFunc(flagName string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error {\n\tflag := c.Flag(flagName)\n\tif flag == nil {\n\t\treturn fmt.Errorf(\"RegisterFlagCompletionFunc: flag '%s' does not exist\", flagName)\n\t}\n\tflagCompletionMutex.Lock()\n\tdefer flagCompletionMutex.Unlock()\n\n\tif _, exists := flagCompletionFunctions[flag]; exists {\n\t\treturn fmt.Errorf(\"RegisterFlagCompletionFunc: flag '%s' already registered\", flagName)\n\t}\n\tflagCompletionFunctions[flag] = f\n\treturn nil\n}"},{"path":"shell_completions.go","start_line":52,"end_line":56,"text":"// It is recommended to instead use c.RegisterFlagCompletionFunc(...) which allows\n// to register a Go function which will work across all shells.\nfunc (c *Command) MarkFlagCustom(name string, f string) error {\n\treturn MarkFlagCustom(c.Flags(), name, f)\n}"},{"path":"completions.go","start_line":149,"end_line":151,"text":"func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {\n\tflag := c.Flag(flagName)\n\tif flag == nil {"},{"path":"completions.go","start_line":36,"end_line":36,"text":"var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}"}],"provenance":{"input_sha256":"a05166fd0c11df944f280189995dba19ee8b6ddddd21b8c39df96cf39b9bcd6e","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

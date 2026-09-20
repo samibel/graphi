@@ -1,0 +1,1 @@
+PASS: The transcript shows UsageString assigning both output writers to the same bytes.Buffer, calling Usage, and returning the buffer’s string, supporting preservation of their relative write order. All cited lines exist and support the claims.

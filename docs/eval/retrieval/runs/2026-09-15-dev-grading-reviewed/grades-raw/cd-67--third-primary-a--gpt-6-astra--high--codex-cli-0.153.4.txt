@@ -1,0 +1,1 @@
+PASS: The response accurately describes NameAndAliases joining the command name and all aliases with ", ", supported by command.go:1540–1543. Its explanation of Name() is also supported by command.go:1495–1503.

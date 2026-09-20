@@ -1,0 +1,1 @@
+PASS: The response correctly states the runnable/deprecated/hidden rejection, recursive requirement that every child qualify, and childless success case. Its Runnable definition and both citations are supported by the preserved command.go spans.

@@ -1,0 +1,1 @@
+Set the package variable EnablePrefixMatching = true (cobra.go:52–55). With it enabled, command.go:774–783 collects commands matching hasNameOrAliasPrefix(next) and returns the match when exactly one exists.

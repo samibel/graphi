@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "attestation_type": "independent-unchanged-seal-repreregistration",
+  "curator": {
+    "identity": "Codex subagent /root/fresh_holdout_curator",
+    "provider": "OpenAI",
+    "resolved_model_identity": "GPT-5 Codex agent",
+    "model_identity_limitation": "The execution surface exposed no immutable backend model-weights or build digest."
+  },
+  "times_utc": {
+    "review_started": "2026-09-15T18:18:21Z",
+    "eligibility_determined": "2026-09-15T18:20:07Z",
+    "validation_completed": "2026-09-15T18:24:42Z"
+  },
+  "binding": {
+    "candidate_commit": "2d65df335544c2c66c0ff12e8f79db4f6c53e72b",
+    "candidate_tree": "9af24c26ba6b5b221e70f7e8998c351b640776f8",
+    "candidate_product_identity": "task_context/2-compact/17",
+    "candidate_token_budget": 1200,
+    "corpus_repo": "spf13/cobra",
+    "corpus_commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "dataset_sha256": "8b194e4bb2bec052458d77e0e49e86269d7b1a0d4357c1f68f26009c455d3562",
+    "source_curation_commit": "b54c06fdcf59521cff9fdc56e04387f70874a83f"
+  },
+  "population": {
+    "n": 64,
+    "k": 56,
+    "unique_query_ids": 64,
+    "unique_family_ids": 64,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "natural_language": 11,
+      "architecture_flow": 11,
+      "config_convention": 10,
+      "ambiguous": 10
+    }
+  },
+  "validations": {
+    "reuse_protocol_determination": "PASS",
+    "source_seal_byte_identity": "PASS",
+    "old_preregistration_untouched": "PASS",
+    "json_and_dataset_schema": "PASS",
+    "exact_candidate_commit_and_tree": "PASS",
+    "candidate_product_and_budget_binding": "PASS",
+    "exact_corpus_commit": "PASS",
+    "clean_corpus_checkout": "PASS",
+    "all_referenced_files_spans_and_anchors_resolve": "PASS",
+    "answerable_population_n_64": "PASS",
+    "one_exact_grade3_judgement_per_query": "PASS",
+    "unique_query_ids_family_ids_and_query_texts": "PASS",
+    "source_cross_population_duplicate_audit_carried_by_byte_identity": "PASS",
+    "threshold_rederived_k_56": "PASS",
+    "frozen_rubric_sha256": "PASS",
+    "answer_spans_complete_within_1200_token_ceiling": "64/64 PASS",
+    "capture_response_rating_and_grade_absence": "PASS"
+  },
+  "independence_declarations": [
+    "I did not implement, tune, run, inspect, or evaluate the compact/17 candidate.",
+    "I did not use compact/17 candidate outputs, captures, bundles, responses, grades, adjudications, or results.",
+    "I did not manually reopen or alter the sealed dataset; it was transferred byte-for-byte by content address.",
+    "I did not amend, substitute, or modify the compact/16 run or preregistration.",
+    "I disclosed no query text, answer, source span, anchor, qrel, bundle, or dataset byte to the root orchestration agent.",
+    "The operator must commit the complete compact/17 capture before any primary, rater, grader, or adjudicator executes."
+  ],
+  "limitations": [
+    "The dataset carries its original compact/16 curation note because changing that note would change the seal. The authoritative compact/17 candidate binding is this new run's preregistration and future harness precondition record.",
+    "Eligibility relies on the recorded and user-confirmed fact that the source seal was never captured and its content was never disclosed; evidence contradicting that fact invalidates this run before capture.",
+    "No capture, prompt delivery, answer, rating, grade, adjudication, or decision was performed by the curator."
+  ]
+}

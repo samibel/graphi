@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `nameForVar := name` and notes that variables cannot contain `-` or `:` (`fish_completions.go:24–27`), but omits the lines that sanitize those characters.

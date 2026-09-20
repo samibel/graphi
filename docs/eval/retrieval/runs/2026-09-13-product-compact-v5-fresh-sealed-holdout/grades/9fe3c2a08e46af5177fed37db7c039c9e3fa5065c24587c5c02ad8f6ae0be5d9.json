@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q058",
+  "response_sha256": "9fe3c2a08e46af5177fed37db7c039c9e3fa5065c24587c5c02ad8f6ae0be5d9",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The bundle’s comment at command.go:1292-1294 explicitly says sorting is skipped when commands are already sorted or sorting is disabled, supporting that their current order can remain unchanged. The cited global switch exists at cobra.go:59.",
+  "graded_at": "2026-09-13T12:57:15Z",
+  "sha256": "ce46c937d995a19c5fabe97d361ce3eda6eed29723910d86429fef032ddb5a3c"
+}

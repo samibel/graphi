@@ -1,0 +1,1 @@
+The invocation produces an error if only some flags in a required-together group are supplied. `MarkFlagsRequiredTogether` explicitly documents this behavior in `flag_groups.go:31–32`: “Cobra errors … if the command is invoked with a subset (but not all) of the given flags.”

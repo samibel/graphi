@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 110,
+  "previous_sha256": "071d6aa0db3e56c3218d4f79e34615e41f122233ca66218e816d9366b3af5739",
+  "kind": "grade",
+  "query_id": "cb-25",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "b623b26f5c9e9979c3f95ecc8a2b6ba5776cb91dd8ef49b1e70888044eac136e",
+  "outcome": "pass",
+  "rationale": "The candidate gives the correct concrete setting, `rootCmd.CompletionOptions.DisableDefaultCmd = true`. This is fully supported by the preserved bundle: `completions.go:103-116` says `DisableDefaultCmd` prevents Cobra from creating the default `completion` command, and `completions.go:683-687` shows `InitDefaultCompletionCmd` returns when that option is true.\n",
+  "sha256": "ded13402ac28037e102597c17fbd1048b77a18e5618d1350f42aa3de9e9fc4d8"
+}

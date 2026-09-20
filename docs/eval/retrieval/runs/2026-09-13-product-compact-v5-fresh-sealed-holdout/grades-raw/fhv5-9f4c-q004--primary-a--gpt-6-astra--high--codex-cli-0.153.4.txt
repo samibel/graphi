@@ -1,0 +1,1 @@
+PASS: The response accurately describes the closure’s signature, captured choices and directive, ignored invocation arguments, and returned values. Its citation to completions.go:126–129 exists in the bundle and supports these claims.

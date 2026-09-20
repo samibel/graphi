@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6c-b944-7081-8a0e-d8d7d1f720f7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains recursive parent lookup, selection of the nearest nonempty ancestor prefix, and the default \"Error:\" fallback. Its citations to command.go:611–621 and command.go:357–360 exist in the bundle and support the claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18178,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

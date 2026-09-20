@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad1-03a1-7222-a8d6-ad6f6364891a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that a prefix must match exactly one subcommand’s name or alias, while exact matches are accepted immediately. Both behaviors and the cited locations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18043,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":44,"reasoning_output_tokens":0}}

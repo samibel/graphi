@@ -1,0 +1,16 @@
+Use `cobra.MatchAll(...)` and assign the result to the command’s `Args` field:
+
+```go
+cmd := &cobra.Command{
+    Args: cobra.MatchAll(
+        cobra.ExactArgs(2),
+        cobra.OnlyValidArgs,
+    ),
+}
+```
+
+This requires exactly two positional arguments, each listed in the command’s `ValidArgs` field. The guide shows this combination in `site/content/user_guide.md:384-397`.
+
+Validators run in the order supplied, stopping at the first error; if all succeed, `MatchAll` returns `nil` (`args.go:113-123`).
+
+You can also include custom validators with the signature `func(cmd *cobra.Command, args []string) error` (`args.go:22`; `site/content/user_guide.md:399`).

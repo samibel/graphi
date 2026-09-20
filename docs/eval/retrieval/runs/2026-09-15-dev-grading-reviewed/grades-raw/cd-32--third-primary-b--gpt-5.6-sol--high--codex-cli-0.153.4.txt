@@ -1,0 +1,1 @@
+PASS: The response accurately describes the checks in completions.go:522-532: flag existence, non-empty FlagSetByCobraAnnotation, and Changed being true. Its explanation of the annotation is supported by command.go:1183-1198, and it directly answers how Cobra detects the flags.

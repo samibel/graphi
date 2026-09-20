@@ -1,0 +1,18 @@
+`LocalFlags` rebuilds the view as follows in `command.go:1668-1693`:
+
+1. Calls `c.mergePersistentFlags()` to update the command’s flag sets.
+2. Lazily creates `c.lflags`, configures its output, sorting, and normalization.
+3. Visits every flag in both `c.Flags()` and `c.PersistentFlags()`.
+4. Adds a flag only when:
+   - it is not already in `c.lflags`, and
+   - it is not the exact same flag returned by `c.parentsPflags.Lookup(f.Name)`.
+
+The key condition is:
+
+```go
+if c.lflags.Lookup(f.Name) == nil && f != c.parentsPflags.Lookup(f.Name) {
+    c.lflags.AddFlag(f)
+}
+```
+
+Thus an unshadowed inherited parent flag is excluded because it is the same `*flag.Flag` as the parent lookup. A locally declared flag with the same name is included because it is a different flag object—i.e., it shadows the parent flag.

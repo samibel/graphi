@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-6409-7913-9cf4-06f7a9a3bdb5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`powershell_completions_test.go` belongs to package `cobra` (line 15). It declares `TestPwshCompletionNoActiveHelp` (lines 23–33), which generates PowerShell completion for a `Command` and verifies the output disables active help by containing `${env:<activeHelpVar>}=0`."}}
+{"type":"turn.completed","usage":{"input_tokens":15884,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":285,"reasoning_output_tokens":212}}

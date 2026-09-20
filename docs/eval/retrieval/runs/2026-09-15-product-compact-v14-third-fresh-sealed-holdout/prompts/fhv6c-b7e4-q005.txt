@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+minimumNArgsWithLessArgs
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 7431a0c832b2; read in order (156/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"args_test.go","start_line":66,"end_line":75,"text":"func minimumNArgsWithLessArgs(err error, t *testing.T) {\n\tif err == nil {\n\t\tt.Fatal(\"Expected an error\")\n\t}\n\tgot := err.Error()\n\texpected := \"requires at least 2 arg(s), only received 1\"\n\tif got != expected {\n\t\tt.Fatalf(\"Expected %q, got %q\", expected, got)\n\t}\n}"},{"path":"args_test.go","start_line":23,"end_line":33,"text":"func getCommand(args PositionalArgs, withValid bool) *Command {\n\tc := &Command{\n\t\tUse:  \"c\",\n\t\tArgs: args,\n\t\tRun:  emptyRun,\n\t}\n\tif withValid {\n\t\tc.ValidArgs = []string{\"one\", \"two\", \"three\"}\n\t}\n\treturn c\n}"},{"path":"command_test.go","start_line":32,"end_line":35,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {\n\t_, output, err = executeCommandC(root, args...)\n\treturn output, err\n}"},{"path":"args_test.go","start_line":1,"end_line":7,"text":"// Copyright 2013-2023 The Cobra Authors\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"}],"provenance":{"input_sha256":"fe092f960e5110ae9eaa03537c8dbd152fd4dab1af21f7abacaecc252d11b45a","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 140,
+  "previous_sha256": "d882c43ff4edfadb622d806fd893fde283272a98c727d8dbb3b9dbba38de8757",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1b1b9a2556c8a7436f27366331bba52860dbd56547cba02a650598b66edba3d5",
+  "outcome": "pass",
+  "rationale": "The answer directly and correctly explains the required API call and supports it with the preserved bundle: `flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` and says using more than one flag from the set causes an error. Its statement that flags must already be defined is supported by `c.Flags().Lookup(v)` and the nil-check panic at lines 67-71. Its statement that repeated calls create separate groups and allow overlapping membership is supported by the comment and annotation logic at lines 72-75. The concrete example is consistent with that variadic string-name API.\n",
+  "sha256": "2bd814df6d092446e75d43c44812fc99feb873ef15f9868221527ac5d2426dfb"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ce-274f-7ed2-b2e6-8a12cb230d2c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies `COBRA_ACTIVE_HELP=\"0\"` as overriding the program-specific setting and explains that otherwise `<PROGRAM>_ACTIVE_HELP` is used. Both claims and citations are supported by the preserved function and documentation spans."}}
+{"type":"turn.completed","usage":{"input_tokens":18495,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

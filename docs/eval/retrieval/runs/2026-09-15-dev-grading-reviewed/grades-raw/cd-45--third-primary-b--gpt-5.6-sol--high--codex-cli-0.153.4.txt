@@ -1,0 +1,1 @@
+PASS: The response directly answers with both documented approaches: `MarkFlagDirname` and a completion function returning `ShellCompDirectiveFilterDirs`. Both cited ranges exist and support the claims, and `shell_completions.go:81-85` supports the error-return handling.

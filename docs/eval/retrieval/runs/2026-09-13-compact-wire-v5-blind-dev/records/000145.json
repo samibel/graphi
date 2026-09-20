@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 145,
+  "previous_sha256": "bdf604b3dfe82240e1c14ad2790d0c79915e3d161901a8d34268b37c488bed0e",
+  "kind": "grade",
+  "query_id": "ci-1970",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3819a60e785655bb296e93d09ab3cd5e063e64795b4c5757b550e4722c73db36",
+  "outcome": "pass",
+  "rationale": "PASS: The complete, local, and inherited FlagSet routes and the merge behavior are accurately explained from the bundled Flags, LocalFlags, InheritedFlags, and mergePersistentFlags snippets.\n",
+  "sha256": "db0d3a682efd1572ae116475159837550c36b24b9f95b5d41c28f86aed97a7df"
+}

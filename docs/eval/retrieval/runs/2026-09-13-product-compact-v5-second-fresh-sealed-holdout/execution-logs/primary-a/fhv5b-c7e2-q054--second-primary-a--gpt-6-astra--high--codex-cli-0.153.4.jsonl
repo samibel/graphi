@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b62-14c7-70a3-b582-216e978770ca"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains neither a Viper binding example nor the backing-variable caveat; `site/content/user_guide.md` lines 270–273 only describe persistent flags’ availability to descendant commands."}}
+{"type":"turn.completed","usage":{"input_tokens":17545,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

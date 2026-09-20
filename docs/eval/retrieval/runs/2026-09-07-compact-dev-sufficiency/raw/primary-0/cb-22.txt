@@ -1,0 +1,1 @@
+INSUFFICIENT The response lists tree-generator signatures and says YAML generation produces one file per command (`site/content/docgen/yaml.md:56`), but provides no traversal bodies showing recursion, ordering, or command filtering.

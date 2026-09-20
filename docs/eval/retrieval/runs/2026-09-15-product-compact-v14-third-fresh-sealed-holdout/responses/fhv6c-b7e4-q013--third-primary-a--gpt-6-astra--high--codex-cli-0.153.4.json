@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q013",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a48034865676903aed3da7be846f56efab79615c941b4b0089d0eb17584d391a",
+  "bundle_sha256": "d9736ed5a72f12b40438af7e559197e897f833f56b27d12024218ef9bfb04ba3",
+  "prompt_sha256": "80e534da9ef768ef71a5a2758236c67d5fe216bf54d8b93af3889ae574c1f9d6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`args_test.go` contains tests and error-checking helpers in package `cobra` (line 15).\n\n- **Assertion helpers** check for a non-nil error and compare its message: `validOnlyWithInvalidArgs` (44–53), `noArgsWithArgs` (55–64), `minimumNArgsWithLessArgs` (66–75), `maximumNArgsWithMoreArgs` (77–86), `exactArgsWithInvalidCount` (88–97), and `rangeArgsWithInvalidCount` (99–108).\n- **Basic test:** `TestNoArgs` creates a command with `NoArgs`, executes it without arguments, and calls `expectSuccess` (112–116).\n- **Combined-validator tests:** `TestExactArgs_WithInvalidCount_WithValidOnly_WithInvalidArgs` combines `OnlyValidArgs` with `ExactArgs(2)` (326–330); `TestRangeArgs_WithInvalidCount_WithValidOnly_WithInvalidArgs` combines it with `RangeArgs(2, 4)` (376–380). Both pass invalid argument `\"a\"` and check for `invalid argument \"a\" for \"c\"` through `validOnlyWithInvalidArgs` (44–53).\n\nThe response is marked `truncated: true`, so these snippets do not establish the file’s complete declaration list.",
+  "responded_at": "2026-09-15T08:29:06Z",
+  "sha256": "88010cb416d45e00562d47461719748c96f40e4a96813a3f1d74d8a4f76b1f2c"
+}

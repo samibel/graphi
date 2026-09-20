@@ -1,0 +1,1 @@
+INSUFFICIENT The response defines `OnInitialize` (`cobra.go:97–101`) but does not show when flag parsing occurs relative to initialization or how parsed persistent flag values are retrieved.

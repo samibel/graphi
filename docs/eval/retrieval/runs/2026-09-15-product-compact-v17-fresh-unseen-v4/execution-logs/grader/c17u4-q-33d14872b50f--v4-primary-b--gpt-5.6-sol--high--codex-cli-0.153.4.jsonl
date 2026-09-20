@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d4-13a6-7240-b323-b4848186337a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies `SetHelpFunc` with the required command-and-arguments callback, explains that it stores the replacement in `c.helpFunc`, and accurately describes parent inheritance and default behavior. All claims and citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18378,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

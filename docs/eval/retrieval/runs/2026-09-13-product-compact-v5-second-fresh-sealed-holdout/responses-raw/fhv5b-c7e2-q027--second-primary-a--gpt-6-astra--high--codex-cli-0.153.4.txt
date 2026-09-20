@@ -1,0 +1,1 @@
+INSUFFICIENT The response provides `UsagePadding()` in `command.go:515–521`, but omits the implementations that choose command-path and name padding widths.

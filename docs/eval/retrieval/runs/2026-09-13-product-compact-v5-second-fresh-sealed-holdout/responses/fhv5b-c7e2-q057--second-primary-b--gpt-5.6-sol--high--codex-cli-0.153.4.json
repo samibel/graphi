@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q057",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "1196777dda371a9cc7df566b69eda08c807075e1cec921c4d5363be1c0dcea24",
+  "bundle_sha256": "17daf0fc4806fb5af02e5cd47d959e927ec80051aa64c9f3476d85eff922bb6d",
+  "prompt_sha256": "02ede33919ac369b68c66eb586d6ef16820ad5e7c58d9e7b15cd07a9d65325bc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The child returns the root’s help template. In `command.go:584–596`, `HelpTemplate()` returns its own `c.helpTemplate` when set; otherwise, if it has a parent, it recursively calls `c.parent.HelpTemplate()`. The root’s template is set by `SetHelpTemplate` in `command.go:347–350`.",
+  "responded_at": "2026-09-13T15:27:43Z",
+  "sha256": "a2aed1d69bf63df2cdd8313e3120a68041c3b499f52a779ff3d5ec820bef1540"
+}

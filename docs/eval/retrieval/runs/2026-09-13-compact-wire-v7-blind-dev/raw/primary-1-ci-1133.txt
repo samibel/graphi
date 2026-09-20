@@ -1,0 +1,10 @@
+Use the currently executing `*Command` passed to your handler:
+
+```go
+f := cmd.Flag("flag-name")
+if f == nil {
+    // flag not found
+}
+```
+
+`Command.Flag(name)` first calls `c.Flags().Lookup(name)` and, if absent, searches persistent flags via `c.persistentFlag(name)` ([command.go, lines 1794–1803]).

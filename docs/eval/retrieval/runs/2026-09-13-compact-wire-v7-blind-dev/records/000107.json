@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 107,
+  "previous_sha256": "5fa4863e7418acb64bbb617f3afaa322e70c8e0c3b8d8f2db160ab8a1c6067b4",
+  "kind": "grade",
+  "query_id": "cb-24",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "961ae7b833c3c9f322be5246b42a5cf452e240c090e5e7427a568f7bd2a45526",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains the completion flow using only preserved evidence: `completions.go:379-381` shows `finalCmd.enforceFlagGroupsForCompletion()` is called before flag completions; `flag_groups.go:220-228` states that the method returns when `DisableFlagParsing` is set, marks relevant group flags required, and hides mutually exclusive alternatives; and `flag_groups.go:273-277` explicitly ties hiding mutually exclusive flags to preventing shell suggestions. The conclusion that this adjusts required/hidden state so standard completion behaves appropriately is explicitly supported by the comment at `flag_groups.go:225-226`.\n",
+  "sha256": "0337fe839db8cba998ecc71cd55382d88605361718e95144443696a24801899e"
+}

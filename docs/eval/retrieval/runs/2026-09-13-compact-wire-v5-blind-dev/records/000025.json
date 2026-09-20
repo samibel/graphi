@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 25,
+  "previous_sha256": "3df7b6a8a6267eb6669f853939ed0d0426be9e12b44f0ee609d4ecf97f817c82",
+  "kind": "response",
+  "query_id": "cb-33",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "76c9a1562afc578374410d8ba1e4826e53bdac0e0d50b4b8754644516968cbf9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).Flags()` returns the complete flag set applicable to the command—local flags plus persistent flags declared on it and its parents. It lazily creates that `FlagSet`, creates a shared error buffer if needed, and directs flag errors there (`command.go:1641-1653`). Related views include `LocalNonPersistentFlags` for flags that do not propagate and `InheritedFlags` for parent-provided flags (`command.go:1655-1659`, `command.go:1695-1701`). `ResetFlags` recreates the local and persistent sets and clears cached derived sets (`command.go:1737-1749`).\n",
+  "sha256": "336db3cb1c1d866701a7d68b6176e21595d6b74cf696ba63c72a4b8f6ba8d426"
+}

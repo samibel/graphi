@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q054",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "d9d8ffb674ada0ddb7c8bddbd5e58e72c1f87da57ec3a67a3ddbc895f19d4bc7",
+  "bundle_sha256": "270fab08beab0f1aba11a0f637b6abb888308c5eaf366beb7c27c20b86a4889d",
+  "prompt_sha256": "2e47ffba0514e9d45dca92a52ee7dfe85a5e635d01ce116cc0bbd5506dafa175",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "- **`GenYamlTreeCustom`** accepts both `filePrepender` and `linkHandler`, each of type `func(string) string` (`doc/yaml_docs.go:59–60`). It writes `filePrepender(filename)` before generating the YAML and passes `linkHandler` to `GenYamlCustom` (`doc/yaml_docs.go:78–81`).\n- **`GenYamlCustom`** accepts only the link-rewriting callback, `linkHandler func(string) string`, alongside the command and output writer (`doc/yaml_docs.go:92–93`).",
+  "responded_at": "2026-09-15T08:31:26Z",
+  "sha256": "f6038913aa5dbf0756a890a5d674048c135dda3149b2711955212f4422ec0492"
+}

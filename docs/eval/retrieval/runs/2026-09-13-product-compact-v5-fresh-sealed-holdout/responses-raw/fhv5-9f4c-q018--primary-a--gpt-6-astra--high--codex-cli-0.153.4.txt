@@ -1,0 +1,8 @@
+Each command’s output filename is its full `cmd.CommandPath()` with spaces replaced by underscores, followed by `.md`, joined to the output directory `dir`.
+
+Evidence in `doc/md_docs.go`:
+- Line 30: `const markdownExtension = ".md"`
+- Line 143: `basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + markdownExtension`
+- Lines 144–145: `filename := filepath.Join(dir, basename)`, then `os.Create(filename)`
+
+Thus, a command path `root sub child` produces `dir/root_sub_child.md`.

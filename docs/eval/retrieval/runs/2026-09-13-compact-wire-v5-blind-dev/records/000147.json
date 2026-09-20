@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 147,
+  "previous_sha256": "c1e1a01feb294a5d28cff3a88dae10ab7ce1ecf90db9bf437f3b643ec24bb50b",
+  "kind": "grade",
+  "query_id": "ci-1991",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "aac994383ba796cda0b444a891226aa0713cf3eb13c9ab9327f6acf84ce8c041",
+  "outcome": "fail",
+  "rationale": "FAIL: The bundle proves that cmd.Flag finds a parent persistent *pflag.Flag, but it does not expose any API or field for extracting that object's parsed value. Saying it contains the current value is not the concrete, byte-supported retrieval procedure the question asks for.\n",
+  "sha256": "4e69335ad2d8e39021405eea5dfe7344aa5c0f1e986cdac25c7b845bb024d445"
+}

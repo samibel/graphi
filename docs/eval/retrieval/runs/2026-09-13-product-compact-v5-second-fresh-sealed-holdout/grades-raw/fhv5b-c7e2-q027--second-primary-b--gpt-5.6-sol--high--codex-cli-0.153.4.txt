@@ -1,0 +1,1 @@
+FAIL: The response explains UsagePadding but does not answer how command-path and name padding widths are chosen. The preserved bundle omits those implementations, so the essential behavior for all three widths cannot be verified.

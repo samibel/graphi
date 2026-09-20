@@ -1,0 +1,1 @@
+PASS: The response identifies Apache License Version 2.0, supported by LICENSE.txt:1–5, and accurately cites the confirmation in README.md:110–112.

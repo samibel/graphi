@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7c4ec2b70300427d8826ec6f743408ebf971b75e10a412c0a00ddf55f19b4d44
+QUERY ID: c17u4-q-2af503c8726e
+
+QUESTION:
+How does the legacy Bash generator collect available child commands and their aliases?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- bash_completions.go:447-457 anchor="func writeCommands(buf io.StringWriter, cmd *Command)" reason=The function filters unavailable non-help children, emits each command name, and delegates alias emission.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query b325e717b6a6; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/completions/_index.md","start_line":416,"end_line":420,"text":"### Bash legacy dynamic completions\n\nFor backward compatibility, Cobra still supports its bash legacy dynamic completion solution.\nPlease refer to [Bash Completions](bash.md) for details.\n"},{"path":"site/content/completions/_index.md","start_line":426,"end_line":430,"text":"A new V2 bash completion version is also available.  This version can be used by calling `GenBashCompletionV2()` or\n`GenBashCompletionFileV2()`.  The V2 version does **not** support the legacy dynamic completion\n(see [Bash Completions](bash.md)) but instead works only with the Go dynamic completion\nsolution described in this document.\nUnless your program already uses the legacy dynamic completion solution, it is recommended that you use the bash"},{"path":"site/content/completions/_index.md","start_line":402,"end_line":409,"text":"### Aliases\n\nYou can also configure `bash` aliases for your program and they will also support completions.\n\n```bash\nalias aliasname=origcommand\ncomplete -o default -F __start_origcommand aliasname\n"},{"path":"site/content/completions/bash.md","start_line":5,"end_line":6,"text":"## Bash legacy dynamic completions\n"},{"path":"command.go","start_line":1614,"end_line":1629,"text":"\n// HasAvailableSubCommands determines if a command has available sub commands that\n// need to be shown in the usage/help default template under 'available commands'.\nfunc (c *Command) HasAvailableSubCommands() bool {\n\t// return true on the first found available (non deprecated/help/hidden)\n\t// sub command\n\tfor _, sub := range c.commands {\n\t\tif sub.IsAvailableCommand() {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no available (non deprecated/help/hidden)\n\t// sub commands\n\treturn false\n}"},{"path":"command.go","start_line":1559,"end_line":1576,"text":"\n// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"command.go","start_line":97,"end_line":98,"text":"\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator.\n\t// For portability with other shells, it is recommended to instead use ValidArgsFunction"},{"path":"doc/md_docs.go","start_line":98,"end_line":105,"text":"\t\tchildren := cmd.Commands()\n\t\tsort.Sort(byName(children))\n\n\t\tfor _, child := range children {\n\t\t\tif !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tcname := name + \" \" + child.Name()"},{"path":"command.go","start_line":1524,"end_line":1526,"text":"// hasNameOrAliasPrefix returns true if the Name or any of aliases start\n// with prefix\nfunc (c *Command) hasNameOrAliasPrefix(prefix string) bool {"}],"provenance":{"input_sha256":"d3e23515a806b7ff44a4d2e924adfd803a8ae6a5e3c316b77ce05ce42acd463b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response includes availability checks in `command.go:1559–1576`, but no legacy Bash generator implementation showing how it collects child commands and their aliases.
+----- END THE RATER'S RESPONSE -----

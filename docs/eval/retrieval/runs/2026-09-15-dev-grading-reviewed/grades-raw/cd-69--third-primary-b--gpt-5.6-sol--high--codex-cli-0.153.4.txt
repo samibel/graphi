@@ -1,0 +1,1 @@
+PASS: The response accurately describes the required persistent flag behavior, delegation to MarkFlagRequired(c.PersistentFlags(), name), and the helper’s annotation. All cited locations exist in the preserved transcript and support the attached claims.

@@ -1,0 +1,1 @@
+PASS: It gives the correct callback shape and accurately explains lookup errors, duplicate-registration errors, and map storage.

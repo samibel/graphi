@@ -1,0 +1,1 @@
+FAIL: The response explains inheritance and duplicate prevention but omits the essential behavior: initializing help on the child preserves the parent flag’s custom usage instead of replacing it with default usage. The bundle also lacks the test and its assertion.

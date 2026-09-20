@@ -1,0 +1,9 @@
+The Levenshtein distance is implemented by `ld(s, t string, ignoreCase bool)` in `cobra.go:188–221`. It builds a distance matrix `d`, computes each cell in the nested loops at lines 201–217, and returns `d[len(s)][len(t)]`.
+
+It is invoked in `command.go:836`:
+
+```go
+levenshteinDistance := ld(typedName, cmd.Name(), true)
+```
+
+The result is compared against `c.SuggestionsMinimumDistance` at `command.go:837`.

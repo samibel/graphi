@@ -1,0 +1,1 @@
+After detaching selected children by setting each removed child’s `parent` to `nil`, `RemoveCommand` repairs the parent’s cached command-length state. It rebuilds `c.commands`, resets `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen` to zero, then recomputes them from the remaining children (`command.go:1362–1392`).

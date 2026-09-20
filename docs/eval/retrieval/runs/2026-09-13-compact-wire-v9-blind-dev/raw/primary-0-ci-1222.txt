@@ -1,0 +1,30 @@
+Define a callback returning completion candidates and a `ShellCompDirective`.
+
+```go
+cmd.ValidArgsFunction = func(
+    cmd *Command,
+    args []string,
+    toComplete string,
+) ([]string, ShellCompDirective) {
+    return []string{"candidate1", "candidate2"}, directive
+}
+```
+
+For a flag, register the same callback shape:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("format",
+    func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+        return []string{"json", "yaml"}, directive
+    },
+)
+```
+
+Evidence:
+
+- Positional completion uses `Command.ValidArgsFunction` with that exact signature: `command.go:87-89`.
+- Flag completion uses `RegisterFlagCompletionFunc(flagName, callback)`: `completions.go:132-146`. It errors if the flag does not exist or already has a registered function.
+- Static candidates can use `FixedCompletions(choices, directive)`: `completions.go:124-127`.
+- Completion scripts query the hidden `__complete` or `__completeNoDesc` commands: `completions.go:26-33`.
+
+The response does not include the available directive constants, so `directive` must be replaced with an appropriate `ShellCompDirective` defined elsewhere in the repository.

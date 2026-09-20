@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 98,
+  "previous_sha256": "550f49147f98459dc85509086770df447b886b4b4329275d62a0f038f85e89d6",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a0c93200bc6ea9ff7dd1f63a28b1e62a31882d652f519844a52f53fcced1bf77",
+  "outcome": "pass",
+  "rationale": "PASS: The response gives a concrete and accurate explanation of subcommand selection fully supported by the bundled Find body.\n",
+  "sha256": "34fc8d901d7e0ce053b83388364ff328a82fb5b558338b5cd6fd41f53dc203c2"
+}

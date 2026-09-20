@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+where is the levenshtein distance computed
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s) for \"where is the levenshtein distance computed\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"cobra.go","start_line":187,"end_line":208,"text":"// ld compares two strings and returns the levenshtein distance between them.\nfunc ld(s, t string, ignoreCase bool) int {\n\tif ignoreCase {\n\t\ts = strings.ToLower(s)\n\t\tt = strings.ToLower(t)\n\t}\n\td := make([][]int, len(s)+1)\n\tfor i := range d {\n\t\td[i] = make([]int, len(t)+1)\n\t}\n\tfor i := range d {\n\t\td[i][0] = i\n\t}\n\tfor j := range d[0] {\n\t\td[0][j] = j\n\t}\n\tfor j := 1; j \u003c= len(t); j++ {\n\t\tfor i := 1; i \u003c= len(s); i++ {\n\t\t\tif s[i-1] == t[j-1] {\n\t\t\t\td[i][j] = d[i-1][j-1]\n\t\t\t} else {\n\t\t\t\tmin := d[i-1][j]"},{"path":"command.go","start_line":836,"end_line":838,"text":"\t\t\tlevenshteinDistance := ld(typedName, cmd.Name(), true)\n\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance\n\t\t\tsuggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))"},{"path":"command.go","start_line":248,"end_line":249,"text":"\t// DisableSuggestions disables the suggestions based on Levenshtein distance\n\t// that go along with 'unknown command' messages."},{"path":"command.go","start_line":253,"end_line":261,"text":"\t// Must be \u003e 0.\n\tSuggestionsMinimumDistance int\n}\n\n// Context returns underlying command context. If command was executed\n// with ExecuteContext or the context was set with SetContext, the\n// previously set context will be returned. Otherwise, nil is returned.\n//\n// Notice that a call to Execute and ExecuteC will replace a nil context of"},{"path":"command.go","start_line":252,"end_line":252,"text":"\t// SuggestionsMinimumDistance defines minimum levenshtein distance to display suggestions."},{"path":"command.go","start_line":837,"end_line":837,"text":"\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance"},{"path":"command.go","start_line":1496,"end_line":1497,"text":"func (c *Command) Name() string {\n\tname := c.Use"},{"path":"command.go","start_line":390,"end_line":391,"text":"func (c *Command) InOrStdin() io.Reader {\n\treturn c.getIn(os.Stdin)"},{"path":"command.go","start_line":414,"end_line":415,"text":"func (c *Command) getIn(def io.Reader) io.Reader {\n\tif c.inReader != nil {"},{"path":"doc/util.go","start_line":52,"end_line":52,"text":"func (s byName) Less(i, j int) bool { return s[i].Name() \u003c s[j].Name() }"},{"path":"cobra.go","start_line":241,"end_line":242,"text":"func WriteStringAndCheck(b io.StringWriter, s string) {\n\t_, err := b.WriteString(s)"}],"provenance":{"input_sha256":"ecd5002d3d7cd966b0de845184adeadebbff0a15dd7360a47a8d2431aebc02e9","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

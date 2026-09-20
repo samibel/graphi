@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q048",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "70f3f395e841fd9d27691387f57b2988266f8e924c7b3304dd7ae7081c0a0d73",
+  "bundle_sha256": "6b5d3ff92abcd6ff4e643bfa611d09d6e7cf6ee0f8bb0ec7ae65ab6cb3befe46",
+  "prompt_sha256": "c4fb02a9e92ab70a961bf6ec52a0fcaf3cb3949937293795a604e8576bbb3441",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The `bash_completions.go:685–697` snippet shows `GenBashCompletion` embedding `c.BashCompletionFunction`, but neither response specifies which command should hold it or when the custom function is called.",
+  "responded_at": "2026-09-15T08:30:59Z",
+  "sha256": "9d327c6a4015dbe80736373f393c1091cbdd1406ab361e1a5f4ee18429f7e558"
+}

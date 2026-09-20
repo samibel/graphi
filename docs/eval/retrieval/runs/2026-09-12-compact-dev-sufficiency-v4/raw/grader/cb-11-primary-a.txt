@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-11:primary-a
+Outcome: pass
+Rationale: Correctly locates required-flag validation in ValidateRequiredFlags, cites its contract and VisitAll evidence, and explicitly notes that the execution call site/order is absent.

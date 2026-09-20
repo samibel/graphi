@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-4ac1-7c50-bf5e-2f01d8fd64be"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Yes—but not with the default flag. `InitDefaultHelpFlag` registers `--help` and `-h` as the same boolean via `c.Flags().BoolP(\"help\", \"h\", ...)` (`command.go:1183–1198`), so they are indistinguishable by default. You can override this before execution: initialization is deliberately delayed “to allow for user overriding” (`command.go:883–886`), and it does nothing when a `help` flag already exists (`command.go:1185–1188`), allowing `--help` and `-h` to be defined separately."}}
+{"type":"turn.completed","usage":{"input_tokens":16475,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":489,"reasoning_output_tokens":355}}

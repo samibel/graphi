@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 154,
+  "previous_sha256": "aa95cfe7e2fe749bcd462d0d1cbd16c8d11b2ff439ac92c5ab683761055e0879",
+  "kind": "grade",
+  "query_id": "ci-678",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "7889e3680bbcbdf0e30ced2280044c5d0700330a0c180e29e90f7d54b5b71a6b",
+  "outcome": "pass",
+  "rationale": "The candidate gives the concrete supported procedure: pass flag tokens through `cmd.SetArgs(...)` and execute the command. The bundle states that `SetArgs` is particularly useful for testing and assigns the slice to `c.args` (`command.go:275-279`); execution then uses `args := c.args`, falling back to `os.Args[1:]` only when `c.args == nil` (`command.go:1075-1084`); and the supplied arguments are parsed by `c.ParseFlags(a)` (`command.go:888-890`). The example `[]string{\"--flag\", \"value\"}` is consistent with that evidence.\n",
+  "sha256": "3c2f1cc1a8ece7c30a43f3144f2b2996ba44df486a4e26a760339a8947a68cda"
+}

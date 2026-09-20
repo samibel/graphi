@@ -25,17 +25,8 @@ import (
 // comparison is on canonical JSON so a reordered map key or a changed
 // `required` list cannot pass as equal.
 //
-// It also exercises the AC-5 rollback switch in both positions, which is what
-// makes "switchable back" a tested property rather than a claim.
-
-// withDescriptorSource flips the served descriptor source for the duration of a
-// test and restores it afterwards.
-func withDescriptorSource(t *testing.T, source descriptorSourceKind) {
-	t.Helper()
-	previous := descriptorSource
-	descriptorSource = source
-	t.Cleanup(func() { descriptorSource = previous })
-}
+// The legacy builders remain an independent test oracle, while production
+// serves only the catalog projection.
 
 // descriptorBytes renders a descriptor catalog as canonical, diff-readable JSON.
 // It is the same shape the AX-00 golden freezes (name, description, inputSchema,
@@ -138,23 +129,6 @@ func projectionProfileBindings(t *testing.T) map[string]func() []map[string]any 
 	}
 }
 
-// AC-1 / AC-5 — every binding profile is byte-identical under BOTH switch
-// positions, and the per-binding narrowing survives projection.
-func TestAX05_EveryBindingProfile_IsIdenticalUnderBothSources(t *testing.T) {
-	for profile, build := range projectionProfileBindings(t) {
-		t.Run(profile, func(t *testing.T) {
-			withDescriptorSource(t, descriptorSourceLegacy)
-			legacy := build()
-			withDescriptorSource(t, descriptorSourceProjected)
-			projected := build()
-			requireIdenticalCatalogs(t, profile, legacy, projected)
-			if len(projected) == 0 {
-				t.Fatalf("%s: advertised no tools at all", profile)
-			}
-		})
-	}
-}
-
 // AC-1 — the narrowing counts themselves, stated as numbers rather than implied
 // by a byte compare, because "11 stdio-stable / 7 daemon / the full catalog with
 // -labs" is the property the story names and a reviewer wants to read.
@@ -178,45 +152,6 @@ func TestAX05_PerBindingNarrowing_SurvivesProjection(t *testing.T) {
 		if got := len(build()); got != tc.want {
 			t.Errorf("profile %q advertises %d tools under the projection, want %d", tc.profile, got, tc.want)
 		}
-	}
-}
-
-// AC-5 — the switch is real: flipping it to legacy makes the projection
-// unreachable, and flipping it back restores it. A switch nothing exercises is
-// a comment.
-func TestAX05_RollbackSwitch_SelectsTheServedSource(t *testing.T) {
-	if descriptorSource != descriptorSourceProjected {
-		t.Fatalf("the shipped default descriptor source is %q, want %q — AC-1 requires the "+
-			"derived form to be the served one", descriptorSource, descriptorSourceProjected)
-	}
-
-	withDescriptorSource(t, descriptorSourceLegacy)
-	legacy := descriptorBytes(t, maximalToolDescriptors())
-	withDescriptorSource(t, descriptorSourceProjected)
-	projected := descriptorBytes(t, maximalToolDescriptors())
-	if !bytes.Equal(legacy, projected) {
-		t.Fatal("the two descriptor sources disagree at switch time; rollback would be a wire change")
-	}
-
-	// The switch must actually reach a DIFFERENT code path. Proving that by
-	// bytes is impossible (the two agree by construction), so prove it by
-	// perturbing the projection: with the switch on legacy, a broken projection
-	// must not affect what is served.
-	saved := projectedProfiles
-	t.Cleanup(func() { projectedProfiles = saved })
-	projectedProfiles = profileDescriptors{
-		stable:  []map[string]any{{"name": "tampered", "description": "tampered"}},
-		maximal: []map[string]any{{"name": "tampered", "description": "tampered"}},
-	}
-	withDescriptorSource(t, descriptorSourceLegacy)
-	if got := descriptorBytes(t, maximalToolDescriptors()); !bytes.Equal(got, legacy) {
-		t.Fatal("with the switch on legacy, tampering with the projection changed what is served — " +
-			"the switch does not select the source it claims to")
-	}
-	withDescriptorSource(t, descriptorSourceProjected)
-	if got := descriptorBytes(t, maximalToolDescriptors()); bytes.Equal(got, legacy) {
-		t.Fatal("with the switch on projected, tampering with the projection changed nothing — " +
-			"the projected path is not the one being served")
 	}
 }
 

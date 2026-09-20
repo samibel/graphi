@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-061de8f34ab7",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "90f0330a916cf3bd523526e3e3a53c0ab79c3b35dd133e145b7a193551dcef2d",
+  "bundle_sha256": "85fac1bfc970711c5a61570e1c02d372276ea0aa2b759bb368f6700b82ee6721",
+  "prompt_sha256": "f26d844699728cc1f481732853b098144b1d0aef2015a10d7e69a7e842a688c8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`RangeArgs` checks whether `len(args) \u003c min || len(args) \u003e max`, so the interval is inclusive. If either condition is true, it returns an error reporting the accepted bounds and actual count; otherwise it returns `nil` (`args.go`, `RangeArgs`, lines 104–112).",
+  "responded_at": "2026-09-15T20:22:57Z",
+  "sha256": "966fa5e0362ca044cb379ed2554cadffcab405e8b57912930832d87de425476f"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 152,
+  "previous_sha256": "4b2dba0715ed4860c385b031496de3f56c8f7376a5e8f9664af66cbf82a87d50",
+  "kind": "grade",
+  "query_id": "ci-467",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f87671d11f9d799be1ffdb159a1b4c3bf29254e93f233ac01811d10189f08291",
+  "outcome": "pass",
+  "rationale": "The candidate correctly distinguishes flags from positional arguments and supports both claims with the preserved bundle. `command.go:793-828` shows `Traverse` collecting flags (including space-separated values), calling `c.ParseFlags(flags)`, and then descending to the matched child. `command.go:730-736` shows `Find` using the first token remaining after `stripFlags` as `nextSubCmd`, while `command.go:817-821` shows traversal stopping when a non-flag token is not a child command. The answer is concrete, accurate, and does not rely on evidence outside the bundle.\n",
+  "sha256": "553e685116fb3c3e5b152b3f5c606b73c7a9e65d47f7973eb95fa5661a1030d7"
+}

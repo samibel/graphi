@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q049",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "868f2f2935044e857981f32580209d3b3151014ea313535ea797e7fe854c639f",
+  "bundle_sha256": "8750f645716d083639519eb5f1a859bb5bcdf35c121a3bdcf1c7de4ea9f4b87d",
+  "prompt_sha256": "911761767fa6b926f3e235d94b8fc8a57ae54be3550befc672f440f2dc697682",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ValidArgsFunction` replaced the position-specific Zsh noun-completion helpers:\n\n- **Word choices:** use `ValidArgsFunction` instead of `cmd.MarkZshCompPositionalArgumentWords(pos, words[])`.\n- **File completion:** now enabled for all arguments by default; use `ValidArgsFunction` with `ShellCompDirectiveNoFileComp` to disable it per argument.\n- **File filtering:** use `ValidArgsFunction` with `ShellCompDirectiveFilterFileExt` for extension filtering; it does **not** replace full glob filtering.\n\nBoth `MarkZshCompPositionalArgumentFile()` and `MarkZshCompPositionalArgumentWords()` are deprecated and silently ignored. Evidence: `site/content/completions/zsh.md`, lines 24–28, in the supplied “Noun completion” table.",
+  "responded_at": "2026-09-15T08:31:02Z",
+  "sha256": "dc7ddfa1b67dfb7b9535a9bfe194cc4f57a6298e120acbb0482c9f5703286d1e"
+}

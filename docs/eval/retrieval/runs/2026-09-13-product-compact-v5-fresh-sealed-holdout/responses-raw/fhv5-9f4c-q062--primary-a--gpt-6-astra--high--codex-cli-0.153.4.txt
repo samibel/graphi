@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the subcommand classification logic in `command.go`’s `IsAdditionalHelpTopicCommand()` (after line 1590) and the definition of `IsAvailableCommand()`, which are needed to distinguish additional help topics from available command categories.

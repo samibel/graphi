@@ -1,0 +1,1 @@
+FAIL: The response does not answer how values are skipped or what `--` does. The bundle shows only long-flag `inFlag` assignment at command.go:796–799; it lacks the required value-skipping and double-dash termination behavior.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d5-dbb4-75f0-bdbc-1e368eb6b9a8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response states the exact error `required flag(s) \"foo1\", \"foo2\" not set`, including both missing flags in order, and accurately describes the assertion in the preserved `command_test.go:818–834` span."}}
+{"type":"turn.completed","usage":{"input_tokens":17681,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":54,"reasoning_output_tokens":0}}

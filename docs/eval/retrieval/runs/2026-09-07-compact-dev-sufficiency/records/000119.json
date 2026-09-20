@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 119,
+  "previous_sha256": "1a6cea3b52164cac3dbac2339cec84d5b0676fa51e1e7f4811fdd97fd30526bf",
+  "kind": "grade",
+  "query_id": "ci-1236",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "445e798e6b5157f6a200c001cec8e526f87141b70867845b2317f71d75a90abe",
+  "outcome": "pass",
+  "rationale": "The answer concretely recommends CalledAs for a command object already available. command.go:1516-1518 supplies that accessor and explicitly documents the empty string for a command not called, with the called-state branch visible. The answer stays within that evidence and correctly identifies the absent direct selected-command-return API.\n",
+  "sha256": "6830dba972e494203fda3e51d79926609449be74f9908ee3c53740b88c42e4de"
+}

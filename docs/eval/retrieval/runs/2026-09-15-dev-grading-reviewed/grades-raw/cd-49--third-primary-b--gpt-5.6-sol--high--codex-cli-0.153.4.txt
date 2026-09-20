@@ -1,0 +1,1 @@
+PASS: The follow-up transcript explicitly documents `--no-descriptions` and the exact `source <(helm completion bash --no-descriptions)` example. The cited documentation range supports the instruction, and `completions.go:111-112` supports the additional `DisableDescriptions` claim.

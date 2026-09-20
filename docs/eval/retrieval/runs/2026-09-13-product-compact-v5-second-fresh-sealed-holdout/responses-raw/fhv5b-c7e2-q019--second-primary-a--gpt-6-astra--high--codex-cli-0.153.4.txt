@@ -1,0 +1,1 @@
+`MarkFlagDirname` sets the named flag’s `BashCompSubdirsInDir` annotation to an empty string slice (`[]string{}`), marking completions as directory names only. Evidence: `shell_completions.go:94–98`, specifically `flags.SetAnnotation(name, BashCompSubdirsInDir, []string{})` on line 97.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows parent persistent flags being collected and identifies `InheritedFlags`, but omits the lookup and value-access behavior needed to retrieve a named parent flag's value.

@@ -1,0 +1,1 @@
+`GroupID` selects the group under which a subcommand appears in its parent's help output (`command.go:73`); a test assigns it with `Command{Use: "xxx", GroupID: "group", ...}` (`command_test.go:1866`). Parents store groups in `commandgroups`, exposed by `Groups()` and extended by `AddGroup(groups ...*Group)` (`command.go:1332–1333`, `command.go:1357–1358`).

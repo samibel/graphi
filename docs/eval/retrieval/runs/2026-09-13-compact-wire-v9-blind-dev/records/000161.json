@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 161,
+  "previous_sha256": "99c6cbb431c632f1190547a172e9fe0d4e3a66082ce6740c35ce647352ce5eca",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "46e89f2eb347b1fb5197779dcb1af9c64754017acf02f9b9517697885aa627c1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shell_completions.go` belongs to package `cobra` (`shell_completions.go:15`) and declares shell-completion flag helpers:\n\n- `(*Command).MarkFlagRequired(name string) error` — line 24\n- `(*Command).MarkPersistentFlagRequired(name string) error` — line 31\n- `MarkFlagRequired(flags *pflag.FlagSet, name string) error` — line 38\n- `(*Command).MarkFlagFilename(name string, extensions ...string) error` — line 44\n- `(*Command).MarkFlagCustom(name string, f string) error` — line 54\n- `(*Command).MarkPersistentFlagFilename(name string, extensions ...string) error` — line 61\n- `MarkFlagCustom(flags *pflag.FlagSet, name string, f string) error` — line 77\n- `(*Command).MarkFlagDirname(name string) error` — line 83\n- `MarkFlagDirname(flags *pflag.FlagSet, name string) error` — line 96\n\nThe comments say these helpers mark flags as required, restrict completion to filenames/extensions or directories, or attach a Bash-only custom completion function. `MarkFlagCustom` recommends `RegisterFlagCompletionFunc` for cross-shell support (`shell_completions.go:71–77`).",
+  "sha256": "8d965a23a02ae90b543c449dd03a785def53aabbab5a1ddcf400ed5ef3de6989"
+}

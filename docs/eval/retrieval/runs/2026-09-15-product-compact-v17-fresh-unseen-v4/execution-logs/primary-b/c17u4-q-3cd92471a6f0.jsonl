@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-cd2a-78f1-86e7-33f40b517715"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It establishes that a child inherits the parent’s persistent `help` flag and does not create a duplicate default flag. `InitDefaultHelpFlag` first calls `mergePersistentFlags()` and only adds `help` when `c.Flags().Lookup(\"help\") == nil` ([command.go:1185–1197]); `mergePersistentFlags` adds all parents’ persistent flags through `parentsPflags` ([command.go:1846–1874])."}}
+{"type":"turn.completed","usage":{"input_tokens":16440,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":184,"reasoning_output_tokens":87}}

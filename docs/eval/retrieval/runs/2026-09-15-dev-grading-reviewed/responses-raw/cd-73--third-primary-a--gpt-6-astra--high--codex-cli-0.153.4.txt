@@ -1,0 +1,6 @@
+`command_notwin.go` contains:
+
+- `package cobra` — package declaration at line 18.
+- `var preExecHookFn func(*Command)` — a package-level variable holding a function that takes a `*Command` and returns nothing, at line 20.
+
+The response is truncated, so it does not establish the file’s complete structure.

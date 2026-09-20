@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 155,
+  "previous_sha256": "2cd2a30f159c735c29ff1d0bfc86ebe85b3532f622f7bd14ea80c4dfdda50e2f",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v7-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "4bccc9c77652f493906982b6a3261061452e19ac0c98c05c73d21dabd43f5e5e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In tests, pass flags as command arguments with `SetArgs`, for example:\n\n```go\ncmd.SetArgs([]string{\"--flag\", \"value\"})\n```\n\nEvidence: [`command.go:275-278`] defines `func (c *Command) SetArgs(a []string)` and explicitly says it is “particularly useful when testing.” The response does not include an execution example, but `SetArgs` is the test-facing API shown.",
+  "sha256": "9747316e72df131f47a93176e82ef0a570bd0be1d646b158ef8cabc02d019b13"
+}

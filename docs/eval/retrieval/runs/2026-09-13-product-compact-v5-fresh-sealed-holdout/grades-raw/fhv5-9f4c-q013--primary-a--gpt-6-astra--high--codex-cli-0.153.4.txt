@@ -1,0 +1,1 @@
+PASS: The response accurately identifies application to both flag sets, storage in c.globNormFunc, and recursive propagation to existing children through c.commands. All claims and cited lines are supported by command.go:362–372 in the preserved bundle.

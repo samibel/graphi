@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-6535-7c91-8fc2-bf0e6847801d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Use `OnInitialize` rather than reading flag values directly in Go’s package `init()`:\n\n```go\nfunc init() {\n    cobra.OnInitialize(func() {\n        f := rootCmd.Flag(\"flag-name\")\n        value := f.Value.String()\n        // use value here\n    })\n}\n```\n\n`OnInitialize` registers functions for command execution (`cobra.go:97–101`). Flags are parsed first via `c.ParseFlags(a)` (`command.go:883–890`), then initializers run through `c.preRun()` (`command.go:926`, `command.go:1015–1019`). `Command.Flag(name)` searches both ordinary and persistent flags, climbing the command tree when necessary (`command.go:1794–1803`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16355,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":420,"reasoning_output_tokens":262}}

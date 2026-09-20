@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What exact error text does flagCompError.Error construct?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query f1ab8d2168a4; read in order (243/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":44,"end_line":52,"text":"\ntype flagCompError struct {\n\tsubCommand string\n\tflagName   string\n}\n\nfunc (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":315,"end_line":320,"text":"\n// SetFlagErrorFunc sets a function to generate an error when flag parsing\n// fails.\nfunc (c *Command) SetFlagErrorFunc(f func(*Command, error) error) {\n\tc.flagErrorFunc = f\n}"},{"path":"site/content/user_guide.md","start_line":599,"end_line":604,"text":"## Error Message Prefix\n\nCobra prints an error message when receiving a non-nil error value.\nThe default error message is `Error: <error contents>`.\nThe Prefix, `Error:` can be customized using the `cmd.SetErrPrefix(s string)` function.\n"},{"path":"completions.go","start_line":891,"end_line":896,"text":"\n// CompError prints the specified completion message to stderr.\nfunc CompError(msg string) {\n\tmsg = fmt.Sprintf(\"[Error] %s\", msg)\n\tCompDebug(msg, true)\n}"},{"path":"command.go","start_line":496,"end_line":511,"text":"\n// FlagErrorFunc returns either the function set by SetFlagErrorFunc for this\n// command or a parent, or it returns a function which returns the original\n// error.\nfunc (c *Command) FlagErrorFunc() (f func(*Command, error) error) {\n\tif c.flagErrorFunc != nil {\n\t\treturn c.flagErrorFunc\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.FlagErrorFunc()\n\t}\n\treturn func(c *Command, err error) error {\n\t\treturn err\n\t}\n}"},{"path":"completions.go","start_line":334,"end_line":335,"text":"\t\t// If error type is flagCompError and we don't want flagCompletion we should ignore the error\n\t\tif _, ok := flagErr.(*flagCompError); !(ok && !flagCompletion) {"},{"path":"completions.go","start_line":661,"end_line":662,"text":"\t\t// Flag not supported by this command, the interspersed option might be set so return the original args\n\t\treturn nil, args, orgLastArg, &flagCompError{subCommand: finalCmd.Name(), flagName: flagName}"},{"path":"doc/rest_docs.go","start_line":56,"end_line":59,"text":"// GenReST creates reStructured Text output.\nfunc GenReST(cmd *cobra.Command, w io.Writer) error {\n\treturn GenReSTCustom(cmd, w, defaultLinkHandler)\n}"}],"provenance":{"input_sha256":"1c94dd6b01b3c3d17e7d9a127a82311a2c12c07a0c862d51be6397b00fce23ba","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

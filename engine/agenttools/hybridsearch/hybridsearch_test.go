@@ -110,6 +110,57 @@ func TestSearchCamelCaseSegments(t *testing.T) {
 	}
 }
 
+func TestTokenizeDoesNotSpendBudgetOnConversationalScaffolding(t *testing.T) {
+	got := TokenizeForRetrieval("How would I create a custom Zsh completion, but for another shell?")
+	want := []string{"create", "custom", "zsh", "completion", "shell"}
+	if len(got) != len(want) {
+		t.Fatalf("tokens = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("tokens = %v, want %v", got, want)
+		}
+	}
+}
+
+// Candidate admission must not depend on whether a useful term appears first
+// or last in a natural-language question. Four earlier tokens can each fill
+// perTokenLimit and exhaust candidateCap before the final search contributes.
+func TestSearchReservesCandidatesForEveryQueryTerm(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	for _, term := range []string{"alpha", "beta", "gamma", "delta"} {
+		for i := 0; i < perTokenLimit; i++ {
+			n, err := model.NewNode("function", term+string(rune('A'+i))+"Handler", term+".go", i+1, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := store.PutNode(ctx, n); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	target, err := model.NewNode("function", "omega.Handler", "omega.go", 1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutNode(ctx, target); err != nil {
+		t.Fatal(err)
+	}
+	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+	res, err := SearchFairCandidates(ctx, Params{Query: "alpha beta gamma delta omega", MaxItems: candidateCap, Deps: deps})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range res.Items {
+		if item.RefID == string(target.ID()) {
+			return
+		}
+	}
+	t.Fatal("last query term contributed no candidate")
+}
+
 func TestSearchEmptyAndUnavailable(t *testing.T) {
 	deps := fixtureDeps(t)
 	res, err := Search(context.Background(), Params{Query: "zzz qqq nothing", Deps: deps})

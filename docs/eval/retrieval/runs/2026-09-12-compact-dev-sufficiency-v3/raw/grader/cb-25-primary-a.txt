@@ -1,0 +1,1 @@
+CompletionOptions.DisableDefaultCmd is documented as the disabling switch, and the preserved InitDefaultCompletionCmd guard immediately returns when set.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a661-60f3-7563-abe2-cb7c3799ec10"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response explains that stdout traces become completion choices (`completions.go`, `CompDebug`, lines 861–862; `site/content/completions/_index.md`, line 270), but does not explain how setup messages affect completion script generation."}}
+{"type":"turn.completed","usage":{"input_tokens":17092,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":129,"reasoning_output_tokens":68}}

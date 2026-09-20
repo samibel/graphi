@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-ea71-75b3-b528-61e996d826ce"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows shorthand suggestions in `completions.go:559-562`, but not how a one-letter shorthand is resolved to its `pflag.Flag`; `checkIfFlagCompletion` is only named at `completions.go:592` without its implementation."}}
+{"type":"turn.completed","usage":{"input_tokens":16616,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":113,"reasoning_output_tokens":49}}

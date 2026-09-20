@@ -1,0 +1,1 @@
+FAIL: Flag callback registration is supported, but the response also presents ValidArgsFunction as the positional-completion mechanism and cites site/content/completions/_index.md:477-478, which is absent from this prompt bundle. The development key treats that positional half as a required part of the generic question.

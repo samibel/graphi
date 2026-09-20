@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q011",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "5c2582cd27a283fefe4c19ba0573272606d4da04c7c7190991e1edcb458fe05a",
+  "bundle_sha256": "4a9d694ac8a073bb30b02fc16fe86e6cf39315a98c48e2e68e67b19f7f203dcd",
+  "prompt_sha256": "2e0fb90d6ff2979a55d9a9c8a471e7ebbcbcaa3cebb407bb3a96909ac375d4cd",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`validArgsFunc2` is defined in `completions_test.go:40–52`. It returns shell-completion candidates:\n\n- If `args` is nonempty, it returns `nil, ShellCompDirectiveNoFileComp` (lines 41–43).\n- Otherwise, it filters `\"three\\tThe third\"` and `\"four\\tThe fourth\"` using `strings.HasPrefix(comp, toComplete)` (lines 46–49).\n- It returns the matching strings with `ShellCompDirectiveDefault` (line 51).\n\nThe `cmd` parameter is unused.",
+  "responded_at": "2026-09-15T08:28:55Z",
+  "sha256": "e6d3455da90b6793f1426af0a5e06eeec12836080e29d4286b06fb3743417b9a"
+}

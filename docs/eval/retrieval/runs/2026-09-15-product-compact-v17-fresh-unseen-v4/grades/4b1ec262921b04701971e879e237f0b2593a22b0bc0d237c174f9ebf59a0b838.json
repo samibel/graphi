@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-34f80c3a927e",
+  "response_sha256": "4b1ec262921b04701971e879e237f0b2593a22b0bc0d237c174f9ebf59a0b838",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response directly identifies `SetHelpCommand(customHelpCmd)` and explains that it assigns `c.helpCommand = cmd`, matching the essential behavior preserved in `command.go:327–330`. The citation resolves inside the bundle, and no unsupported material claims appear.",
+  "graded_at": "2026-09-15T20:48:43Z",
+  "sha256": "9dceffa9ecd18f7ffe06d06324a2babf89047aa31b3f57dcadcdb06559c08fa7"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-ac52-7980-ba52-8a3f8d6dcd43"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Parent()` returns a command’s parent as a `*Command`. It directly returns `c.parent` (`command.go`, lines 1842–1845):\n\n```go\nfunc (c *Command) Parent() *Command {\n    return c.parent\n}\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":17155,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":58,"reasoning_output_tokens":0}}

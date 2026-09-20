@@ -1,0 +1,1 @@
+PASS: The response's access operation, cmd.Flag("name"), is directly supported by the bundled comment and implementation showing lookup on the command and then up the persistent-flag chain.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies only `CompletionOptions.DisableDefaultCmd` (`completions.go:103–116`); the full conditions promised by `InitDefaultCompletionCmd`’s comment (`completions.go:678–679`) are missing.

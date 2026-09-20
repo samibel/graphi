@@ -1,0 +1,1 @@
+FAIL: The response correctly describes persistent and command-local flag scopes, but omits the underlying pflag fork and its retention of the Go flag interface. Those essential library details are absent from the preserved bundle; README.md:67–74 supports only the scopes and POSIX/Go flag support.

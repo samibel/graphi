@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 131,
+  "previous_sha256": "89a8e5f52ebde384f7600211ddfe741bbe9832a3f66a716b0e26eb3e383052d9",
+  "kind": "grade",
+  "query_id": "ci-771",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a88130543165a67f44354187e45f63fcd475b821485c6f1a5b9bc5b296fd1d47",
+  "outcome": "pass",
+  "rationale": "PASS: The response correctly recommends the portable Go completion hooks and identifies the hidden request commands and supported shells from the supplied documentation and constants.\n",
+  "sha256": "c601cc1d96cfa54263c348a82803d4bccbd39bc7eb7bad6c385fedb0794fd6ec"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-e44e-7f41-8222-048245d8bb3c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that NoFileCompletions returns nil candidates with ShellCompDirectiveNoFileComp, which suppresses file completion even when no candidates are provided. Both cited line ranges exist in the preserved transcript and support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":17994,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

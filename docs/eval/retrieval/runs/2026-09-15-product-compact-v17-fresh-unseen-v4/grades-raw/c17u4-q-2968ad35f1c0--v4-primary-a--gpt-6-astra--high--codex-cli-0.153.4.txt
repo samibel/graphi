@@ -1,0 +1,1 @@
+PASS: The response correctly describes visiting inherited and non-inherited flag sets directly when parsing may not have merged them, selecting unchanged flags with the one-required annotation, and appending their name completions. All claims and citations are supported by the preserved bundle.

@@ -1,0 +1,1 @@
+PASS: The response correctly explains that InitDefaultHelpFlag merges persistent flags and creates the default help flag only when Lookup("help") is nil, preserving an application-defined help flag. The cited command.go:1183–1198 exists in the bundle and directly supports the answer.

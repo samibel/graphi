@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1ce7419b50d3",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "0a6dda45b96ef019ffe8079ace01f23a8e96f684d9d69c13a1ccd5e0f0a10154",
+  "bundle_sha256": "bb75d347ff317f342aec14bba34ce32fcbb109529a46a87a8834dedee3802bd3",
+  "prompt_sha256": "0d2b8d1c9290396aa6656c2645a2b6e0877935e177e86919f03cf48efa3da3ba",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The `eq` template helper supports signed integers (`int`, `int8`, `int16`, `int32`, `int64`) and strings. In [`cobra.go`, lines 142–157], `Eq` switches on `reflect.Kind`, comparing integers via `av.Int() == bv.Int()` and strings via `av.String() == bv.String()`.\n\nFor collection-related kinds—arrays, maps, and slices—it panics with `\"Eq called on unsupported type\"`; channels receive the same treatment (`reflect.Array, reflect.Chan, reflect.Map, reflect.Slice`). Other unhandled kinds return `false`. The helper is registered as `\"eq\": Eq` in [`cobra.go`, lines 31–40].",
+  "responded_at": "2026-09-15T20:25:38Z",
+  "sha256": "105ef0dcaad5c73a6019990adc8e1e01cbf9288732383deef5821aa42d0ebe26"
+}

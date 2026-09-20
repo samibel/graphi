@@ -1,0 +1,7 @@
+For flag completion, write a Go callback with this signature and register it on the command:
+
+```go
+func completeFlag(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective)
+```
+
+Call `cmd.RegisterFlagCompletionFunc("flag-name", completeFlag)` after the flag exists, and handle its returned error. The callback returns completion strings and a shell directive; registration rejects nonexistent flags and duplicate registrations (`completions.go:132–146`). The response supplies the registration contract but does not define the individual directive values.

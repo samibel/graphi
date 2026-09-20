@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved implementation: check for a parent, invoke the callback on that parent, then recurse upward. Its parent-to-root order, exclusion of the starting command, and termination without callbacks when called on the root are supported by the transcript, and all cited ranges exist and support their claims.

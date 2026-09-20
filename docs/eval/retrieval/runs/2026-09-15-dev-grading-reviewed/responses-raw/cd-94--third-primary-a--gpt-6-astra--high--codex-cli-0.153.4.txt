@@ -1,0 +1,18 @@
+Use `GenReSTTreeCustom` and pass a `linkHandler func(name, ref string) string` that returns your desired link markup:
+
+```go
+err := doc.GenReSTTreeCustom(
+    cmd,
+    outputDir,
+    func(string) string { return "" }, // No file preamble.
+    func(name, ref string) string {
+        return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
+    },
+)
+```
+
+Evidence in the response:
+
+- `doc/rest_docs.go:143–145` defines `GenReSTTreeCustom` with custom `filePrepender` and `linkHandler` arguments.
+- `site/content/docgen/rest.md:107` says the handler receives a command name and reference and customizes command links, including Sphinx `:ref:` links.
+- `doc/rest_docs.go:51–54` shows the default format is `` `name <ref.rst>`_ ``; `GenReSTTree` uses that default (`doc/rest_docs.go:138–140`).

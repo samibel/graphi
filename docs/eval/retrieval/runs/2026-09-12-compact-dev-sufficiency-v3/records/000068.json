@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 68,
+  "previous_sha256": "bda4946779c26b0c0a011a1a676a59a2fdbcd8bc27a6a21c66a3210414f00e79",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "fb1fdcdec26376f3351c3a33bdd833409849e9a39fcda2e611aa0156fb17a7db",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For flag completion, write a callback with signature func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective), and register it with cmd.RegisterFlagCompletionFunc(\"flag-name\", callback). The implementation stores that callback for the named flag, returning an error if the flag does not exist or already has a registered callback (completions.go:132-146).\n",
+  "sha256": "4d6760271bdb652736a8c6e6c0ab6d201e3435754db3aac2fc32d14a40c74635"
+}

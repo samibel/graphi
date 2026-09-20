@@ -1,0 +1,1 @@
+No. `command.go:332-339` shows `SetHelpCommandGroupID` always saves the choice in `c.helpCommandGroupID`, specifically noting it “is used if no helpCommand is defined by the user.” If the help command already exists, it also immediately sets `c.helpCommand.GroupID`.

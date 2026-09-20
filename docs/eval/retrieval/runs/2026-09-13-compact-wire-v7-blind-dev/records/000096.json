@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 96,
+  "previous_sha256": "dd9bfa412a163fcbd3552f6bf780474ff413649fe5a5facf201980b7d2f383b6",
+  "kind": "grade",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "cc8342e57a51ceaab02db6956389aa62dccb8db27a868b5d1fe82ac36c42b11c",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `command.go:831-850` shows filtering by `cmd.IsAvailableCommand()`, the `ld(typedName, cmd.Name(), true) \u003c= c.SuggestionsMinimumDistance` test, the case-insensitive prefix test, and case-insensitive `SuggestFor` matching via `strings.EqualFold`; `cobra.go:187-188` identifies `ld` and its `ignoreCase` parameter. `command.go:1495-1503` supports that `cmd.Name()` is the first word of `cmd.Use`. `command.go:750-765` supports disabling suggestions, defaulting a nonpositive distance to 2, and rendering results under “Did you mean this?”. The claim that results retain traversal order without sorting or deduplication is also supported by the complete shown `SuggestionsFor` loop and direct append/return logic.\n",
+  "sha256": "ff6ea9edca9721bb52a597fbd173c42493288ae9318a3c9e2f6138528dac47a4"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q030",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "c9589057b50aa983b6e0c1a9ae28286a21e35d0ad8e217afc2b7fc645b6d0f87",
+  "bundle_sha256": "561cd1e0fe17df87629cfe852e2856c9370634dc8c990db8d4e1ac5afe6e939a",
+  "prompt_sha256": "a708964d2e0ad5de11c7d92214bef825f49982655755752544e68510fa7cc419",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes only the opening of `UsageTemplate()` (`command.go:544–545`), omitting the template sections and conditions that separate grouped commands, ungrouped commands, local flags, global flags, and additional help topics.",
+  "responded_at": "2026-09-13T15:24:52Z",
+  "sha256": "3481032b6e5115e4404d418879c4e72e0857953cfa9235342eb9c477cb99a1c1"
+}

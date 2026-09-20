@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 473df2da25e78898ac7ab748228f5aa78e76bedac434d264f77d001067b20dea
+QUERY ID: c17u4-q-3d78a2b50ce4
+
+QUESTION:
+What does the child-help test establish about the target of a `help child` invocation?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:918-929 anchor="func TestHelpCommandExecutedOnChild(t *testing.T)" reason=The test invokes root help for the child and verifies the child's long description appears without error.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"3 ranked source span(s); query 39236b836727; read in order (281/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command_test.go","start_line":931,"end_line":961,"text":"func TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag(t *testing.T) {\n\tparent := &Command{Use: \"parent\", Run: emptyRun}\n\tchild := &Command{Use: \"child\", Run: emptyRun}\n\tparent.AddCommand(child)\n\n\tparent.PersistentFlags().Bool(\"foo\", false, \"parent foo usage\")\n\tparent.PersistentFlags().Bool(\"bar\", false, \"parent bar usage\")\n\tchild.Flags().Bool(\"foo\", false, \"child foo usage\") // This shadows parent's foo flag\n\tchild.Flags().Bool(\"baz\", false, \"child baz usage\")\n\n\tgot, err := executeCommand(parent, \"help\", \"child\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\texpected := `Usage:\n  parent child [flags]\n\nFlags:\n      --baz    child baz usage\n      --foo    child foo usage\n  -h, --help   help for child\n\nGlobal Flags:\n      --bar   parent bar usage\n`\n\n\tif got != expected {\n\t\tt.Errorf(\"Help text mismatch.\\nExpected:\\n%s\\n\\nGot:\\n%s\\n\", expected, got)\n\t}\n}"},{"path":"command_test.go","start_line":1010,"end_line":1026,"text":"// TestHelpFlagInHelp checks,\n// if '--help' flag is shown in help for child (executing `parent help child`),\n// that has no other flags.\n// Related to https://github.com/spf13/cobra/issues/302.\nfunc TestHelpFlagInHelp(t *testing.T) {\n\tparentCmd := &Command{Use: \"parent\", Run: func(*Command, []string) {}}\n\n\tchildCmd := &Command{Use: \"child\", Run: func(*Command, []string) {}}\n\tparentCmd.AddCommand(childCmd)\n\n\toutput, err := executeCommand(parentCmd, \"help\", \"child\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\tcheckStringContains(t, output, \"[flags]\")\n}"},{"path":"command.go","start_line":449,"end_line":476,"text":"\n// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}\n\n// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"}],"provenance":{"input_sha256":"eeb674768201815e2fdff1268845063310f9241cccbd7cf09a77e0e82d6a4841","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`help child` targets the **child command’s help**. In `command_test.go:931–961`, `TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag` calls `executeCommand(parent, "help", "child")` and requires output containing `Usage: parent child [flags]` and `help for child`. It also requires the child’s `--foo` to shadow the parent’s `--foo`, while the parent’s unshadowed `--bar` appears under `Global Flags`.
+----- END THE RATER'S RESPONSE -----

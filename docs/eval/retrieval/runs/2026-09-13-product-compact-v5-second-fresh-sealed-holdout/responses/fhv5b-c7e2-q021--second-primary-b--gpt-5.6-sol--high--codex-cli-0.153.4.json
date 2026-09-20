@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q021",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "3b3fd521db0be7c44d002a8612ede793dddbd279311d955748f312736b9a5b69",
+  "bundle_sha256": "fec9854389b1ebe99c66464bd84aab1d9d7f670af3afcd184de0a4608aa39c9b",
+  "prompt_sha256": "19ea1916a87ae5b3b9b7c95b5a1bfc0a91a3a6b63bdaf07caadda169f250e228",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/man_docs.go`:\n\n- Section defaults to `\"1\"` and is overridden by `opts.Header.Section` when non-empty. A nil header is first replaced with `\u0026GenManHeader{}` (lines 49–52, 62–65).\n- Separator defaults to `\"_\"` and is overridden by `opts.CommandSeparator` when non-empty (lines 67–70).\n- The basename is `cmd.CommandPath()` with spaces replaced by the separator. The output filename is `filepath.Join(opts.Path, basename+\".\"+section)` (lines 71–72).\n\nThus, for command path `foo bar`, defaults produce `opts.Path/foo_bar.1`.",
+  "responded_at": "2026-09-13T15:22:46Z",
+  "sha256": "13d43511c0ef453574ce8ce114d93406ea740e74b195687c6532dae7299f3852"
+}

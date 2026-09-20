@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-a1a3-7790-8007-ea7b1d6ba622"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`CompDebugln` appends a newline with `fmt.Sprintf(\"%s\\n\", msg)`, then calls `CompDebug` with that string and the unchanged `printToStdErr` flag (`completions.go:888–890`). Delegating preserves `CompDebug` behavior, including its `[Debug] ` prefix (`completions.go:864–865`) and the documented logging controlled by `BASH_COMP_DEBUG_FILE` (`completions.go:884–887`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17143,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":102,"reasoning_output_tokens":0}}

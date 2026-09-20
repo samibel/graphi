@@ -1,0 +1,1154 @@
+[
+  {
+    "id": "cd-08",
+    "stratum": "exact_identifier",
+    "text": "GenYamlTreeCustom",
+    "family_id": "cobra-family-7554451c7901f37a",
+    "judgements": [
+      {
+        "path": "doc/yaml_docs.go",
+        "start_line": 59,
+        "end_line": 85,
+        "anchor": "func GenYamlTreeCustom(",
+        "grade": 3,
+        "reason": "The declaration of GenYamlTreeCustom itself.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-09",
+    "stratum": "exact_identifier",
+    "text": "GetFlagCompletionFunc",
+    "family_id": "cobra-family-af5997328ed74469",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 148,
+        "end_line": 160,
+        "anchor": "func (c *Command) GetFlagCompletionFunc(",
+        "grade": 3,
+        "reason": "The declaration of Command.GetFlagCompletionFunc itself.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-11",
+    "stratum": "exact_identifier",
+    "text": "hasSeeAlso",
+    "family_id": "cobra-family-6286a0045729688b",
+    "judgements": [
+      {
+        "path": "doc/util.go",
+        "start_line": 23,
+        "end_line": 37,
+        "anchor": "func hasSeeAlso(",
+        "grade": 3,
+        "reason": "The declaration of hasSeeAlso itself.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-13",
+    "stratum": "exact_path",
+    "text": "active_help.go",
+    "family_id": "cobra-family-6b89d1ea157c55b1",
+    "judgements": [
+      {
+        "path": "active_help.go",
+        "start_line": 24,
+        "end_line": 33,
+        "anchor": "activeHelpMarker = ",
+        "grade": 3,
+        "reason": "The file's defining constants: the active-help marker and environment variable names.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-14",
+    "stratum": "exact_path",
+    "text": "cobra.go",
+    "family_id": "cobra-family-ada83171e4e59a12",
+    "judgements": [
+      {
+        "path": "cobra.go",
+        "start_line": 45,
+        "end_line": 66,
+        "anchor": "defaultPrefixMatching   = false",
+        "grade": 3,
+        "reason": "The file's package-level behaviour toggles and their defaults.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-15",
+    "stratum": "exact_path",
+    "text": "completions.go",
+    "family_id": "cobra-family-5741ebf5bd799e5f",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 26,
+        "end_line": 43,
+        "anchor": "ShellCompRequestCmd = ",
+        "grade": 3,
+        "reason": "The file's defining constants and the ShellCompDirective type that the rest of the file implements.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-16",
+    "stratum": "exact_path",
+    "text": "doc/md_docs.go",
+    "family_id": "cobra-family-7cf82107a4f140dd",
+    "judgements": [
+      {
+        "path": "doc/md_docs.go",
+        "start_line": 51,
+        "end_line": 54,
+        "anchor": "func GenMarkdown(",
+        "grade": 3,
+        "reason": "The file's public entry point for one command; the tree variant delegates to the same custom generator.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-17",
+    "stratum": "exact_path",
+    "text": "doc/yaml_docs.go",
+    "family_id": "cobra-family-9cad15ee1bc6ac96",
+    "judgements": [
+      {
+        "path": "doc/yaml_docs.go",
+        "start_line": 30,
+        "end_line": 46,
+        "anchor": "type cmdOption struct",
+        "grade": 3,
+        "reason": "The file's defining document types cmdOption and cmdDoc that every generator in it fills.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-18",
+    "stratum": "exact_path",
+    "text": "doc/rest_docs.go",
+    "family_id": "cobra-family-34fbe9fbbd31587b",
+    "judgements": [
+      {
+        "path": "doc/rest_docs.go",
+        "start_line": 51,
+        "end_line": 59,
+        "anchor": "func defaultLinkHandler(",
+        "grade": 3,
+        "reason": "The file's default link handler and its public single-command entry point.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-23",
+    "stratum": "nl_behaviour",
+    "text": "how does cobra warn that a command is deprecated when it runs",
+    "family_id": "cobra-family-0997bf69a5ea9b19",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 879,
+        "end_line": 881,
+        "anchor": "if len(c.Deprecated) \u003e 0 {",
+        "grade": 3,
+        "reason": "execute prints the deprecation notice before anything else runs.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-24",
+    "stratum": "nl_behaviour",
+    "text": "when does executing a command return flag.ErrHelp instead of running it",
+    "family_id": "cobra-family-bb4d09bd914753f7",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 893,
+        "end_line": 925,
+        "anchor": "helpVal, err := c.Flags().GetBool(\"help\")",
+        "grade": 3,
+        "reason": "The two ErrHelp returns: the help flag was set, or the command is not runnable.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-28",
+    "stratum": "nl_behaviour",
+    "text": "what does Cobra's pre-run stage do with functions registered through OnInitialize",
+    "family_id": "cobra-family-3ad98ca4f79e9e7c",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1015,
+        "end_line": 1019,
+        "anchor": "func (c *Command) preRun(",
+        "grade": 3,
+        "reason": "preRun runs every registered initializer; execute calls it before validating arguments.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-29",
+    "stratum": "nl_behaviour",
+    "text": "how does completion resolve a one-letter flag shorthand to its flag",
+    "family_id": "cobra-family-0670043f70d87385",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 841,
+        "end_line": 858,
+        "anchor": "func findFlag(",
+        "grade": 3,
+        "reason": "findFlag converts a shorthand to the long name through the local and inherited flag sets before Flag lookup.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-30",
+    "stratum": "nl_behaviour",
+    "text": "how does Cobra identify which required flags to offer during completion",
+    "family_id": "cobra-family-c1a4ac8b1a669b94",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 567,
+        "end_line": 590,
+        "anchor": "func completeRequireFlags(",
+        "grade": 3,
+        "reason": "completeRequireFlags suggests only unset flags carrying the required annotation; regular flags follow only when it finds none.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-32",
+    "stratum": "nl_behaviour",
+    "text": "how does Cobra detect that its --help or --version flag is already present during completion",
+    "family_id": "cobra-family-9f7eb80f286ed1c5",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 522,
+        "end_line": 532,
+        "anchor": "func helpOrVersionFlagPresent(",
+        "grade": 3,
+        "reason": "helpOrVersionFlagPresent detects the Cobra-added flags being set; getCompletions then returns no completions.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-35",
+    "stratum": "architecture_flow",
+    "text": "how does a command find a flag by climbing the parent chain",
+    "family_id": "cobra-family-01fcb86a15b0a3fd",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1794,
+        "end_line": 1816,
+        "anchor": "func (c *Command) Flag(",
+        "grade": 3,
+        "reason": "Flag tries the local set, then persistentFlag tries the command's persistent set and the merged parents' persistent flags.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-40",
+    "stratum": "architecture_flow",
+    "text": "how does completion fall back from subcommand names to ValidArgs and ArgAliases",
+    "family_id": "cobra-family-7602458727f5435f",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 450,
+        "end_line": 494,
+        "anchor": "// Complete subcommand names, including the help command",
+        "grade": 3,
+        "reason": "getCompletions lists subcommands, then required flags, then ValidArgs, and ArgAliases only when nothing matched.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-41",
+    "stratum": "architecture_flow",
+    "text": "how does getCompletions decide between the flag completion function and ValidArgsFunction",
+    "family_id": "cobra-family-e806d681adada9b0",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 502,
+        "end_line": 519,
+        "anchor": "var completionFn func(cmd *Command, args []string, toComplete string)",
+        "grade": 3,
+        "reason": "A flag under completion selects its registered function; otherwise the command's ValidArgsFunction is called.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-43",
+    "stratum": "architecture_flow",
+    "text": "how does DebugFlags walk the command tree and label local versus persistent flags",
+    "family_id": "cobra-family-ca6665934ca864a1",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1453,
+        "end_line": 1493,
+        "anchor": "func (c *Command) DebugFlags(",
+        "grade": 3,
+        "reason": "DebugFlags recurses over subcommands, printing each flag with an L, LP or P label.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-44",
+    "stratum": "architecture_flow",
+    "text": "how does completion of subcommand names get suppressed once a local non-persistent flag is present",
+    "family_id": "cobra-family-e316353482c9dd8c",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 436,
+        "end_line": 463,
+        "anchor": "foundLocalNonPersistentFlag := false",
+        "grade": 3,
+        "reason": "getCompletions checks changed local non-persistent flags unless TraverseChildren is set, and skips subcommand completion when one is found.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-45",
+    "stratum": "config_docs",
+    "text": "how do I limit a flag's completions to directory names",
+    "family_id": "cobra-family-fd2a45235429a3ff",
+    "judgements": [
+      {
+        "path": "site/content/completions/_index.md",
+        "start_line": 334,
+        "end_line": 347,
+        "anchor": "### Limit flag completions to directory names",
+        "grade": 3,
+        "reason": "The documented MarkFlagDirname and ShellCompDirectiveFilterDirs options.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-47",
+    "stratum": "config_docs",
+    "text": "how can I make every parent's persistent hooks run instead of only the first",
+    "family_id": "cobra-family-8ef9fe67510e5113",
+    "judgements": [
+      {
+        "path": "site/content/user_guide.md",
+        "start_line": 690,
+        "end_line": 692,
+        "anchor": "By default, only the first persistent hook found in the command chain is executed.",
+        "grade": 3,
+        "reason": "The documented EnableTraverseRunHooks switch.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-48",
+    "stratum": "config_docs",
+    "text": "how do I customize the Error: prefix of printed errors",
+    "family_id": "cobra-family-67ee9adf1933ea8d",
+    "judgements": [
+      {
+        "path": "site/content/user_guide.md",
+        "start_line": 599,
+        "end_line": 603,
+        "anchor": "## Error Message Prefix",
+        "grade": 3,
+        "reason": "The documented SetErrPrefix function.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-49",
+    "stratum": "config_docs",
+    "text": "how do I turn off the descriptions shown next to shell completions",
+    "family_id": "cobra-family-6eca3fc0c8b7f88d",
+    "judgements": [
+      {
+        "path": "site/content/completions/_index.md",
+        "start_line": 384,
+        "end_line": 395,
+        "anchor": "If you don't want to show descriptions in the completions",
+        "grade": 3,
+        "reason": "The documented --no-descriptions flag of the default completion command.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-51",
+    "stratum": "config_docs",
+    "text": "how do I attach a description to my own completion choices",
+    "family_id": "cobra-family-ce8bf724edad3f92",
+    "judgements": [
+      {
+        "path": "site/content/completions/_index.md",
+        "start_line": 373,
+        "end_line": 382,
+        "anchor": "Cobra allows you to add descriptions to your own completions.",
+        "grade": 3,
+        "reason": "The documented tab-separated description convention for ValidArgs, ValidArgsFunction and flag completions.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-52",
+    "stratum": "config_docs",
+    "text": "how do I combine several positional argument validators",
+    "family_id": "cobra-family-e15493a3ee60e351",
+    "judgements": [
+      {
+        "path": "site/content/user_guide.md",
+        "start_line": 384,
+        "end_line": 397,
+        "anchor": "Moreover, `MatchAll(pargs ...PositionalArgs)`",
+        "grade": 3,
+        "reason": "The documented MatchAll combinator with its example.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-54",
+    "stratum": "config_docs",
+    "text": "how do I provide my own usage template",
+    "family_id": "cobra-family-79f7dd15ed48a263",
+    "judgements": [
+      {
+        "path": "site/content/user_guide.md",
+        "start_line": 583,
+        "end_line": 590,
+        "anchor": "### Defining your own usage",
+        "grade": 3,
+        "reason": "The documented SetUsageFunc and SetUsageTemplate methods.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-55",
+    "stratum": "ambiguous",
+    "text": "Root",
+    "family_id": "cobra-family-fe13f0f5ff0d5833",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 860,
+        "end_line": 866,
+        "anchor": "func (c *Command) Root(",
+        "grade": 3,
+        "reason": "Command.Root is the canonical definition; other hits are callers and 'root command' prose.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-57",
+    "stratum": "ambiguous",
+    "text": "Parent",
+    "family_id": "cobra-family-e44d10696f2528c1",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1842,
+        "end_line": 1845,
+        "anchor": "func (c *Command) Parent(",
+        "grade": 3,
+        "reason": "Command.Parent is the canonical definition; the term also names fields, helpers and documentation.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-58",
+    "stratum": "ambiguous",
+    "text": "Usage",
+    "family_id": "cobra-family-7a16f823ad8b160d",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 443,
+        "end_line": 448,
+        "anchor": "func (c *Command) Usage(",
+        "grade": 3,
+        "reason": "Command.Usage is the canonical definition among usage templates, functions and prose.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-61",
+    "stratum": "ambiguous",
+    "text": "directive",
+    "family_id": "cobra-family-8554aca476678847",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 41,
+        "end_line": 43,
+        "anchor": "type ShellCompDirective int",
+        "grade": 3,
+        "reason": "The ShellCompDirective type is the definition every directive constant and check refers to.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-62",
+    "stratum": "ambiguous",
+    "text": "template",
+    "family_id": "cobra-family-14cffcfa2c26ebe3",
+    "judgements": [
+      {
+        "path": "cobra.go",
+        "start_line": 32,
+        "end_line": 40,
+        "anchor": "var templateFuncs = template.FuncMap{",
+        "grade": 3,
+        "reason": "templateFuncs is the definition behind every usage, help and version template.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-63",
+    "stratum": "ambiguous",
+    "text": "Aliases",
+    "family_id": "cobra-family-4cdc90e60ae79b2c",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 63,
+        "end_line": 64,
+        "anchor": "Aliases []string",
+        "grade": 3,
+        "reason": "The Command.Aliases field and its contract are the canonical definition of the bare term.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-64",
+    "stratum": "ambiguous",
+    "text": "prefix",
+    "family_id": "cobra-family-0d4ace9cc4fb28c5",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1524,
+        "end_line": 1538,
+        "anchor": "func (c *Command) hasNameOrAliasPrefix(",
+        "grade": 3,
+        "reason": "hasNameOrAliasPrefix is the prefix-matching implementation; EnablePrefixMatching is its switch.",
+        "annotator": "claude-fable-5.1 (draft author; unreviewed)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-65",
+    "stratum": "exact_identifier",
+    "text": "AllChildCommandsHaveGroup",
+    "family_id": "cobra-family-cd7601504076e7cc",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1336,
+        "end_line": 1344,
+        "anchor": "func (c *Command) AllChildCommandsHaveGroup(",
+        "grade": 3,
+        "reason": "The complete declaration defines which available or help subcommands must carry a group ID.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-66",
+    "stratum": "exact_identifier",
+    "text": "ContainsGroup",
+    "family_id": "cobra-family-9c41779d8465ffe0",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1346,
+        "end_line": 1354,
+        "anchor": "func (c *Command) ContainsGroup(",
+        "grade": 3,
+        "reason": "The complete declaration searches the command-group slice for a matching ID.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-67",
+    "stratum": "exact_identifier",
+    "text": "NameAndAliases",
+    "family_id": "cobra-family-e38999e58d5388a2",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1540,
+        "end_line": 1543,
+        "anchor": "func (c *Command) NameAndAliases(",
+        "grade": 3,
+        "reason": "The complete declaration joins the command name and aliases into the returned display string.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-68",
+    "stratum": "exact_identifier",
+    "text": "CompErrorln",
+    "family_id": "cobra-family-210a895e4c3275e0",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 898,
+        "end_line": 901,
+        "anchor": "func CompErrorln(",
+        "grade": 3,
+        "reason": "The complete declaration appends a newline and delegates completion-error output to CompError.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-69",
+    "stratum": "exact_identifier",
+    "text": "MarkPersistentFlagRequired",
+    "family_id": "cobra-family-5444fe045af7f1c8",
+    "judgements": [
+      {
+        "path": "shell_completions.go",
+        "start_line": 28,
+        "end_line": 33,
+        "anchor": "func (c *Command) MarkPersistentFlagRequired(",
+        "grade": 3,
+        "reason": "The complete declaration marks a named persistent flag required through the shared helper.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-70",
+    "stratum": "exact_identifier",
+    "text": "GenBashCompletionV2",
+    "family_id": "cobra-family-83b084be11bacec7",
+    "judgements": [
+      {
+        "path": "bash_completionsV2.go",
+        "start_line": 392,
+        "end_line": 396,
+        "anchor": "func (c *Command) GenBashCompletionV2(",
+        "grade": 3,
+        "reason": "The complete declaration delegates Bash V2 generation to the shared writer implementation.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-71",
+    "stratum": "exact_identifier",
+    "text": "SetIn",
+    "family_id": "cobra-family-8d1cd71864ea9fd1",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 300,
+        "end_line": 304,
+        "anchor": "func (c *Command) SetIn(",
+        "grade": 3,
+        "reason": "The complete declaration records the command's input reader.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-72",
+    "stratum": "exact_identifier",
+    "text": "AddGroup",
+    "family_id": "cobra-family-aa6eb391bf2206d3",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1356,
+        "end_line": 1359,
+        "anchor": "func (c *Command) AddGroup(",
+        "grade": 3,
+        "reason": "The complete declaration appends supplied groups to the command's group list.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-73",
+    "stratum": "exact_path",
+    "text": "command_notwin.go",
+    "family_id": "cobra-family-9d15c701813de7f7",
+    "judgements": [
+      {
+        "path": "command_notwin.go",
+        "start_line": 15,
+        "end_line": 20,
+        "anchor": "var preExecHookFn func(*Command)",
+        "grade": 3,
+        "reason": "The platform build constraint and no-op pre-execution hook are the file's defining implementation.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-74",
+    "stratum": "exact_path",
+    "text": "bash_completionsV2.go",
+    "family_id": "cobra-family-1d661114ad7a5e38",
+    "judgements": [
+      {
+        "path": "bash_completionsV2.go",
+        "start_line": 24,
+        "end_line": 29,
+        "anchor": "func (c *Command) genBashCompletion(",
+        "grade": 3,
+        "reason": "The file's central writer path buffers the generated Bash V2 script and copies it to the caller's writer.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-75",
+    "stratum": "exact_path",
+    "text": "go.mod",
+    "family_id": "cobra-family-3b3a0583268ba947",
+    "judgements": [
+      {
+        "path": "go.mod",
+        "start_line": 1,
+        "end_line": 10,
+        "anchor": "module github.com/spf13/cobra",
+        "grade": 3,
+        "reason": "The module declaration, Go version, and direct requirements are the file's canonical contents.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-76",
+    "stratum": "exact_path",
+    "text": "LICENSE.txt",
+    "family_id": "cobra-family-9025f5bf7313f93b",
+    "judgements": [
+      {
+        "path": "LICENSE.txt",
+        "start_line": 1,
+        "end_line": 5,
+        "anchor": "Apache License",
+        "grade": 3,
+        "reason": "The license header identifies the governing license and version.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-77",
+    "stratum": "exact_path",
+    "text": "Makefile",
+    "family_id": "cobra-family-36f3ef70db8d1dc6",
+    "judgements": [
+      {
+        "path": "Makefile",
+        "start_line": 8,
+        "end_line": 24,
+        "anchor": ".PHONY: fmt lint test install_deps clean",
+        "grade": 3,
+        "reason": "The declared targets and their fmt, lint, and test recipes form the Makefile's primary interface.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-78",
+    "stratum": "nl_behaviour",
+    "text": "what happens if Cobra tries to execute a nil Command receiver",
+    "family_id": "cobra-family-fd0068906f959336",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 874,
+        "end_line": 877,
+        "anchor": "if c == nil {",
+        "grade": 3,
+        "reason": "The execution method rejects a nil receiver immediately with an error.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-79",
+    "stratum": "nl_behaviour",
+    "text": "how does Cobra report how many parsed arguments appeared before a -- separator",
+    "family_id": "cobra-family-c2f788cd144a1745",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 868,
+        "end_line": 872,
+        "anchor": "func (c *Command) ArgsLenAtDash(",
+        "grade": 3,
+        "reason": "ArgsLenAtDash delegates to the command's flag set to report the pre-separator argument count.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-80",
+    "stratum": "nl_behaviour",
+    "text": "when does Cobra append [flags] to a command's use line",
+    "family_id": "cobra-family-a98bb7db13261f11",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1436,
+        "end_line": 1450,
+        "anchor": "func (c *Command) UseLine(",
+        "grade": 3,
+        "reason": "UseLine constructs the full command use, honors DisableFlagsInUseLine, and appends the marker only when available flags exist and the marker is absent.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-81",
+    "stratum": "nl_behaviour",
+    "text": "how does NoFileCompletions tell a shell not to offer file names",
+    "family_id": "cobra-family-6c42d9c841e8ebed",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 118,
+        "end_line": 122,
+        "anchor": "func NoFileCompletions(",
+        "grade": 3,
+        "reason": "The completion callback returns no candidates together with ShellCompDirectiveNoFileComp.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-82",
+    "stratum": "nl_behaviour",
+    "text": "when does Cobra consider a command to have an available subcommand for help output",
+    "family_id": "cobra-family-5f216fdbe3981471",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1615,
+        "end_line": 1629,
+        "anchor": "func (c *Command) HasAvailableSubCommands(",
+        "grade": 3,
+        "reason": "The method returns true at the first child accepted by IsAvailableCommand and false if none qualify.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-83",
+    "stratum": "architecture_flow",
+    "text": "how does GenReSTCustom build a command page from initialization through sections, links, and final output",
+    "family_id": "cobra-family-21a6de024387ba21",
+    "judgements": [
+      {
+        "path": "doc/rest_docs.go",
+        "start_line": 61,
+        "end_line": 130,
+        "anchor": "func GenReSTCustom(",
+        "grade": 3,
+        "reason": "The full function shows initialization, section assembly, parent and child link handling, optional generation tag, and the final writer copy.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-84",
+    "stratum": "architecture_flow",
+    "text": "how does checkIfFlagCompletion split a current --flag=value or shorthand=value token before completing its value",
+    "family_id": "cobra-family-8c0e663e77de6471",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 599,
+        "end_line": 625,
+        "anchor": "flagWithEqual := false",
+        "grade": 3,
+        "reason": "The flow detects an equals sign, extracts a long name or the last shorthand, advances to the value, and distinguishes ordinary flag-name completion.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-85",
+    "stratum": "architecture_flow",
+    "text": "how does LocalFlags rebuild the current command's local flag view while excluding unshadowed parent flags",
+    "family_id": "cobra-family-d8a1bb6a5400dc22",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1668,
+        "end_line": 1693,
+        "anchor": "func (c *Command) LocalFlags(",
+        "grade": 3,
+        "reason": "LocalFlags merges persistent state, initializes its view, propagates sorting and normalization, and adds local or shadowing flags.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-86",
+    "stratum": "architecture_flow",
+    "text": "how does VisitParents traverse from a command toward the root and invoke its callback",
+    "family_id": "cobra-family-2bf7ef6038719a09",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 852,
+        "end_line": 858,
+        "anchor": "func (c *Command) VisitParents(",
+        "grade": 3,
+        "reason": "The recursive method invokes the callback on the immediate parent and then continues upward.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-87",
+    "stratum": "architecture_flow",
+    "text": "how does legacy Bash completion serialize available subcommands and their aliases",
+    "family_id": "cobra-family-edb82e269219105f",
+    "judgements": [
+      {
+        "path": "bash_completions.go",
+        "start_line": 447,
+        "end_line": 457,
+        "anchor": "func writeCommands(",
+        "grade": 3,
+        "reason": "The writer initializes the command list, filters unavailable children except help, emits each name, and delegates alias emission.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-88",
+    "stratum": "architecture_flow",
+    "text": "how does legacy Bash completion turn ValidArgs and ValidArgsFunction into required-noun state",
+    "family_id": "cobra-family-d8c641531b5234da",
+    "judgements": [
+      {
+        "path": "bash_completions.go",
+        "start_line": 618,
+        "end_line": 630,
+        "anchor": "func writeRequiredNouns(",
+        "grade": 3,
+        "reason": "The writer sorts ValidArgs, strips tab descriptions, emits noun entries, and marks the presence of a dynamic completion function.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-89",
+    "stratum": "config_docs",
+    "text": "how do I keep Cobra's default completion command but hide it",
+    "family_id": "cobra-family-76378b0748f15cb4",
+    "judgements": [
+      {
+        "path": "site/content/completions/_index.md",
+        "start_line": 102,
+        "end_line": 105,
+        "anchor": "rootCmd.CompletionOptions.HiddenDefaultCmd = true",
+        "grade": 3,
+        "reason": "The documentation gives the HiddenDefaultCmd setting on the root command.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-90",
+    "stratum": "config_docs",
+    "text": "how do I disable Cobra's automatic command suggestions",
+    "family_id": "cobra-family-5828a50a15a11a23",
+    "judgements": [
+      {
+        "path": "site/content/user_guide.md",
+        "start_line": 708,
+        "end_line": 714,
+        "anchor": "command.DisableSuggestions = true",
+        "grade": 3,
+        "reason": "The user guide documents the DisableSuggestions command field and its setting.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-91",
+    "stratum": "ambiguous",
+    "text": "Group",
+    "family_id": "cobra-family-ac2a9bb9ab3c3d9c",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 41,
+        "end_line": 45,
+        "anchor": "type Group struct {",
+        "grade": 3,
+        "reason": "The Group type is the canonical definition among command grouping fields, helpers, and validation code.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-92",
+    "stratum": "ambiguous",
+    "text": "completion options",
+    "family_id": "cobra-family-645252b61a9523fa",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 104,
+        "end_line": 116,
+        "anchor": "type CompletionOptions struct {",
+        "grade": 3,
+        "reason": "The CompletionOptions type is the canonical definition of the completion configuration switches.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-93",
+    "stratum": "ambiguous",
+    "text": "post-run",
+    "family_id": "cobra-family-c6c098b832247473",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 136,
+        "end_line": 143,
+        "anchor": "PostRun func(cmd *Command, args []string)",
+        "grade": 3,
+        "reason": "The Command fields define local and persistent post-run callbacks and their error-returning variants.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  },
+  {
+    "id": "cd-94",
+    "stratum": "config_docs",
+    "text": "how do I customize links in generated ReST documentation",
+    "family_id": "cobra-family-cf19bfb99e06df95",
+    "judgements": [
+      {
+        "path": "site/content/docgen/rest.md",
+        "start_line": 107,
+        "end_line": 114,
+        "anchor": "linkHandler := func(name, ref string) string {",
+        "grade": 3,
+        "reason": "The documentation explains the linkHandler callback and shows a Sphinx cross-reference implementation.",
+        "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+        "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+      }
+    ]
+  }
+]

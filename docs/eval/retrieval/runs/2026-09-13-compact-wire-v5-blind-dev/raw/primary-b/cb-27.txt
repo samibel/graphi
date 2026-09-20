@@ -1,0 +1,1 @@
+Set the package variable `cobra.EnablePrefixMatching = true`; its documentation explicitly says this enables automatic prefix matching and warns that it can be dangerous for CLI tools (`cobra.go:51-56`). The default is false (`cobra.go:45-50`), and command lookup only accepts `hasNameOrAliasPrefix(next)` matches when this variable is enabled (`command.go:774-777`).

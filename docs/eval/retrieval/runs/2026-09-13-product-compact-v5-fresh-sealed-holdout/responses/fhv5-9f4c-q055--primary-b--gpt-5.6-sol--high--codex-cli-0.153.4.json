@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q055",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "58cc4543a79e99fb248149fc4abea1243da9b2cf3753219148686d3b8cc5312a",
+  "bundle_sha256": "2fc02566744d7eb3f9b205cc2556938a91a96b4f353bb6a07b38492bdc6f2120",
+  "prompt_sha256": "4e8e0d67adf0dd149e83e1559efa8e86618ed0fb395e6919a55ec29ba53364ba",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It accepts arbitrary positional arguments. In `command.go:1139-1144`, `ValidateArgs` calls `ArbitraryArgs(c, args)` when `c.Args == nil`, and `args.go:68` states: “ArbitraryArgs never returns an error.” To reject positional arguments, the command must explicitly use `NoArgs` (`args.go:41-47`).",
+  "responded_at": "2026-09-13T12:37:57Z",
+  "sha256": "9af61ef9854a59be36c4f97c577b4cb142dd1ec362a78abfd01882fde7b34f21"
+}

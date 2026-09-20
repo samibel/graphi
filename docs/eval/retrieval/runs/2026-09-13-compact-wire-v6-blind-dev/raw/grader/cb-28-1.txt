@@ -1,0 +1,1 @@
+PASS: It accurately describes help grouping, group registration, and the special default-command setters.

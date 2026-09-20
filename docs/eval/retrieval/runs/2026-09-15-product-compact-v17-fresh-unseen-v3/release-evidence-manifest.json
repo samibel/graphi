@@ -1,0 +1,22 @@
+{
+  "schema": "graphi-release-evidence-manifest/1",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v3",
+  "status": "REFUSED_INVALID_RUN",
+  "product_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+  "product_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+  "curator_commit": "87a8c5320eac8bf5976e9e98267c99d7181542aa",
+  "operator_static_commit": "0bb3ee52a52922456cd276e8f28b1c4c57f635ad",
+  "freeze_commit": "8956f578e66b54c486958f4ddd759428dd26eac3",
+  "refusal_commit": "99d98f44f0ea1d03a3f9ffa34187bdee387094ed",
+  "artifacts": {
+    "dataset_sha256":"c985a0b5e43cf42c6bf37eee1752cf0f01450e0baeecab7b5888817bb55551aa",
+    "curator_preregistration_sha256":"0853fa95e5e3040a7e0123567265bbba8f17b5608f53c1ea46e4004e31a17ab4",
+    "curator_attestation_sha256":"cfc1e9adfdc876772f677801517856d837cedd258408301dae8320dc4cff802c",
+    "handoff_sha256":"ff0245b9c2f685a31453c4e766940ded9d879d3bc1275c7ddc591f539bb5e723",
+    "precondition_file_sha256":"824ddcc4ac5da3767378c353bd15b002bc3d5219a0f0852afc74f93d9da7ea7b",
+    "run_refusal_sha256":"6292f43b36a65038957cf7ff4fefb9199e43412f4b068d8a1a1ce39580e2a19e",
+    "operator_attestation_sha256":"2221f839bd3b1d98c3fe75e6c5e5de50144f60cb59e6da21ed408dd4cbc5b84f"
+  },
+  "decision": {"release":null,"pass_count":null,"k":56,"n":64,"validity":"INVALID_BEFORE_CAPTURE"},
+  "execution": {"freeze_invocations":1,"capture_invocations":0,"primary_responses":0,"events":0,"retries":0,"overwrites":0,"waivers":0,"seal_invocations":0,"decide_invocations":0}
+}

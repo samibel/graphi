@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d3-3a00-7f30-8fc4-4da35f5fdacd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies stdin as the replaced source and os.Stdin as the fallback, with parent-reader inheritance supported by getIn. All claims and citations resolve within the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17536,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":41,"reasoning_output_tokens":0}}

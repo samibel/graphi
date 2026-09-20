@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 71,
+  "previous_sha256": "d88732bad89016e1b8bfebec69971743c24fa6ad6003ef7f1404d76b647fc827",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "a3725e70013778145835f3f949e81b511fe6bba560c5c7999be347bb52118c45",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the global flag as a persistent flag on the parent/root command, then access it from the subcommand with:\n\n```go\nf := cmd.Flag(\"flag-name\")\n```\n\n`Command.Flag` “climbs up the command tree” and, if the flag is not local, calls `persistentFlag` ([command.go:1794–1803]), which searches the command’s persistent flags and then `parentsPflags` ([command.go:1805–1816]). `Command.Flags()` likewise includes local flags plus persistent flags declared by the command and all parents ([command.go:1641–1653]).",
+  "sha256": "735bb2c6c47230c2ab562cb0dc4edb24b2e8562fbde379fd45a32be9d978ebab"
+}

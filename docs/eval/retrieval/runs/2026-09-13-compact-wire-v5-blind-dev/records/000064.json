@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 64,
+  "previous_sha256": "aa4c4c139d3e088e50a4083873f540b79573dab31a829d5e43b623e903abd069",
+  "kind": "response",
+  "query_id": "cb-32",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "d8ea918c0b6727c37bb680180b2542dce2bac88f5486432859a9ce4ce7e65814",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).Execute() error` uses configured arguments or `os.Args[1:]` by default, traverses the command tree to match commands and flags, calls `ExecuteC`, and returns only its error (`command.go:1035-1042`). Use `ExecuteContext` to set a context before the same execution path (`command.go:1027-1034`), or `ExecuteContextC` when the executed `*Command` result is also needed (`command.go:1043-1049`).\n",
+  "sha256": "a17f29565bcfcbfdd1f674ec3fa1c678de8c33b38a3353c248d877aa0076a5d5"
+}

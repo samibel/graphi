@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-443f-7500-a332-6f50d4df261a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `nameForVar := name` and notes that variables cannot contain `-` or `:` (`fish_completions.go:24–27`), but omits the lines that sanitize those characters."}}
+{"type":"turn.completed","usage":{"input_tokens":16458,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":32}}

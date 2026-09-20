@@ -1,0 +1,13 @@
+Install and import Cobra:
+
+```bash
+go get -u github.com/spf13/cobra@latest
+```
+
+```go
+import "github.com/spf13/cobra"
+```
+
+Evidence: `README.md:81-94`.
+
+For command usage output, `(*Command).Usage()` calls the resolved `UsageFunc` (`command.go:443-448`). `UsageFunc` uses a command-specific function, inherits its parent’s function, or renders `UsageTemplate()` to stderr by default (`command.go:424-441`). `UsageString()` captures that output as a string (`command.go:478-495`).

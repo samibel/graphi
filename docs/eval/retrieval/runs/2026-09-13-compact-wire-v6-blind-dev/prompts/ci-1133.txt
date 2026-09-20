@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How do I get the flag of the currently executing command?
+
+----- BEGIN task_context/compact-dev/6 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s) for \"How do I get the flag of the currently executing command?\"; read in order (245/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/6","sources":[{"path":"completions.go","start_line":148,"end_line":160,"text":"// GetFlagCompletionFunc returns the completion function for the given flag of the command, if available.\nfunc (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {\n\tflag := c.Flag(flagName)\n\tif flag == nil {\n\t\treturn nil, false\n\t}\n\n\tflagCompletionMutex.RLock()\n\tdefer flagCompletionMutex.RUnlock()\n\n\tcompletionFunc, exists := flagCompletionFunctions[flag]\n\treturn completionFunc, exists\n}"},{"path":"command.go","start_line":1794,"end_line":1807,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}\n\n// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {"},{"path":"command.go","start_line":172,"end_line":172,"text":"\tflagErrorFunc func(*Command, error) error"},{"path":"command.go","start_line":1035,"end_line":1043,"text":"// Execute uses the args (os.Args[1:] by default)\n// and run through the command tree finding appropriate matches\n// for commands and then corresponding flags.\nfunc (c *Command) Execute() error {\n\t_, err := c.ExecuteC()\n\treturn err\n}\n\n// ExecuteContextC is the same as ExecuteC(), but sets the ctx on the command."},{"path":"command.go","start_line":1045,"end_line":1045,"text":"// functions."},{"path":"command.go","start_line":1052,"end_line":1055,"text":"func (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {\n\t\tc.ctx = context.Background()\n\t}"},{"path":"command.go","start_line":874,"end_line":875,"text":"func (c *Command) execute(a []string) (err error) {\n\tif c == nil {"},{"path":"command.go","start_line":943,"end_line":943,"text":"\t\t\t// When EnableTraverseRunHooks is set:"},{"path":"command.go","start_line":1805,"end_line":1816,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}\n\n\tif flag == nil {\n\t\tc.updateParentsPflags()\n\t\tflag = c.parentsPflags.Lookup(name)\n\t}\n\treturn\n}"},{"path":"flag_groups.go","start_line":81,"end_line":84,"text":"func (c *Command) ValidateFlagGroups() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}"},{"path":"command.go","start_line":1186,"end_line":1187,"text":"func (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()"}],"provenance":{"input_sha256":"aec237806ca2bb76295ff9dda7e703c83bdf35c35099ec5caffc2ad10656a116","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/6 RESPONSE BYTES -----

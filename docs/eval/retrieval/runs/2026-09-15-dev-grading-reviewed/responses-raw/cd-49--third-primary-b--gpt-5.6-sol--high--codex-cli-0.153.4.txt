@@ -1,0 +1,7 @@
+Add `--no-descriptions` when generating the completion script:
+
+```bash
+source <(helm completion bash --no-descriptions)
+```
+
+This disables completion descriptions, as shown in `site/content/completions/_index.md:380-395`. The underlying Cobra option is `DisableDescriptions` (`completions.go:111-112`).

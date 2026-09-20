@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q016",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "4c08781a1c6c69898cdd3a21c0c759d846fc32148e6b5aaf70ad2db146e9f145",
+  "bundle_sha256": "64999bfcad4b3121c29f481effc1a7c3834ec1b0e08196898a9f3e4c5019984b",
+  "prompt_sha256": "c9e4b6b49ea460a4a45ea907deb4e1b9079e65dd34081b053f186ae219190713",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response is truncated and contains only selected spans from `command_test.go`, so its complete structure and declarations are missing.",
+  "responded_at": "2026-09-15T08:29:12Z",
+  "sha256": "c67c79b53a7b8ab3d955d14fd6eae37bc9f7868aa5046cdfd0a0dbb473b6dc1e"
+}

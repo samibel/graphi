@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to check what command was chosen
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"How to check what command was chosen\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":1057,"end_line":1070,"text":"\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {\n\t\treturn c.Root().ExecuteC()\n\t}\n\n\t// windows hook\n\tif preExecHookFn != nil {\n\t\tpreExecHookFn(c)\n\t}\n\n\t// initialize help at the last point to allow for user overriding\n\tc.InitDefaultHelpCmd()\n\t// initialize completion at the last point to allow for user overriding\n\tc.InitDefaultCompletionCmd()"},{"path":"command.go","start_line":1515,"end_line":1522,"text":"// CalledAs returns the command name or alias that was used to invoke\n// this command or an empty string if the command has not been called.\nfunc (c *Command) CalledAs() string {\n\tif c.commandCalledAs.called {\n\t\treturn c.commandCalledAs.name\n\t}\n\treturn \"\"\n}"},{"path":"command.go","start_line":1229,"end_line":1233,"text":"func (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n"},{"path":"command.go","start_line":1496,"end_line":1497,"text":"func (c *Command) Name() string {\n\tname := c.Use"},{"path":"command.go","start_line":1303,"end_line":1303,"text":"func (c *Command) AddCommand(cmds ...*Command) {"},{"path":"command.go","start_line":328,"end_line":328,"text":"func (c *Command) SetHelpCommand(cmd *Command) {"},{"path":"command.go","start_line":1426,"end_line":1426,"text":"func (c *Command) CommandPath() string {"},{"path":"command.go","start_line":1632,"end_line":1632,"text":"func (c *Command) HasParent() bool {"}],"provenance":{"input_sha256":"04abc27b8b191b254a2ab8a0e83d476ee4a66cea38bb98612ecacf2fb5a81cf1","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

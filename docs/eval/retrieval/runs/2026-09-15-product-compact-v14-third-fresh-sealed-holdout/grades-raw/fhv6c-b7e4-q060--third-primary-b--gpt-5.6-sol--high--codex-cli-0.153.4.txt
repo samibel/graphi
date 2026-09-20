@@ -1,0 +1,1 @@
+FAIL: The response does not address blank argument strings surrounding a valid flag, the essential behavior identified by TestEmptyInputs. The transcript includes only that test’s declaration, so the behavior cannot be verified. MinimumNArgs(1) checks argument count; it does not establish rejection of empty-string arguments.

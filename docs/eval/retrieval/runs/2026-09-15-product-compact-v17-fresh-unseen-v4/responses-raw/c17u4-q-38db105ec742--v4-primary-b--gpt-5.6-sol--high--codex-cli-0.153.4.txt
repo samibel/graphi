@@ -1,0 +1,6 @@
+`TestEnablePrefixMatching` in `command_test.go` (lines 305–332) proves it:
+
+- Sets `EnablePrefixMatching = true`.
+- Defines command `aCmd` with `ExactArgs(2)`.
+- Executes the abbreviated name with arguments: `executeCommand(rootCmd, "a", "one", "two")`.
+- Verifies execution succeeds and `aCmd` receives both arguments by checking `strings.Join(aCmdArgs, " ") == onetwo`.

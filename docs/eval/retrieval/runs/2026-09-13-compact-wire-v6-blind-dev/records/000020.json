@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 20,
+  "previous_sha256": "704deba69d51a40a2eda4261e274db8dc621945c602c1a362c3a5ef5808ee27c",
+  "kind": "response",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "dbc7a4b3e9811ff15f7ca4cbbd5ed1f699998c449a6f6295165b13784dce5cea",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SuggestionsFor` examines available child commands and suggests a name when its case-insensitive Levenshtein distance from the input is at most `SuggestionsMinimumDistance`, when its name has the typed prefix case-insensitively, or when the input equals an entry in `SuggestFor` case-insensitively (`command.go:831-851`). `findSuggestions` disables this entirely via `DisableSuggestions`, defaults a nonpositive distance to 2, and formats the matches (`command.go:750-766`).",
+  "sha256": "bcdc779790b909070b58bf77dacf907dd82f8c0dc5d83de9d8583defc7b43441"
+}

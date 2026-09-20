@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q019",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "729d42f4567508949a3f4e84e3a7c153bec3be8591bc9e8f2689b1617b6a3f44",
+  "bundle_sha256": "7e11476d6b7f2282f39ec444ace20049cc2c61333e90760b0d7481c4c910a9dc",
+  "prompt_sha256": "bfc6e0048520fdc33549e90e8a614a581610016d1da184b7ec9aa89289ea5768",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/man_docs.go`:\n\n- String defaults use the quoted format `=%q` when `flag.Value.Type() == \"string\"` (lines 172–175), so `flag.DefValue` is rendered with Go-style quotes.\n- If `flag.NoOptDefVal` is non-empty, the value expression is wrapped in brackets by adding `[` before and `]` after it (lines 168–170 and 179–181).\n\nThus a string flag with an optional value renders like `--flag[=\"default\"]`; without an optional value, it renders like `--flag=\"default\"`. Shorthand, when available and not deprecated, is rendered alongside the long form (lines 165–169).",
+  "responded_at": "2026-09-15T18:37:07Z",
+  "sha256": "1bf572687ea1dcf1e194a221890f4382bad8cd700095935876602ced5f2501dd"
+}

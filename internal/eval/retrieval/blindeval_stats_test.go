@@ -20,6 +20,10 @@ func TestQrelBlindSmoke_MinimumPassCountGoldenTable(t *testing.T) {
 		{n: 13, wantK: 13},
 		{n: 20, wantK: 19},
 		{n: 30, wantK: 28},
+		// The compact development sufficiency population has exactly 40
+		// answerable queries. Keep its derived threshold executable rather
+		// than copying an unchecked 36/40 into a run note.
+		{n: 40, wantK: 36},
 		{n: 41, wantK: 37},
 		{n: 64, wantK: 56},
 	} {

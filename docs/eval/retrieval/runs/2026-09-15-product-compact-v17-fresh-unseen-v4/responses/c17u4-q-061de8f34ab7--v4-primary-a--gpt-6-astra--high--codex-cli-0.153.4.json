@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-061de8f34ab7",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "90f0330a916cf3bd523526e3e3a53c0ab79c3b35dd133e145b7a193551dcef2d",
+  "bundle_sha256": "85fac1bfc970711c5a61570e1c02d372276ea0aa2b759bb368f6700b82ee6721",
+  "prompt_sha256": "f26d844699728cc1f481732853b098144b1d0aef2015a10d7e69a7e842a688c8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`RangeArgs(min, max)` checks `len(args) \u003c min || len(args) \u003e max` (`args.go`, lines 104–107). Thus, the accepted interval is inclusive: counts equal to `min` or `max` pass.\n\nOutside that interval, it returns `\"accepts between %d and %d arg(s), received %d\"` with the bounds and actual count; otherwise, it returns `nil` (lines 108–110).",
+  "responded_at": "2026-09-15T20:22:58Z",
+  "sha256": "c06e5e8f9a475dec4cca82ee8131c81efd0f7bfd1c124722c456026b1bf94d61"
+}

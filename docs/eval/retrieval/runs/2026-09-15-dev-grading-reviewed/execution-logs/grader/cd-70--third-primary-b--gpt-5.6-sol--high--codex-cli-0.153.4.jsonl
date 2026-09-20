@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-79f3-7e11-9f42-9901853db6c8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The transcript supports delegation, buffered generation, write-error propagation, and the file wrapper, but does not establish that `includeDesc` controls description inclusion. That API behavior is asserted without preserved implementation or documentation supporting it."}}
+{"type":"turn.completed","usage":{"input_tokens":18053,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":34}}

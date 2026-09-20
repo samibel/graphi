@@ -1,0 +1,1 @@
+PASS: The response accurately identifies signed integer and string support, the panic for Array, Chan, Map, and Slice, and false for other unhandled first-operand kinds. All claims and citations are supported by the preserved cobra.go spans.

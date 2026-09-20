@@ -1,0 +1,4 @@
+retrieval-eval: indexing /absolute/path/to/pinned/cobra
+retrieval-eval: embedder "ollama:qwen3-embedding:0.6b@ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d:ctx=8192:runtime=0.33.3:query=qwen3-code-v1:compute=cpu:adapter=2" active; generating vectors
+retrieval-eval: retrieval-eval: generate+persist: embed: generate: ollama: request to 127.0.0.1:11434 failed: Post "http://127.0.0.1:11434/api/embed": context deadline exceeded (Client.Timeout exceeded while awaiting headers) (SW-263 fail-closed)
+exit status 1

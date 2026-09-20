@@ -1,0 +1,3 @@
+When a child’s `inReader` is nil, `getIn(def)` calls `c.parent.getIn(def)`, recursively choosing the nearest ancestor with a non-nil reader. If no ancestor has one, it returns `def` (`command.go`, lines 413–422).
+
+For `InOrStdin()`, that default is `os.Stdin`, supplied by `c.getIn(os.Stdin)` (`command.go`, lines 388–392).

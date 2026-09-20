@@ -1,0 +1,1 @@
+PASS: The answer is a complete, supported summary of how children are added and their parent pointer is set.

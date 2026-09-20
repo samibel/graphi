@@ -1,0 +1,1 @@
+PASS: The response accurately states that HasAvailableSubCommands returns true when any direct child passes IsAvailableCommand and false otherwise. Its eligibility conditions and connection to help output are fully supported by the cited command.go spans.

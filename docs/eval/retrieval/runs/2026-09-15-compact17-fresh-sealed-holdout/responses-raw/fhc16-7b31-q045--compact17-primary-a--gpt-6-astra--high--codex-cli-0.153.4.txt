@@ -1,0 +1,1 @@
+Cobra supports **Bash, Zsh, fish, and PowerShell**. They are explicitly listed under “The currently supported shells are:” in `site/content/completions/_index.md`, lines 4–8, and confirmed in `site/content/user_guide.md`, line 742.

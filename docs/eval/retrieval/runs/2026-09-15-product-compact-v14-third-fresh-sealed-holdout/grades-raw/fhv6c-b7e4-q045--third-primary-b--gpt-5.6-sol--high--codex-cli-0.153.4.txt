@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer the question; it reports insufficient context. The transcript supports adequate tests and `go test ./...` or `make test`, but truncates the formatting requirement before the required formatting command.

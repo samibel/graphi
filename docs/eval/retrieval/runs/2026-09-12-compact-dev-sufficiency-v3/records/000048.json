@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 48,
+  "previous_sha256": "45cda0daf6ce39856dd3caf63699f609c5c1a593668b16cb93175113368740d8",
+  "kind": "response",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "04f81c0073f3cd559a8893a267477724c4796944c7fecbd1d8a6ab5cae3a6262",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Required flags are checked by (*Command).ValidateRequiredFlags in command.go:1147-1168. Unless DisableFlagParsing is set, it visits the command's flags and collects those with BashCompOneRequiredFlag annotation \"true\" whose Changed field is false. It returns a required-flag error listing missing names, or nil if none are missing. The provided spans identify the validator but do not show its execution call site.\n",
+  "sha256": "f70ec6e6dbaa5948ae68b549696662c42cbbd9990294d26df7711a82bd541f4e"
+}

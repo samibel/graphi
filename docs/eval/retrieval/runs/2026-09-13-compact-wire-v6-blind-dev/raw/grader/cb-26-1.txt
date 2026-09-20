@@ -1,0 +1,1 @@
+PASS: It accurately identifies both <PROGRAM>_ACTIVE_HELP and the COBRA_ACTIVE_HELP=0 override.

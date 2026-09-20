@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-ae35-7a61-a417-5048ccc83678"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetOut(nil)` makes `OutOrStdout()` fall back to `os.Stdout`, unless a parent command has a non-nil output writer, which it inherits.\n\nEvidence: `SetOut` assigns `nil` to `c.outWriter` (`command.go:288–292`); `OutOrStdout` calls `c.getOut(os.Stdout)` (`command.go:374–377`); and `getOut` checks parent writers before returning the default (`command.go:394–402`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16239,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":203,"reasoning_output_tokens":92}}

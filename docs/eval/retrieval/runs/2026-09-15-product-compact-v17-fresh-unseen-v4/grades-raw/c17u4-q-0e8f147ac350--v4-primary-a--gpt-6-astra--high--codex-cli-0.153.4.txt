@@ -1,0 +1,1 @@
+PASS: The bundle shows `OnFinalize` appending `y...` to the package-level `finalizers []func()` slice, supporting accumulation in order across calls while preserving earlier entries. All cited lines resolve within the bundle.

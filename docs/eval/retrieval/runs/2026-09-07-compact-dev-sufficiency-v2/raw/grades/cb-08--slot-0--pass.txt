@@ -1,0 +1,1 @@
+PASS: The answer satisfies the exact-path development key by describing doc/man_docs.go and its fillHeader helper. The exact implementation at lines 118–141 supports title and section defaults, absent-date handling, SOURCE_DATE_EPOCH parsing and error, date format, and conditional source default. Comments at 82–83 and 103 support the man-page-generation context.

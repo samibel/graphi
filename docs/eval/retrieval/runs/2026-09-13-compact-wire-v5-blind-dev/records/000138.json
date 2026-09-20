@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 138,
+  "previous_sha256": "d743e513384f2b8ddec7e7d595acda68b6e32c403b64eb42608ac742fea9cab3",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "123d6defce85eb5bd0b712cb427bb07c01232a89fd17f7a4bf58cff2eea285b8",
+  "outcome": "fail",
+  "rationale": "FAIL: The bundle supports a flag callback signature only; it does not contain ValidArgsFunction or the cited portability documentation. The response therefore supplies a material part of its generic Go completion procedure from outside the exact bundle bytes.\n",
+  "sha256": "237766b70bb03e8e69190fe226c069700854543b5154612dc3a230972819fe30"
+}

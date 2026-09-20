@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c3-2937-7851-be4d-a1c807bd8690"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"- **`command.DisableSuggestions`**: set to `true` to disable unknown-command suggestions. `(*Command).findSuggestions` returns `\"\"` when this is enabled (`command.go:750–753`).\n- **`command.SuggestionsMinimumDistance`**: controls the Levenshtein distance threshold. Values `<= 0` default to **2** (`command.go:754–756`). Despite its name, suggestions qualify when their distance is **at most** this value: `levenshteinDistance <= c.SuggestionsMinimumDistance` (`command.go:837`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17287,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":123,"reasoning_output_tokens":0}}

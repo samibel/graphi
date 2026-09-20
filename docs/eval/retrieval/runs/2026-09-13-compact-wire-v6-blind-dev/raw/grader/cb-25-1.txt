@@ -1,0 +1,1 @@
+FAIL: The option must be configured on the root command used for execution; saying only a generic cmd may direct the user to set it on an ineffective child.

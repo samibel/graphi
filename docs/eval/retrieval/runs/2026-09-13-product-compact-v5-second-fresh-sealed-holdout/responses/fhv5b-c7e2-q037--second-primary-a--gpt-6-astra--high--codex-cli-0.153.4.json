@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q037",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "bf6297d09a504acb874a905f175afe0f46aa59b0738260d158d4678380ca542a",
+  "bundle_sha256": "1b3f39136bb9196e4a13c57be3fbc132bc53dafe9d1ac1b10f8a08c4168cf0bc",
+  "prompt_sha256": "722c1767186f9649d7bb4f983e22eaaa6afe834cd4c64a4e4926d447cd248215",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows local nonpersistent flag emission in `bash_completions.go:523–533`, but omits the classification logic for persistent, inherited, hidden, and traversal-sensitive flags and the remaining legacy Bash completion arrays.",
+  "responded_at": "2026-09-13T15:25:54Z",
+  "sha256": "887c53f81db1dc74adc98967a61dfa9ba4a7a5f195cfa1b645362191a14d83d0"
+}

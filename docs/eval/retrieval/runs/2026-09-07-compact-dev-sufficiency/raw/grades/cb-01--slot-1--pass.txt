@@ -1,0 +1,1 @@
+The named method and its signature are concretely located at preserved command.go:1051-1052. The nil-context default is visible at 1053-1054, and the cited ExecuteContextC and Execute bodies support the additional context-setting and error-only-wrapper claims.

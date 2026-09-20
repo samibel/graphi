@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 57,
+  "previous_sha256": "71a8cfd017deac4b5b0f13d6556ac741e5db36636c79439872268262c0d9b754",
+  "kind": "response",
+  "query_id": "cb-22",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v2-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "0e6bfa131fc52ff0253479e8010c872db5d39a45e1e45d251f17ae7340773cd6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows the start of a `cmd.Commands()` loop in `GenManTreeFromOpts` (`doc/man_docs.go:48–54`) but omits its body and recursion, so traversal order and command filtering cannot be established.\n",
+  "sha256": "887d25d577b29f858bd3abf2cc57be7a83715febe6da75f3991484e06ed4282b"
+}

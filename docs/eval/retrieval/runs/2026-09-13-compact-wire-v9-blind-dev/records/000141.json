@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 141,
+  "previous_sha256": "2bd814df6d092446e75d43c44812fc99feb873ef15f9868221527ac5d2426dfb",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3e09263f80ab77d60e8de1ef720de85a45065f1e9a0ea7b9fb1217ae9d2dbfeb",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, correct access path: `subCommand.Flag(\"flag-name\")`. This is directly supported by `command.go:1794–1803`, where `Command.Flag` is documented to climb the command tree and falls back to `persistentFlag`, and by `command.go:1805–1816`, where inherited parent persistent flags are looked up through `parentsPflags.Lookup(name)`. Its inheritance limitation is also supported by `command.go:1655–1666`, which states that local non-persistent flags do not persist to subcommands.\n",
+  "sha256": "e779ee6256d9b11f7e1a6e613863e69ea87fe1c46cae2eae04c277f6291fd635"
+}

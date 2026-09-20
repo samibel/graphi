@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-6052-7a43-890a-6095a1f52109"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The shown portion of `powershell_completions_test.go` contains:\n\n- **Package:** `cobra` (line 15).\n- **Test:** `TestPwshCompletionNoActiveHelp(t *testing.T)` (lines 23–33). It creates a command named `c`, generates PowerShell completion into a buffer, checks generation succeeds, and verifies the output contains `${env:<active-help-variable>}=0`, disabling active help.\n\nThe response is truncated, so it does not establish the file’s complete structure or declaration list."}}
+{"type":"turn.completed","usage":{"input_tokens":16649,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":270,"reasoning_output_tokens":155}}

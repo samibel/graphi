@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 92,
+  "previous_sha256": "99d13b16cbb1c228cb9147311d92fa1238b1d0887191b3e833c96891c8814c3a",
+  "kind": "grade",
+  "query_id": "cb-08",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "83bfa2da4a466e54f6d796d6338557351137139e287c6ad1354c73e9b3476e5f",
+  "outcome": "pass",
+  "rationale": "The exact-path answer correctly describes GenMan and its nil-header allocation from doc/man_docs.go:103-108. The options fields and their use are visible at 82-86. The empty-title transformation and empty-section default are directly implemented in preserved lines 118-124.\n",
+  "sha256": "27e76dc94619e92297286d7c4c3e4d4e884c6e6c671703dc3f8e361b76cb3837"
+}

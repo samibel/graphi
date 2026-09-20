@@ -1,0 +1,1 @@
+Call `cmd.CalledAs()` on the selected `*Command`. It returns the command name or alias used to invoke it, or `""` if it has not been called (`command.go:1515-1522`). The chosen value is recorded in `commandCalledAs.name`, including aliases (`command.go:1527-1538`) and the matched command token (`command.go:771-773`).

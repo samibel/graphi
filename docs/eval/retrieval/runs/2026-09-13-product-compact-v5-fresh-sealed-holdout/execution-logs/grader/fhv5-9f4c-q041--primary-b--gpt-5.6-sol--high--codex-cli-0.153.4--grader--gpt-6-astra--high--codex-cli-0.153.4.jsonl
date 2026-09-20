@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad3-dd8c-73c0-a9a3-21374e87cbc2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle supports the three separate group-state maps, visiting every flag for each annotation, and running required-together, one-required, then exclusive validation with immediate error returns. It also supports skipping validation when flag parsing is disabled; the cited ranges support these behaviors."}}
+{"type":"turn.completed","usage":{"input_tokens":18366,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":88,"reasoning_output_tokens":28}}

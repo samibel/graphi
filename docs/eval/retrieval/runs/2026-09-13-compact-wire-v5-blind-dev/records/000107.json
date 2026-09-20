@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 107,
+  "previous_sha256": "dfc0e4d592ce97e36448060855ccf38c03cdc3fb5624cc5e6f33596b0a9eab6f",
+  "kind": "grade",
+  "query_id": "cb-21",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e8afe116f592db5a8c420f1de5c909379143db5f9aee73c6af164cbb456a3ec0",
+  "outcome": "pass",
+  "rationale": "PASS: Every stated AddCommand bookkeeping step and Parent behavior is explicit in command.go:1302-1330 and 1842-1845.\n",
+  "sha256": "8995a68d4902a599e2801db08c4230286986c3222f9d5ae4dc5d5ea931f82020"
+}

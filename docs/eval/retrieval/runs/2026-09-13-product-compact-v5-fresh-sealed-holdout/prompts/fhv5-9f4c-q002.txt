@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How does GetActiveHelpConfig choose between global and program-specific environment settings?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 7f27a03f14c9; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"active_help.go","start_line":46,"end_line":57,"text":"// GetActiveHelpConfig returns the value of the ActiveHelp environment variable\n// <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the root command in upper\n// case, with all non-ASCII-alphanumeric characters replaced by `_`.\n// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP\n// is set to \"0\".\nfunc GetActiveHelpConfig(cmd *Command) string {\n\tactiveHelpCfg := os.Getenv(activeHelpGlobalEnvVar)\n\tif activeHelpCfg != activeHelpGlobalDisable {\n\t\tactiveHelpCfg = os.Getenv(activeHelpEnvVar(cmd.Root().Name()))\n\t}\n\treturn activeHelpCfg\n}"},{"path":"active_help.go","start_line":24,"end_line":31,"text":"const (\n\tactiveHelpMarker = \"_activeHelp_ \"\n\t// The below values should not be changed: programs will be using them explicitly\n\t// in their user documentation, and users will be using them explicitly.\n\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\"\n\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\"\n\tactiveHelpGlobalDisable = \"0\"\n)"},{"path":"active_help.go","start_line":59,"end_line":60,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the"},{"path":"completions.go","start_line":216,"end_line":216,"text":"\t\t\t\tif GetActiveHelpConfig(finalCmd) == activeHelpGlobalDisable {"},{"path":"completions.go","start_line":259,"end_line":259,"text":"\t\t// for example, having this command would cause problems to a"},{"path":"site/content/active_help.md","start_line":90,"end_line":90,"text":"You may want to allow your users to disable Active Help or choose between different levels of Active Help.  It is entirely up to the program to define the type of configurability of Active Help that it wants to offer, if any."},{"path":"active_help.go","start_line":49,"end_line":49,"text":"// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP"},{"path":"active_help.go","start_line":29,"end_line":29,"text":"\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\""},{"path":"active_help.go","start_line":30,"end_line":30,"text":"\tactiveHelpGlobalDisable = \"0\""},{"path":"active_help.go","start_line":51,"end_line":51,"text":"func GetActiveHelpConfig(cmd *Command) string {"},{"path":"command.go","start_line":1495,"end_line":1499,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {"}],"provenance":{"input_sha256":"13f830c65062a876974ff5728382c4bed4481e66528f40e412091a162805a659","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

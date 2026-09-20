@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 99,
+  "previous_sha256": "8e9062470bd741b3ceccb9e97fe8259e17d55b84856e5ccc37988f822cbfb184",
+  "kind": "grade",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "8e9878dce4f140a6d6887a553155ea72250a6ae454b5f238ebfacc2b7885b61e",
+  "outcome": "pass",
+  "rationale": "The candidate concretely and correctly describes both supported stages. `command.go:1200–1224` shows that `InitDefaultVersionFlag` does nothing when `c.Version` is empty, preserves an existing `version` flag, creates a boolean `--version` flag with `-v` only when that shorthand is free, and sets `FlagSetByCobraAnnotation`. `command.go:908–919` shows execution retrieving `version` with `GetBool`, printing the quoted non-bool diagnostic and returning the error on failure, and rendering `c.VersionTemplate()` to `c.OutOrStdout()` when true. The final late-initialization statement is also grounded in the preserved comment at `command.go:883`, though its wording is slightly paraphrased.\n",
+  "sha256": "692289688deb4880cbfa042dba313ffbbc9d9cedb36a838fba0efb6c55a53ee9"
+}

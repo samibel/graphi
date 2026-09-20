@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac5-b8fb-7bd1-ad3b-236c46bb90b6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response names only `TabCompleteNext` and omits the other two modes and the minimum PowerShell version."}}
+{"type":"turn.completed","usage":{"input_tokens":16431,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":80,"reasoning_output_tokens":47}}

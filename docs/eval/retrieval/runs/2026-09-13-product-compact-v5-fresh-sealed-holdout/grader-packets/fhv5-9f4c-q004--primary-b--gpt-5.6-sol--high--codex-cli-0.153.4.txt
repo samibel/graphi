@@ -1,0 +1,92 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: ff9d4166676afa8cab9a42f97cf656f91397c8fda90f9605579457a24196f6b0
+QUERY ID: fhv5-9f4c-q004
+
+QUESTION:
+What closure does FixedCompletions return and what values does that closure produce?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- completions.go:124-130 anchor="return choices, directive" reason=It returns a completion function that ignores invocation inputs and returns the captured choices and directive.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query b142f4d63395; read in order (245/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"completions.go","start_line":123,"end_line":130,"text":"\n// FixedCompletions can be used to create a completion function which always\n// returns the same results.\nfunc FixedCompletions(choices []string, directive ShellCompDirective) func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\treturn func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\t\treturn choices, directive\n\t}\n}"},{"path":"completions.go","start_line":135,"end_line":135,"text":"\tif flag == nil {"},{"path":"command.go","start_line":55,"end_line":56,"text":"\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"completions.go","start_line":188,"end_line":189,"text":"\t\treturn fmt.Sprintf(\"ERROR: unexpected ShellCompDirective value: %d\", d)\n\t}"},{"path":"completions.go","start_line":162,"end_line":162,"text":"// Returns a string listing the different directive enabled in the specified parameter"},{"path":"command.go","start_line":702,"end_line":703,"text":"\t\t\t// over the next arg, because that is the value of this flag.\n\t\t\tpos++"},{"path":"command.go","start_line":681,"end_line":681,"text":"// argsMinusFirstX removes only the first x from args.  Otherwise, commands that look like"},{"path":"active_help.go","start_line":46,"end_line":46,"text":"// GetActiveHelpConfig returns the value of the ActiveHelp environment variable"},{"path":"completions.go","start_line":118,"end_line":122,"text":"// NoFileCompletions can be used to disable file completion for commands that should\n// not trigger file completions.\nfunc NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\treturn nil, ShellCompDirectiveNoFileComp\n}"},{"path":"completions.go","start_line":148,"end_line":160,"text":"// GetFlagCompletionFunc returns the completion function for the given flag of the command, if available.\nfunc (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {\n\tflag := c.Flag(flagName)\n\tif flag == nil {\n\t\treturn nil, false\n\t}\n\n\tflagCompletionMutex.RLock()\n\tdefer flagCompletionMutex.RUnlock()\n\n\tcompletionFunc, exists := flagCompletionFunctions[flag]\n\treturn completionFunc, exists\n}"},{"path":"completions.go","start_line":35,"end_line":35,"text":"// Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it."}],"provenance":{"input_sha256":"a56257166101ca6a459ba9d99a9bec440f94b7b5e716ba105a2bbfa44fc695cf","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`FixedCompletions` returns a closure with signature:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```
+
+The closure ignores all three arguments and always returns the captured `choices` slice and `directive` value passed to `FixedCompletions` (`completions.go`, lines 123–130):
+
+```go
+return choices, directive
+```
+----- END THE RATER'S RESPONSE -----

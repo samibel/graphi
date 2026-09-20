@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+GenMarkdownTree
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"GenMarkdownTree\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"doc/md_docs.go","start_line":124,"end_line":126,"text":"// help output will be in the file `cmd-sub-third.1`.\nfunc GenMarkdownTree(cmd *cobra.Command, dir string) error {\n\tidentity := func(s string) string { return s }"},{"path":"doc/md_docs.go","start_line":132,"end_line":134,"text":"// with custom filePrepender and linkHandler.\nfunc GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {\n\tfor _, c := range cmd.Commands() {"},{"path":"site/content/docgen/md.md","start_line":59,"end_line":61,"text":"\nYou may wish to have more control over the output, or only generate for a single command, instead of the entire command tree. If this is the case you may prefer to `GenMarkdown` instead of `GenMarkdownTree`\n"},{"path":"doc/md_docs_test.go","start_line":102,"end_line":104,"text":"\n\tif err := GenMarkdownTree(c, tmpdir); err != nil {\n\t\tt.Fatalf(\"GenMarkdownTree failed: %v\", err)"},{"path":"doc/md_docs.go","start_line":51,"end_line":53,"text":"// GenMarkdown creates markdown output.\nfunc GenMarkdown(cmd *cobra.Command, w io.Writer) error {\n\treturn GenMarkdownCustom(cmd, w, func(s string) string { return s })"},{"path":"doc/md_docs.go","start_line":57,"end_line":57,"text":"func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {"},{"path":"command.go","start_line":51,"end_line":51,"text":"type Command struct {"},{"path":"command.go","start_line":1562,"end_line":1562,"text":"func (c *Command) IsAvailableCommand() bool {"}],"provenance":{"input_sha256":"4dbb240a455e1ade9291c2d0e97b62fad9a26b94525446712c6694e1def54907","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

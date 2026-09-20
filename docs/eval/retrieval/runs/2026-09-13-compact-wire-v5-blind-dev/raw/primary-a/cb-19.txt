@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Execute` delegating to `ExecuteC`, the runnable check, and comments about persistent-hook traversal, but omits the execution body that establishes the complete validation and Run-hook order.

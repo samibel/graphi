@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 10,
+  "previous_sha256": "30124589f5591ce6e283f086c902fc2bbc40d9fbc17f57a42af25399f4a2c011",
+  "kind": "response",
+  "query_id": "cb-13",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "feefb2af68461553d5e5ba0edef29b6aafeab0cd4c39d48aa44666d47cbba966",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response names `SuggestionsFor` and mentions Levenshtein distance, but omits the selection logic, thresholds, and candidate filtering needed to explain how unknown-command suggestions are computed.\n",
+  "sha256": "3d6b752e92d683f2ef1dceecc9962659f5b7bf6b000845c38d903c8ddf81396c"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 77,
+  "previous_sha256": "8f18fcae781b76c111e74fb28ea70f90174d20cb81eec4309545688550b1696e",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "7a533a660445eeca5eb5ca800aa0062bfafaaaa2cf484a81fddc5d92f539d0c9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response names OnInitialize but does not show flag-value access or when flags are parsed relative to initialization.\n",
+  "sha256": "de1b1b8d05e1fc7f4c9a96460683e1b27a4940028bb5524ac173130fbb380260"
+}

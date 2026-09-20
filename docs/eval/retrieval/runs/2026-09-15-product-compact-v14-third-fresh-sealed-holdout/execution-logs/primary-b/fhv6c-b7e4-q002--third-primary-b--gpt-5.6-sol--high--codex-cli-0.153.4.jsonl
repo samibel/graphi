@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-730b-70c0-9dcb-ede5c586a7de"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`expectSuccess` is a test helper in `args_test.go` (lines 35–42). It verifies that a command succeeded silently:\n\n- If `output` is non-empty, it records `t.Errorf(\"Unexpected output: %v\", output)`.\n- If `err` is non-nil, it immediately fails with `t.Fatalf(\"Unexpected error: %v\", err)`.\n\nFor example, `TestMaximumNArgs_WithValid_WithInvalidArgs` calls it after `executeCommand(c, \"a\", \"b\")` (`args_test.go`, lines 246–250)."}}
+{"type":"turn.completed","usage":{"input_tokens":16570,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":124,"reasoning_output_tokens":0}}

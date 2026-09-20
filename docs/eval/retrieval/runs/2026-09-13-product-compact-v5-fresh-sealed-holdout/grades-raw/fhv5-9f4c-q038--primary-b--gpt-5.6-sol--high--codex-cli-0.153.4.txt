@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer the question. It correctly identifies that the bundle lacks target-command resolution, flag-parsing preparation, and file/directory annotation handling, but those essential behaviors cannot be verified from the supplied lookup and registration spans.

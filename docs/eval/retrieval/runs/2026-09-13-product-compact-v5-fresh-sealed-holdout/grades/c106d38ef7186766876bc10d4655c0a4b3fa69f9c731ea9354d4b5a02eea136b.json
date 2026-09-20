@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q001",
+  "response_sha256": "c106d38ef7186766876bc10d4655c0a4b3fa69f9c731ea9354d4b5a02eea136b",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies the appended element as activeHelpMarker concatenated with activeHelpStr and explains that existing completion entries are preserved. The implementation at active_help.go:42-44 and comments at lines 39-41 support these claims and the ordering of repeated help lines.",
+  "graded_at": "2026-09-13T12:42:47Z",
+  "sha256": "88f74baddb523ce475992ef586a5959b390c9206502e836ea9e3a4be6d3766f0"
+}

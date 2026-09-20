@@ -1,0 +1,480 @@
+{
+  "stratum": "exact_path",
+  "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)",
+  "reviewed_at": "2026-09-17",
+  "cobra_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "source_read": {
+    "clone_path": "<session scratchpad>/cobra",
+    "head_verified": "git rev-parse HEAD == a0a6ae020bb3899ff0276067863e50523f897370",
+    "working_tree": "clean (git status --porcelain empty), so every file read is the pinned blob",
+    "method": "byte-level line count per file (count of \\n, plus one if the file does not end with \\n); no heuristic, no brace scan"
+  },
+  "scope": {
+    "lot": "all 8 candidates with stratum == exact_path (cq-08..cq-15)",
+    "judgements_reviewed": 16,
+    "distinct_files_counted": 16,
+    "out_of_scope": "every candidate with another stratum was ignored; no other file in the repository was written"
+  },
+  "method": {
+    "span_check": "for every judgement: start_line == 1 and end_line == the counted last line of the file at the pinned SHA",
+    "anchor_check": "the anchor string was located in the file and its line recorded; all anchors are the package clause and all fall inside the span",
+    "grade_check": "grade 3 only where the span is the whole of the file the query names; grade 1 only for sibling/twin files that are not the file asked for",
+    "stratum_check": "every query string is a literal repository-relative path that exists at the pinned SHA",
+    "ambiguity_check": "the only duplicated basenames in the cobra tree are _index.md and labeler.yml, so none of the eight bare-path queries is ambiguous",
+    "precedent_recheck": "the four cobra-v2 exact_path grade-3 spans were re-counted independently: flag_groups.go 290, doc/man_docs.go 246, shell_completions.go 98, active_help.go 67 - all four equal the dataset values, confirming the whole-file convention is 'last line of the file'"
+  },
+  "queries": [
+    {
+      "id": "cq-08",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "args.go",
+      "family_id": "cobra-family-968c66eafcb63d1b",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path, the shape of cb-07..cb-10. args.go is a top-level package file that no cobra-v2 exact_path row names.",
+      "judgements": [
+        {
+          "path": "args.go",
+          "start_line": 1,
+          "end_line": 131,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "args_test.go",
+          "start_line": 1,
+          "end_line": 541,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ]
+    },
+    {
+      "id": "cq-09",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "bash_completionsV2.go",
+      "family_id": "cobra-family-edc0725ac7dea120",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. Chosen because the stem collides with bash_completions.go, giving the row a real near-miss the way cb-10 has active_help_test.go.",
+      "judgements": [
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 1,
+          "end_line": 396,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "bash_completions.go",
+          "start_line": 1,
+          "end_line": 712,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The V1 bash generator has a near-identical name but is a different file.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "bash_completionsV2_test.go",
+          "start_line": 1,
+          "end_line": 33,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ]
+    },
+    {
+      "id": "cq-10",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "doc/yaml_docs.go",
+      "family_id": "cobra-family-e3096c161715ce43",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path with a directory component, matching cb-08 (doc/man_docs.go). No cobra-v2 exact_path row names a doc/ file other than man_docs.go.",
+      "judgements": [
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 1,
+          "end_line": 175,
+          "anchor": "package doc",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "doc/yaml_docs_test.go",
+          "start_line": 1,
+          "end_line": 101,
+          "anchor": "package doc",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ]
+    },
+    {
+      "id": "cq-11",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "fish_completions.go",
+      "family_id": "cobra-family-fed02f483d9519db",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. fish_completions.go has exactly one judgement anywhere in cobra-v2.json (a grade-2 distractor in cb-35) and no exact_path row.",
+      "judgements": [
+        {
+          "path": "fish_completions.go",
+          "start_line": 1,
+          "end_line": 292,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "fish_completions_test.go",
+          "start_line": 1,
+          "end_line": 143,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ]
+    },
+    {
+      "id": "cq-12",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "powershell_completions.go",
+      "family_id": "cobra-family-13a9c7591077102a",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path, the longest per-shell generator filename in the tree; one grade-2 judgement in cobra-v2.json and no exact_path row.",
+      "judgements": [
+        {
+          "path": "powershell_completions.go",
+          "start_line": 1,
+          "end_line": 325,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "powershell_completions_test.go",
+          "start_line": 1,
+          "end_line": 33,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ]
+    },
+    {
+      "id": "cq-13",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "doc/util.go",
+      "family_id": "cobra-family-c5a327260fc85cca",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. A deliberately generic filename ('util.go') in a subdirectory, which is the hardest honest exact_path case in this repo: the name carries no topical signal at all.",
+      "judgements": [
+        {
+          "path": "doc/util.go",
+          "start_line": 1,
+          "end_line": 52,
+          "anchor": "package doc",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ],
+      "review_note": "doc/util.go is also the subject of cd-11 (hasSeeAlso) in docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json, as an exact_identifier row. Different query and different span, but the reviewer should confirm the overlap is tolerable."
+    },
+    {
+      "id": "cq-14",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "command_win.go",
+      "family_id": "cobra-family-dd418a9f008051e3",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path for a build-tagged file. Its !windows twin command_notwin.go is the natural near-miss.",
+      "judgements": [
+        {
+          "path": "command_win.go",
+          "start_line": 1,
+          "end_line": 41,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "command_notwin.go",
+          "start_line": 1,
+          "end_line": 20,
+          "anchor": "package cobra",
+          "grade": 1,
+          "reason": "The !windows twin of the file asked for: same role, different build tag.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ]
+    },
+    {
+      "id": "cq-15",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "doc/rest_docs.go",
+      "family_id": "cobra-family-d4b89f4341a29303",
+      "provenance": "draft:2026-09-17:coderank-qualification:authored-against-pinned-checkout-a0a6ae020bb3:unreviewed | Bare repository-relative path. doc/rest_docs.go holds two grade-2 judgements in cobra-v2.json (cb-22, cb-31) but is named by no exact_path row.",
+      "judgements": [
+        {
+          "path": "doc/rest_docs.go",
+          "start_line": 1,
+          "end_line": 186,
+          "anchor": "package doc",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        },
+        {
+          "path": "doc/rest_docs_test.go",
+          "start_line": 1,
+          "end_line": 113,
+          "anchor": "package doc",
+          "grade": 1,
+          "reason": "The sibling test file shares the stem but is not the file asked for.",
+          "annotator": "claude-opus-5 (CodeRank qualification candidate drafter; UNREVIEWED)",
+          "reviewer": "Claude Opus 5 (CodeRank qualification reviewer R2)"
+        }
+      ]
+    }
+  ],
+  "verdicts": [
+    {
+      "id": "cq-08",
+      "verdict": "accepted",
+      "note": "Span args.go:1-131 verified against the pinned checkout: 131 is the real last line (closing brace of the last declaration, file ends with a trailing newline). Anchor 'package cobra' present at line 15. Grade 3 matches the cb-07..cb-10 precedent for a bare-path query. Distractor args_test.go:1-541 verified (541 lines) and its reason is the verbatim cb-10 distractor wording. Review note, not a defect: the provenance claim 'no cobra-v2 exact_path row names args.go' is literally true, but args.go does carry many grade-2/grade-3 judgements in the ci-* config_docs rows of cobra-v2.json; a human should confirm that overlap is acceptable for a dev row."
+    },
+    {
+      "id": "cq-09",
+      "verdict": "accepted",
+      "note": "The heavy case of this lot, checked first. bash_completionsV2.go has 14 lines starting with '}' in column 0 (29, 44, 52, 96, 195, 215, 243, 278, 291, 337, 366, 379, 390, 396); lines 96 and 195 sit inside the embedded bash script of the raw string literal, so a naive brace heuristic really does terminate the span early - the annotator's note is correct. Counted directly: the file is 396 lines, ends with a trailing newline, and line 396 is the closing brace of GenBashCompletionV2. Span 1-396 is exact. Anchor 'package cobra' at line 15. Distractors verified: bash_completions.go is 712 lines and is the V1 generator (GenBashCompletion at line 686, GenBashCompletionFile at 704), so the grade-1 reason is factually right; bash_completionsV2_test.go is 33 lines."
+    },
+    {
+      "id": "cq-10",
+      "verdict": "accepted",
+      "note": "Span doc/yaml_docs.go:1-175 verified: 175 is the real last line. Anchor 'package doc' at line 15. Distractor doc/yaml_docs_test.go:1-101 verified (101 lines, 'package doc' at line 15, not package doc_test). Provenance claim that no cobra-v2 exact_path row names a doc/ file other than man_docs.go is true."
+    },
+    {
+      "id": "cq-11",
+      "verdict": "accepted",
+      "note": "Span fish_completions.go:1-292 verified: 292 is the real last line. Anchor 'package cobra' at line 15. Distractor fish_completions_test.go:1-143 verified. Provenance claim checked against cobra-v2.json: fish_completions.go carries exactly one judgement there, a grade-2 in cb-35 - correct."
+    },
+    {
+      "id": "cq-12",
+      "verdict": "accepted",
+      "note": "Span powershell_completions.go:1-325 verified: 325 is the real last line. Anchor 'package cobra' at line 18 (the file carries a build-tag-free header but the package clause sits at 18, not 15) - anchor is present, so the judgement is sound. Distractor powershell_completions_test.go:1-33 verified. Provenance claim checked: exactly one grade-2 judgement in cobra-v2.json (cb-35) - correct."
+    },
+    {
+      "id": "cq-13",
+      "verdict": "accepted",
+      "note": "Span doc/util.go:1-52 verified by reading the whole file: line 52 is 'func (s byName) Less(i, j int) bool { ... }', a one-line method, so the file does NOT end on a column-0 closing brace - the span is still correct because the convention is the last line of the file. Anchor 'package doc' at line 15. Answering the annotator's review_note: the overlap with cd-11 is tolerable. cd-11 is a different query ('hasSeeAlso'), a different stratum (exact_identifier), a different span (23-37) and a different family_id (cobra-family-6286a0045729688b vs cobra-family-c5a327260fc85cca), and both rows are split 'dev', so the family/split rule in dataset.go is not touched. Also noted for the record: cobra-v2.json cb-40 (no_hit, holdout) grades doc/util.go:23-37 as 0 for an unrelated query; that is query-conditional and not a conflict. No distractor judgement here, which matches cb-07/cb-08/cb-09."
+    },
+    {
+      "id": "cq-14",
+      "verdict": "accepted",
+      "note": "Span command_win.go:1-41 verified: 41 is the real last line. Anchor 'package cobra' at line 18 (lines 15-16 are the //go:build windows / +build windows tags). Distractor command_notwin.go:1-20 verified: 20 lines, last line 'var preExecHookFn func(*Command)', package clause at 18, build tags //go:build !windows. The grade-1 reason ('same role, different build tag') is factually correct: command_win.go defines preExecHookFn = preExecHook with the mousetrap hook, command_notwin.go declares the same variable as a nil func."
+    },
+    {
+      "id": "cq-15",
+      "verdict": "accepted",
+      "note": "Span doc/rest_docs.go:1-186 verified: 186 is the real last line. Anchor 'package doc' at line 15. Distractor doc/rest_docs_test.go:1-113 verified (113 lines, package doc). Provenance claim checked against cobra-v2.json: doc/rest_docs.go holds exactly two grade-2 judgements, in cb-22 and cb-31 - correct."
+    }
+  ],
+  "summary": {
+    "accepted": 8,
+    "amended": 0,
+    "rejected": 0,
+    "total": 8,
+    "reviewer_field_filled": "set on all 16 judgements; it was empty throughout the draft",
+    "line_counts": {
+      "args.go": {
+        "claimed_end_line": 131,
+        "counted_last_line": 131,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      },
+      "args_test.go": {
+        "claimed_end_line": 541,
+        "counted_last_line": 541,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      },
+      "bash_completions.go": {
+        "claimed_end_line": 712,
+        "counted_last_line": 712,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      },
+      "bash_completionsV2.go": {
+        "claimed_end_line": 396,
+        "counted_last_line": 396,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      },
+      "bash_completionsV2_test.go": {
+        "claimed_end_line": 33,
+        "counted_last_line": 33,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      },
+      "command_notwin.go": {
+        "claimed_end_line": 20,
+        "counted_last_line": 20,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 18
+      },
+      "command_win.go": {
+        "claimed_end_line": 41,
+        "counted_last_line": 41,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 18
+      },
+      "doc/rest_docs.go": {
+        "claimed_end_line": 186,
+        "counted_last_line": 186,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package doc",
+        "anchor_found_at_line": 15
+      },
+      "doc/rest_docs_test.go": {
+        "claimed_end_line": 113,
+        "counted_last_line": 113,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package doc",
+        "anchor_found_at_line": 15
+      },
+      "doc/util.go": {
+        "claimed_end_line": 52,
+        "counted_last_line": 52,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package doc",
+        "anchor_found_at_line": 15
+      },
+      "doc/yaml_docs.go": {
+        "claimed_end_line": 175,
+        "counted_last_line": 175,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package doc",
+        "anchor_found_at_line": 15
+      },
+      "doc/yaml_docs_test.go": {
+        "claimed_end_line": 101,
+        "counted_last_line": 101,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package doc",
+        "anchor_found_at_line": 15
+      },
+      "fish_completions.go": {
+        "claimed_end_line": 292,
+        "counted_last_line": 292,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      },
+      "fish_completions_test.go": {
+        "claimed_end_line": 143,
+        "counted_last_line": 143,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      },
+      "powershell_completions.go": {
+        "claimed_end_line": 325,
+        "counted_last_line": 325,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 18
+      },
+      "powershell_completions_test.go": {
+        "claimed_end_line": 33,
+        "counted_last_line": 33,
+        "match": true,
+        "file_ends_with_newline": true,
+        "anchor": "package cobra",
+        "anchor_found_at_line": 15
+      }
+    },
+    "line_count_mismatches": [],
+    "precedent_line_counts_rechecked": {
+      "flag_groups.go": {
+        "cobra_v2_end_line": 290,
+        "counted_last_line": 290
+      },
+      "doc/man_docs.go": {
+        "cobra_v2_end_line": 246,
+        "counted_last_line": 246
+      },
+      "shell_completions.go": {
+        "cobra_v2_end_line": 98,
+        "counted_last_line": 98
+      },
+      "active_help.go": {
+        "cobra_v2_end_line": 67,
+        "counted_last_line": 67
+      }
+    },
+    "open_items_for_a_human": [
+      "cq-08: args.go is already the subject of many ci-* config_docs judgements in cobra-v2.json (grades 2 and 3). No exact_path row names it, so the candidate is conformant, but the file is not fresh ground.",
+      "cq-13: doc/util.go overlaps cd-11 in docs/eval/retrieval/drafts/2026-09-14-holdout-shaped-dev/dataset.json (different query, stratum, span and family_id; both dev). Reviewed as tolerable; flagged because it crosses draft datasets.",
+      "All eight candidates are split 'dev'. cobra-v2 puts one of its four exact_path rows (cb-10) in holdout; whether this lot needs a holdout counterpart is a dataset-composition decision, not a span question."
+    ]
+  }
+}

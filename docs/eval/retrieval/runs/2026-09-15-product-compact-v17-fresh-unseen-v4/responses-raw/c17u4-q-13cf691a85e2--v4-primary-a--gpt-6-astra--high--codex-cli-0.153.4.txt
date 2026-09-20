@@ -1,0 +1,7 @@
+`getIn` uses this precedence:
+
+1. The current command’s `c.inReader`, if non-nil.
+2. The nearest ancestor’s non-nil reader, by recursively calling `c.parent.getIn(def)`.
+3. The supplied default reader, `def`, if no command in the chain has a reader.
+
+Evidence: `command.go:414–422`, specifically `return c.inReader`, `return c.parent.getIn(def)`, and `return def`. When called through `InOrStdin`, the default is `os.Stdin` (`command.go:390–392`).

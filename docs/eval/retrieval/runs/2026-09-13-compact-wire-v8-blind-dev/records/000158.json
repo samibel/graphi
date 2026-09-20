@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 158,
+  "previous_sha256": "709feebb1cf6d66bbfad22f5bc7d2d30f2190c9c45c395688bafc46021b0a116",
+  "kind": "response",
+  "query_id": "cb-14",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v8-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "28e8ac02f88525f6a379b5041b84f901f28f9eb2096d54b45abc5d2a86adebf3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Shell scripts dispatch completion by invoking a hidden command:\n\n- `ShellCompRequestCmd = \"__complete\"`; without descriptions, `ShellCompNoDescRequestCmd = \"__completeNoDesc\"` ([`completions.go`, lines 26–33]).\n- Bash, Zsh, Fish, and PowerShell generators select `ShellCompRequestCmd` (`bash_completionsV2.go:32`, `zsh_completions.go:88`, `fish_completions.go:31`, `powershell_completions.go:34–35`).\n- The hidden command’s `Run` handler calls `cmd.getCompletions(args)`, receiving the resolved command, candidates, directive, and error ([`completions.go`, lines 205–215]).\n- It determines whether descriptions should be omitted with `cmd.CalledAs() == ShellCompNoDescRequestCmd`, then iterates over the returned completions (`completions.go:213–215`).\n\nThus: shell-generated request → `__complete`/`__completeNoDesc` hidden command → its `Run` callback → `cmd.getCompletions(args)`.",
+  "sha256": "19709b20754f76fbf1557f282efe4e9b596613b74621f4c74a8f74a12229a02a"
+}

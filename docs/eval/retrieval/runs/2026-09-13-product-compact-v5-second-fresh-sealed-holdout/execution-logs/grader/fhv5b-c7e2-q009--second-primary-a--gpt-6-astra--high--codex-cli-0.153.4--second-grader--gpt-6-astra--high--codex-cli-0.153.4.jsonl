@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b66-9f53-7453-bf4f-74b149ddea1b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the loop in cobra.go:91–95: each supplied entry is assigned into templateFuncs, replacing matching names, adding new names, and preserving entries not supplied."}}
+{"type":"turn.completed","usage":{"input_tokens":18195,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

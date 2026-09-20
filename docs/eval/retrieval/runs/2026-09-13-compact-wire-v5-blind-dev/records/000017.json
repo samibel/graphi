@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 17,
+  "previous_sha256": "e8afe116f592db5a8c420f1de5c909379143db5f9aee73c6af164cbb456a3ec0",
+  "kind": "response",
+  "query_id": "cb-22",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f148a2c6a85965dbf52caafceddde389ee2acb1591c36b39a35efb5cd83a6ef3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The man-page generator performs a depth-first, children-before-parent walk. `GenManTreeFromOpts` iterates `cmd.Commands()`, skips unavailable commands and additional help topics, recursively generates each remaining child, then creates the current command's output file and calls `GenMan` (`doc/man_docs.go:46-80`). Filenames use the command path with spaces replaced by the configured separator (default `_`) and the header section (default `1`) as the extension (`doc/man_docs.go:60-80`).\n",
+  "sha256": "294ccb9195913f3bd3f6805cff46f6e0b79f70562c94d587a9ec7b74998b5743"
+}

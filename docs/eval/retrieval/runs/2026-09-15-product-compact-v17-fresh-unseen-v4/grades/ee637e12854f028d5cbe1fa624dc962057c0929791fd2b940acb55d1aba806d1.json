@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-0d31eab9627c",
+  "response_sha256": "ee637e12854f028d5cbe1fa624dc962057c0929791fd2b940acb55d1aba806d1",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly states that OnInitialize appends all supplied functions to the package-level initializers []func() slice. Both the declaration and append operation are preserved in the bundle, and the citations resolve to the supporting lines.",
+  "graded_at": "2026-09-15T20:39:03Z",
+  "sha256": "65416e1a080f7184228b604ff1579ab2de0ba8b5392805b3c253ad3208980573"
+}

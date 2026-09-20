@@ -1,0 +1,3 @@
+Yes, but not with the default help flag. `InitDefaultHelpFlag` binds both forms to one boolean via `c.Flags().BoolP("help", "h", false, usage)` (`command.go:1183–1198`), and execution only checks `GetBool("help")` (`command.go:894–905`).
+
+To distinguish them, override/predefine the help flag before initialization; `InitDefaultHelpFlag` does nothing when `"help"` already exists, and initialization is deliberately delayed to permit user overrides (`command.go:883–886`, `1183–1198`).

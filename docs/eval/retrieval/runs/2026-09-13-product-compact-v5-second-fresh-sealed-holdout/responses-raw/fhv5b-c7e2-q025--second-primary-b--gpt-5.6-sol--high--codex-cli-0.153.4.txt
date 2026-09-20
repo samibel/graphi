@@ -1,0 +1,7 @@
+Call `SetArgs` on the command with the replacement argument slice:
+
+```go
+cmd.SetArgs([]string{"arg1", "arg2"})
+```
+
+Evidence: [`command.go`, lines 276–278] defines `func (c *Command) SetArgs(a []string)` and assigns the supplied slice to the command’s internal `c.args` field.

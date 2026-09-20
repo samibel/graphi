@@ -1,0 +1,8 @@
+Flags modify a command’s behavior. Cobra supports POSIX-compliant flags and Go’s `flag` package; flags may persist to child commands or remain command-specific (`README.md:68-74`).
+
+Key APIs:
+
+- `(*Command).Flags()` returns all applicable local and persistent flags, including inherited parent flags (`command.go:1641-1653`).
+- `(*Command).LocalFlags()` returns flags set on the current command, handling inherited persistent flags and shadowing (`command.go:1668-1693`).
+- `(*Command).LocalNonPersistentFlags()` filters local flags to those that do not persist to subcommands (`command.go:1655-1666`).
+- Persistent flags are combined through `(*Command).mergePersistentFlags()` (`command.go:1849`).

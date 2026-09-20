@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f21ff5a5f9f69db1e7d5675210ad1c9e3c20f2d5d310daddf77a3d58d4459c00
+QUERY ID: fhv5b-c7e2-q063
+
+QUESTION:
+Do hidden or deprecated children stop a command from technically having subcommands?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1555-1558 anchor="return len(c.commands) > 0" reason=No; HasSubCommands checks only whether the child slice is nonempty and does not filter availability.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 8076a89d2465; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":73,"end_line":81,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n\n\t// Long is the long message shown in the 'help <this-command>' output.\n\tLong string\n\n\t// Example is examples of how to use the command.\n\tExample string\n"},{"path":"command.go","start_line":1336,"end_line":1344,"text":"// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"},{"path":"command.go","start_line":1346,"end_line":1346,"text":"// ContainsGroup return if groupID exists in the list of command groups."},{"path":"command.go","start_line":1615,"end_line":1629,"text":"// HasAvailableSubCommands determines if a command has available sub commands that\n// need to be shown in the usage/help default template under 'available commands'.\nfunc (c *Command) HasAvailableSubCommands() bool {\n\t// return true on the first found available (non deprecated/help/hidden)\n\t// sub command\n\tfor _, sub := range c.commands {\n\t\tif sub.IsAvailableCommand() {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no available (non deprecated/help/hidden)\n\t// sub commands\n\treturn false\n}"},{"path":"command.go","start_line":1560,"end_line":1576,"text":"// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"command.go","start_line":1580,"end_line":1582,"text":"// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated.\n// Concrete example: https://github.com/spf13/cobra/issues/393#issuecomment-282741924."},{"path":"command.go","start_line":1555,"end_line":1558,"text":"// HasSubCommands determines if the command has children commands.\nfunc (c *Command) HasSubCommands() bool {\n\treturn len(c.commands) > 0\n}"},{"path":"command.go","start_line":1560,"end_line":1560,"text":"// IsAvailableCommand determines if a command is available as a non-help command"},{"path":"command.go","start_line":1777,"end_line":1778,"text":"// HasAvailablePersistentFlags checks if the command contains persistent flags which are not hidden or deprecated.\nfunc (c *Command) HasAvailablePersistentFlags() bool {"},{"path":"command.go","start_line":1788,"end_line":1788,"text":"// HasAvailableInheritedFlags checks if the command has flags inherited from its parent command which are"},{"path":"command.go","start_line":1603,"end_line":1603,"text":"func (c *Command) HasHelpSubCommands() bool {"}],"provenance":{"input_sha256":"3673bb94c7a96560eca9168dcca6d4b3d809ae65284b22392cd2db4435128691","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+No. Hidden or deprecated children still count as subcommands: `HasSubCommands()` checks only `len(c.commands) > 0` ([command.go, lines 1555–1558]). They are excluded only from “available” subcommands because `IsAvailableCommand()` returns false for deprecated or hidden commands ([command.go, lines 1560–1565]), which affects `HasAvailableSubCommands()` ([command.go, lines 1615–1629]).
+----- END THE RATER'S RESPONSE -----

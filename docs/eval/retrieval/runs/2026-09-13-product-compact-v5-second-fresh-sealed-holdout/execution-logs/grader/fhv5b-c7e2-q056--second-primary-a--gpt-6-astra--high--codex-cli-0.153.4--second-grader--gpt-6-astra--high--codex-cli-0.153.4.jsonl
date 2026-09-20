@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b71-ea9a-7533-8329-42e00b8e8a90"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the root command as retaining the group ID, supported by the assignment `c.Root().completionCommandGroupID = groupID` in the cited bundle lines `command.go:342–344`."}}
+{"type":"turn.completed","usage":{"input_tokens":17896,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

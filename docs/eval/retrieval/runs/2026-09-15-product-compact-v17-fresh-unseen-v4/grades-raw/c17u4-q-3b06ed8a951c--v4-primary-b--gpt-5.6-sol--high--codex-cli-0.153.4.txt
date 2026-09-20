@@ -1,0 +1,1 @@
+PASS: The response gives the exact combined error naming "foo1" then "foo2" and correctly describes the no-argument execution and error comparison in the preserved command_test.go:818–834 span.

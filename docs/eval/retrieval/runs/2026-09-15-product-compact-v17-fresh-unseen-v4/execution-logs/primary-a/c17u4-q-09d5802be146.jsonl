@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-0168-7100-80f8-75d96ab3b99b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The callback preserves the supplied `choices []string` and `directive ShellCompDirective`, returning both unchanged regardless of `cmd`, `args`, or `toComplete`. In `completions.go:125–128`, `FixedCompletions` returns a closure whose body is `return choices, directive`."}}
+{"type":"turn.completed","usage":{"input_tokens":17229,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":66,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+PASS: The bundle supports child-first recursion that skips unavailable commands and additional help topics, followed by underscore-based .rst file creation, writing filePrepender(filename), and page generation through GenReSTCustom. The cited lines and immediate error-return behavior match the supplied source.

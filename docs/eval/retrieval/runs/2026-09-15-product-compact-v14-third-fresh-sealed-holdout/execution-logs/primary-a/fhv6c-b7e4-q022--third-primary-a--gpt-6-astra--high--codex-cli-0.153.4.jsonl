@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-8074-7f03-9f85-d98fe30ae3c5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The provided spans show:\n\n- **Package:** `cobra` (`zsh_completions_test.go:15`).\n- **Test declaration:** `TestZshCompletionWithActiveHelp(t *testing.T)` (lines 23–33).\n- **Test behavior:** Creates a `Command` named `\"c\"` with `Run: emptyRun`, generates Zsh completion into a `bytes.Buffer`, and checks generation succeeds (lines 24–28). It then computes `activeHelpEnvVar(c.Name())` and checks the output omits `\"<variable>=0\"`, verifying active help is not disabled (lines 30–32).\n\nThe response is truncated, so it does not establish the file’s complete structure or all declarations."}}
+{"type":"turn.completed","usage":{"input_tokens":16648,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":235,"reasoning_output_tokens":81}}

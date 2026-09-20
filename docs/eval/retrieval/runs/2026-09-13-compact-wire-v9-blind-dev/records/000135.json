@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 135,
+  "previous_sha256": "d1b76927d38acbf2013bdb64aa648895ca9d7a9d260c5799aea0c9e1c2bbf14c",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "be2f9ecab4c2773422d020f3c97fa863a2c6c6c0089bf84aa0b14c3ab9b3fa52",
+  "outcome": "pass",
+  "rationale": "The answer concretely provides the two supported mechanisms and exact callback signature: assigning `Command.ValidArgsFunction` is supported by `command.go:87-89`, and registering flag completion with `RegisterFlagCompletionFunc` is supported by `completions.go:132-146`. The stated unknown-flag and duplicate-registration errors are present in that span. `FixedCompletions` is supported by `completions.go:124-127`, and the hidden completion command names are supported by `completions.go:26-33`. The answer also correctly acknowledges that the preserved bundle omits the directive constants, rather than inventing one.\n",
+  "sha256": "729077a57bc793a283f29e58b020ba7769cb406f46c7573b44b9c1c2e5267eaa"
+}

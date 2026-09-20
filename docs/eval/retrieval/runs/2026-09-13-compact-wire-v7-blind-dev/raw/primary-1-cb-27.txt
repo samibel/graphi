@@ -1,0 +1,7 @@
+Set the package-level variable before executing commands:
+
+```go
+cobra.EnablePrefixMatching = true
+```
+
+Evidence: `cobra.go:55` defines `EnablePrefixMatching`, and `command.go:767-786` uses it to accept a prefix only when exactly one command name or alias matches. `command.go:1524-1538` shows matching uses `strings.HasPrefix` against command names and aliases.

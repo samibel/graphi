@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7f04d6420de077f2b0bb3f9cd0960b8ee012da2e26222dfcea73678efa307406
+QUERY ID: fhv5-9f4c-q060
+
+QUESTION:
+What state is cleared and recreated when flags are reset on a command?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1737-1749 anchor="c.parentsPflags = nil" reason=The error buffer and local/persistent base flag sets are recreated, while local, inherited, and parent-persistent caches are cleared.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query e23e456e4493; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":1805,"end_line":1805,"text":"// Recursively find matching persistent flag."},{"path":"command.go","start_line":109,"end_line":109,"text":"\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,"},{"path":"command.go","start_line":162,"end_line":162,"text":"\t// globNormFunc is the global normalization function"},{"path":"command.go","start_line":1737,"end_line":1749,"text":"// ResetFlags deletes all flags from command.\nfunc (c *Command) ResetFlags() {\n\tc.flagErrorBuf = new(bytes.Buffer)\n\tc.flagErrorBuf.Reset()\n\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.flags.SetOutput(c.flagErrorBuf)\n\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.pflags.SetOutput(c.flagErrorBuf)\n\n\tc.lflags = nil\n\tc.iflags = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1751,"end_line":1751,"text":"// HasFlags checks if the command contains any flags (local plus persistent from the entire structure)."},{"path":"command.go","start_line":1277,"end_line":1283,"text":"// ResetCommands delete parent, subcommand and help command from c.\nfunc (c *Command) ResetCommands() {\n\tc.parent = nil\n\tc.commands = nil\n\tc.helpCommand = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1285,"end_line":1285,"text":"// Sorts commands by their names."},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1737,"end_line":1737,"text":"// ResetFlags deletes all flags from command."},{"path":"command.go","start_line":1806,"end_line":1809,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}"},{"path":"command.go","start_line":1725,"end_line":1728,"text":"// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)"}],"provenance":{"input_sha256":"60e7801ce4f2fd20bed890c73ad4a85158c2aec65cdb2f5830eceefb76555180","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`(*Command).ResetFlags()` in `command.go:1737–1749`:
+
+- Recreates and resets `c.flagErrorBuf` as a new `bytes.Buffer`.
+- Recreates `c.flags` and `c.pflags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`, directing both outputs to `c.flagErrorBuf`.
+- Clears `c.lflags`, `c.iflags`, and `c.parentsPflags` by setting them to `nil`.
+----- END THE RATER'S RESPONSE -----

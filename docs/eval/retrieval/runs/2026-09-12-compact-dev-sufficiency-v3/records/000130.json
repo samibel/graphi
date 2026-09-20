@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 130,
+  "previous_sha256": "64bd99c02fbd591d16eae69fef86dbd1462e27f2ae4063ab7e56b20e79aa4eda",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "85c29eb8d845784c1e7120ccc1a5cc92630263c8764c309a937b272a469427d9",
+  "outcome": "pass",
+  "rationale": "flag_groups.go:65-86 and 223-224 support the concrete mutually-exclusive marker invocation, existence requirement, validation role and completion effect.\n",
+  "sha256": "5d91cde411ec365997899b512393423fae0b747f382cd1e772003666a6f6c63e"
+}

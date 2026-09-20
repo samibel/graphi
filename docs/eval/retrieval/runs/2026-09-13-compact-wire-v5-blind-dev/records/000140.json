@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 140,
+  "previous_sha256": "e40744a63508c7ea9a51e558d44f4223ef5ef1c4ba7ba6157cab3a3fe658ed6f",
+  "kind": "grade",
+  "query_id": "ci-1236",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "abbf90a99f4fd73fa4ab209c3d32f6c847d8a4782e16d9a66ac1a2681929098f",
+  "outcome": "fail",
+  "rationale": "FAIL: The answer leads with an ExecuteC/ExecuteContextC procedure whose signatures and selected-command return semantics are absent from the bundle. CalledAs alone does not support that external-call procedure.\n",
+  "sha256": "5061fc452c5b80f718b7aa991bbae3e3d77138e5eec4418958a79c2e87dea5e4"
+}

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do flag groups get enforced during completion
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"15 ranked source span(s) for \"how do flag groups get enforced during completion\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"flag_groups.go","start_line":224,"end_line":227,"text":"// This allows the standard completion logic to behave appropriately for flag groups\nfunc (c *Command) enforceFlagGroupsForCompletion() {\n\tif c.DisableFlagParsing {\n\t\treturn"},{"path":"flag_groups.go","start_line":121,"end_line":122,"text":"func processFlagForGroupAnnotation(flags *flag.FlagSet, pflag *flag.Flag, annotation string, groupStatus map[string]map[string]bool) {\n\tgroupInfo, found := pflag.Annotations[annotation]"},{"path":"flag_groups.go","start_line":80,"end_line":82,"text":"// first error encountered.\nfunc (c *Command) ValidateFlagGroups() error {\n\tif c.DisableFlagParsing {"},{"path":"flag_groups.go","start_line":144,"end_line":145,"text":"func validateRequiredFlagGroups(data map[string]map[string]bool) error {\n\tkeys := sortedKeys(data)"},{"path":"flag_groups.go","start_line":167,"end_line":167,"text":"func validateOneRequiredFlagGroups(data map[string]map[string]bool) error {"},{"path":"flag_groups.go","start_line":188,"end_line":188,"text":"func validateExclusiveFlagGroups(data map[string]map[string]bool) error {"},{"path":"completions.go","start_line":149,"end_line":149,"text":"func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {"},{"path":"shell_completions.go","start_line":21,"end_line":21,"text":"// MarkFlagRequired instructs the various shell completion implementations to"},{"path":"shell_completions.go","start_line":35,"end_line":35,"text":"// MarkFlagRequired instructs the various shell completion implementations to"},{"path":"completions.go","start_line":573,"end_line":573,"text":"\t\t\t\t// If the flag is not already present, we suggest it as a completion"},{"path":"flag_groups.go","start_line":111,"end_line":111,"text":"func hasAllFlags(fs *flag.FlagSet, flagnames ...string) bool {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1795,"end_line":1795,"text":"func (c *Command) Flag(name string) (flag *flag.Flag) {"},{"path":"command.go","start_line":1721,"end_line":1721,"text":"func (c *Command) NonInheritedFlags() *flag.FlagSet {"},{"path":"completions.go","start_line":563,"end_line":564,"text":"\n\treturn completions"}],"provenance":{"input_sha256":"142653b5acf55aaa9f86ff9ea1e3d813e2a9507bc891565313233d6a28e49e62","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

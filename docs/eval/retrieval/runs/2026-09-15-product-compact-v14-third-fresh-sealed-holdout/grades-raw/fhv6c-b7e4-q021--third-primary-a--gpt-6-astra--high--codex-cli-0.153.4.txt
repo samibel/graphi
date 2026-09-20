@@ -1,0 +1,1 @@
+PASS: The response accurately identifies package cobra and TestPwshCompletionNoActiveHelp at the supplied lines, including successful completion generation and verification that the generated script disables Active Help with `${env:<active-help-variable>}=0`. It appropriately limits its description to the truncated transcript.

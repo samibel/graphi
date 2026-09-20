@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-bd9e-73e2-a36f-2649b2a113dc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response omits the bodies of `Command.UsageFunc()` and `Command.UsageTemplate()` in `command.go` (lines 425–426 and 542–545), so neither the complete selection logic nor the default rendering behavior is shown."}}
+{"type":"turn.completed","usage":{"input_tokens":16447,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":120,"reasoning_output_tokens":59}}

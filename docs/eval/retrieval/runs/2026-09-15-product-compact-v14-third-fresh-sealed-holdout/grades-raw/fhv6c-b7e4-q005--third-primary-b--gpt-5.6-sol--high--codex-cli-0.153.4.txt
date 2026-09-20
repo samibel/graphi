@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper at args_test.go:66–75, including the nil-error failure, exact expected error string, and t.Fatalf call on mismatch, all supported by the preserved transcript.

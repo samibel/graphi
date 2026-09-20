@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q015",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "3152f251ff3a40e61508219a9fc3aa4b4ffd4df61b8e003baedf5b2b2443992d",
+  "bundle_sha256": "bd72571d189b771bc034c25796b308a02243753e06286ca68e30826bd0ec4477",
+  "prompt_sha256": "bfc7c16e5b72e4c4b24f2be6ece6a104ee9755b41ec3b529ee79366168a13bbe",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`bash_completions_test.go` belongs to package `cobra` (line 15). The provided snippets show:\n\n- **Helpers:** `checkOmit` checks for an unexpected substring (27–28); `check` reports an error when an expected substring is absent (33–36); `checkNumOccurrences` counts substring occurrences (39–40).\n- **Custom completion constant:** `bashCompletionFunc` defines `__root_custom_func`, which sets `COMPREPLY` to `\"hello\"` (77–80).\n- **Main test:** `TestBashCompletions` creates a root command with argument aliases, valid arguments, the custom completion function, and a required `introot` flag (83–93).\n- **Additional tests:** `TestBashCompletionHiddenFlag` (229–235), `TestBashCompletionDeprecatedFlag` (245–253), `TestBashCompletionTraverseChildren` (261–266), and `TestBashCompletionNoActiveHelp` (279–281).\n\nThe response is truncated, so these declarations are not necessarily the file’s complete contents.",
+  "responded_at": "2026-09-15T08:29:09Z",
+  "sha256": "a1ec85228e5613d22890af4973ff403321598f50ad915ad9244e0037a06cfe76"
+}

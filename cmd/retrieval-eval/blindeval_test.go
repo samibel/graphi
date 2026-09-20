@@ -3,16 +3,20 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 	"github.com/samibel/graphi/internal/eval/retrieval"
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
@@ -25,14 +29,24 @@ import (
 func TestRetrievalEval_FlagSetIsEnumeratedAndCarriesNoOverride(t *testing.T) {
 	want := []string{
 		"aggregate",
+		// answer-span-ceiling reads a dataset and a checkout and writes
+		// counts; answer-span-detail names an extra output file. Neither
+		// touches k, N, a query's membership, a graded response or a pass:
+		// the mode has no access to any evaluation state at all.
+		"answer-span-ceiling",
+		"answer-span-detail",
 		"baseline",
 		"blind-eval",
+		// blind-eval-contract selects a frozen contract version; it never
+		// changes a threshold, waives a query or retries an answer.
+		"blind-eval-contract",
 		"blind-eval-dir",
 		"budget-large",
 		"budget-medium",
 		"budget-small",
 		"budgets-out",
 		"check-claim",
+		"check-targets",
 		"checkout",
 		"dataset",
 		"date",
@@ -163,6 +177,331 @@ func TestRetrievalEval_BlindEvalRejectsAnUnknownPhase(t *testing.T) {
 	}
 }
 
+func TestRetrievalEval_BlindEvalRejectsUnknownContractVersion(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{phase: blindEvalFreeze, contractVersion: "3"}, &stdout, &stderr)
+	if code != exitUsage {
+		t.Fatalf("unknown contract returned %d, want %d", code, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "-blind-eval-contract must be one of 1, 2") {
+		t.Fatalf("stderr %q does not enumerate the accepted contract versions", stderr.String())
+	}
+}
+
+func TestRetrievalEval_BlindEvalFreezeContractTwoWritesValidRecord(t *testing.T) {
+	root, runDir := newBlindEvalFreezeRepository(t)
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{
+		phase: blindEvalFreeze, contractVersion: blindEvalContractV2,
+		root: root, dir: runDir, dataset: "dataset.json",
+	}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("freeze exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	record, err := retrieval.LoadPreconditionRecord(filepath.Join(runDir, retrieval.BlindEvalPreconditionFile))
+	if err != nil {
+		t.Fatalf("written contract-2 record does not validate: %v", err)
+	}
+	if record.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 ||
+		record.MeasurementContractVersion != retrieval.MeasurementContractVersion2 ||
+		record.FollowupMaxLines != compactv9.FollowupMaxLines ||
+		record.ClaimWordingSHA256 != retrieval.SHA256Hex([]byte(retrieval.SecondResponseClaimWording())) {
+		t.Fatalf("contract-2 fields = %+v", record)
+	}
+	methodology := frozenInputByRole(t, record, "methodology")
+	if methodology.Path != "docs/eval/retrieval/methodology-v2.md" {
+		t.Fatalf("methodology path = %q, want methodology-v2.md", methodology.Path)
+	}
+	wantSHA, err := retrieval.RepoFileSHA256Reader(root)(methodology.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if methodology.SHA256 != wantSHA {
+		t.Fatalf("methodology sha256 = %s, want %s", methodology.SHA256, wantSHA)
+	}
+}
+
+func TestRetrievalEval_BlindEvalFreezeContractOnePreservesLegacyRecordBytes(t *testing.T) {
+	root, runDir := newBlindEvalFreezeRepository(t)
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{
+		phase: blindEvalFreeze, contractVersion: blindEvalContractV1,
+		root: root, dir: runDir, dataset: "dataset.json",
+	}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("freeze exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	recordPath := filepath.Join(runDir, retrieval.BlindEvalPreconditionFile)
+	record, err := retrieval.LoadPreconditionRecord(recordPath)
+	if err != nil {
+		t.Fatalf("written contract-1 record does not validate: %v", err)
+	}
+	if record.ContractVersion != retrieval.QrelBlindSmokeContractVersion ||
+		record.MeasurementContractVersion != retrieval.MeasurementContractVersion ||
+		record.FollowupMaxLines != 0 ||
+		record.ClaimWordingSHA256 != retrieval.SHA256Hex([]byte(retrieval.FrozenClaimWording())) {
+		t.Fatalf("legacy contract fields = %+v", record)
+	}
+	wantInputs := blindEvalFrozenInputs("runs/open-run")
+	if len(record.Inputs) != len(wantInputs) {
+		t.Fatalf("frozen input count = %d, want %d", len(record.Inputs), len(wantInputs))
+	}
+	for i, want := range wantInputs {
+		if record.Inputs[i].Role != want.role || record.Inputs[i].Path != want.path {
+			t.Fatalf("frozen input %d = %s/%s, want %s/%s", i, record.Inputs[i].Role, record.Inputs[i].Path, want.role, want.path)
+		}
+	}
+	raw, err := os.ReadFile(recordPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(raw, []byte(`"followup_max_lines"`)) || bytes.Contains(raw, []byte("methodology-v2.md")) {
+		t.Fatalf("contract-1 record gained version-2 bytes:\n%s", raw)
+	}
+}
+
+func newBlindEvalFreezeRepository(t *testing.T) (root, runDir string) {
+	t.Helper()
+	root = t.TempDir()
+	runDir = filepath.Join(root, "runs", "open-run")
+	for path, body := range map[string]string{
+		"docs/eval/retrieval-budgets.json":      "{}\n",
+		"docs/eval/retrieval-targets.json":      "{}\n",
+		"docs/eval/retrieval/methodology.md":    "contract one\n",
+		"docs/eval/retrieval/methodology-v2.md": "contract two\n",
+		"runs/open-run/grading-rubric.md":       "fixture rubric\n",
+	} {
+		full := filepath.Join(root, filepath.FromSlash(path))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dataset := retrieval.Dataset{
+		SchemaVersion: retrieval.SchemaVersion,
+		ID:            "freeze-fixture", Repo: "fixture", Language: "go", EvidenceClass: "fixture",
+		Queries: []retrieval.Query{{
+			ID: "q-1", Stratum: retrieval.StratumNLBehaviour, Language: "go", Split: retrieval.SplitHoldout, Text: "Where?",
+			Judgements: []retrieval.Judgement{{Path: "answer.go", StartLine: 1, EndLine: 1, Anchor: "answer", Grade: 3, Reason: "fixture", Annotator: "fixture", Reviewer: "fixture"}},
+		}},
+	}
+	if err := retrieval.WriteBlindEvalJSON(filepath.Join(root, "dataset.json"), dataset); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"init", "-q"},
+		{"add", "."},
+		{"-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-q", "-m", "fixture"},
+	} {
+		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	return root, runDir
+}
+
+func frozenInputByRole(t *testing.T, record retrieval.PreconditionRecord, role string) retrieval.FrozenInput {
+	t.Helper()
+	for _, input := range record.Inputs {
+		if input.Role == role {
+			return input
+		}
+	}
+	t.Fatalf("record has no %q input", role)
+	return retrieval.FrozenInput{}
+}
+
+func TestBuildGraderPacketNamesTheRubricFrozenForThisRun(t *testing.T) {
+	const rubric = "docs/eval/retrieval/runs/fresh-run/grading-rubric.md"
+	const rubricBody = "# exact fresh rubric\n"
+	rubricSHA := retrieval.SHA256Hex([]byte(rubricBody))
+	packet := buildGraderPacket(
+		retrieval.Query{ID: "q-1", Text: "where"},
+		retrieval.CapturedCandidateBundle{},
+		retrieval.RaterResponse{SHA256: strings.Repeat("a", 64), Text: "answer"},
+		rubric,
+		rubricSHA,
+		[]byte(rubricBody),
+	)
+	if !strings.Contains(packet, "FROZEN RUBRIC PATH: "+rubric) || !strings.Contains(packet, "FROZEN RUBRIC SHA256: "+rubricSHA) {
+		t.Fatalf("grader packet does not name frozen rubric: %q", packet)
+	}
+	if !strings.Contains(packet, "BEGIN THE EXACT FROZEN GRADING RUBRIC -----\n"+rubricBody+"----- END") {
+		t.Fatalf("grader packet does not embed exact frozen rubric bytes: %q", packet)
+	}
+	if strings.Contains(packet, "2026-09-05-sw280-qrel-blind-smoke") {
+		t.Fatalf("grader packet leaked the historical run rubric: %q", packet)
+	}
+	if strings.Contains(packet, "RESPONSE 1 OF") || strings.Contains(packet, "RESPONSE 2 OF") {
+		t.Fatalf("one-slice grader packet gained second-response markers: %q", packet)
+	}
+}
+
+func TestBuildGraderPacketCarriesTwoSliceTranscript(t *testing.T) {
+	const rubricPath = "docs/eval/retrieval/runs/fresh-run/grading-rubric.md"
+	rubric := []byte("# exact fresh rubric\n")
+	rubricSHA := retrieval.SHA256Hex(rubric)
+	first := []byte("slice one\n")
+	second := []byte("slice two\n")
+	followup := retrieval.PreservedPayload{Bytes: second, SHA256: retrieval.SHA256Hex(second)}
+	bundle := retrieval.CapturedCandidateBundle{
+		Payload:      retrieval.PreservedPayload{Bytes: first},
+		FollowupRead: &followup,
+	}
+	query := retrieval.Query{ID: "q-1", Text: "where"}
+	response := retrieval.RaterResponse{SHA256: strings.Repeat("a", 64), Text: "answer"}
+
+	oneSlice := buildGraderPacket(query, retrieval.CapturedCandidateBundle{Payload: bundle.Payload}, response, rubricPath, rubricSHA, rubric)
+	packet := buildGraderPacket(query, bundle, response, rubricPath, rubricSHA, rubric)
+	wantTranscript := "----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n" +
+		string(first) +
+		"----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n" +
+		"----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----\n" +
+		string(second) +
+		"----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----"
+	if !strings.Contains(packet, wantTranscript) {
+		t.Fatalf("two-slice grader packet does not preserve the transcript in order: %q", packet)
+	}
+	wantAddresses := "RESPONSE CONTENT ADDRESS: " + response.SHA256 + "\n" +
+		"FOLLOW-UP READ CONTENT ADDRESS: " + followup.SHA256 + "\n"
+	if !strings.Contains(packet, wantAddresses) {
+		t.Fatalf("two-slice grader packet content addresses = %q", packet)
+	}
+	oneInstructions, _, ok := strings.Cut(oneSlice, "RESPONSE CONTENT ADDRESS:")
+	if !ok {
+		t.Fatal("one-slice packet has no response content address")
+	}
+	twoInstructions, _, ok := strings.Cut(packet, "RESPONSE CONTENT ADDRESS:")
+	if !ok {
+		t.Fatal("two-slice packet has no response content address")
+	}
+	if twoInstructions != oneInstructions {
+		t.Fatalf("grader instructions changed for two slices:\n--- one ---\n%s--- two ---\n%s", oneInstructions, twoInstructions)
+	}
+}
+
+func TestCheckPreRegisteredCapturedBundlesRejectsFollowupBindingDrift(t *testing.T) {
+	dir := t.TempDir()
+	firstBytes := []byte(`{"result":{"structuredContent":{"followup":"answer.go:1-2"}}}`)
+	secondBytes := []byte(`{"path":"answer.go","start_line":1,"end_line":2,"text":"answer"}` + "\n")
+	first := retrieval.PreservedPayload{
+		Sequence: 1, Boundary: retrieval.PayloadBoundaryCandidate, Operation: retrieval.PayloadOperationTaskContext,
+		Bytes: firstBytes, SHA256: retrieval.SHA256Hex(firstBytes), ByteCount: len(firstBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}, {TokenizerID: "real", VocabularySHA256: strings.Repeat("a", 64), Tokens: 2}},
+	}
+	second := retrieval.PreservedPayload{
+		Sequence: 2, Boundary: retrieval.PayloadBoundaryCandidate, Operation: retrieval.PayloadOperationFollowupRead,
+		Bytes: secondBytes, SHA256: retrieval.SHA256Hex(secondBytes), ByteCount: len(secondBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}, {TokenizerID: "real", VocabularySHA256: strings.Repeat("a", 64), Tokens: 2}},
+	}
+	bundle := retrieval.CapturedCandidateBundle{QueryID: "q-1", Payload: first, FollowupRead: &second}
+	if err := retrieval.WriteBlindEvalJSON(filepath.Join(dir, retrieval.BlindEvalBundlesDir, retrieval.BundleFileName(bundle.QueryID)), bundle); err != nil {
+		t.Fatal(err)
+	}
+	pre := retrieval.PreRegistration{
+		ContractVersion: retrieval.QrelBlindSmokeContractVersion2,
+		Queries: []retrieval.PreRegisteredQuery{{
+			QueryID:      bundle.QueryID,
+			BundleSHA256: first.SHA256, BundleByteCount: first.ByteCount, BundleBoundary: first.Boundary, BundleTokenCounts: first.TokenCounts,
+			FollowupSHA256: second.SHA256, FollowupByteCount: second.ByteCount, FollowupTokenCounts: second.TokenCounts,
+		}},
+	}
+	if err := checkPreRegisteredCapturedBundles(dir, pre); err != nil {
+		t.Fatalf("valid on-disk binding: %v", err)
+	}
+	pre.Queries[0].FollowupByteCount++
+	err := checkPreRegisteredCapturedBundles(dir, pre)
+	if err == nil || !strings.Contains(err.Error(), "followup_byte_count") {
+		t.Fatalf("error = %v, want follow-up binding drift refusal", err)
+	}
+}
+
+func TestPreRegisteredQueryFromBundleBindsFollowup(t *testing.T) {
+	firstBytes := []byte("first\n")
+	secondBytes := []byte("second\n")
+	first := retrieval.PreservedPayload{
+		Boundary: retrieval.PayloadBoundaryCandidate, Bytes: firstBytes,
+		SHA256: retrieval.SHA256Hex(firstBytes), ByteCount: len(firstBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}},
+	}
+	second := retrieval.PreservedPayload{
+		Boundary: retrieval.PayloadBoundaryCandidate, Bytes: secondBytes,
+		SHA256: retrieval.SHA256Hex(secondBytes), ByteCount: len(secondBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}},
+	}
+	query := retrieval.Query{ID: "q-1", FamilyID: "family-1", Stratum: retrieval.StratumNLBehaviour, Text: "question"}
+	prompt := retrieval.RaterPrompt{SHA256: strings.Repeat("a", 64)}
+	got := preRegisteredQueryFromBundle(query, prompt, retrieval.CapturedCandidateBundle{QueryID: query.ID, Payload: first, FollowupRead: &second})
+	if got.FollowupSHA256 != second.SHA256 || got.FollowupByteCount != second.ByteCount || !reflect.DeepEqual(got.FollowupTokenCounts, second.TokenCounts) {
+		t.Fatalf("follow-up binding = %+v", got)
+	}
+	one := preRegisteredQueryFromBundle(query, prompt, retrieval.CapturedCandidateBundle{QueryID: query.ID, Payload: first})
+	if one.FollowupSHA256 != "" || one.FollowupByteCount != 0 || len(one.FollowupTokenCounts) != 0 {
+		t.Fatalf("one-slice query gained follow-up fields: %+v", one)
+	}
+}
+
+func TestValidateCapturedBundleForGraderPacketRejectsForgedFollowup(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "answer.go"), []byte("line one\nline two\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	counter := retrieval.PayloadCounter{
+		TokenizerID:      "fixture-real-tokenizer",
+		VocabularySHA256: strings.Repeat("b", 64),
+		Count:            func(raw []byte) (int, error) { return len(raw), nil },
+	}
+	first := []byte(`{"result":{"structuredContent":{"followup":"answer.go:1-2"}}}`)
+	forged := []byte(`{"path":"answer.go","start_line":1,"end_line":2,"text":"forged\ntext"}` + "\n")
+	second := retrieval.PreservedPayload{
+		Sequence: 2, Boundary: retrieval.PayloadBoundaryCandidate, Operation: retrieval.PayloadOperationFollowupRead,
+		Bytes: forged, SHA256: retrieval.SHA256Hex(forged), ByteCount: len(forged),
+		TokenCounts: []retrieval.PayloadTokenCount{
+			{TokenizerID: retrieval.TokenizerID, Tokens: len(strings.Fields(string(forged)))},
+			{TokenizerID: counter.TokenizerID, VocabularySHA256: counter.VocabularySHA256, Tokens: len(forged)},
+		},
+	}
+	bundle := retrieval.CapturedCandidateBundle{
+		QueryID: "q-1", Payload: retrieval.PreservedPayload{Bytes: first}, FollowupRead: &second,
+	}
+	err := validateCapturedBundleForGraderPacket(os.DirFS(root), bundle.QueryID, bundle, counter)
+	if err == nil || !strings.Contains(err.Error(), "bytes differ") {
+		t.Fatalf("error = %v, want forged-byte refusal", err)
+	}
+}
+
+func TestLoadFrozenGradingRubricFailsClosedOnMissingOrDriftedBytes(t *testing.T) {
+	root := t.TempDir()
+	const rubricPath = "run/grading-rubric.md"
+	if err := os.MkdirAll(filepath.Join(root, "run"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := []byte("# frozen rubric\n")
+	precondition := retrieval.PreconditionRecord{Inputs: []retrieval.FrozenInput{{
+		Role: retrieval.PreconditionInputGradingRubric, Path: rubricPath, SHA256: retrieval.SHA256Hex(original),
+	}}}
+
+	if _, _, _, err := loadFrozenGradingRubric(root, precondition); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("missing rubric error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(rubricPath)), []byte("# drifted rubric\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := loadFrozenGradingRubric(root, precondition); err == nil || !strings.Contains(err.Error(), "drifted") {
+		t.Fatalf("drifted rubric error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(rubricPath)), original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path, sha, raw, err := loadFrozenGradingRubric(root, precondition)
+	if err != nil || path != rubricPath || sha != precondition.Inputs[0].SHA256 || !bytes.Equal(raw, original) {
+		t.Fatalf("frozen rubric = %q %q %q %v", path, sha, raw, err)
+	}
+}
+
 // buildBlindEvalRunDir writes a complete, correctly ordered run directory with
 // n queries of which passes pass. It uses real repository files as the frozen
 // inputs so the end-of-run comparison genuinely reads them.
@@ -174,6 +513,10 @@ func TestRetrievalEval_BlindEvalRejectsAnUnknownPhase(t *testing.T) {
 // directory. A fixture that lived in a temp directory outside the repository
 // would only prove those checks do not run.
 func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
+	return buildBlindEvalRunDirForContract(t, n, passes, retrieval.QrelBlindSmokeContractVersion)
+}
+
+func buildBlindEvalRunDirForContract(t *testing.T, n, passes int, contractVersion string) string {
 	t.Helper()
 	root, err := repositoryRoot()
 	if err != nil {
@@ -199,8 +542,17 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		{retrieval.PreconditionInputGradingRubric, rubricPath},
 		{"methodology", "docs/eval/retrieval/methodology.md"},
 	}
+	measurementContractVersion := retrieval.MeasurementContractVersion
+	claimWording := retrieval.FrozenClaimWording()
+	followupMaxLines := 0
+	if contractVersion == retrieval.QrelBlindSmokeContractVersion2 {
+		measurementContractVersion = retrieval.MeasurementContractVersion2
+		claimWording = retrieval.SecondResponseClaimWording()
+		followupMaxLines = compactv9.FollowupMaxLines
+		inputs[len(inputs)-1].path = "docs/eval/retrieval/methodology-v2.md"
+	}
 	precondition := retrieval.PreconditionRecord{
-		ContractVersion:            retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:            contractVersion,
 		Evaluation:                 retrieval.QrelBlindSmokeEvaluationName,
 		FreezeCommit:               "abcdefabcdefabcdefabcdefabcdefabcdefabcd",
 		FreezeTimestamp:            "2026-09-05T08:00:00Z",
@@ -211,8 +563,9 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		ComparatorVersion:          retrieval.BlindEvalComparatorVersion,
 		TokenizerID:                evaltokenizer.TokenizerID,
 		TokenizerVocabularySHA256:  evaltokenizer.PinnedVocabularySHA256,
-		MeasurementContractVersion: retrieval.MeasurementContractVersion,
-		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(retrieval.FrozenClaimWording())),
+		MeasurementContractVersion: measurementContractVersion,
+		FollowupMaxLines:           followupMaxLines,
+		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(claimWording)),
 	}
 	datasetSHA, err := read(precondition.DatasetPath)
 	if err != nil {
@@ -238,7 +591,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		t.Fatal(err)
 	}
 
-	derivation, err := retrieval.DerivePassCount(n, precondition.DatasetSHA256, "cmd fixture")
+	derivation, err := retrieval.DerivePassCountForContract(contractVersion, n, precondition.DatasetSHA256, "cmd fixture")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -250,7 +603,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 	adjudicator := retrieval.Participant{ID: "adjudicator", Role: "adjudicator", Provider: "fixture", Model: "m-x", IndependenceBasis: "cmd fixture"}
 
 	pre := retrieval.PreRegistration{
-		ContractVersion:    retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:    contractVersion,
 		Evaluation:         retrieval.QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
 		PreconditionCommit: precondition.FreezeCommit,
@@ -367,7 +720,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		}
 		for _, rater := range raters {
 			response := retrieval.RaterResponse{
-				ContractVersion:       retrieval.QrelBlindSmokeContractVersion,
+				ContractVersion:       contractVersion,
 				Evaluation:            retrieval.QrelBlindSmokeEvaluationName,
 				Role:                  "primary",
 				QueryID:               q.QueryID,
@@ -392,7 +745,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 				t.Fatal(err)
 			}
 			grade := retrieval.Grade{
-				ContractVersion: retrieval.QrelBlindSmokeContractVersion,
+				ContractVersion: contractVersion,
 				Evaluation:      retrieval.QrelBlindSmokeEvaluationName,
 				QueryID:         q.QueryID,
 				ResponseSHA256:  sealedResponse.SHA256,
@@ -421,6 +774,170 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		t.Fatal(err)
 	}
 	return dir
+}
+
+func buildBlindEvalRawRunDirForContract(t *testing.T, n, passes int, contractVersion string) string {
+	t.Helper()
+	dir := buildBlindEvalRunDirForContract(t, n, passes, contractVersion)
+	pre, err := retrieval.LoadPreRegistration(filepath.Join(dir, retrieval.BlindEvalPreRegFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{
+		filepath.Join(dir, retrieval.BlindEvalResponsesDir),
+		filepath.Join(dir, retrieval.BlindEvalGradesDir),
+		filepath.Join(dir, retrieval.BlindEvalAdjudicationsDir),
+		filepath.Join(dir, retrieval.BlindEvalSidecarManifestFile),
+	} {
+		if err := os.RemoveAll(path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i, query := range pre.Queries {
+		outcome := "FAIL: fixture failure"
+		if i < passes {
+			outcome = "PASS: fixture pass"
+		}
+		for _, rater := range pre.PrimaryRaters {
+			responsePath := filepath.Join(dir, blindEvalRawResponsesDir, rawResponseFileName(query.QueryID, rater.ID))
+			if err := os.MkdirAll(filepath.Dir(responsePath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(responsePath, []byte("answer for "+query.QueryID+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			gradePath := filepath.Join(dir, blindEvalRawGradesDir, rawGradeFileName(query.QueryID, rater.ID))
+			if err := os.MkdirAll(filepath.Dir(gradePath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(gradePath, []byte(outcome+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return dir
+}
+
+func TestRetrievalEval_BlindEvalContractTwoSealsAndDecidesWithOneRunVersion(t *testing.T) {
+	dir := buildBlindEvalRawRunDirForContract(t, 13, 13, retrieval.QrelBlindSmokeContractVersion2)
+	pre, err := retrieval.LoadPreRegistration(filepath.Join(dir, retrieval.BlindEvalPreRegFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	queryID := pre.Queries[0].QueryID
+	if err := os.WriteFile(filepath.Join(dir, blindEvalRawGradesDir, rawGradeFileName(queryID, pre.PrimaryRaters[1].ID)), []byte("FAIL: fixture disagreement\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, blindEvalRawAdjudicationsDir), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, blindEvalRawAdjudicationsDir, queryID+".txt"), []byte("adjudicator answer\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, blindEvalRawGradesDir, rawGradeFileName(queryID, pre.Adjudicator.ID)), []byte("PASS: fixture majority\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalSeal, dir: dir, root: root}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("seal exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	artifacts, err := retrieval.LoadEvaluationArtifacts(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, response := range artifacts.Responses {
+		if response.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+			t.Fatalf("response for query %s contract_version=%q", response.QueryID, response.ContractVersion)
+		}
+	}
+	for _, grade := range artifacts.Grades {
+		if grade.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+			t.Fatalf("grade for query %s contract_version=%q", grade.QueryID, grade.ContractVersion)
+		}
+	}
+	if len(artifacts.Adjudications) != 1 {
+		t.Fatalf("adjudications=%d, want 1", len(artifacts.Adjudications))
+	}
+	adjudication := artifacts.Adjudications[0]
+	if adjudication.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 ||
+		adjudication.Disclosure.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 ||
+		adjudication.Response.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+		t.Fatalf("adjudication versions = envelope %q disclosure %q response %q", adjudication.ContractVersion, adjudication.Disclosure.ContractVersion, adjudication.Response.ContractVersion)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("decide exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	var comparison retrieval.HashComparisonResult
+	if err := readTestJSON(filepath.Join(dir, retrieval.BlindEvalComparisonFile), &comparison); err != nil {
+		t.Fatal(err)
+	}
+	var outcome retrieval.EvaluationOutcome
+	if err := readTestJSON(filepath.Join(dir, retrieval.BlindEvalOutcomeFile), &outcome); err != nil {
+		t.Fatal(err)
+	}
+	if comparison.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 || outcome.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+		t.Fatalf("decision versions = comparison %q outcome %q", comparison.ContractVersion, outcome.ContractVersion)
+	}
+}
+
+func TestRetrievalEval_BlindEvalDecideRefusesContractOneGradeInContractTwoRun(t *testing.T) {
+	dir := buildBlindEvalRawRunDirForContract(t, 13, 13, retrieval.QrelBlindSmokeContractVersion2)
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalSeal, dir: dir, root: root}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("seal exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	entries, err := os.ReadDir(filepath.Join(dir, retrieval.BlindEvalGradesDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("the sealed fixture has no grades")
+	}
+	gradePath := filepath.Join(dir, retrieval.BlindEvalGradesDir, entries[0].Name())
+	var grade retrieval.Grade
+	if err := readTestJSON(gradePath, &grade); err != nil {
+		t.Fatal(err)
+	}
+	queryID := grade.QueryID
+	grade.ContractVersion = retrieval.QrelBlindSmokeContractVersion
+	grade, err = retrieval.SealGrade(grade)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := retrieval.WriteBlindEvalJSON(gradePath, grade); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code == exitOK {
+		t.Fatal("decide accepted a contract-1 grade in a contract-2 run")
+	}
+	for _, want := range []string{queryID, retrieval.QrelBlindSmokeContractVersion, retrieval.QrelBlindSmokeContractVersion2} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("stderr %q does not name %q", stderr.String(), want)
+		}
+	}
+}
+
+func readTestJSON(path string, dst any) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return jsonUnmarshalStrict(raw, dst)
 }
 
 // blindEvalFixtureRunDir makes a throwaway run directory INSIDE the repository
@@ -490,6 +1007,39 @@ func TestRetrievalEval_BlindEvalRefusesARunDirectoryOutsideTheRepository(t *test
 	}
 	if !strings.Contains(stderr.String(), "outside the repository") {
 		t.Errorf("stderr %q", stderr.String())
+	}
+}
+
+// A lexical path below the repository can still resolve physically outside it
+// through a symlink. The run directory is the candidate-binding exclusion, so
+// accepting that path would let mutable, uncommitted inputs masquerade as a
+// repository-owned evaluation record.
+func TestRetrievalEval_BlindEvalRefusesASymlinkRunDirectoryOutsideTheRepository(t *testing.T) {
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parent := filepath.Join(root, "cmd", "retrieval-eval", "testdata")
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	link := filepath.Join(parent, "blindeval-run-outside-link")
+	if err := os.Symlink(outside, link); err != nil {
+		if os.IsPermission(err) {
+			t.Skipf("symlinks unavailable: %v", err)
+		}
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(link)
+		_ = os.Remove(parent)
+	})
+
+	if rel, err := runDirectoryInsideRepository(root, link); err == nil {
+		t.Fatalf("a symlink to an outside run directory resolved to %q instead of being refused", rel)
+	} else if !strings.Contains(err.Error(), "outside the repository") {
+		t.Errorf("refusal %q does not say the physical directory is outside the repository", err)
 	}
 }
 

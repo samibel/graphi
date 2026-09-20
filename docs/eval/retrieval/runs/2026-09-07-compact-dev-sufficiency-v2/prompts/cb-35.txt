@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+completion
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"completion\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"completions.go","start_line":683,"end_line":710,"text":"func (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tfor _, cmd := range c.commands {\n\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {\n\t\t\t// A completion command is already available\n\t\t\treturn\n\t\t}\n\t}\n\n\thaveNoDescFlag := !c.CompletionOptions.DisableNoDescFlag \u0026\u0026 !c.CompletionOptions.DisableDescriptions\n\n\tcompletionCmd := \u0026Command{\n\t\tUse:   compCmdName,\n\t\tShort: \"Generate the autocompletion script for the specified shell\",\n\t\tLong: fmt.Sprintf(`Generate the autocompletion script for %[1]s for the specified shell.\nSee each sub-command's help for details on how to use the generated script.\n`, c.Root().Name()),\n\t\tArgs:              NoArgs,\n\t\tValidArgsFunction: NoFileCompletions,\n\t\tHidden:            c.CompletionOptions.HiddenDefaultCmd,\n\t\tGroupID:           c.completionCommandGroupID,\n\t}\n\tc.AddCommand(completionCmd)\n\n\tout := c.OutOrStdout()"},{"path":"completions.go","start_line":91,"end_line":97,"text":"\t// behavior after completions have been provided.\n\t// This one must be last to avoid messing up the iota count.\n\tShellCompDirectiveDefault ShellCompDirective = 0\n)\n\nconst (\n\t// Constants for the completion command"},{"path":"site/content/completions/_index.md","start_line":117,"end_line":118,"text":"# Customizing completions\n"},{"path":"site/content/completions/_index.md","start_line":112,"end_line":113,"text":"To tell Cobra to completely disable descriptions for completions:\n```"}],"provenance":{"input_sha256":"662d6bba2bfd3cf9dbb8892e8adb858f1d9ec2afca5f2eb8b20e1892fc14c1ba","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

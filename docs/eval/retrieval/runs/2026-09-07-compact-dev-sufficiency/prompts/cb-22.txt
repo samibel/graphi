@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does the documentation generator walk the command tree
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"16 ranked source span(s) for \"how does the documentation generator walk the command tree\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"doc/man_docs.go","start_line":38,"end_line":38,"text":"func GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {"},{"path":"doc/man_docs.go","start_line":48,"end_line":48,"text":"func GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {"},{"path":"doc/md_docs.go","start_line":125,"end_line":125,"text":"func GenMarkdownTree(cmd *cobra.Command, dir string) error {"},{"path":"doc/md_docs.go","start_line":133,"end_line":133,"text":"func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {"},{"path":"doc/yaml_docs.go","start_line":53,"end_line":53,"text":"func GenYamlTree(cmd *cobra.Command, dir string) error {"},{"path":"doc/yaml_docs.go","start_line":60,"end_line":60,"text":"func GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {"},{"path":"site/content/user_guide.md","start_line":735,"end_line":735,"text":"## Generating documentation for your command"},{"path":"site/content/docgen/yaml.md","start_line":56,"end_line":56,"text":"This will generate a whole series of files, one for each command in the tree, in the directory specified (in this case \"./\")"},{"path":"command.go","start_line":1426,"end_line":1426,"text":"func (c *Command) CommandPath() string {"},{"path":"command.go","start_line":1583,"end_line":1583,"text":"func (c *Command) IsAdditionalHelpTopicCommand() bool {"},{"path":"command.go","start_line":861,"end_line":861,"text":"func (c *Command) Root() *Command {"},{"path":"doc/man_docs.go","start_line":84,"end_line":84,"text":"type GenManTreeOptions struct {"},{"path":"doc/man_examples_test.go","start_line":25,"end_line":25,"text":"func ExampleGenManTree() {"},{"path":"doc/man_docs.go","start_line":105,"end_line":105,"text":"func GenMan(cmd *cobra.Command, header *GenManHeader, w io.Writer) error {"},{"path":"command.go","start_line":47,"end_line":47,"text":"// Command is just that, a command for your application."},{"path":"site/content/user_guide.md","start_line":282,"end_line":282,"text":"A flag can also be assigned locally, which will only apply to that specific command."}],"provenance":{"input_sha256":"dbc781d2df1ddde5ab72c190876ad24ed944f616b5666c29b85b45c9061c7a68","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

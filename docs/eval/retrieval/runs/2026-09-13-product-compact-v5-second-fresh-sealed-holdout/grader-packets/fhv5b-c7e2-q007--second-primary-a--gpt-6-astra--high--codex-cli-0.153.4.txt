@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: b62d56ad6708b186e91d46aa445c94081ab05cfd8728fa09a4d2b76d60e19e7c
+QUERY ID: fhv5b-c7e2-q007
+
+QUESTION:
+Are both endpoints accepted by RangeArgs, and what causes rejection?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:103-111 anchor="len(args) < min || len(args) > max" reason=The range is inclusive; only counts below min or above max are rejected.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 26ec289d5e5c; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"args.go","start_line":103,"end_line":111,"text":"// RangeArgs returns an error if the number of args is not within the expected range.\nfunc RangeArgs(min int, max int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) < min || len(args) > max {\n\t\t\treturn fmt.Errorf(\"accepts between %d and %d arg(s), received %d\", min, max, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"command.go","start_line":57,"end_line":65,"text":"\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command.\n\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are\n\t//       optional, they are enclosed in brackets ([ ]).\n\t// Example: add [-F file | -D dir]... [-f format] profile\n\tUse string\n\n\t// Aliases is an array of aliases that can be used instead of the first word in Use.\n\tAliases []string\n"},{"path":"powershell_completions.go","start_line":161,"end_line":161,"text":"        # This is needed because the CompletionResult does not accept an empty string as argument"},{"path":"doc/util.go","start_line":25,"end_line":35,"text":"// both not deprecated and not the autogenerated help command.\nfunc hasSeeAlso(cmd *cobra.Command) bool {\n\tif cmd.HasParent() {\n\t\treturn true\n\t}\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\treturn true\n\t}"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"args.go","start_line":22,"end_line":22,"text":"type PositionalArgs func(cmd *Command, args []string) error"},{"path":"completions.go","start_line":163,"end_line":168,"text":"func (d ShellCompDirective) string() string {\n\tvar directives []string\n\tif d&ShellCompDirectiveError != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveError\")\n\t}\n\tif d&ShellCompDirectiveNoSpace != 0 {"},{"path":"CONDUCT.md","start_line":12,"end_line":15,"text":"### CVE\nMaintainers will make every effort to release security patches in the case of a medium to high severity CVE directly impacting the library. The speed in which these patches reach a release is up to the discretion of the maintainers. A low severity CVE may be a lower priority than a high severity one.\n\n### Communication"},{"path":"args_test.go","start_line":346,"end_line":350,"text":"func TestRangeArgs_WithValid_WithInvalidArgs(t *testing.T) {\n\tc := getCommand(RangeArgs(2, 4), true)\n\toutput, err := executeCommand(c, \"three\", \"a\", \"two\")\n\texpectSuccess(output, err, t)\n}"}],"provenance":{"input_sha256":"df6ee314035befc6cdd73538f35e900106d596bd22f7342fbf0ec2fa473d36c0","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Yes. `RangeArgs(min, max)` accepts both endpoints: argument counts equal to `min` or `max` return `nil`. It rejects only when `len(args) < min || len(args) > max`, returning `"accepts between %d and %d arg(s), received %d"` (`args.go`, lines 104–109).
+----- END THE RATER'S RESPONSE -----

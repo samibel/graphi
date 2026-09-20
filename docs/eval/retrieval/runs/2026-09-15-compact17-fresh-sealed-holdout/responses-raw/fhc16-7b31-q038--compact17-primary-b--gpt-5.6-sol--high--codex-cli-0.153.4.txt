@@ -1,0 +1,13 @@
+In `command.go:1436-1451`, `(*Command).UseLine` builds the usage line as follows:
+
+- If the command has a parent (`HasParent()` means `c.parent != nil`, `command.go:1630-1634`), it concatenates `c.parent.CommandPath()`, a space, and `c.Use`:
+  `useline = c.parent.CommandPath() + " " + c.Use`
+- Otherwise, it uses `c.Use` alone.
+- If `DisableFlagsInUseLine` is true, it immediately returns that result.
+- Otherwise, when `HasAvailableFlags()` is true and `useline` does not already contain `"[flags]"`, it appends `" [flags]"`.
+
+`CommandPath()` recursively constructs the parent path as `parent.CommandPath() + " " + Name()` (`command.go:1424-1434`). Thus, a child’s final form is effectively:
+
+`<recursive parent path> <child Use> [flags]`
+
+with `[flags]` omitted when disabled, unavailable, or already present in the assembled line.

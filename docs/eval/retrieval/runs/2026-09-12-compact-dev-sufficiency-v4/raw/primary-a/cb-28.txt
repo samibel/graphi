@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows group registration and group-ID setters, but omits the `GroupID` field's behavioral contract and the code that uses it to affect command behavior or output.

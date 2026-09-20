@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How do I get the flag of the currently executing command?
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"18 ranked source span(s) for \"How do I get the flag of the currently executing command?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command.go","start_line":1794,"end_line":1796,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)"},{"path":"command.go","start_line":1643,"end_line":1644,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {"},{"path":"command.go","start_line":1805,"end_line":1807,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {"},{"path":"command.go","start_line":1038,"end_line":1038,"text":"func (c *Command) Execute() error {"},{"path":"command.go","start_line":1052,"end_line":1052,"text":"func (c *Command) ExecuteC() (cmd *Command, err error) {"},{"path":"command_test.go","start_line":1734,"end_line":1734,"text":"func TestFlagOnPflagCommandLine(t *testing.T) {"},{"path":"command_test.go","start_line":70,"end_line":70,"text":"func resetCommandLineFlagSet() {"},{"path":"command.go","start_line":1767,"end_line":1767,"text":"func (c *Command) HasInheritedFlags() bool {"},{"path":"command.go","start_line":1696,"end_line":1696,"text":"func (c *Command) InheritedFlags() *flag.FlagSet {"},{"path":"command.go","start_line":874,"end_line":874,"text":"func (c *Command) execute(a []string) (err error) {"},{"path":"flag_groups.go","start_line":81,"end_line":81,"text":"func (c *Command) ValidateFlagGroups() error {"},{"path":"completions.go","start_line":149,"end_line":149,"text":"func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {"},{"path":"completions.go","start_line":841,"end_line":841,"text":"func findFlag(cmd *Command, name string) *pflag.Flag {"},{"path":"command.go","start_line":172,"end_line":172,"text":"\tflagErrorFunc func(*Command, error) error"},{"path":"command.go","start_line":375,"end_line":375,"text":"func (c *Command) OutOrStdout() io.Writer {"},{"path":"command.go","start_line":1496,"end_line":1496,"text":"func (c *Command) Name() string {"},{"path":"command.go","start_line":1551,"end_line":1551,"text":"func (c *Command) Runnable() bool {"},{"path":"completions.go","start_line":287,"end_line":287,"text":"\t\t\trootCmd.RemoveCommand(c)"}],"provenance":{"input_sha256":"033943e1419629c3c15f8d62cfbcf356bc4c50ccce868a912f608e1cb79602d9","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

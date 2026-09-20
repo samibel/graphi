@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 48,
+  "previous_sha256": "1549ab77bf2cf847cd4219be410e194d53da028c4cfe164d7d219e7c549d5391",
+  "kind": "response",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "2e61b9ce33dd9b400139b7fe64eb92586764e593a109dcc8528696a0f8a0e070",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Required flags are validated by `(*Command).ValidateRequiredFlags` in `command.go:1146-1169`. Unless flag parsing is disabled, it visits all applicable flags, finds those annotated `BashCompOneRequiredFlag=true` that were not changed, and returns `required flag(s) ... not set` listing the missing names.\n",
+  "sha256": "6941448a7f9fcbcaa217e773f4215ccedab1687150c1832339d74e68a62fb26f"
+}

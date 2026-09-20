@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q059",
+  "response_sha256": "113a8cd04af292b0e2d746c6e99535235b9edb4492bdd7b44387a0879b44fcfa",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The behavioral summary is supported, but the pinpoint citations are not: command.go:1369 contains `continue main`, not the parent reset at line 1368; line 1375 is a comment, not the slice replacement at line 1374.",
+  "graded_at": "2026-09-13T12:57:36Z",
+  "sha256": "4b9d78f789ead1816b236df6dd609139aa91a301c91140bf0c984ff24c94eeb4"
+}

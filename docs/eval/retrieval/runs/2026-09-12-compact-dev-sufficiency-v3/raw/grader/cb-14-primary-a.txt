@@ -1,0 +1,1 @@
+The hidden-command comments and Run handler show dispatch to getCompletions(args), error reporting with continued processing and CalledAs-based description selection.

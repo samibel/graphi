@@ -1,0 +1,7 @@
+The provided spans show these declarations in `cobra_test.go`:
+
+- **Package:** `cobra` (line 15).
+- **Helper:** `assertNoErr(t *testing.T, e error)` reports non-nil errors with `t.Error(e)` (lines 22–26).
+- **Test:** `TestAddTemplateFunctions(t *testing.T)` registers template functions through `AddTemplateFunc` and `AddTemplateFuncs`, sets a `Command` usage template, and checks that `UsageString()` returns `"Hello, world."` (lines 28–42).
+
+The response is marked `truncated: true`, so it does not establish the file’s complete structure or all declarations.

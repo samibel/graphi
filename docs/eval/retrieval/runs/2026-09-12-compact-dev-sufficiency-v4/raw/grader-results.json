@@ -1,0 +1,322 @@
+{
+  "cb-01:primary-a": {
+    "outcome": "pass",
+    "rationale": "Identifies ExecuteC and accurately summarizes the visible context, root delegation, setup, and command resolution; explicitly limits claims to the partial body in command.go:1051-1092."
+  },
+  "cb-01:primary-b": {
+    "outcome": "pass",
+    "rationale": "Identifies ExecuteC and accurately summarizes the visible context, root delegation, setup, and command resolution; explicitly limits claims to the partial body in command.go:1051-1092."
+  },
+  "cb-02:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies the mutually exclusive marker, annotation append mechanism, missing-flag/error handling, and validation entry point shown in flag_groups.go:63-90."
+  },
+  "cb-02:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies the mutually exclusive marker, annotation append mechanism, missing-flag/error handling, and validation entry point shown in flag_groups.go:63-90."
+  },
+  "cb-03:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies GenMarkdownTree and its documented scope and filename warning; describes only visible related customization/page-generation evidence in doc/md_docs.go."
+  },
+  "cb-03:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies GenMarkdownTree and its documented scope and filename warning; describes only visible related customization/page-generation evidence in doc/md_docs.go."
+  },
+  "cb-04:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly explains callback signature, missing/duplicate flag rejection, mutex-protected registration, and accessor, all shown in completions.go:132-161."
+  },
+  "cb-04:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly explains callback signature, missing/duplicate flag rejection, mutex-protected registration, and accessor, all shown in completions.go:132-161."
+  },
+  "cb-07:primary-a": {
+    "outcome": "pass",
+    "rationale": "Answers the path query with accurate flag-group validation and annotation-processing behavior shown in flag_groups.go:81-165."
+  },
+  "cb-07:primary-b": {
+    "outcome": "pass",
+    "rationale": "Answers the path query with accurate flag-group validation and annotation-processing behavior shown in flag_groups.go:81-165."
+  },
+  "cb-08:primary-a": {
+    "outcome": "pass",
+    "rationale": "Answers the path query with the visible GenMan API and accurate fillHeader defaults, epoch parsing, date formatting, and attribution conditions."
+  },
+  "cb-08:primary-b": {
+    "outcome": "pass",
+    "rationale": "Answers the path query with the visible GenMan API and accurate fillHeader defaults, epoch parsing, date formatting, and attribution conditions."
+  },
+  "cb-09:primary-a": {
+    "outcome": "pass",
+    "rationale": "Answers the path query with package and required/filename flag helper behavior supported by shell_completions.go snippets."
+  },
+  "cb-09:primary-b": {
+    "outcome": "pass",
+    "rationale": "Answers the path query with package and required/filename flag helper behavior supported by shell_completions.go snippets."
+  },
+  "cb-11:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly locates required-flag validation in ValidateRequiredFlags, cites its contract and VisitAll evidence, and explicitly notes that the execution call site/order is absent."
+  },
+  "cb-11:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly locates required-flag validation in ValidateRequiredFlags, cites its contract and VisitAll evidence, and explicitly notes that the execution call site/order is absent."
+  },
+  "cb-12:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; supplied Find/findNext declarations omit the argument-processing and matching mechanism."
+  },
+  "cb-12:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; supplied Find/findNext declarations omit the argument-processing and matching mechanism."
+  },
+  "cb-13:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle omits suggestion candidate selection and threshold/application logic."
+  },
+  "cb-13:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle omits suggestion candidate selection and threshold/application logic."
+  },
+  "cb-14:primary-a": {
+    "outcome": "pass",
+    "rationale": "Accurately traces shell requests through hidden __complete, initCompleteCmd configuration, and its Run callback to getCompletions using completions.go:27-29,193-208."
+  },
+  "cb-14:primary-b": {
+    "outcome": "pass",
+    "rationale": "Accurately traces shell requests through hidden __complete, initCompleteCmd configuration, and its Run callback to getCompletions using completions.go:27-29,193-208."
+  },
+  "cb-15:primary-a": {
+    "outcome": "pass",
+    "rationale": "Explains conditional default flag creation, nonempty Version gating, boolean validation, and version-template output, all directly supported by command.go:1200-1210 and 906-917."
+  },
+  "cb-15:primary-b": {
+    "outcome": "pass",
+    "rationale": "Explains conditional default flag creation, nonempty Version gating, boolean validation, and version-template output, all directly supported by command.go:1200-1210 and 906-917."
+  },
+  "cb-16:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly locates ld in cobra.go and describes visible case-folding/table initialization and the shown command-suggestion caller and threshold."
+  },
+  "cb-16:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly locates ld in cobra.go and describes visible case-folding/table initialization and the shown command-suggestion caller and threshold."
+  },
+  "cb-19:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle does not establish command resolution, parsing/validation, or the ordered execution-hook chain."
+  },
+  "cb-19:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle does not establish command resolution, parsing/validation, or the ordered execution-hook chain."
+  },
+  "cb-20:primary-a": {
+    "outcome": "pass",
+    "rationale": "Explains parent-flag accumulation, mergePersistentFlags adding own and parent sets, and local-then-parent lookup, directly supported by command.go:1805-1816,1847-1861."
+  },
+  "cb-20:primary-b": {
+    "outcome": "pass",
+    "rationale": "Explains parent-flag accumulation, mergePersistentFlags adding own and parent sets, and local-then-parent lookup, directly supported by command.go:1805-1816,1847-1861."
+  },
+  "cb-21:primary-a": {
+    "outcome": "fail",
+    "rationale": "Identifies AddCommand and the parent-pointer assignment, but omits adding the child to the parent's command collection, an essential part of the requested addition mechanism in the development key; the bundle stops before that operation."
+  },
+  "cb-21:primary-b": {
+    "outcome": "fail",
+    "rationale": "Identifies AddCommand and the parent-pointer assignment, but omits adding the child to the parent's command collection, an essential part of the requested addition mechanism in the development key; the bundle stops before that operation."
+  },
+  "cb-22:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; the tree-generator declarations/comments do not show recursive traversal, filtering, or order."
+  },
+  "cb-22:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; the tree-generator declarations/comments do not show recursive traversal, filtering, or order."
+  },
+  "cb-24:primary-a": {
+    "outcome": "pass",
+    "rationale": "Accurately describes required-group and mutually-exclusive completion metadata changes and DisableFlagParsing bypass using the explicit enforceFlagGroupsForCompletion contract."
+  },
+  "cb-24:primary-b": {
+    "outcome": "pass",
+    "rationale": "Accurately describes required-group and mutually-exclusive completion metadata changes and DisableFlagParsing bypass using the explicit enforceFlagGroupsForCompletion contract."
+  },
+  "cb-25:primary-a": {
+    "outcome": "pass",
+    "rationale": "Gives the correct CompletionOptions.DisableDefaultCmd assignment and timing, supported by the field contract and InitDefaultCompletionCmd early return."
+  },
+  "cb-25:primary-b": {
+    "outcome": "pass",
+    "rationale": "Gives the correct CompletionOptions.DisableDefaultCmd assignment and timing, supported by the field contract and InitDefaultCompletionCmd early return."
+  },
+  "cb-26:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly names normalized <PROGRAM>_ACTIVE_HELP and the COBRA_ACTIVE_HELP=0 global override, explicitly documented in active_help.go:46-64."
+  },
+  "cb-26:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly names normalized <PROGRAM>_ACTIVE_HELP and the COBRA_ACTIVE_HELP=0 global override, explicitly documented in active_help.go:46-64."
+  },
+  "cb-27:primary-a": {
+    "outcome": "pass",
+    "rationale": "Gives the correct package-level EnablePrefixMatching=true setting and connects it to the shown name/alias-prefix candidate condition."
+  },
+  "cb-27:primary-b": {
+    "outcome": "pass",
+    "rationale": "Gives the correct package-level EnablePrefixMatching=true setting and connects it to the shown name/alias-prefix candidate condition."
+  },
+  "cb-28:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; setters and group-list helpers omit GroupID's help-presentation purpose and behavioral contract."
+  },
+  "cb-28:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; setters and group-list helpers omit GroupID's help-presentation purpose and behavioral contract."
+  },
+  "cb-30:primary-a": {
+    "outcome": "pass",
+    "rationale": "Gives a supported tree-generation API with Path, optional Header, error handling, and visible child filtering from GenManTreeFromOpts."
+  },
+  "cb-30:primary-b": {
+    "outcome": "pass",
+    "rationale": "Gives a supported tree-generation API with Path, optional Header, error handling, and visible child filtering from GenManTreeFromOpts."
+  },
+  "cb-32:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies Execute, its documented argument/command behavior, its ExecuteC wrapper implementation, and shown context variant."
+  },
+  "cb-32:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies Execute, its documented argument/command behavior, its ExecuteC wrapper implementation, and shown context variant."
+  },
+  "cb-33:primary-a": {
+    "outcome": "pass",
+    "rationale": "Accurately identifies Flags and its lazy cached flag-set/error-buffer initialization, distinguishing the documented full-set contract from the visible inherited-flag merge."
+  },
+  "cb-33:primary-b": {
+    "outcome": "pass",
+    "rationale": "Accurately identifies Flags and its lazy cached flag-set/error-buffer initialization, distinguishing the documented full-set contract from the visible inherited-flag merge."
+  },
+  "cb-35:primary-a": {
+    "outcome": "pass",
+    "rationale": "Identifies the default completion command and accurately describes visible creation guards, command configuration, Bash child setup, and generator APIs."
+  },
+  "cb-35:primary-b": {
+    "outcome": "pass",
+    "rationale": "Identifies the default completion command and accurately describes visible creation guards, command configuration, Bash child setup, and generator APIs."
+  },
+  "ci-1133:primary-a": {
+    "outcome": "pass",
+    "rationale": "Gives the supported Flag(name) and Flags().Lookup(name) operations on the executing command object and accurately explains the shown own/persistent-parent lookup evidence."
+  },
+  "ci-1133:primary-b": {
+    "outcome": "pass",
+    "rationale": "Gives the supported Flag(name) and Flags().Lookup(name) operations on the executing command object and accurately explains the shown own/persistent-parent lookup evidence."
+  },
+  "ci-1222:primary-a": {
+    "outcome": "fail",
+    "rationale": "Supplies only the flag callback signature and registration step; it explicitly lacks positional-argument registration and directive meanings, leaving the development key's Go completion mechanism incomplete."
+  },
+  "ci-1222:primary-b": {
+    "outcome": "fail",
+    "rationale": "The callback declaration and flag registration are supported, but the answer explicitly lacks the positional-argument completion API and usable directive choices, leaving essential completion behavior unspecified."
+  },
+  "ci-1236:primary-a": {
+    "outcome": "pass",
+    "rationale": "Uses CalledAs on a candidate command and accurately states its documented name/alias-or-empty contract, a supported way to determine whether and how that command was called."
+  },
+  "ci-1236:primary-b": {
+    "outcome": "pass",
+    "rationale": "Uses CalledAs on a candidate command and accurately states its documented name/alias-or-empty contract, a supported way to determine whether and how that command was called."
+  },
+  "ci-1358:primary-a": {
+    "outcome": "pass",
+    "rationale": "Gives the correct MarkFlagsMutuallyExclusive procedure after flag definition and the at-most-one invocation rule, both supported by the marker contract; completion behavior is also documented."
+  },
+  "ci-1358:primary-b": {
+    "outcome": "pass",
+    "rationale": "Gives the correct MarkFlagsMutuallyExclusive procedure after flag definition and the at-most-one invocation rule, both supported by the marker contract; completion behavior is also documented."
+  },
+  "ci-1408:primary-a": {
+    "outcome": "pass",
+    "rationale": "Gives the supported subcommand Flag(name) route for a global/parent flag object, grounded in the explicit tree-climbing contract, and limits claims because typed value getters are absent."
+  },
+  "ci-1408:primary-b": {
+    "outcome": "pass",
+    "rationale": "Gives the supported subcommand Flag(name) route for a global/parent flag object, grounded in the explicit tree-climbing contract, and limits claims because typed value getters are absent."
+  },
+  "ci-1970:primary-a": {
+    "outcome": "pass",
+    "rationale": "Provides an actionable, supported alternative to Flags(): enumerate and combine LocalFlags and InheritedFlags via VisitAll; visible inherited-set filtering supports excluding locally shadowed names."
+  },
+  "ci-1970:primary-b": {
+    "outcome": "pass",
+    "rationale": "Provides an actionable, supported alternative to Flags(): enumerate and combine LocalFlags and InheritedFlags via VisitAll; visible inherited-set filtering supports excluding locally shadowed names."
+  },
+  "ci-1991:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle supports locating parent flag objects but supplies no value-reading API, which the question specifically requests."
+  },
+  "ci-1991:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle supports locating parent flag objects but supplies no value-reading API, which the question specifically requests."
+  },
+  "ci-2249:primary-a": {
+    "outcome": "pass",
+    "rationale": "Provides concrete HasInheritedFlags and InheritedFlags().Lookup assertions, with the merge precondition and parent persistent declaration supported by the supplied snippets."
+  },
+  "ci-2249:primary-b": {
+    "outcome": "pass",
+    "rationale": "Provides concrete HasInheritedFlags and InheritedFlags().Lookup assertions, with the merge precondition and parent persistent declaration supported by the supplied snippets."
+  },
+  "ci-2314:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle omits help shorthand registration and boolean help dispatch needed to explain separate -h and --help behavior."
+  },
+  "ci-2314:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle omits help shorthand registration and boolean help dispatch needed to explain separate -h and --help behavior."
+  },
+  "ci-467:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle lacks flag stripping, first-positional-token selection, and the TraverseChildren condition needed to distinguish interleaved flags from positional arguments."
+  },
+  "ci-467:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle lacks flag stripping, first-positional-token selection, and the TraverseChildren condition needed to distinguish interleaved flags from positional arguments."
+  },
+  "ci-511:primary-a": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle lacks the ParseFlags-to-OnInitialize/preRun ordering and parsed-value access needed to answer initialization-time flag access."
+  },
+  "ci-511:primary-b": {
+    "outcome": "fail",
+    "rationale": "Response begins exactly INSUFFICIENT; bundle lacks the ParseFlags-to-OnInitialize/preRun ordering and parsed-value access needed to answer initialization-time flag access."
+  },
+  "ci-678:primary-a": {
+    "outcome": "pass",
+    "rationale": "Gives the correct SetArgs argument-slice procedure for tests, grounded in its explicit testing contract and c.args assignment; the example flag syntax is shown in test data."
+  },
+  "ci-678:primary-b": {
+    "outcome": "pass",
+    "rationale": "Gives the correct SetArgs argument-slice procedure for tests, grounded in its explicit testing contract and c.args assignment; the example flag syntax is shown in test data."
+  },
+  "ci-771:primary-a": {
+    "outcome": "fail",
+    "rationale": "Describes portable callbacks for already supported shells but omits the development key's custom-shell integration mechanism: invoking __complete and parsing completion lines, the final directive, and stderr."
+  },
+  "ci-771:primary-b": {
+    "outcome": "fail",
+    "rationale": "Names __complete and acknowledges that a new-shell adapter is not shown, but still omits the completion-line/final-directive protocol and directive handling required by the development key."
+  },
+  "ci-943:primary-a": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies nonempty Command.Version and absence of an existing version flag as default-registration conditions, and avoids claiming a confirmed application-specific cause."
+  },
+  "ci-943:primary-b": {
+    "outcome": "pass",
+    "rationale": "Correctly identifies nonempty Command.Version and absence of an existing version flag as default-registration conditions, and avoids claiming a confirmed application-specific cause."
+  }
+}

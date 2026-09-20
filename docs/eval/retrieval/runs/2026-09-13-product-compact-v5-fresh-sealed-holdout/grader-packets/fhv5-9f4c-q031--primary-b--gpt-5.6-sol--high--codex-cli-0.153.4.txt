@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 75d97ad63d5b3578c5789e8578bfee734697b63f4b921500492893c1839b8d7d
+QUERY ID: fhv5-9f4c-q031
+
+QUESTION:
+Which commands are excluded from the set of available non-help commands?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1560-1576 anchor="if len(c.Deprecated) != 0 || c.Hidden" reason=Deprecated, hidden, and the configured help command are unavailable; remaining commands need to be runnable or contain an available descendant.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query fbdeeb7ee7dd; read in order (245/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":473,"end_line":474,"text":"func (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})"},{"path":"command.go","start_line":73,"end_line":73,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent."},{"path":"command.go","start_line":104,"end_line":104,"text":"\t// Annotations are key/value pairs that can be used by applications to identify or"},{"path":"command.go","start_line":1578,"end_line":1598,"text":"// IsAdditionalHelpTopicCommand determines if a command is an additional\n// help topic command; additional help topic command is determined by the\n// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated.\n// Concrete example: https://github.com/spf13/cobra/issues/393#issuecomment-282741924.\nfunc (c *Command) IsAdditionalHelpTopicCommand() bool {\n\t// if a command is runnable, deprecated, or hidden it is not a 'help' command\n\tif c.Runnable() || len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\t// if any non-help sub commands are found, the command is not a 'help' command\n\tfor _, sub := range c.commands {\n\t\tif !sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn false\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no non-help sub commands\n\treturn true\n}"},{"path":"command.go","start_line":1626,"end_line":1626,"text":"\t// the command either has no sub commands, or no available (non deprecated/help/hidden)"},{"path":"command.go","start_line":1600,"end_line":1600,"text":"// HasHelpSubCommands determines if a command has any available 'help' sub commands"},{"path":"command.go","start_line":1560,"end_line":1576,"text":"// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"command.go","start_line":328,"end_line":328,"text":"func (c *Command) SetHelpCommand(cmd *Command) {"}],"provenance":{"input_sha256":"d4a384d395ce5bcec9e3e2a6b183b65fa5051149bc824c6de638da641f068120","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Excluded commands are:
+
+- Deprecated commands (`len(c.Deprecated) != 0`)
+- Hidden commands (`c.Hidden`)
+- The parent’s configured help command (`c.Parent().helpCommand == c`)
+- Non-runnable commands with no available subcommands
+
+Evidence: `Command.IsAvailableCommand` in `command.go:1560–1576` returns `false` for the first three categories and returns `true` only when `c.Runnable()` or `c.HasAvailableSubCommands()` is true.
+----- END THE RATER'S RESPONSE -----

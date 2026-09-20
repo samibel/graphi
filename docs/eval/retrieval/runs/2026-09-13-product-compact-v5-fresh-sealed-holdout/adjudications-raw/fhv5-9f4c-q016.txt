@@ -1,0 +1,1 @@
+Validation succeeds when either none of the group’s flags are set or all are set (`flag_groups.go:154-156`). If only a subset is set, the error identifies the group and the sorted list of missing flags: `"if any flags in the group [%v] are set they must all be set; missing %v"` (`flag_groups.go:158-160`).

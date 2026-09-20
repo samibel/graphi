@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-045b-7283-9ed1-0a578128bc5d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`NoFileCompletions` returns `nil` for completion candidates and `ShellCompDirectiveNoFileComp` to disable file completion (`completions.go`, lines 119–121)."}}
+{"type":"turn.completed","usage":{"input_tokens":16536,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

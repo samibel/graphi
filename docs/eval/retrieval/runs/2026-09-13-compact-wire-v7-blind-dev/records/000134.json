@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 134,
+  "previous_sha256": "6e2742ec27609accef8a4a4f9270197503d9537bf161adb869348d84bb9ad4c8",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "735bb2c6c47230c2ab562cb0dc4edb24b2e8562fbde379fd45a32be9d978ebab",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and supported by the preserved bundle. `command.go:1794–1803` explicitly states that `Command.Flag(name)` climbs the command tree and falls back to `persistentFlag`; `command.go:1805–1816` shows lookup in the command’s persistent flags and `parentsPflags`; and `command.go:1641–1653` states that `Flags()` includes persistent flags declared by all parents. Thus `cmd.Flag(\"flag-name\")` from a subcommand is a correct supported access route for a parent/root persistent (“global”) flag.\n",
+  "sha256": "d0b4a34484b40570e5ef2186e8078857373e7b095b7a84466bd9f9618f848e85"
+}

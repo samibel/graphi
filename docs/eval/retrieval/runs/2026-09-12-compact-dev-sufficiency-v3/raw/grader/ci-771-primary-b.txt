@@ -1,0 +1,1 @@
+Portable callback API recommendations for the four supported shells do not explain creating another shell's integration. The required __complete invocation, completion-line/directive parsing and stderr handling are absent.

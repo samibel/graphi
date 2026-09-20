@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bc-1acf-7463-abc7-7c58e847b3da"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`hasSeeAlso` returns true when the command has **a parent**, or **at least one child** for which `IsAvailableCommand()` is true and `IsAdditionalHelpTopicCommand()` is false. Otherwise it returns false (`doc/util.go:26–37`).\n\nAn available child must be neither deprecated nor hidden, must not be its parent’s designated help command, and must either be runnable or have an available subcommand (`command.go:1562–1575`, `1617–1629`). The parent check only requires `c.parent != nil` (`command.go:1632–1634`).\n\nThis result gates the Markdown `### SEE ALSO` heading (`doc/md_docs.go:83–84`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17309,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":151,"reasoning_output_tokens":0}}

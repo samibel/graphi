@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+RegisterFlagCompletionFunc
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"RegisterFlagCompletionFunc\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"completions.go","start_line":132,"end_line":134,"text":"// RegisterFlagCompletionFunc should be called to register a function to provide completion for a flag.\nfunc (c *Command) RegisterFlagCompletionFunc(flagName string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error {\n\tflag := c.Flag(flagName)"},{"path":"shell_completions.go","start_line":51,"end_line":53,"text":"// This will only work for bash completion.\n// It is recommended to instead use c.RegisterFlagCompletionFunc(...) which allows\n// to register a Go function which will work across all shells."},{"path":"completions.go","start_line":148,"end_line":150,"text":"// GetFlagCompletionFunc returns the completion function for the given flag of the command, if available.\nfunc (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {\n\tflag := c.Flag(flagName)"},{"path":"completions.go","start_line":36,"end_line":36,"text":"var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}"},{"path":"bash_completions.go","start_line":535,"end_line":537,"text":"// prepareCustomAnnotationsForFlags setup annotations for go completions for registered flags\nfunc prepareCustomAnnotationsForFlags(cmd *Command) {\n\tflagCompletionMutex.RLock()"},{"path":"command.go","start_line":50,"end_line":51,"text":"// definition to ensure usability.\ntype Command struct {"},{"path":"command.go","start_line":1795,"end_line":1795,"text":"func (c *Command) Flag(name string) (flag *flag.Flag) {"},{"path":"completions.go","start_line":43,"end_line":43,"text":"type ShellCompDirective int"}],"provenance":{"input_sha256":"a05166fd0c11df944f280189995dba19ee8b6ddddd21b8c39df96cf39b9bcd6e","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

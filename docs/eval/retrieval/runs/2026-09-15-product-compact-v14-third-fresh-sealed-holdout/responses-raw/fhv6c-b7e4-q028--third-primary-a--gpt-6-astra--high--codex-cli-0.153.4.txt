@@ -1,0 +1,1 @@
+Yes. `UsageString` assigns both `c.outWriter` and `c.errWriter` to the same `bytes.Buffer` (`command.go:484–486`), calls `c.Usage()` (line 488), and returns `bb.String()` (line 494). Writes through those writers therefore accumulate in their relative write order.

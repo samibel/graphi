@@ -1,0 +1,1 @@
+FAIL: The response does not answer how pflag.CommandLine is incorporated. The transcript shows persistent flag merging but omits the global flag integration and the test body verifying lookup through Flags() after mergePersistentFlags().

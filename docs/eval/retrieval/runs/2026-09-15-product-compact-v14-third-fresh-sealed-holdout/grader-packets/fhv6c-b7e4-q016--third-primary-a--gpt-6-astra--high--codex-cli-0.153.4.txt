@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 27a140bb60b421db1597220727b2a76db4bc7fe82dfaa91e1ece405c2e70024a
+QUERY ID: fhv6c-b7e4-q016
+
+QUESTION:
+command_test.go
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:88-111 anchor="func TestSingleCommand(" reason=The first command execution test constructs a runnable root with children and verifies that root positional arguments reach its Run callback.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 4c08781a1c6c; read in order (217/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command_test.go","start_line":15,"end_line":15,"text":"package cobra"},{"path":"command_test.go","start_line":274,"end_line":289,"text":"func TestCommandAlias(t *testing.T) {\n\tvar timesCmdArgs []string\n\trootCmd := &Command{Use: \"root\", Args: NoArgs, Run: emptyRun}\n\techoCmd := &Command{\n\t\tUse:     \"echo\",\n\t\tAliases: []string{\"say\", \"tell\"},\n\t\tArgs:    NoArgs,\n\t\tRun:     emptyRun,\n\t}\n\ttimesCmd := &Command{\n\t\tUse:  \"times\",\n\t\tArgs: ExactArgs(2),\n\t\tRun:  func(_ *Command, args []string) { timesCmdArgs = args },\n\t}\n\techoCmd.AddCommand(timesCmd)\n\trootCmd.AddCommand(echoCmd)"},{"path":"command_test.go","start_line":931,"end_line":940,"text":"func TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag(t *testing.T) {\n\tparent := &Command{Use: \"parent\", Run: emptyRun}\n\tchild := &Command{Use: \"child\", Run: emptyRun}\n\tparent.AddCommand(child)\n\n\tparent.PersistentFlags().Bool(\"foo\", false, \"parent foo usage\")\n\tparent.PersistentFlags().Bool(\"bar\", false, \"parent bar usage\")\n\tchild.Flags().Bool(\"foo\", false, \"child foo usage\") // This shadows parent's foo flag\n\tchild.Flags().Bool(\"baz\", false, \"child baz usage\")\n"},{"path":"command_test.go","start_line":32,"end_line":35,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {\n\t_, output, err = executeCommandC(root, args...)\n\treturn output, err\n}"},{"path":"command_test.go","start_line":37,"end_line":44,"text":"func executeCommandWithContext(ctx context.Context, root *Command, args ...string) (output string, err error) {\n\tbuf := new(bytes.Buffer)\n\troot.SetOut(buf)\n\troot.SetErr(buf)\n\troot.SetArgs(args)\n\n\terr = root.ExecuteContext(ctx)\n"},{"path":"command_test.go","start_line":48,"end_line":55,"text":"func executeCommandC(root *Command, args ...string) (c *Command, output string, err error) {\n\tbuf := new(bytes.Buffer)\n\troot.SetOut(buf)\n\troot.SetErr(buf)\n\troot.SetArgs(args)\n\n\tc, err = root.ExecuteC()\n"},{"path":"command_test.go","start_line":59,"end_line":62,"text":"func executeCommandWithContextC(ctx context.Context, root *Command, args ...string) (c *Command, output string, err error) {\n\tbuf := new(bytes.Buffer)\n\troot.SetOut(buf)\n\troot.SetErr(buf)"},{"path":"command_test.go","start_line":70,"end_line":72,"text":"func resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)\n}"},{"path":"command_test.go","start_line":88,"end_line":92,"text":"func TestSingleCommand(t *testing.T) {\n\tvar rootCmdArgs []string\n\trootCmd := &Command{\n\t\tUse:  \"root\",\n\t\tArgs: ExactArgs(2),"},{"path":"command_test.go","start_line":113,"end_line":117,"text":"func TestChildCommand(t *testing.T) {\n\tvar child1CmdArgs []string\n\trootCmd := &Command{Use: \"root\", Args: NoArgs, Run: emptyRun}\n\tchild1Cmd := &Command{\n\t\tUse:  \"child1\","}],"provenance":{"input_sha256":"61e68b15235b3034d702e12ee0ff655bda12a86fa5a6c9157eeb0185a222313f","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`command_test.go` belongs to package `cobra` (line 15). The supplied excerpts show:
+
+- **Execution helpers:** `executeCommand` delegates to `executeCommandC` (lines 32–35). `executeCommandWithContext` and `executeCommandC` configure an output buffer, error output, and arguments before calling `ExecuteContext` or `ExecuteC` (lines 37–55). `executeCommandWithContextC` is also declared (lines 59–62).
+- **Flag reset helper:** `resetCommandLineFlagSet` replaces `pflag.CommandLine` with a new flag set using `os.Args[0]` and `pflag.ExitOnError` (lines 70–72).
+- **Tests:** `TestSingleCommand` configures exactly two arguments (lines 88–92); `TestChildCommand` builds root and child commands (lines 113–117); `TestCommandAlias` defines `echo` aliases `say` and `tell`, plus a `times` subcommand (lines 274–289).
+- **Flag shadowing test:** `TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag` creates parent persistent flags and child local flags, with the child’s `foo` shadowing the parent’s (lines 931–940).
+
+The response is truncated, so this is a partial inventory of the file’s declarations.
+----- END THE RATER'S RESPONSE -----

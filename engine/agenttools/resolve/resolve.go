@@ -75,6 +75,7 @@ type RetrieverRow struct {
 // concrete module. Keeping every field prevents the composition adapter from
 // silently reducing the audit trail before SW-264 consumes it.
 type RetrieverExplain struct {
+	Base           int
 	LexicalRank    int
 	SemanticRank   int
 	RRF            int
@@ -90,6 +91,11 @@ type RetrieverSummary struct {
 	RetrievalVersion string
 	Strategy         string
 	WeightsHash      string
+	// ModelFingerprint is a MODEL ID (embed.Fingerprint.ModelID), not a
+	// canonical fingerprint, while IndexFingerprint is a full canonical. The
+	// two are different kinds of value despite the parallel names; see
+	// engine/retrieval.Summary for why, and never compare one against the
+	// other.
 	ModelFingerprint string
 	IndexFingerprint string
 	Query            string

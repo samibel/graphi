@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q017",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a48adb6340d8ba7edd34d788b0ae96063b01168ff3bcb9f37fa413d7bf6125a5",
+  "bundle_sha256": "93325f34a1481a6dd363b58d29b1da8433cd184771d56939ab81bedce4bee064",
+  "prompt_sha256": "917db43b654154a01c649f9602e78ef8dfdcb396bc742f8b0fc49bca4ebfd079",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`doc/man_examples_test.go` is an external test/example file in package `doc_test` (line 15). It declares two example functions:\n\n- `ExampleGenManTree` (lines 25–35): creates a `cobra.Command` and `doc.GenManHeader`, then calls `doc.GenManTree(cmd, header, \"/tmp\")` through `cobra.CheckErr`.\n- `ExampleGenMan` (lines 37–49): creates the same command/header setup, writes `doc.GenMan` output to a `bytes.Buffer`, checks the error with `cobra.CheckErr`, and prints the generated text using `fmt.Print(out.String())`.",
+  "responded_at": "2026-09-15T08:29:16Z",
+  "sha256": "1c57d955658939be411dc18bafa7d9b63c88fd33d687124d9ad0c01a8b22169d"
+}

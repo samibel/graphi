@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-b141-7212-8391-93cee0950aae"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`exactArgsWithInvalidCount` is a test helper in `args_test.go:88–97`. It asserts that:\n\n- `err` is non-nil, otherwise it calls `t.Fatal(\"Expected an error\")`.\n- `err.Error()` equals exactly `\"accepts 2 arg(s), received 3\"`.\n- On mismatch, it calls `t.Fatalf(\"Expected %q, got %q\", expected, got)`."}}
+{"type":"turn.completed","usage":{"input_tokens":16144,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":93,"reasoning_output_tokens":0}}

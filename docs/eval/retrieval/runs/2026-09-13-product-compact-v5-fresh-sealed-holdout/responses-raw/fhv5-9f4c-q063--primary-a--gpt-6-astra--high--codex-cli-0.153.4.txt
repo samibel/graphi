@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only a comment at `completions.go:667` about a presumed two-word flag being boolean, but omits the code checking the no-option default and determining whether the following token is its value.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows that flags are parsed before `c.preRun()` and that `OnInitialize` registers initializer functions, but it does not show where those initializers run or an API/example for reading a persistent flag value from them.

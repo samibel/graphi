@@ -1,0 +1,1 @@
+PASS: The response correctly tells the caller to supply flag tokens with SetArgs, directly supported by command.go:274-279.

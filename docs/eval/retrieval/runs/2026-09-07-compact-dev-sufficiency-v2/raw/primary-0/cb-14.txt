@@ -1,0 +1,1 @@
+Shell completion scripts invoke the hidden command named __complete, defined by ShellCompRequestCmd in completions.go:27–29. The special completion command's Run callback passes its args to cmd.getCompletions(args), receiving finalCmd, completions, directive, and err; errors are sent to CompErrorln (completions.go:202–208).

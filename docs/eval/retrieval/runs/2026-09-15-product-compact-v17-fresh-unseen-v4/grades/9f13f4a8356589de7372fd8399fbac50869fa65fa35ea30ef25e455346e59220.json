@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-268c51e30ab9",
+  "response_sha256": "9f13f4a8356589de7372fd8399fbac50869fa65fa35ea30ef25e455346e59220",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response accurately states the runnable/deprecated/hidden exclusions, recursive requirement that every child qualify, and qualifying leaf case. All claims and citations are supported by the preserved command.go spans.",
+  "graded_at": "2026-09-15T20:45:22Z",
+  "sha256": "c871e52423a1825940c9cc6be52572c3950ddb303732d4b2e455a605f1050553"
+}

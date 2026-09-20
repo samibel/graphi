@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q010",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "e157588bfbbde13654d37ca8c45879082b7246569ece543ad00ddaf8cc1df802",
+  "bundle_sha256": "9129e4d43ad4c024e07a90f5e7601b9864b78058c1e1f46159d327251dcdf944",
+  "prompt_sha256": "1de5d3f58690787071d7b1b5d25e7663696fb6f80899519f5d2829addd1c720c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`resetCommandLineFlagSet` is a test helper that replaces the global `pflag.CommandLine` with a fresh flag set named after `os.Args[0]`, configured with `pflag.ExitOnError`:\n\n```go\nfunc resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)\n}\n```\n\nEvidence: `command_test.go`, lines 70–72.",
+  "responded_at": "2026-09-15T08:28:53Z",
+  "sha256": "3ba79f610a2256800977098996674bb77acb7b4d6f05817d13142d9a6fb1e9af"
+}

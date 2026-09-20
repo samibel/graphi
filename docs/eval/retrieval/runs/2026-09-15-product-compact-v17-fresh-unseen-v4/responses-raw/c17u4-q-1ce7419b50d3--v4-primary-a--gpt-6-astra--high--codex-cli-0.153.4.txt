@@ -1,0 +1,3 @@
+The template helper `"eq"` maps to `Eq` (`cobra.go:39`). It supports signed integer kinds—`Int`, `Int8`, `Int16`, `Int32`, `Int64`—and `String`, comparing via `av.Int() == bv.Int()` or `av.String() == bv.String()` (`cobra.go:151–154`).
+
+For `Array`, `Chan`, `Map`, or `Slice`, it panics with `"Eq called on unsupported type"` (`cobra.go:149–150`). The switch checks the first operand’s kind; other unhandled kinds return `false` (`cobra.go:148–156`).

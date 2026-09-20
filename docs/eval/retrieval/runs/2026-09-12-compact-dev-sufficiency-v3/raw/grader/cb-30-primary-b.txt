@@ -1,0 +1,1 @@
+doc/man_docs.go:33-47 explicitly supports the API, descendant coverage, nil header and options passed to GenManTreeFromOpts.

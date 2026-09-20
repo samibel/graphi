@@ -1,0 +1,1 @@
+FAIL: The response does not answer how annotations become handlers; it only reports missing logic. The bundle omits the required filename, custom-handler, and subdirectory branches, including handler-list registration and default behaviors.

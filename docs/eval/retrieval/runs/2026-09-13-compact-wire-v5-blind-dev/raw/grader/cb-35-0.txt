@@ -1,0 +1,1 @@
+PASS: The response concretely describes the default completion command and a shell generator using the supplied InitDefaultCompletionCmd and GenBashCompletion spans.

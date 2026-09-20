@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-2032-7d93-83e2-6bd112bf8b96"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The `Command` options are:\n\n- `DisableSuggestions`: set to `true` to suppress unknown-command suggestions (`site/content/user_guide.md:712-716`; checked in `command.go:750-752`).\n- `SuggestionsMinimumDistance`: sets the maximum Levenshtein distance for suggested commands (`site/content/user_guide.md:718-722`; comparison in `command.go:837`). Values `<= 0` default to `2` (`command.go:753-755`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16520,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":0}}

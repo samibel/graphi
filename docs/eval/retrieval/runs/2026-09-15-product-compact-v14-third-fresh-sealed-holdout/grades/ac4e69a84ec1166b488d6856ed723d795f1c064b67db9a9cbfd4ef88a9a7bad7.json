@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q042",
+  "response_sha256": "ac4e69a84ec1166b488d6856ed723d795f1c064b67db9a9cbfd4ef88a9a7bad7",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response correctly explains that Traverse parses accumulated flags only before descending into a child. The preserved command.go:788–829 shows that the final child returns its remaining arguments without parsing collected trailing flags, supporting both the explanation and citation.",
+  "graded_at": "2026-09-15T08:34:33Z",
+  "sha256": "76b501410ce4952125afa39dee099665346adcf5144815497e24dcc2a51565c1"
+}

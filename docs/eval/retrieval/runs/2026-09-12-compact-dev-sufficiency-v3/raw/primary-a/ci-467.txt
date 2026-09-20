@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the bodies of `Find`, `Traverse`, and `stripFlags` that establish whether positional arguments or flags can appear between a root command and its subcommand.

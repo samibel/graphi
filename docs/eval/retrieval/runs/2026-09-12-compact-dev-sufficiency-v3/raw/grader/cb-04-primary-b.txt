@@ -1,0 +1,1 @@
+The registration and accessor bodies support the concrete API, callback contract and locking claims, with shell_completions.go:52-53 supporting portability.

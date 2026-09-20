@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acc-779a-7aa0-80c8-7187a0e7db91"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle confirms commandNameMatches uses strings.EqualFold when EnableCaseInsensitive is enabled and exact equality otherwise. It also confirms HasAlias calls commandNameMatches, supporting the alias claim. Both cited line ranges exist and support the response."}}
+{"type":"turn.completed","usage":{"input_tokens":17992,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

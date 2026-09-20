@@ -1,0 +1,1 @@
+Call `cmd.CalledAs()` on a command you want to check. It is documented to return the command name or alias used to invoke that command, or an empty string if it has not been called (`command.go:1515–1518`). Thus a nonempty result identifies that command as having been invoked and tells you the spelling or alias used.

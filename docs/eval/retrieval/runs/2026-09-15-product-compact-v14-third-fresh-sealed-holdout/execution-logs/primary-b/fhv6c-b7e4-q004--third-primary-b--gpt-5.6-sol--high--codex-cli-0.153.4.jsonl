@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-8ff7-7431-90d5-68c518d045a0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`validOnlyWithInvalidArgs` is a test helper in `args_test.go:44–53`. It:\n\n1. Fails immediately with `\"Expected an error\"` if `err == nil` (`args_test.go:45–47`).\n2. Requires `err.Error()` to equal `invalid argument \"a\" for \"c\"` (`args_test.go:48–49`).\n3. Reports the expected and actual messages with `t.Errorf` if they differ (`args_test.go:50–52`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16143,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":133,"reasoning_output_tokens":23}}

@@ -1,0 +1,1 @@
+PASS: The response accurately describes both defining structs, `cmdOption` (lines 30–35) and `cmdDoc` (lines 37–46), including their fields and YAML tags. Its generator and flag-helper summaries are supported by the cited transcript spans, and it appropriately acknowledges the transcript’s truncation.

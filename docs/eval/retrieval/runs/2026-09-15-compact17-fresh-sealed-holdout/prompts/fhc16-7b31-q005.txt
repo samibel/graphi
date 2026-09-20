@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Under what exact conditions does helpOrVersionFlagPresent return true?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 263b1a3ec50a; read in order (284/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":521,"end_line":532,"text":"\nfunc helpOrVersionFlagPresent(cmd *Command) bool {\n\tif versionFlag := cmd.Flags().Lookup(\"version\"); versionFlag != nil &&\n\t\tlen(versionFlag.Annotations[FlagSetByCobraAnnotation]) > 0 && versionFlag.Changed {\n\t\treturn true\n\t}\n\tif helpFlag := cmd.Flags().Lookup(\"help\"); helpFlag != nil &&\n\t\tlen(helpFlag.Annotations[FlagSetByCobraAnnotation]) > 0 && helpFlag.Changed {\n\t\treturn true\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":876,"end_line":880,"text":"\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")\n\t}\n\n\tif len(c.Deprecated) > 0 {\n\t\tc.Printf(\"Command %q is deprecated, %s\\n\", c.Name(), c.Deprecated)"},{"path":"command.go","start_line":373,"end_line":377,"text":"\n// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1549,"end_line":1553,"text":"\n// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"completions.go","start_line":283,"end_line":284,"text":"\t\t// call to Find() -> legacyArgs() will return an error if there are any arguments.\n\t\t// To avoid this, we first remove the __complete command to get back to having no sub-commands."},{"path":"completions.go","start_line":679,"end_line":680,"text":"// This function will do nothing if any of the following is true:\n// 1- the feature has been explicitly disabled by the program,"},{"path":"command.go","start_line":1346,"end_line":1354,"text":"// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"}],"provenance":{"input_sha256":"aa9ebb89e55f5ff6a147dfd605a53f5c76a36e3e98f9f94dab0f40964c461991","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

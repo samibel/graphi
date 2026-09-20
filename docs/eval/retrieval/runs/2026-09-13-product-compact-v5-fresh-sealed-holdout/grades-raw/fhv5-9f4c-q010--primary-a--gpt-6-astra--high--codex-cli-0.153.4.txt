@@ -1,0 +1,1 @@
+PASS: The response correctly states that commandNameMatches uses strings.EqualFold when enabled and exact equality otherwise, supported by command.go:1876–1885. Its alias-matching claim is supported by HasAlias calling commandNameMatches at command.go:1505–1513.

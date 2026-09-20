@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-5acb-7702-94ca-07d7a26de8e5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Configure completion options through the **root command’s `CompletionOptions` field** (`site/content/completions/_index.md:94–95`).\n\n`CompletionOptions` contains four boolean fields (`completions.go:104–116`):\n\n| Field | Effect |\n|---|---|\n| `DisableDefaultCmd` | Prevents creation of the default `completion` command. |\n| `DisableNoDescFlag` | Prevents creation of `--no-descriptions` for shells supporting descriptions. |\n| `DisableDescriptions` | Turns off completion descriptions for shells supporting them. |\n| `HiddenDefaultCmd` | Hides the default `completion` command. |"}}
+{"type":"turn.completed","usage":{"input_tokens":17128,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":139,"reasoning_output_tokens":0}}

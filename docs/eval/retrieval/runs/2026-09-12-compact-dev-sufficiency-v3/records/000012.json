@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 12,
+  "previous_sha256": "3c39383a8c32a6b1bdcba62ef12459c8f2bb13f2b70459c02870f8839704235b",
+  "kind": "response",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "12f8419e075ca01d99bb6a774713babd227c0ce340508b7363f0233a4a8c01ac",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows how `InitDefaultVersionFlag` creates the flag but omits the execution branch that reads its value, renders version output, and determines whether command hooks run.\n",
+  "sha256": "52e27b154d42c372717cb0a6b823720361f08e21863a2b7315bb2a9cd96c0ab7"
+}

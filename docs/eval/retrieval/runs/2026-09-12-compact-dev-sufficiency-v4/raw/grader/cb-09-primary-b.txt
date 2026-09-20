@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-09:primary-b
+Outcome: pass
+Rationale: Answers the path query with package and required/filename flag helper behavior supported by shell_completions.go snippets.

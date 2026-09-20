@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows root delegation (`command.go:1059`) and context setup (`ExecuteContextC`, lines 1043–1049), but omits the ExecuteC logic for command selection, context propagation to the selected command, execution, and error/help handling.

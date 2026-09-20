@@ -1,0 +1,6 @@
+The version flag is handled automatically when a command executes:
+
+- `Command.InitDefaultVersionFlag()` does nothing if `c.Version` is empty or a `version` flag already exists (`command.go:1200-1209`).
+- Otherwise, it creates a boolean `--version` flag, adding `-v` only when that shorthand is unused, and annotates it with `FlagSetByCobraAnnotation` (`command.go:1210-1223`).
+- During execution, if `c.Version` is nonempty, Cobra reads the flag as a boolean. A non-boolean user-defined `version` flag produces `"version" flag declared as non-bool. Please correct your code` (`command.go:908-913`).
+- When the value is true, it renders `c.VersionTemplate()` to `c.OutOrStdout()` and returns the template result (`command.go:914-919`).

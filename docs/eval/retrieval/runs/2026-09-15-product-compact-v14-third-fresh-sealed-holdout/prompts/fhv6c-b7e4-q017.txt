@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+doc/man_examples_test.go
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"3 ranked source span(s); query a48adb6340d8; read in order (56/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"doc/man_examples_test.go","start_line":15,"end_line":15,"text":"package doc_test"},{"path":"doc/man_examples_test.go","start_line":25,"end_line":35,"text":"func ExampleGenManTree() {\n\tcmd := &cobra.Command{\n\t\tUse:   \"test\",\n\t\tShort: \"my test program\",\n\t}\n\theader := &doc.GenManHeader{\n\t\tTitle:   \"MINE\",\n\t\tSection: \"3\",\n\t}\n\tcobra.CheckErr(doc.GenManTree(cmd, header, \"/tmp\"))\n}"},{"path":"doc/man_examples_test.go","start_line":37,"end_line":49,"text":"func ExampleGenMan() {\n\tcmd := &cobra.Command{\n\t\tUse:   \"test\",\n\t\tShort: \"my test program\",\n\t}\n\theader := &doc.GenManHeader{\n\t\tTitle:   \"MINE\",\n\t\tSection: \"3\",\n\t}\n\tout := new(bytes.Buffer)\n\tcobra.CheckErr(doc.GenMan(cmd, header, out))\n\tfmt.Print(out.String())\n}"}],"provenance":{"input_sha256":"e7a9ef0ba1f4239196c472222de550ccb3bc8c1c81d4c1e6a924a001d22db843","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

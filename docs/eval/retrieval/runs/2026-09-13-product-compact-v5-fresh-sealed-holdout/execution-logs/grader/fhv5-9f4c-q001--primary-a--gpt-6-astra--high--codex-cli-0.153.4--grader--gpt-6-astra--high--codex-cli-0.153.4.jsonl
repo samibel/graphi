@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09aca-668c-7c61-9114-a9b47053d788"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the appended string as activeHelpMarker immediately followed by activeHelpStr and explains that existing completion entries retain their order. The implementation and comments at active_help.go:38–44 support these claims and the stated ordering of successive ActiveHelp lines."}}
+{"type":"turn.completed","usage":{"input_tokens":18075,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":95,"reasoning_output_tokens":35}}

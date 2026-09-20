@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b69-4605-7e13-98a5-fb3cb42f0e68"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that the deprecated method is disabled and returns nil, and identifies ValidArgs for the first argument and ValidArgsFunction for any argument. All cited locations are present in the bundle and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18182,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":71,"reasoning_output_tokens":19}}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 69,
+  "previous_sha256": "69d804fa2e8fed5ca64b99ebd8e7759227792e8ce9ab0b5827db87ce5b73e385",
+  "kind": "response",
+  "query_id": "ci-1236",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "cbb277cd286268784cb9d1cb61e13b0434261479b36ab0c162e54d06e990fc3a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.CalledAs()` on the selected `*Command`. It returns the exact command name or alias used to invoke it, or `\"\"` if it has not been called (`command.go:1515–1522`). The chosen value is recorded during command matching, including aliases (`command.go:1527–1538`) and direct matches (`command.go:771–773`).",
+  "sha256": "f3beb05edb612661cd88beea1de9a97db8cf1d1cb5a28480d47798a395f2130e"
+}

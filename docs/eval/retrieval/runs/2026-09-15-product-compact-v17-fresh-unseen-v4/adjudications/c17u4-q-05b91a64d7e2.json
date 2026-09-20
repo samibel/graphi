@@ -1,0 +1,39 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "query_id": "c17u4-q-05b91a64d7e2",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "c17u4-q-05b91a64d7e2",
+    "rater_id": "v4-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+    "query_text_sha256": "1ce678547c6f9807f885ef569d773a0ed030428953bc01930482cd4ed71872e1",
+    "bundle_sha256": "a61bd7239fc60f0a5d9d374c46852c82419ce5182c8a48659e6167ef0589465d",
+    "prompt_sha256": "d922bbaa79d82c1b7204f2f88d90a85d6945d84209b60a870335b7cbcb167e47",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "In `doc/yaml_docs.go:148-175`, `genFlagResult` includes the shorthand only when it is non-empty and not deprecated:\n\n- Usable shorthand: creates `cmdOption` positionally with `flag.Name`, `flag.Shorthand`, `flag.DefValue`, and the formatted usage (`lines 156-163`).\n- Absent or deprecated shorthand: creates `cmdOption` with named fields `Name`, `DefaultValue`, and `Usage`, leaving the shorthand unset (`lines 165-170`). This branch also applies `forceMultiLine` to the default value.",
+    "responded_at": "2026-09-15T20:54:18Z",
+    "sha256": "aee31d79ee70a64f0192a16ae877c11af57f8730ba2bfe582bed0cd1ab9d43a4"
+  },
+  "disclosure": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "query_id": "c17u4-q-05b91a64d7e2",
+    "adjudicator_response_sha256": "aee31d79ee70a64f0192a16ae877c11af57f8730ba2bfe582bed0cd1ab9d43a4",
+    "disclosed_artifact_sha256": [
+      "5af084a255b8d97efea69a9a9d566336b2bc5a804eac9e9a246278db440c9a1d",
+      "82c82e5ca97acc12019fa0f7227a0526257c1dff040dbdf81732a5c80ba15fd0",
+      "adf6d1dbc45fc21a719b291ef1759736d4f2a103a1e40404950ac0eb2f25b53b",
+      "b748f88f4e990737a6f9b21b53270474c4708ffe80c805ec2d2672e8a8273896"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

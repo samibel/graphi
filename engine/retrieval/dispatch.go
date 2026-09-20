@@ -1,6 +1,7 @@
-// SW-263 semantic-first dispatchers (owner decision 2026-09-01).
+// Exact-query and fallback dispatchers, retaining the SW-263 compatibility
+// contracts alongside the newer natural-language path in flow.go.
 //
-// The shipped ModeAuto takes the reviewer's replacement AC-2 path:
+// Identifier-shaped queries without an exact name retain the AC-2 path:
 // semantic candidates S (AC-3 quantised-ordered, unique by canonical
 // node_id) form the result prefix, lexical candidates L (the delegated
 // hybrid_v1 candidates) backfill unfilled positions. AC-7's byte
@@ -8,7 +9,10 @@
 // and on every non-ready state. The exact-PATH override (owner-decided
 // 2026-09-01) restores lexical dominance for path queries — the path
 // rule is the part of the original AC-6 override the evidence
-// supported keeping; the IDENTIFIER rule stays lifted.
+// supported keeping. retrieval/3 additionally promotes actual identifier
+// equality; it does not restore an override of the entire lexical ranking.
+// Multi-word queries use the evidence-ranked union and bounded callee
+// expansion in flow.go, not the immutable semantic prefix described here.
 //
 // Symmetric RRF fusion (ModeFusionNoGraph, ModeFusionGraph) is
 // evaluator-only — it implements the pre-redirection SW-263 pipeline
@@ -66,10 +70,8 @@ func (e *engine) lexicalOnlyRows(lexHits []lexicalHit) []row {
 // verbatim so a reader of the bytes can distinguish a path-override
 // result from the AC-7 non-ready fallback (both produce L unchanged).
 //
-// Strategy stays "semantic_first" because the dispatch is still
-// semantic-first — the path override is a documented sub-case of the
-// semantic-first strategy, not a separate strategy. The Region tag is
-// where AC-11 carries the per-row provenance.
+// Strategy stays "semantic_first" as the historical ModeAuto dispatch label.
+// Version and Region identify the actual sub-dispatch and per-row provenance.
 func (e *engine) lexicalPathOverrideRows(lexHits []lexicalHit) []row {
 	out := make([]row, len(lexHits))
 	for i, h := range lexHits {
@@ -240,6 +242,50 @@ func normalizedResultPath(value string) string {
 		return ""
 	}
 	return strings.TrimPrefix(clean, "./")
+}
+
+// An explicit symbol name is stronger evidence than either cosine similarity
+// or hybridsearch's degree/segment score. Promote only actual name equality
+// (including a qualified suffix), never the whole lexical ranking. In
+// particular BuildTreeCustom must not displace BuildTree. Unknown names keep
+// semantic-first behavior. Promotion precedes both the result and file caps.
+func (e *engine) exactNameFirstRows(query string, lex []lexicalHit, sem []semanticHit, limit int) []row {
+	all := e.semanticFirstRows(lex, sem, len(lex)+len(sem))
+	byID := make(map[string]row, len(all))
+	for _, r := range all {
+		byID[r.nodeID] = r
+	}
+	var exact []row
+	seen := map[string]bool{}
+	add := func(r row) {
+		if seen[r.nodeID] || normalizedResultPath(r.path) == "" {
+			return
+		}
+		if r.qualifiedName != query && !strings.HasSuffix(r.qualifiedName, "."+query) {
+			return
+		}
+		if merged, ok := byID[r.nodeID]; ok {
+			r = merged
+		}
+		r.region = "exact_identifier"
+		seen[r.nodeID] = true
+		exact = append(exact, r)
+	}
+	for _, r := range e.lexicalOnlyRows(lex) {
+		add(r)
+	}
+	for _, r := range all {
+		add(r)
+	}
+	if len(exact) == 0 {
+		return e.semanticFirstRows(lex, sem, limit)
+	}
+	for _, r := range all {
+		if !seen[r.nodeID] {
+			exact = append(exact, r)
+		}
+	}
+	return exact
 }
 
 // fusionRows is the EVALUATOR-ONLY symmetric RRF pipeline. It is

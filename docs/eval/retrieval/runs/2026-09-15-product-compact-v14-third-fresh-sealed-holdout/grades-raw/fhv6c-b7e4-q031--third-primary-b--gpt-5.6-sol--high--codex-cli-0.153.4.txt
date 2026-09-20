@@ -1,0 +1,1 @@
+PASS: The preserved args.go:73–81 checks len(args) < n and returns the cited formatted error. With n=2 and one positional value, this supports the response’s exact error message and the reviewed too-few-arguments behavior.

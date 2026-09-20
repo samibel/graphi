@@ -1,0 +1,9 @@
+The man-page documentation generator walks the command tree depth-first, post-order. In `doc/man_docs.go:46-80`, `GenManTreeFromOpts`:
+
+- Iterates over direct children with `for _, c := range cmd.Commands()`.
+- Skips children where `!c.IsAvailableCommand()` or `c.IsAdditionalHelpTopicCommand()`.
+- Recursively calls `GenManTreeFromOpts(c, opts)` before generating the current command’s page.
+- Stops and returns immediately if a descendant returns an error.
+- After all eligible descendants, creates the current command’s output file from `cmd.CommandPath()` and calls `GenMan(cmd, &headerCopy, f)`.
+
+Thus, eligible leaf commands are documented first, followed by their parents, with unavailable commands and additional help topics excluded.

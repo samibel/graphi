@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 91,
+  "previous_sha256": "e0889dd2ff9a40a1eae4c3f631d44eab3745123b700ac4f55d15d48dfaad6f90",
+  "kind": "grade",
+  "query_id": "cb-08",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3396cfe0565b1f319e8c82a205ab7f5fb873ffdf0c2c9731b062eaceb6751ee7",
+  "outcome": "pass",
+  "rationale": "The candidate accurately and concretely summarizes every declaration shown in the preserved bundle: package `doc` at line 15; exported `GenManTree` at lines 33–38, `GenManTreeFromOpts` at line 48, `GenManTreeOptions` and its three fields at lines 82–88, `GenManHeader` and all six fields/default comments at lines 90–101, and `GenMan` at lines 103–105. It also correctly identifies the shown private helpers `fillHeader` (118), `manPreamble` (143), `manPrintFlags` (159), and `genMan` (202–204), including the two initialization calls explicitly present in the `genMan` snippet. No required claim relies on evidence outside the sealed response.\n",
+  "sha256": "cc8c359ddca74b55bb95144e5016b3e697cd697790c1093d10e17a4614bb082f"
+}

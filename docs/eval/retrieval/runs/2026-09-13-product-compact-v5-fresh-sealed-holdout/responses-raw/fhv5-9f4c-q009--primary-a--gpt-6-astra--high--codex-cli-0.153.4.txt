@@ -1,0 +1,5 @@
+For children passing `cmd.IsAvailableCommand()` (`command.go:835`), `SuggestionsFor` suggests a command through three mechanisms:
+
+1. **Levenshtein distance:** `ld(typedName, cmd.Name(), true) <= c.SuggestionsMinimumDistance` (lines 836–837).
+2. **Case-insensitive prefix:** the lowercased command name starts with the lowercased `typedName` (line 838).
+3. **Explicit suggestion match:** `typedName` matches an entry in `cmd.SuggestFor` using `strings.EqualFold` (lines 842–845).

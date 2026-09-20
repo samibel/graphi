@@ -1,0 +1,1 @@
+FAIL: The response identifies bundle gaps but does not trace the requested flow. The bundle supports root delegation and ExecuteContextC context setup, but lacks command selection, selected-command context propagation, execution, and error/help handling.

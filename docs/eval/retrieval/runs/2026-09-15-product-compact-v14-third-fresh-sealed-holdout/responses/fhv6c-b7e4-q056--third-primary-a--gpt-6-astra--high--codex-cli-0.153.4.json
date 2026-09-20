@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q056",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a5b62118935fda4850ea6e872ff3013412de31537b230f21438dd73b69c0ab63",
+  "bundle_sha256": "dd9c10f3aca5daf5796c919dbe259b030c42fbac4281361642415dd9415af458",
+  "prompt_sha256": "f871f00d8c47914e497c40f0e3b98e118daeb7bfc5409a07e4aab6fe15814900",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The output writer is `Command.outWriter`, an `io.Writer`.\n\n- `SetOutput(output io.Writer)` sets both `c.outWriter` and `c.errWriter`. It is deprecated in favor of `SetOut` and/or `SetErr` (`command.go:280–286`).\n- `getOut(def io.Writer)` returns the command’s writer if set, otherwise checks its parent recursively, then returns `def` (`command.go:394–402`).\n- `UsageString()` temporarily redirects both writers to a `bytes.Buffer`, calls usage, restores the writers, and returns the captured text (`command.go:478–495`).",
+  "responded_at": "2026-09-15T08:31:32Z",
+  "sha256": "da4ad6e5b8a3056e0e8cab4f61f8ef22d8726143fd7c1cc5c7ff17f942d7640c"
+}

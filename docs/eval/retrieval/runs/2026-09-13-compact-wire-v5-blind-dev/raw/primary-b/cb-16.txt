@@ -1,0 +1,1 @@
+The distance is computed by the unexported `ld(s, t string, ignoreCase bool) int` function in `cobra.go:187-222`. It optionally lowercases both strings, fills a dynamic-programming matrix with insertion/deletion/substitution costs, and returns the bottom-right value. Command suggestions invoke it as `ld(typedName, cmd.Name(), true)` in `command.go:836-838`.

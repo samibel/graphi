@@ -1,0 +1,1 @@
+PASS: The bundle supports using cobra-cli for easy application and command scaffolding, and manually using Cobra by creating main.go, a root command file, and optional additional commands. The response captures this distinction without unsupported material claims.

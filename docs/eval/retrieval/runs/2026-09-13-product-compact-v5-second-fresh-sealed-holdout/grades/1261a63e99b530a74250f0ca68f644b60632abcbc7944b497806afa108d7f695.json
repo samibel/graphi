@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q016",
+  "response_sha256": "1261a63e99b530a74250f0ca68f644b60632abcbc7944b497806afa108d7f695",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response accurately describes saving both writers, redirecting them to one buffer, calling CheckErr(c.Usage()), restoring the originals, and returning bb.String(). Its citations and observation that restoration is explicit rather than deferred are supported by command.go:477–495.",
+  "graded_at": "2026-09-13T15:35:02Z",
+  "sha256": "979b5daa5c815c15cffa46c5f93c4ada8fcf66c0bcd8c07e341a8b717ad6c786"
+}

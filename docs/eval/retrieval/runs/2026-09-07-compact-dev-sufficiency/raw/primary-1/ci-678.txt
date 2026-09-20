@@ -1,0 +1,1 @@
+Supply the test's flag arguments with `cmd.SetArgs([]string{"--flag-name", "value"})`, replacing the placeholders with a defined flag and its value. `(*Command).SetArgs(a []string)` assigns the slice to `c.args`, and its comment explicitly identifies testing as a use case (`command.go:275–277`). The excerpt does not include a complete execution-and-assertion example.

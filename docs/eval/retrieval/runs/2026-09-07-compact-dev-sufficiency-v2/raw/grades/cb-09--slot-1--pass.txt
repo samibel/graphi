@@ -1,0 +1,1 @@
+PASS: The answer supplies concrete symbols and behavior in shell_completions.go, satisfying the exact-path development key. Lines 42–46 show extension-limited MarkFlagFilename using c.Flags(); lines 58–63 show its persistent counterpart using c.PersistentFlags(); lines 35–36 explicitly describe completion prioritization by MarkFlagRequired.

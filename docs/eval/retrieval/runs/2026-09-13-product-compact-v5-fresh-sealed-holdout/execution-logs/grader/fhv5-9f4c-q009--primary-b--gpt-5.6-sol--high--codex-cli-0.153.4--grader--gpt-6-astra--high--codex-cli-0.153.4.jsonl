@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acc-3d89-7ae1-ae23-1c09d2152556"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies all three mechanisms supported by command.go:831–850: Levenshtein distance within SuggestionsMinimumDistance, a case-insensitive command-name prefix match, and a case-insensitive match against SuggestFor. It also correctly states that these checks require IsAvailableCommand() to be true."}}
+{"type":"turn.completed","usage":{"input_tokens":18122,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":67,"reasoning_output_tokens":0}}

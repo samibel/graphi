@@ -1,0 +1,1 @@
+FAIL: The response omits the error-returning post-run variants identified as essential by the reviewed spans. The transcript documents `PostRunE` at `command.go:138`, but the response never mentions it, and the preserved transcript lacks the `PersistentPostRunE` definition.

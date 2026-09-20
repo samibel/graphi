@@ -1,0 +1,1 @@
+PASS: The response names all four CompletionOptions switches and accurately describes their independent effects. Every claim and cited line is supported by the preserved completions.go:103–116 span.

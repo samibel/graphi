@@ -1,0 +1,1 @@
+PASS: The transcript at command.go:874-877 explicitly checks for a nil receiver and immediately returns the stated error, before flag parsing or run hooks execute.

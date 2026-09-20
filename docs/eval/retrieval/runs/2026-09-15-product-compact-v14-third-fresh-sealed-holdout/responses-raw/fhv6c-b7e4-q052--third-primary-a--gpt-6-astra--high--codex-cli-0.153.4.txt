@@ -1,0 +1,24 @@
+Use `GenMarkdownTreeCustom` with a `filePrepender` callback. It receives each file’s full path and returns text to prepend to the generated Markdown (`site/content/docgen/md.md`, lines 74–88).
+
+The documented Hugo example returns YAML front matter:
+
+```go
+const fmTemplate = `---
+date: %s
+title: "%s"
+slug: %s
+url: %s
+---
+`
+
+filePrepender := func(filename string) string {
+    now := time.Now().Format(time.RFC3339)
+    name := filepath.Base(filename)
+    base := strings.TrimSuffix(name, path.Ext(name))
+    url := "/commands/" + strings.ToLower(base) + "/"
+    return fmt.Sprintf(fmTemplate, now,
+        strings.Replace(base, "_", " ", -1), base, url)
+}
+```
+
+This sets the date, derives the title and slug from the filename, and assigns a `/commands/.../` URL (`site/content/docgen/md.md`, lines 90–105). Pass this callback as the `filePrepender` argument to `GenMarkdownTreeCustom`; its `linkHandler` argument can also map internal command links to those URLs (lines 76–80 and 108–115).

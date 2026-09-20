@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 22,
+  "previous_sha256": "2130dc166c1fd190ae7687797dbdb5965b4c6fc9db04d0c2f8bb0faa78829c03",
+  "kind": "response",
+  "query_id": "cb-28",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "469ce43e4a0c018214eb51936de405d3acaa49f91c94fe6da3ef418bc2ca140a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A command's group ID associates it with one of its parent's registered command groups, whose definitions are `Group{ID, Title}` and are installed with `AddGroup` (`command.go:41-46`, `command.go:1356-1359`). `ContainsGroup` checks whether a given ID is registered (`command.go:1346-1354`). Cobra also lets you assign the generated help and completion commands to groups via `SetHelpCommandGroupID` and `SetCompletionCommandGroupID`; the configured IDs are retained for defaults not yet created (`command.go:332-346`).\n",
+  "sha256": "b51e36ea5637703237ff9b14ad282cf00b5374f4f42aed47d46eadfdea448bd8"
+}

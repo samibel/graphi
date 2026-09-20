@@ -1,0 +1,1 @@
+PASS: SetArgs is the concrete test-facing mechanism requested, and the bundled comment explicitly says it overrides os.Args[1:] and is particularly useful when testing.

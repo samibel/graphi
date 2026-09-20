@@ -1,0 +1,87 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 37b34b69039d7dc9da2d5a4b3220aa3aa249734497322a625368c19d7d79ac88
+FOLLOW-UP READ CONTENT ADDRESS: b120c35e7ab0bb6c5e34d97c101c9014f8c4ee60cecc88f7d7071501e62295bf
+QUERY ID: fhv6c-b7e4-q063
+
+QUESTION:
+wrong help group
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:1954-1972 anchor="SetHelpCommandGroupID(\"wrong\")" reason=The focused test is the canonical record of the panic caused by assigning the generated help command to a missing group.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query dad823b6d594; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/user_guide.md","start_line":533,"end_line":539,"text":"### Grouping commands in help\n\nCobra supports grouping of available commands in the help output.  To group commands, each group must be explicitly\ndefined using `AddGroup()` on the parent command.  Then a subcommand can be added to a group using the `GroupID` element\nof that subcommand. The groups will appear in the help output in the same order as they are defined using different\ncalls to `AddGroup()`.  If you use the generated `help` or `completion` commands, you can set their group ids using\n`SetHelpCommandGroupId()` and `SetCompletionCommandGroupId()` on the root command, respectively."},{"path":"command.go","start_line":332,"end_line":339,"text":"// SetHelpCommandGroupID sets the group id of the help command.\nfunc (c *Command) SetHelpCommandGroupID(groupID string) {\n\tif c.helpCommand != nil {\n\t\tc.helpCommand.GroupID = groupID\n\t}\n\t// helpCommandGroupID is used if no helpCommand is defined by the user\n\tc.helpCommandGroupID = groupID\n}"},{"path":"command.go","start_line":470,"end_line":476,"text":"// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"command.go","start_line":450,"end_line":468,"text":"// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}"},{"path":"command.go","start_line":1356,"end_line":1359,"text":"// AddGroup adds one or more command groups to this parent command.\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}"},{"path":"command.go","start_line":341,"end_line":343,"text":"// SetCompletionCommandGroupID sets the group id of the completion command.\nfunc (c *Command) SetCompletionCommandGroupID(groupID string) {\n\t// completionCommandGroupID is used if no completion command is defined by the user"},{"path":"command.go","start_line":73,"end_line":73,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent."},{"path":"command.go","start_line":42,"end_line":42,"text":"type Group struct {"},{"path":"command_test.go","start_line":1954,"end_line":1954,"text":"func TestWrongGroupForHelp(t *testing.T) {"}],"provenance":{"input_sha256":"d47a2d65f91de60177e800da5c4cd6b64ae986761d9e0b9e0d6cf7cb94a33178","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/user_guide.md:533-540"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/user_guide.md","start_line":533,"end_line":540,"text":"### Grouping commands in help\n\nCobra supports grouping of available commands in the help output.  To group commands, each group must be explicitly\ndefined using `AddGroup()` on the parent command.  Then a subcommand can be added to a group using the `GroupID` element\nof that subcommand. The groups will appear in the help output in the same order as they are defined using different\ncalls to `AddGroup()`.  If you use the generated `help` or `completion` commands, you can set their group ids using\n`SetHelpCommandGroupId()` and `SetCompletionCommandGroupId()` on the root command, respectively.\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT
+The responses name `TestWrongGroupForHelp` at `command_test.go:1954` but omit its body and the validation logic needed to determine what happens when the help command has a wrong group.
+----- END THE RATER'S RESPONSE -----

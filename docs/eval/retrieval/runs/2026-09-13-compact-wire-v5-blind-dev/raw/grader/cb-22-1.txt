@@ -1,0 +1,1 @@
+PASS: The documentation-tree walk and output naming are correctly and sufficiently explained from the full bundled generator body.

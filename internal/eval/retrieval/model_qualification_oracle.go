@@ -1,0 +1,574 @@
+package retrieval
+
+// Qrel-only stage-ceiling controls for the embedded-model qualification.
+//
+// This file is deliberately confined to internal/eval. Normal candidates are
+// frozen before this code receives them; qrels can influence only the three
+// explicitly labelled oracle artifacts returned by BuildOracleControls.
+
+import (
+	"bytes"
+	"context"
+	"encoding/binary"
+	"encoding/json"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/shape"
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
+	"github.com/samibel/graphi/engine/embed"
+)
+
+const (
+	OracleControlCurrentCandidatesOraclePacker  = "current_candidates_oracle_packer"
+	OracleControlOracleCandidateCurrentSelector = "oracle_candidate_current_selector"
+	OracleControlOracleCandidateOraclePacker    = "oracle_candidate_oracle_packer"
+)
+
+// OracleInput is the post-capture boundary. CurrentCandidates must be the
+// frozen, qrel-blind task_context/2 result. BuildOracleControls never mutates
+// it; candidate injection is performed on a deep copy.
+type OracleInput struct {
+	Query             Query
+	CurrentCandidates contract.Result
+	Repository        fs.FS
+	RealCounter       PayloadCounter
+	RetrievalState    string
+}
+
+// OracleControls separates retrieval recall, current-selector retention, and
+// the fixed representation/budget ceiling.
+type OracleControls struct {
+	CurrentCandidatesOraclePacker  OracleBundle `json:"current_candidates_oracle_packer"`
+	OracleCandidateCurrentSelector OracleBundle `json:"oracle_candidate_current_selector"`
+	OracleCandidateOraclePacker    OracleBundle `json:"oracle_candidate_oracle_packer"`
+}
+
+// QualificationOracleBuildRef binds the one oracle collection to the exact
+// qrel-blind build whose frozen candidates were used. Oracle evidence is
+// defined only for M3 build 1.
+type QualificationOracleBuildRef struct {
+	BaseArm                 QualificationArm `json:"base_arm"`
+	Build                   int              `json:"build"`
+	BuildSHA256             string           `json:"build_sha256"`
+	CaptureProvenanceSHA256 string           `json:"capture_provenance_sha256"`
+}
+
+// QualificationOracleEvidence is one closed collection. Its collection-level
+// build reference prevents per-query mixtures or relabeling across arms/builds.
+type QualificationOracleEvidence struct {
+	BuildRef                QualificationOracleBuildRef `json:"build_ref"`
+	OraclePayloadsSHA256    string                      `json:"oracle_payloads_sha256"`
+	OracleTokenCountsSHA256 string                      `json:"oracle_token_counts_sha256"`
+	Controls                []OracleControls            `json:"controls"`
+	SHA256                  string                      `json:"sha256"`
+}
+
+func sealQualificationOracleEvidence(evidence QualificationOracleEvidence) (QualificationOracleEvidence, error) {
+	address, err := ContentAddress(evidence, func(v *QualificationOracleEvidence) { v.SHA256 = "" })
+	if err != nil {
+		return QualificationOracleEvidence{}, err
+	}
+	evidence.SHA256 = address
+	return evidence, nil
+}
+
+func qualificationOracleControlsFromMap(controls map[string]OracleControls) []OracleControls {
+	out := make([]OracleControls, 0, len(controls))
+	for _, control := range controls {
+		out = append(out, control)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].CurrentCandidatesOraclePacker.QueryID < out[j].CurrentCandidatesOraclePacker.QueryID
+	})
+	return out
+}
+
+func qualificationOracleDigests(controls []OracleControls) (string, string) {
+	canonical := append([]OracleControls(nil), controls...)
+	sort.Slice(canonical, func(i, j int) bool {
+		return canonical[i].CurrentCandidatesOraclePacker.QueryID < canonical[j].CurrentCandidatesOraclePacker.QueryID
+	})
+	var payloads, tokens bytes.Buffer
+	for _, controlSet := range canonical {
+		for _, control := range oracleControlBundles(controlSet) {
+			qualificationWriteString(&payloads, control.QueryID)
+			qualificationWriteString(&payloads, control.ControlKind)
+			qualificationWriteString(&payloads, control.CandidateProvenance)
+			qualificationWriteString(&payloads, control.CandidateSHA256)
+			qualificationWriteBytes(&payloads, control.Payload.Bytes)
+			qualificationWriteString(&payloads, control.Payload.SHA256)
+			qualificationWriteString(&tokens, control.QueryID)
+			qualificationWriteString(&tokens, control.ControlKind)
+			_ = binary.Write(&tokens, binary.BigEndian, int64(control.TokenCount))
+			counts := append([]PayloadTokenCount(nil), control.Payload.TokenCounts...)
+			sort.Slice(counts, func(i, j int) bool { return counts[i].TokenizerID < counts[j].TokenizerID })
+			for _, count := range counts {
+				qualificationWriteString(&tokens, count.TokenizerID)
+				qualificationWriteString(&tokens, count.VocabularySHA256)
+				_ = binary.Write(&tokens, binary.BigEndian, int64(count.Tokens))
+			}
+		}
+	}
+	return SHA256Hex(payloads.Bytes()), SHA256Hex(tokens.Bytes())
+}
+
+// OracleBundle is safe to hand to the existing blind-rater workflow. It
+// intentionally contains neither qrels nor answer labels. OutputName and
+// CandidateProvenance keep oracle artifacts out of normal capture namespaces.
+type OracleBundle struct {
+	ControlKind         string           `json:"control_kind"`
+	QueryID             string           `json:"query_id"`
+	OutputName          string           `json:"output_name"`
+	CandidateProvenance string           `json:"candidate_provenance"`
+	CandidateSHA256     string           `json:"candidate_sha256"`
+	Injected            bool             `json:"injected"`
+	InjectedRows        int              `json:"injected_rows"`
+	CompleteGrade3Span  bool             `json:"complete_grade_3_span"`
+	TokenCount          int              `json:"token_count"`
+	Payload             PreservedPayload `json:"payload"`
+}
+
+type oracleSource struct {
+	taskcompact.Source
+	judgement Judgement
+	cost      int
+}
+
+// BuildOracleControls constructs all three ceilings only after the caller has
+// frozen normal candidates. The current selector is the exported compact/17
+// selector itself; it has no oracle callback or alternate ranking path.
+func BuildOracleControls(in OracleInput) (OracleControls, error) {
+	if strings.TrimSpace(in.Query.ID) == "" || strings.TrimSpace(in.Query.Text) == "" {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: query id and text are required")
+	}
+	if in.Repository == nil {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: repository is required")
+	}
+	if in.RealCounter.Count == nil || strings.TrimSpace(in.RealCounter.TokenizerID) == "" || in.RealCounter.TokenizerID == TokenizerID {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: pinned real tokenizer counter is required")
+	}
+
+	current, err := cloneOracleCandidates(in.CurrentCandidates)
+	if err != nil {
+		return OracleControls{}, err
+	}
+	grade3, err := loadOracleSources(in.Repository, in.Query, in.RealCounter)
+	if err != nil {
+		return OracleControls{}, err
+	}
+
+	retrievalState := in.RetrievalState
+	if retrievalState == "" {
+		retrievalState = embed.StateReady.String()
+	}
+	if retrievalState != embed.StateReady.String() && retrievalState != "lexical_only" {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: unsupported retrieval state %q", retrievalState)
+	}
+	currentRaw, err := contract.SerializeStable(&current)
+	if err != nil {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: serialize frozen candidates: %w", err)
+	}
+	currentSHA := SHA256Hex(currentRaw)
+	currentSelection, err := runOracleCurrentSelector(in.Query.Text, current, in.Repository, retrievalState)
+	if err != nil {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: current candidates/current selector: %w", err)
+	}
+	currentEligible := oracleSourcesPresentInCandidates(grade3, current)
+	currentPacked, err := buildOraclePackedBundle(
+		in, OracleControlCurrentCandidatesOraclePacker,
+		"oracle-current-candidates-oracle-packer.json", "frozen_normal_candidates/oracle_packer",
+		currentSHA, retrievalState, false, 0, currentSelection, currentEligible,
+	)
+	if err != nil {
+		return OracleControls{}, err
+	}
+
+	injectedCandidates, injectedRows, err := injectOracleCandidates(current, grade3)
+	if err != nil {
+		return OracleControls{}, err
+	}
+	injectedRaw, err := contract.SerializeStable(&injectedCandidates)
+	if err != nil {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: serialize injected candidates: %w", err)
+	}
+	injectedSHA := SHA256Hex(injectedRaw)
+	injectedSelection, err := runOracleCurrentSelector(in.Query.Text, injectedCandidates, in.Repository, retrievalState)
+	if err != nil {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: oracle candidates/current selector: %w", err)
+	}
+	injectedSelected, err := buildOracleSelectorBundle(
+		in, OracleControlOracleCandidateCurrentSelector,
+		"oracle-candidate-current-selector.json", "oracle_candidate_copy/current_selector",
+		injectedSHA, retrievalState, injectedRows, injectedSelection,
+	)
+	if err != nil {
+		return OracleControls{}, err
+	}
+	injectedPacked, err := buildOraclePackedBundle(
+		in, OracleControlOracleCandidateOraclePacker,
+		"oracle-candidate-oracle-packer.json", "oracle_candidate_copy/oracle_packer",
+		injectedSHA, retrievalState, true, injectedRows, injectedSelection, grade3,
+	)
+	if err != nil {
+		return OracleControls{}, err
+	}
+
+	return OracleControls{
+		CurrentCandidatesOraclePacker:  currentPacked,
+		OracleCandidateCurrentSelector: injectedSelected,
+		OracleCandidateOraclePacker:    injectedPacked,
+	}, nil
+}
+
+func cloneOracleCandidates(in contract.Result) (contract.Result, error) {
+	raw, err := json.Marshal(in)
+	if err != nil {
+		return contract.Result{}, fmt.Errorf("embedded-model qualification oracle: clone candidates: %w", err)
+	}
+	var out contract.Result
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&out); err != nil {
+		return contract.Result{}, fmt.Errorf("embedded-model qualification oracle: clone candidates: %w", err)
+	}
+	if err := contract.ValidateResult(&out); err != nil {
+		return contract.Result{}, fmt.Errorf("embedded-model qualification oracle: invalid frozen candidates: %w", err)
+	}
+	return out, nil
+}
+
+func loadOracleSources(repository fs.FS, query Query, real PayloadCounter) ([]oracleSource, error) {
+	seen := make(map[string]bool)
+	var out []oracleSource
+	for _, judgement := range query.Judgements {
+		if judgement.Grade != GradeMax {
+			continue
+		}
+		key := fmt.Sprintf("%s\x00%d\x00%d", judgement.Path, judgement.StartLine, judgement.EndLine)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		text, err := exactSourceSpan(repository, judgement.Path, judgement.StartLine, judgement.EndLine)
+		if err != nil {
+			return nil, fmt.Errorf("embedded-model qualification oracle: query %s: %w", query.ID, err)
+		}
+		source := taskcompact.Source{
+			Path: judgement.Path, StartLine: judgement.StartLine,
+			EndLine: judgement.EndLine, Text: text,
+		}
+		raw, err := json.Marshal(source)
+		if err != nil {
+			return nil, err
+		}
+		cost, err := real.Count(raw)
+		if err != nil {
+			return nil, fmt.Errorf("embedded-model qualification oracle: count source %s: %w", judgement.Path, err)
+		}
+		out = append(out, oracleSource{Source: source, judgement: judgement, cost: cost})
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("embedded-model qualification oracle: query %s has no grade-3 judgement", query.ID)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].cost != out[j].cost {
+			return out[i].cost < out[j].cost
+		}
+		if out[i].Path != out[j].Path {
+			return out[i].Path < out[j].Path
+		}
+		if out[i].StartLine != out[j].StartLine {
+			return out[i].StartLine < out[j].StartLine
+		}
+		return out[i].EndLine < out[j].EndLine
+	})
+	return out, nil
+}
+
+func oracleSourcesPresentInCandidates(sources []oracleSource, candidates contract.Result) []oracleSource {
+	referenced := make(map[string]bool)
+	for _, item := range candidates.Items {
+		for _, ref := range item.EvidenceRefIDs {
+			referenced[ref] = true
+		}
+	}
+	var present []oracleSource
+	for _, source := range sources {
+		for _, evidence := range candidates.Evidence {
+			if referenced[evidence.RefID] && SpanMatches(evidence.Path, evidence.Line, source.judgement) {
+				present = append(present, source)
+				break
+			}
+		}
+	}
+	return present
+}
+
+func injectOracleCandidates(current contract.Result, sources []oracleSource) (contract.Result, int, error) {
+	used := make(map[string]bool, len(current.Items)+len(current.Evidence))
+	for _, item := range current.Items {
+		used[item.RefID] = true
+	}
+	for _, evidence := range current.Evidence {
+		used[evidence.RefID] = true
+	}
+	items := make([]contract.Item, 0, len(sources)+len(current.Items))
+	evidence := make([]contract.Evidence, 0, len(sources)+len(current.Evidence))
+	for i, source := range sources {
+		base := fmt.Sprintf("oracle-injected-%03d", i+1)
+		itemRef := uniqueOracleRef(base+"-item", used)
+		used[itemRef] = true
+		evidenceRef := uniqueOracleRef(base+"-evidence", used)
+		used[evidenceRef] = true
+		items = append(items, contract.Item{
+			RefID: itemRef, Rank: i + 1, Reason: "evaluation control candidate",
+			EvidenceRefIDs: []string{evidenceRef},
+		})
+		evidence = append(evidence, contract.Evidence{
+			RefID: evidenceRef, Path: source.Path, Line: source.StartLine,
+			Span: fmt.Sprintf("%d-%d", source.StartLine, source.EndLine),
+			Role: "snippet", Snippet: source.Text, TextHash: shape.TextHash(source.Text),
+		})
+	}
+	current.Items = append(items, current.Items...)
+	current.Evidence = append(evidence, current.Evidence...)
+	current.Limits.TotalAvailable += len(sources)
+	if err := contract.ValidateResult(&current); err != nil {
+		return contract.Result{}, 0, fmt.Errorf("embedded-model qualification oracle: inject candidates: %w", err)
+	}
+	return current, len(sources), nil
+}
+
+func uniqueOracleRef(base string, used map[string]bool) string {
+	if !used[base] {
+		return base
+	}
+	for suffix := 2; ; suffix++ {
+		candidate := fmt.Sprintf("%s-%d", base, suffix)
+		if !used[candidate] {
+			return candidate
+		}
+	}
+}
+
+func runOracleCurrentSelector(query string, candidates contract.Result, repository fs.FS, retrievalState string) (taskcompact.Result, error) {
+	raw, err := contract.SerializeStable(&candidates)
+	if err != nil {
+		return taskcompact.Result{}, err
+	}
+	if retrievalState == "lexical_only" {
+		return taskcompact.BuildEvaluationControl(context.Background(), query, raw, repository, taskcompact.DefaultSourceBudget)
+	}
+	return taskcompact.Build(context.Background(), query, raw, repository, taskcompact.DefaultSourceBudget)
+}
+
+func buildOracleSelectorBundle(in OracleInput, kind, outputName, provenance, candidateSHA, retrievalState string, injectedRows int, selected taskcompact.Result) (OracleBundle, error) {
+	payload, tokens, err := preserveOraclePayload(in.Query.ID, selected, in.RealCounter, retrievalState)
+	if err != nil {
+		return OracleBundle{}, err
+	}
+	return OracleBundle{
+		ControlKind: kind, QueryID: in.Query.ID, OutputName: outputName,
+		CandidateProvenance: provenance, CandidateSHA256: candidateSHA, Injected: true, InjectedRows: injectedRows,
+		CompleteGrade3Span: qualificationCompleteGrade3Span(in.Query, selected.Structured.Sources),
+		TokenCount:         tokens, Payload: payload,
+	}, nil
+}
+
+func buildOraclePackedBundle(in OracleInput, kind, outputName, provenance, candidateSHA, retrievalState string, injected bool, injectedRows int, template taskcompact.Result, eligible []oracleSource) (OracleBundle, error) {
+	packed := template
+	packed.Summary = "task_context/2 evaluation control " + kind
+	packed.Structured.Sources = nil
+	packed.Structured.Followup = nil
+	packed.Structured.Provenance.SourceSelection = "context-definitions/oracle-" + strings.ReplaceAll(kind, "_", "-") + "/1"
+	packed.Structured.Truncated = len(eligible) > 0
+
+	for _, source := range eligible {
+		trial := packed
+		trial.Structured.Sources = append(append([]taskcompact.Source(nil), packed.Structured.Sources...), source.Source)
+		if oracleWhitespaceTokens(trial.Structured.Sources) > taskcompact.DefaultSourceBudget {
+			continue
+		}
+		raw, err := marshalOracleCompactResult(trial)
+		if err != nil {
+			return OracleBundle{}, err
+		}
+		tokens, err := in.RealCounter.Count(raw)
+		if err != nil {
+			return OracleBundle{}, fmt.Errorf("embedded-model qualification oracle: count %s: %w", kind, err)
+		}
+		if tokens > SavingsCandidateBudget {
+			break
+		}
+		packed = trial
+	}
+	packed.Structured.Truncated = len(packed.Structured.Sources) < len(eligible)
+	payload, tokens, err := preserveOraclePayload(in.Query.ID, packed, in.RealCounter, retrievalState)
+	if err != nil {
+		return OracleBundle{}, err
+	}
+	return OracleBundle{
+		ControlKind: kind, QueryID: in.Query.ID, OutputName: outputName,
+		CandidateProvenance: provenance, CandidateSHA256: candidateSHA, Injected: injected, InjectedRows: injectedRows,
+		CompleteGrade3Span: qualificationCompleteGrade3Span(in.Query, packed.Structured.Sources),
+		TokenCount:         tokens, Payload: payload,
+	}, nil
+}
+
+func oracleWhitespaceTokens(sources []taskcompact.Source) int {
+	total := 0
+	for _, source := range sources {
+		total += len(strings.Fields(source.Text))
+	}
+	return total
+}
+
+func preserveOraclePayload(queryID string, result taskcompact.Result, real PayloadCounter, retrievalState string) (PreservedPayload, int, error) {
+	raw, err := marshalOracleCompactResult(result)
+	if err != nil {
+		return PreservedPayload{}, 0, err
+	}
+	tokens, err := real.Count(raw)
+	if err != nil {
+		return PreservedPayload{}, 0, fmt.Errorf("embedded-model qualification oracle: count %s: %w", queryID, err)
+	}
+	if tokens > SavingsCandidateBudget {
+		return PreservedPayload{}, 0, fmt.Errorf("embedded-model qualification oracle: query %s payload is %d tokens, exceeds %d", queryID, tokens, SavingsCandidateBudget)
+	}
+	if _, err := validateCompactCandidateBundleBytesState(queryID, raw, retrievalState); err != nil {
+		return PreservedPayload{}, 0, fmt.Errorf("embedded-model qualification oracle: query %s compact payload: %w", queryID, err)
+	}
+	payload, err := preserveCandidatePayload(queryID, raw, real)
+	if err != nil {
+		return PreservedPayload{}, 0, err
+	}
+	return payload, tokens, nil
+}
+
+func oracleControlBundles(controls OracleControls) []OracleBundle {
+	return []OracleBundle{
+		controls.CurrentCandidatesOraclePacker,
+		controls.OracleCandidateCurrentSelector,
+		controls.OracleCandidateOraclePacker,
+	}
+}
+
+type qualificationOracleArtifact struct {
+	ControlKind         string           `json:"control_kind"`
+	QueryID             string           `json:"query_id"`
+	CandidateProvenance string           `json:"candidate_provenance"`
+	CandidateSHA256     string           `json:"candidate_sha256"`
+	Injected            bool             `json:"injected"`
+	InjectedRows        int              `json:"injected_rows"`
+	PayloadSHA256       string           `json:"payload_sha256"`
+	RealTokenCount      int              `json:"real_token_count"`
+	Payload             PreservedPayload `json:"payload"`
+}
+
+// writeQualificationOracleControls materializes already-built controls. It
+// deliberately has no repository or qrel input: reconstruction after the
+// one-shot capture is impossible by API shape.
+func writeQualificationOracleControls(armDir string, captured []CapturedCandidateBundle, queries []Query) error {
+	queryByID := make(map[string]Query, len(queries))
+	for _, query := range queries {
+		if _, duplicate := queryByID[query.ID]; duplicate {
+			return fmt.Errorf("embedded-model qualification oracle: duplicate query id %q", query.ID)
+		}
+		queryByID[query.ID] = query
+	}
+	for _, candidate := range captured {
+		query, ok := queryByID[candidate.QueryID]
+		if !ok {
+			return fmt.Errorf("embedded-model qualification oracle: captured query %q is not in the frozen dataset", candidate.QueryID)
+		}
+		if candidate.OracleControls == nil {
+			return fmt.Errorf("embedded-model qualification oracle: query %s has no one-shot controls", candidate.QueryID)
+		}
+		if err := validateOraclePathComponent(candidate.QueryID); err != nil {
+			return err
+		}
+		seen := make(map[string]bool, 3)
+		for _, bundle := range oracleControlBundles(*candidate.OracleControls) {
+			if bundle.QueryID != candidate.QueryID || seen[bundle.ControlKind] {
+				return fmt.Errorf("embedded-model qualification oracle: query %s has invalid or duplicate control %q", candidate.QueryID, bundle.ControlKind)
+			}
+			seen[bundle.ControlKind] = true
+			if err := validateOraclePathComponent(bundle.ControlKind); err != nil {
+				return err
+			}
+			if !isLowerHexDigest(bundle.CandidateSHA256, 64) || bundle.Payload.SHA256 != SHA256Hex(bundle.Payload.Bytes) {
+				return fmt.Errorf("embedded-model qualification oracle: query %s control %s has invalid content provenance", candidate.QueryID, bundle.ControlKind)
+			}
+			prompt, err := BuildRaterPrompt(candidate.QueryID, query.Text, bundle.Payload)
+			if err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: query %s control %s grader packet: %w", candidate.QueryID, bundle.ControlKind, err)
+			}
+			controlDir := filepath.Join(armDir, "oracle", candidate.QueryID, bundle.ControlKind)
+			if err := os.MkdirAll(controlDir, 0o755); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: create control directory: %w", err)
+			}
+			artifact := qualificationOracleArtifact{
+				ControlKind: bundle.ControlKind, QueryID: bundle.QueryID,
+				CandidateProvenance: bundle.CandidateProvenance, CandidateSHA256: bundle.CandidateSHA256,
+				Injected: bundle.Injected, InjectedRows: bundle.InjectedRows,
+				PayloadSHA256: bundle.Payload.SHA256, RealTokenCount: bundle.TokenCount, Payload: bundle.Payload,
+			}
+			raw, err := json.MarshalIndent(artifact, "", "  ")
+			if err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: encode artifact: %w", err)
+			}
+			raw = append(raw, '\n')
+			if err := os.WriteFile(filepath.Join(controlDir, "artifact.json"), raw, 0o644); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: write artifact: %w", err)
+			}
+			if err := os.WriteFile(filepath.Join(controlDir, "payload.jsonrpc"), bundle.Payload.Bytes, 0o644); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: write payload: %w", err)
+			}
+			if err := os.WriteFile(filepath.Join(controlDir, "grader-prompt.txt"), prompt.Bytes, 0o644); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: write grader prompt: %w", err)
+			}
+		}
+		if len(seen) != 3 {
+			return fmt.Errorf("embedded-model qualification oracle: query %s emitted %d controls, want 3", candidate.QueryID, len(seen))
+		}
+	}
+	return nil
+}
+
+func validateOraclePathComponent(value string) error {
+	if strings.TrimSpace(value) == "" || value == "." || value == ".." || filepath.Base(value) != value || strings.ContainsAny(value, `/\\`) {
+		return fmt.Errorf("embedded-model qualification oracle: unsafe output path component %q", value)
+	}
+	return nil
+}
+
+func marshalOracleCompactResult(result taskcompact.Result) ([]byte, error) {
+	envelope := struct {
+		JSONRPC string `json:"jsonrpc"`
+		ID      int    `json:"id"`
+		Result  struct {
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+			StructuredContent taskcompact.Structured `json:"structuredContent"`
+			IsError           bool                   `json:"isError"`
+		} `json:"result"`
+	}{JSONRPC: "2.0", ID: 1}
+	envelope.Result.Content = []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}{{Type: "text", Text: result.Summary}}
+	envelope.Result.StructuredContent = result.Structured
+	raw, err := json.Marshal(envelope)
+	if err != nil {
+		return nil, fmt.Errorf("embedded-model qualification oracle: marshal compact payload: %w", err)
+	}
+	return append(raw, '\n'), nil
+}

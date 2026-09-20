@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c3-491e-7a60-be9c-5e686d08b28e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains no test or behavior description for an application and its direct child sharing the same command name."}}
+{"type":"turn.completed","usage":{"input_tokens":17318,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":29,"reasoning_output_tokens":0}}

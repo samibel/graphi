@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 147,
+  "previous_sha256": "4999d43b8dc7b1f5350eb27402a2c24e3200827653bfd7f328c2cc419d5a8ddc",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1996ba413343c277b15340319b5e764d1d4acfea73fad86aca8a0c5390c3bd75",
+  "outcome": "pass",
+  "rationale": "The candidate gives the correct supported mechanism. command.go:1183–1198 says the default help flag is added only if no \"help\" flag exists and shows that the default combines the long name and shorthand via BoolP(\"help\", \"h\", ...). command.go:883–886 explicitly says initialization is delayed to allow user overriding. command.go:894–905 reads only the boolean flag named \"help\" and returns flag.ErrHelp when true. These preserved bytes support both the default indistinguishability and the proposed separation: predefine \"help\" without shorthand and register \"h\" independently.\n",
+  "sha256": "a84703860aacffa3c109ef882183dec19f72e6a1b05bd0c4859929002e4b589c"
+}

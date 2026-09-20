@@ -1,0 +1,1 @@
+FAIL: The response does not answer how all three widths are chosen. The bundle supports UsagePadding() using the fixed minimum at the root and the larger of that minimum and the parent’s commandsMaxUseLen otherwise, but omits the command-path and name padding selection implementations.

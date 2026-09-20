@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows flag-name suggestions in `completions.go:534–565`, but omits the logic distinguishing values after `=` from separate values following a flag; `completions.go:308` and `command.go:796` provide only comments.

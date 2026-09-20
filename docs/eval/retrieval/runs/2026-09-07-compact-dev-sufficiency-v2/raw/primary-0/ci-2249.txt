@@ -1,0 +1,1 @@
+To check whether a command has inherited flags, call cmd.HasInheritedFlags(); it returns c.InheritedFlags().HasFlags() (command.go:1766–1769). To check only inherited flags that are neither hidden nor deprecated, use cmd.HasAvailableInheritedFlags() (command.go:1788–1792). InheritedFlags begins by merging persistent flags (command.go:1696–1697).

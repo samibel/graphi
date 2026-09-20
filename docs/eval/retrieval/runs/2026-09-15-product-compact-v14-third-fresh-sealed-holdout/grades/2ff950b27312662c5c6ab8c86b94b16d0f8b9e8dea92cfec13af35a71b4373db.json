@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q050",
+  "response_sha256": "2ff950b27312662c5c6ab8c86b94b16d0f8b9e8dea92cfec13af35a71b4373db",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The follow-up transcript at site/content/completions/zsh.md:34-39 supports all six behaviors described: default file completion, ignored empty filename annotations, cross-shell extension syntax, directory completion across shells, and retention in Zsh plus extension to Fish of repeated-flag suppression and omission of equals-form suggestions.",
+  "graded_at": "2026-09-15T08:34:59Z",
+  "sha256": "ada4a4d63a6c538e2d6d6bb0fb2445fd9b4c5a9a12db461d923030444dce88f8"
+}

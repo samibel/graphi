@@ -1,0 +1,1 @@
+FAIL: The response omits which hidden completion command the no-description Fish script calls—the essential reviewed behavior. The preserved span at lines 26–38 shows GenFishCompletion(buf, false) but omits the assertion identifying that command, so the required fact cannot be verified from the transcript.

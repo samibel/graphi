@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1f83d2ae0469",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "4cdeaf9f1cc763aafac84e31e7b24c3f08fb3389eb6cbd9fc84ca71217b0eacf",
+  "bundle_sha256": "b0aa46ceb5c320c759ee8f9b8aa5e5dd31d1bb364646bfa3dcce7c5d9ecea2b8",
+  "prompt_sha256": "3188bce9f8bfb30206001faea027b9fb48fc7a5761e839643ab58da7fe786c51",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra uses `stringInSlice(a string, list []string) bool` in `cobra.go:223–230`. It loops through the list, compares each element with `a` using exact, case-sensitive equality (`b == a`), and returns `true` on the first match. If no element matches, it returns `false`.",
+  "responded_at": "2026-09-15T20:26:46Z",
+  "sha256": "077a3a30b6ade2bb88dcb6032887578b22fa3975f0b90618b12152df757d512c"
+}

@@ -1,0 +1,1 @@
+FAIL: The response does not answer where to attach the function or when it runs. The transcript shows only that GenBashCompletion embeds c.BashCompletionFunction; it does not establish root-command attachment or invocation when built-in completion cannot resolve a completion.

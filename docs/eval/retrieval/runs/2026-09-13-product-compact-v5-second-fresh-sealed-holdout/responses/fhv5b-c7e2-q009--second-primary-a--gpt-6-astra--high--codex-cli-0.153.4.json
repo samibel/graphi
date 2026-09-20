@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q009",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "95da10dfae32e69e59ea15c49daeed3bb0c19438c4bad531ecf6bcd3a153432f",
+  "bundle_sha256": "3d445fe38a2c82583d8669aaa1334722b4b9753688840fe0114de9036d4040ea",
+  "prompt_sha256": "9427a1cf4f3ceba34421fc1b4f6bdf62048fcd4c80ae1a5fb5f26afcd260568f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`AddTemplateFuncs` iterates over the supplied map and assigns each entry into the package-level `templateFuncs` map: `for k, v := range tmplFuncs { templateFuncs[k] = v }` (`cobra.go`, lines 91–95). This adds new names, overwrites existing names with supplied values, and preserves entries whose names weren’t supplied.",
+  "responded_at": "2026-09-13T15:21:54Z",
+  "sha256": "c3d9aaffde9f6c06fa8ad7270feefa7a7da98b00749fc1aea5106ba490e091fa"
+}

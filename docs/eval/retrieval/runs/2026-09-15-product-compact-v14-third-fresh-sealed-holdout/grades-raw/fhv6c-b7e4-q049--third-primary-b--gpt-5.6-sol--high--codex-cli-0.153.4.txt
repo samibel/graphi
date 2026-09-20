@@ -1,0 +1,1 @@
+PASS: The response correctly identifies `ValidArgsFunction`, default file completion, and the filtering and disabling directives as replacements. The preserved transcript supports these behaviors and confirms in the cited lines that both old positional helpers are deprecated and silently ignored.

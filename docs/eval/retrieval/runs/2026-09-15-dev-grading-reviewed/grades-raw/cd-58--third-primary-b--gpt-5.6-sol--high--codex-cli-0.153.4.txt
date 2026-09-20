@@ -1,0 +1,1 @@
+PASS: The response identifies that `Command.Usage()` calls `c.UsageFunc()(c)`, supported by `command.go:443-448`. Its descriptions of usage-function resolution, default rendering, string capture, and installation are supported by the cited preserved spans and follow-up read.

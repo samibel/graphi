@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-84db-7c52-b63f-5a40557aa778"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In a test, pass flag arguments to the command with `SetArgs`, then execute it:\n\n```go\ncmd.SetArgs([]string{\"--flag-name\", \"value\"})\nerr := cmd.Execute()\n```\n\nEvidence:\n\n- `command.go:275-279`: `SetArgs(a []string)` assigns the supplied arguments to `c.args` and is documented as “particularly useful when testing.”\n- `command.go:1075-1081`: execution uses `args := c.args`; only when `c.args == nil` does it fall back to `os.Args[1:]`.\n- `command.go:888-890`: those arguments are passed to `c.ParseFlags(a)`."}}
+{"type":"turn.completed","usage":{"input_tokens":16560,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":143,"reasoning_output_tokens":0}}

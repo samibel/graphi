@@ -1,0 +1,1 @@
+PASS: The response accurately describes getCommand in args_test.go:23–33: it returns a *Command with Use "c", Args args, Run emptyRun, and ValidArgs set to {"one", "two", "three"} only when withValid is true. The cited span directly supports these claims.

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Why does `--version` not work?
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"Why does `--version` not work?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":108,"end_line":110,"text":"\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the"},{"path":"command.go","start_line":1202,"end_line":1206,"text":"// If c already has a version flag, it will do nothing.\n// If c.Version is empty, it will do nothing.\nfunc (c *Command) InitDefaultVersionFlag() {\n\tif c.Version == \"\" {\n\t\treturn"},{"path":"command.go","start_line":599,"end_line":606,"text":"func (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.VersionTemplate()\n\t}"},{"path":"command.go","start_line":353,"end_line":355,"text":"func (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":1632,"end_line":1632,"text":"func (c *Command) HasParent() bool {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1496,"end_line":1496,"text":"func (c *Command) Name() string {"},{"path":"command.go","start_line":1849,"end_line":1850,"text":"func (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()"}],"provenance":{"input_sha256":"a0da7cbd58cd5875ebda984508317563b7e51ef6e0ed8b203d6c58fac2e3703b","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

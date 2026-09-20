@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-5bc6-7c73-b533-1176421f391a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows flag lookup and `ParseFlags` (`command.go:1818–1840`), but lacks command selection logic or tests establishing whether flags may appear before a command."}}
+{"type":"turn.completed","usage":{"input_tokens":17414,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q012",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "6737ad498a6769f6222ff01983eaf730117b98ce7d4267706f0ebdc91f3046cc",
+  "bundle_sha256": "4b0e2ba9c23cba2c5a2a17fcd32084e6634c711ca9613e6346dedaf5f865d157",
+  "prompt_sha256": "60dc484f40d6674fb336f081250122864a4d92a83bae098d78379f0cc0761279",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`cobra_test.go` is in package `cobra` (line 15) and the supplied excerpts show:\n\n- `assertNoErr(t *testing.T, e error)` (lines 22–26), a helper that calls `t.Error(e)` when the error is non-nil.\n- `TestAddTemplateFunctions(t *testing.T)` (lines 28–42), which registers template functions via `AddTemplateFunc` and `AddTemplateFuncs`, applies them to a `Command` usage template, and verifies that `UsageString()` equals `\"Hello, world.\"`.\n\nThe response is marked `\"truncated\": true`, so it does not establish whether the file contains additional declarations.",
+  "responded_at": "2026-09-15T08:29:03Z",
+  "sha256": "e489157ee0aa0844e0d84d7e0b73dbd6306dfb6488468ff02b63cc4021957ecb"
+}

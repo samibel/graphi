@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 136,
+  "previous_sha256": "c6d1b7180bfab2792a3d62aac7a77df193b25914a08729812ffc2b3ea725b772",
+  "kind": "grade",
+  "query_id": "ci-1236",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "54ed411092fdc8120f303fbc4da65d58fb8e035482d77c5378deed63ad7d67f0",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and supported by the sealed bundle. `command.go:1515-1522` explicitly defines `CalledAs()` as returning the command name or alias used to invoke the command, or an empty string if it has not been called. `command.go:207-209` identifies `commandCalledAs.name` as the stored name or alias, and `command.go:1527-1538` shows that either the command name or a matching alias is assigned there.\n",
+  "sha256": "7467387e5a0e3082d25de4d411e958bcc471cbb032152ab9a826a6aa17bc5db7"
+}

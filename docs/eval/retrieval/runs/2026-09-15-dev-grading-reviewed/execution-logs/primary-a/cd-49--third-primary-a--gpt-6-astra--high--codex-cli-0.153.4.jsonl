@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-6b7a-79e0-8dec-69f9c53d5630"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Add `--no-descriptions` when generating completions, then load the generated script. For example:\n\n```bash\nsource <(helm completion bash --no-descriptions)\n```\n\nReplace `helm` with your command’s name.\n\nEvidence: `site/content/completions/_index.md:384` explicitly documents this flag on the default `completion` command; lines 392–394 show it removing descriptions."}}
+{"type":"turn.completed","usage":{"input_tokens":17817,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":87,"reasoning_output_tokens":0}}

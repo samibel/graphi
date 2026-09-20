@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-eaa8-7571-bb66-3b54261fd7a4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Install a custom help command by calling:\n\n```go\nparentCmd.SetHelpCommand(customHelpCmd)\n```\n\nEvidence: [`command.go:326-330`](command.go:326) defines `func (c *Command) SetHelpCommand(cmd *Command)` and assigns the supplied command to `c.helpCommand`. Cobra otherwise automatically adds a help command when subcommands exist, per [`site/content/user_guide.md:492-495`](site/content/user_guide.md:492)."}}
+{"type":"turn.completed","usage":{"input_tokens":16522,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":101,"reasoning_output_tokens":0}}

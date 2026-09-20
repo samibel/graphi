@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c3-8ced-73c2-8787-a94302c74d24"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows alias-prefix matching in `command.go:1523–1538` (`hasNameOrAliasPrefix`), but contains no nested command invocation or test assertions showing how that behavior is verified."}}
+{"type":"turn.completed","usage":{"input_tokens":17112,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":49,"reasoning_output_tokens":0}}

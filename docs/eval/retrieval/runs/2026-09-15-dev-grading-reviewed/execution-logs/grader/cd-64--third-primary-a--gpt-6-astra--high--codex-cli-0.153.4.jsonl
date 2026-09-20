@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-3fee-76c2-946a-29bb7f71edc0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies EnablePrefixMatching as the switch and accurately describes hasNameOrAliasPrefix checking command names and aliases with strings.HasPrefix and recording the match. Its additional error-prefix behavior and all cited locations are supported by the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17892,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":94,"reasoning_output_tokens":39}}

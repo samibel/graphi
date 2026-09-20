@@ -1,0 +1,1 @@
+INSUFFICIENT The snippet for `TestFParseErrWhitelistSiblingCommand` in `command_test.go:2437–2452` stops at the sibling’s declaration, omitting its configuration, parsing calls, and assertions needed to establish sibling whitelist behavior.

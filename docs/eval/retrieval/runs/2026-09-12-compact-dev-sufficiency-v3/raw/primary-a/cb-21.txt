@@ -1,0 +1,1 @@
+Call `parent.AddCommand(children...)`. For each child, `AddCommand` rejects the parent itself, sets `cmds[i].parent = c`, updates the parent's maximum usage/path/name lengths, applies any global normalization function to the child, appends the child to `c.commands`, and marks the command list unsorted (`command.go:1302–1329`).

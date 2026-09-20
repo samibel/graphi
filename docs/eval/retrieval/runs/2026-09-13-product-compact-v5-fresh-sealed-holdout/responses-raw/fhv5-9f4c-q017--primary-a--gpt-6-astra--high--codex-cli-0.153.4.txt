@@ -1,0 +1,3 @@
+`MarkFlagCustom` installs the `BashCompCustom` annotation on the named flag with value `[]string{f}`, via `flags.SetAnnotation(name, BashCompCustom, []string{f})` (`shell_completions.go:77–78`).
+
+The warning says this works **only for Bash completion**; use `c.RegisterFlagCompletionFunc(...)` to register a Go function that works across all shells (`shell_completions.go:74–76`).

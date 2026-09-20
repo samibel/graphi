@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q057",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "611ee57e042bebcc52371e5220b6c903276a2836908284d43a86fbfaaf2473e0",
+  "bundle_sha256": "e41207d3bce19913f0a7c357911263a760dc517b8c3c4a70f443338708a950dc",
+  "prompt_sha256": "ce2f125ed85151541cf424e5c8b72291308f3cd1d736aacbb10128e5185193f4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. In `command.go:1819–1822`, `(*Command).ParseFlags` immediately returns `nil` when `c.DisableFlagParsing` is true. It never reaches `c.mergePersistentFlags()` at line 1829 or `c.Flags().Parse(args)` at line 1834, so this call neither merges nor validates flags.",
+  "responded_at": "2026-09-15T18:44:47Z",
+  "sha256": "370f786a9a4b373ddf2dd45b26d50d4cb2b3b1b620f7dee9fbefb5108ec59d5e"
+}

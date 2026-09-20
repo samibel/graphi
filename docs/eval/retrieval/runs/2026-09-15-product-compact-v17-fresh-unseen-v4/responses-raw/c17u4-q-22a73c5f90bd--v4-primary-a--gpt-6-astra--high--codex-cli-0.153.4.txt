@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the body of `UsageFunc()` in `command.go:426`, which is needed to establish the selection order and how the default function renders usage.

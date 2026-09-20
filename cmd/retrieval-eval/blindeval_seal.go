@@ -26,8 +26,10 @@ package main
 // the old grade was gone with the replacement validly sealed.
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -81,6 +83,14 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
+	if err := retrieval.ValidatePreRegistration(pre, precondition); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	if err := checkPreRegisteredCapturedBundles(o.dir, pre); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	// Sealing writes the append-only records and the sidecar manifest, and both
 	// are only evidence if they land in the run directory this evaluation was
 	// frozen into.
@@ -97,11 +107,10 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: dataset sha256 %s, precondition froze %s\n", dataset.SHA256, precondition.DatasetSHA256)
 		return exitError
 	}
-	rubricSHA := ""
-	for _, input := range precondition.Inputs {
-		if input.Role == retrieval.PreconditionInputGradingRubric {
-			rubricSHA = input.SHA256
-		}
+	rubricPath, rubricSHA, rubricBytes, err := loadFrozenGradingRubric(o.root, precondition)
+	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
 	}
 	queries := map[string]retrieval.Query{}
 	for _, q := range dataset.Dataset.Queries {
@@ -156,6 +165,8 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 	// sealed grade below is built from the response object itself.
 	packets, grades := 0, 0
 	var sealedGrades []retrieval.Grade
+	var followupRepository fs.FS
+	var followupCounter retrieval.PayloadCounter
 	for _, response := range sealedResponses {
 		if response.Status != retrieval.ResponseStatusAnswered {
 			continue
@@ -167,7 +178,34 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
-		packet := buildGraderPacket(q, bundle, response)
+		if bundle.FollowupRead != nil {
+			if followupRepository == nil {
+				if strings.TrimSpace(o.checkout) == "" {
+					fmt.Fprintln(stderr, "retrieval-eval: sealing a two-slice transcript needs -checkout at the dataset's pinned repository sha")
+					return exitError
+				}
+				head, err := retrieval.CheckoutHEAD(context.Background(), o.checkout)
+				if err != nil {
+					fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+					return exitError
+				}
+				if !strings.EqualFold(head, dataset.Dataset.RepoSHA) {
+					fmt.Fprintf(stderr, "retrieval-eval: follow-up checkout is at %s, dataset pins %s\n", head, dataset.Dataset.RepoSHA)
+					return exitError
+				}
+				followupCounter, err = retrieval.LoadPinnedRealPayloadCounter()
+				if err != nil {
+					fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+					return exitError
+				}
+				followupRepository = os.DirFS(o.checkout)
+			}
+			if err := validateCapturedBundleForGraderPacket(followupRepository, response.QueryID, bundle, followupCounter, pre.ContractVersion); err != nil {
+				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+				return exitError
+			}
+		}
+		packet := buildGraderPacket(q, bundle, response, rubricPath, rubricSHA, rubricBytes)
 		if err := os.MkdirAll(filepath.Join(o.dir, blindEvalGraderPacketsDir), 0o755); err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
@@ -271,7 +309,7 @@ func sealOneResponse(dir string, pre retrieval.PreRegistration, prq retrieval.Pr
 		return retrieval.RaterResponse{}, fmt.Errorf("read the prompt the rater was given (%s): %w", promptPath, err)
 	}
 	response := retrieval.RaterResponse{
-		ContractVersion:       retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:       pre.ContractVersion,
 		Evaluation:            retrieval.QrelBlindSmokeEvaluationName,
 		Role:                  role,
 		QueryID:               prq.QueryID,
@@ -334,7 +372,7 @@ func sealOneGrade(rawPath string, info os.FileInfo, grader retrieval.Participant
 		return retrieval.Grade{}, fmt.Errorf("raw grade %s carries no rationale", rawPath)
 	}
 	grade := retrieval.Grade{
-		ContractVersion: retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion: response.ContractVersion,
 		Evaluation:      retrieval.QrelBlindSmokeEvaluationName,
 		QueryID:         response.QueryID,
 		ResponseSHA256:  response.SHA256,
@@ -387,9 +425,11 @@ func buildAdjudication(dir, queryID string, response retrieval.RaterResponse, se
 	}
 	sort.Strings(disclosed)
 	return retrieval.Adjudication{
-		QueryID:  queryID,
-		Response: response,
+		ContractVersion: response.ContractVersion,
+		QueryID:         queryID,
+		Response:        response,
 		Disclosure: retrieval.DisclosureRecord{
+			ContractVersion:           response.ContractVersion,
 			QueryID:                   queryID,
 			AdjudicatorResponseSHA256: response.SHA256,
 			DisclosedArtifactSHA256:   disclosed,
@@ -411,18 +451,70 @@ func loadCapturedBundle(dir, queryID string) (retrieval.CapturedCandidateBundle,
 	return bundle, nil
 }
 
+func validateCapturedBundleForGraderPacket(repository fs.FS, queryID string, bundle retrieval.CapturedCandidateBundle, real retrieval.PayloadCounter, contractVersions ...string) error {
+	if err := retrieval.ValidateCapturedTranscript(repository, queryID, bundle, real, contractVersions...); err != nil {
+		return fmt.Errorf("captured bundle for %s has an invalid transcript: %w", queryID, err)
+	}
+	return nil
+}
+
 // buildGraderPacket assembles the grader's complete input. It carries the
 // reviewed grade-3 answer spans, which is the one input the raters never see:
 // the raters are what is being measured, the grader is the instrument reading
 // their answers, and grading correctness without the key would measure the
 // grader's own knowledge of the repository instead.
-func buildGraderPacket(q retrieval.Query, bundle retrieval.CapturedCandidateBundle, response retrieval.RaterResponse) string {
+func loadFrozenGradingRubric(root string, precondition retrieval.PreconditionRecord) (string, string, []byte, error) {
+	rubricPath := ""
+	rubricSHA := ""
+	for _, input := range precondition.Inputs {
+		if input.Role != retrieval.PreconditionInputGradingRubric {
+			continue
+		}
+		if rubricPath != "" {
+			return "", "", nil, fmt.Errorf("precondition record freezes more than one grading rubric")
+		}
+		rubricPath, rubricSHA = input.Path, input.SHA256
+	}
+	if rubricPath == "" || rubricSHA == "" {
+		return "", "", nil, fmt.Errorf("precondition record has no frozen grading rubric")
+	}
+	rootFS, err := os.OpenRoot(root)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("open candidate root for frozen grading rubric: %w", err)
+	}
+	defer rootFS.Close()
+	file, err := rootFS.Open(filepath.FromSlash(rubricPath))
+	if err != nil {
+		return "", "", nil, fmt.Errorf("read frozen grading rubric %s: %w", rubricPath, err)
+	}
+	raw, readErr := io.ReadAll(file)
+	closeErr := file.Close()
+	if readErr != nil || closeErr != nil {
+		return "", "", nil, fmt.Errorf("read frozen grading rubric %s: read=%v close=%v", rubricPath, readErr, closeErr)
+	}
+	if got := retrieval.SHA256Hex(raw); got != rubricSHA {
+		return "", "", nil, fmt.Errorf("frozen grading rubric %s drifted: sha256 %s, precondition froze %s", rubricPath, got, rubricSHA)
+	}
+	return rubricPath, rubricSHA, raw, nil
+}
+
+func buildGraderPacket(q retrieval.Query, bundle retrieval.CapturedCandidateBundle, response retrieval.RaterResponse, rubricPath, rubricSHA string, rubric []byte) string {
 	var b strings.Builder
-	b.WriteString("You are grading ONE response in a qrel-blind smoke evaluation, against the frozen\n")
-	b.WriteString("rubric at docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/grading-rubric.md.\n")
-	b.WriteString("Read that rubric, then apply it to the material below. Do not re-answer the question\n")
+	b.WriteString("You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact\n")
+	b.WriteString("frozen rubric embedded below. Do not re-answer the question\n")
 	b.WriteString("yourself and do not consult any other file, repository or response.\n\n")
+	b.WriteString("FROZEN RUBRIC PATH: " + filepath.ToSlash(rubricPath) + "\n")
+	b.WriteString("FROZEN RUBRIC SHA256: " + rubricSHA + "\n")
+	b.WriteString("----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----\n")
+	b.Write(rubric)
+	if len(rubric) == 0 || rubric[len(rubric)-1] != '\n' {
+		b.WriteByte('\n')
+	}
+	b.WriteString("----- END THE EXACT FROZEN GRADING RUBRIC -----\n\n")
 	b.WriteString("RESPONSE CONTENT ADDRESS: " + response.SHA256 + "\n")
+	if bundle.FollowupRead != nil {
+		b.WriteString("FOLLOW-UP READ CONTENT ADDRESS: " + bundle.FollowupRead.SHA256 + "\n")
+	}
 	b.WriteString("QUERY ID: " + q.ID + "\n\n")
 	b.WriteString("QUESTION:\n" + q.Text + "\n\n")
 	b.WriteString("REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):\n")
@@ -432,9 +524,18 @@ func buildGraderPacket(q retrieval.Query, bundle retrieval.CapturedCandidateBund
 		}
 		b.WriteString(fmt.Sprintf("- %s:%d-%d anchor=%q reason=%s\n", j.Path, j.StartLine, j.EndLine, j.Anchor, j.Reason))
 	}
-	b.WriteString("\n----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----\n")
-	b.Write(bundle.Payload.Bytes)
-	b.WriteString("----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----\n\n")
+	if bundle.FollowupRead == nil {
+		b.WriteString("\n----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----\n")
+		b.Write(bundle.Payload.Bytes)
+		b.WriteString("----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----\n\n")
+	} else {
+		b.WriteString("\n----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n")
+		b.Write(bundle.Payload.Bytes)
+		b.WriteString("----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n")
+		b.WriteString("----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----\n")
+		b.Write(bundle.FollowupRead.Bytes)
+		b.WriteString("----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----\n\n")
+	}
 	b.WriteString("----- BEGIN THE RATER'S RESPONSE -----\n")
 	b.WriteString(response.Text)
 	b.WriteString("\n----- END THE RATER'S RESPONSE -----\n")

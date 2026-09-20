@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5f-62fd-7443-81f8-30a61272bcfe"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The command inherits the nearest ancestor’s non-empty custom prefix. In `command.go:611–621`, `ErrPrefix()` returns its own `c.errPrefix` if non-empty; otherwise, it recursively calls `c.parent.ErrPrefix()`. If no command in that chain has a non-empty prefix, it returns `\"Error:\"`.\n\n`SetErrPrefix(s)` stores the custom value in `c.errPrefix` (`command.go:357–360`); an empty value therefore does not override inheritance."}}
+{"type":"turn.completed","usage":{"input_tokens":17463,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":0}}

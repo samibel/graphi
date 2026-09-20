@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-9870-7230-89c6-171415e6d371"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `TestPlugin` setting `CommandDisplayNameAnnotation` to `\"kubectl plugin\"` in `command_test.go:369-381`, but omits the help invocation and assertion verifying the displayed name."}}
+{"type":"turn.completed","usage":{"input_tokens":16693,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":130,"reasoning_output_tokens":77}}

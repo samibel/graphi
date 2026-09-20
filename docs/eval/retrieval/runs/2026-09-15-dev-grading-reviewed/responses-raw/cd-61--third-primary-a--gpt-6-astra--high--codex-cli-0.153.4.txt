@@ -1,0 +1,9 @@
+`ShellCompDirective` is an `int` bitmap that tells the shell how to behave after completions are provided (`completions.go:41–43`).
+
+Documented flags include:
+
+- `ShellCompDirectiveError`: an error occurred; ignore completions (`completions.go:55–56`).
+- `ShellCompDirectiveNoSpace`: do not append a space, even for a single completion (`completions.go:58–60`).
+- `ShellCompDirectiveNoFileComp`: suppress file completion even when no completion is provided (`completions.go:62–63`).
+
+Its `string()` method lists recognized enabled flags, separated by commas, uses `"ShellCompDirectiveDefault"` when none are recognized, and returns an error string for values at or above `shellCompDirectiveMaxValue` (`completions.go:162–191`).

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows only the declarations of `Find` and `findNext`, omitting the argument traversal and subcommand-matching logic needed to explain how a subcommand is selected.

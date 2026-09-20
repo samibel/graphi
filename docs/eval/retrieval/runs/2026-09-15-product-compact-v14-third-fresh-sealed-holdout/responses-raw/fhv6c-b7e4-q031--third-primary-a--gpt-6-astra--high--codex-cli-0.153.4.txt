@@ -1,0 +1,1 @@
+It returns the error `requires at least 2 arg(s), only received 1`. In `args.go`, `MinimumNArgs` checks `len(args) < n` (line 76) and returns that formatted error (line 77).

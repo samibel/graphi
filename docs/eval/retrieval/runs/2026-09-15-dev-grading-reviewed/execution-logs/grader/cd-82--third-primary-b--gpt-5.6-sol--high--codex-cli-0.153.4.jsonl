@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-f8e0-7180-9ecc-a553f6599a65"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that HasAvailableSubCommands returns true when any child passes IsAvailableCommand, and accurately describes its exclusions and runnable-or-available-descendant requirement. Both cited line ranges exist in the preserved transcript and support the claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18003,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

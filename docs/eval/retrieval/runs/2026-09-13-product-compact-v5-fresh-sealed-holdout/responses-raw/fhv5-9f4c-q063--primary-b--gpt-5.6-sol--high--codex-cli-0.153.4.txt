@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only a comment at `completions.go:667`, not the surrounding logic showing whether the following token is treated as the flag’s value.

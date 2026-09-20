@@ -1,0 +1,10 @@
+`GenMarkdownTree(cmd, dir)` generates one Markdown file for the command and each eligible descendant.
+
+It delegates to `GenMarkdownTreeCustom` using an empty file prepender and an identity link handler ([doc/md_docs.go:119–129]). The recursive implementation:
+
+- Skips unavailable commands and additional help topics ([doc/md_docs.go:134–138]).
+- Processes descendants before the current command ([doc/md_docs.go:133–143]).
+- Names files from `cmd.CommandPath()`, replacing spaces with `_` and appending `.md` ([doc/md_docs.go:145–146], [doc/md_docs.go:30]).
+- Creates each file in `dir`, writes the prepender, then generates content with `GenMarkdownCustom` ([doc/md_docs.go:147–157]).
+
+The documentation warns that command names containing `-` can cause filename collisions, such as `cmd sub third` versus `cmd sub-third` ([doc/md_docs.go:119–125]).

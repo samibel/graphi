@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Command.AddCommand(cmds ...*Command)` begins iterating over commands at `command.go:1302-1304`, but omits the method body that adds each child and sets its `parent` pointer.

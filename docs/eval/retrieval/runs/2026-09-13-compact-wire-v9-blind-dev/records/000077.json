@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 77,
+  "previous_sha256": "f87671d11f9d799be1ffdb159a1b4c3bf29254e93f233ac01811d10189f08291",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "46a8c08d85867e92969f4135c3d8c66773e3aa4ca30af010acf2fe206c788126",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `OnInitialize` rather than reading flag values directly in Go’s package `init()`:\n\n```go\nfunc init() {\n    cobra.OnInitialize(func() {\n        f := rootCmd.Flag(\"flag-name\")\n        value := f.Value.String()\n        // use value here\n    })\n}\n```\n\n`OnInitialize` registers functions for command execution (`cobra.go:97–101`). Flags are parsed first via `c.ParseFlags(a)` (`command.go:883–890`), then initializers run through `c.preRun()` (`command.go:926`, `command.go:1015–1019`). `Command.Flag(name)` searches both ordinary and persistent flags, climbing the command tree when necessary (`command.go:1794–1803`).",
+  "sha256": "cdcf97e4f0380c8adc1c6e460bf85830ce51df194871351fffb67ed25f98e029"
+}

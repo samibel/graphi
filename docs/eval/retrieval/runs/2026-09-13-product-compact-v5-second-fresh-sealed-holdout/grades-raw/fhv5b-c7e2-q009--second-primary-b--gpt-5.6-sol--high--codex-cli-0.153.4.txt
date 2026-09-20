@@ -1,0 +1,1 @@
+PASS: The response correctly explains that AddTemplateFuncs assigns every supplied key/value into the shared templateFuncs map, adding new names and overwriting matching names. Both cited ranges exist in the bundle and support these claims.

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-2d913fa42bc0",
+  "response_sha256": "32bac65d9539cab67999f20dddb7837f004c031bfb8fa882e2c45ff8b0035591",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies the deprecated compatibility behavior: assigning the same writer to usage output (`c.outWriter`) and error output (`c.errWriter`). Its documented nil fallback and citations are supported by the preserved `command.go` span.",
+  "graded_at": "2026-09-15T20:47:06Z",
+  "sha256": "40525f0a15d6b4026919335bb953a2c9bb5c275ccd2714f1173c2a6af3fd66ae"
+}

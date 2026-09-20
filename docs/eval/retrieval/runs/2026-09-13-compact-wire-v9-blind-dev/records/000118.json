@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 118,
+  "previous_sha256": "58ccde1fdbeb994a2914d9398f6e465e8fe2029d2823d94bf2d6df255289ee5c",
+  "kind": "grade",
+  "query_id": "cb-25",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e771138d16ef101c72e2134352a0efe64875842f2ca558e629d7932f2d4a75ca",
+  "outcome": "pass",
+  "rationale": "The candidate gives the correct concrete setting, `rootCmd.CompletionOptions.DisableDefaultCmd = true`, and supports it entirely from the preserved bundle. Specifically, `completions.go:103-116` states that `DisableDefaultCmd` prevents creation of the default `completion` command, while `completions.go:683-687` shows `InitDefaultCompletionCmd` returning when that option is true.\n",
+  "sha256": "5a4d9fddb3d121bbd3062597456fb8102c8fc0b186eb4bec368b0c299b087a62"
+}

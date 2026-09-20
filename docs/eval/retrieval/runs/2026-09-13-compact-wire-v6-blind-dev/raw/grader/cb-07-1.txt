@@ -1,0 +1,1 @@
+PASS: It provides a correct overview of symbols and validation behavior in the file named by the path query.

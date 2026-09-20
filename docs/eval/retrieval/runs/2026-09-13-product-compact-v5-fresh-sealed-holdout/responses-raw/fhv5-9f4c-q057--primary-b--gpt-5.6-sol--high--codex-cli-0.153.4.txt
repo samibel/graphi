@@ -1,0 +1,3 @@
+Generic `Print`, `Println`, and `Printf` write to the configured normal output via `c.OutOrStderr()` (`command.go:1395–1408`). `PrintErr`, `PrintErrln`, and `PrintErrf` write to the separately configured error output via `c.ErrOrStderr()` (`command.go:1409–1423`).
+
+Thus, with custom writers configured, normal and error messages can be routed to different destinations. If the relevant writer is unset, both families fall back to `os.Stderr`; `ErrOrStderr` explicitly calls `c.getErr(os.Stderr)` (`command.go:384–387`).

@@ -1,0 +1,1 @@
+Set the package variable `cobra.EnablePrefixMatching = true`; it defaults to `false` and is deliberately opt-in because automatic prefix matching can be dangerous (`cobra.go:45-56`). When enabled, subcommand lookup adds commands whose name or alias has the supplied prefix (`command.go:774-777`, `command.go:1526-1528`).

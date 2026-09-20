@@ -1,0 +1,7 @@
+Completion uses this priority order:
+
+1. Subcommand names
+2. The command’s `ValidArgs`
+3. `ArgAliases`, only if neither subcommands nor `ValidArgs` produced any completions
+
+Evidence: `site/content/completions/_index.md:163-166` states that aliases “are shown … only if no completions were found within sub-commands or `ValidArgs`.” The same file defines `ValidArgs` as predefined noun choices (`:123-151`) and shows `ArgAliases` configured alongside it (`:153-164`).

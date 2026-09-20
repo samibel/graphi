@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 28,
+  "previous_sha256": "a2dd1805706df743c91505c48118922e0a4c751c6c187f6f3195bb7cdf576c92",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "fb1fdcdec26376f3351c3a33bdd833409849e9a39fcda2e611aa0156fb17a7db",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For flag completion, write a Go callback with this signature and register it on the command:\n\n```go\nfunc completeFlag(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective)\n```\n\nCall `cmd.RegisterFlagCompletionFunc(\"flag-name\", completeFlag)` after the flag exists, and handle its returned error. The callback returns completion strings and a shell directive; registration rejects nonexistent flags and duplicate registrations (`completions.go:132–146`). The response supplies the registration contract but does not define the individual directive values.\n",
+  "sha256": "ff2952db907f9f0663a804c164f895917fb18985f8f00dde5d77a9f8a23603d7"
+}

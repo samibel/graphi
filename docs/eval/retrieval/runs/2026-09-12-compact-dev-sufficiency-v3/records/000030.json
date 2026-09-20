@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 30,
+  "previous_sha256": "26948fc9c4fa62b822fc8563c7a753441d7589b6c5ec12108f31bdec3859d5de",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "bd791639ae7a37d887a40d244a6f20fd95ed73c6a7d3dc9ca87974596f276ada",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "After defining the flags, call `cmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")`, using the flag names. `MarkFlagsMutuallyExclusive` merges persistent flags, looks up each name, and annotates each member with the space-joined group; it panics if a flag is missing (`flag_groups.go:65–77`). Flags can belong to multiple groups because annotations are appended. `ValidateFlagGroups` is documented to enforce these groups (`79–80`), and completion hides the other group members when one is present (`223–224`).\n",
+  "sha256": "119bbbe9a489277da1c3619837ce51b83f953cd6a3fcc167e30d9201cb0bd9aa"
+}

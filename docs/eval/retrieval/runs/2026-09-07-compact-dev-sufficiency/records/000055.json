@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 55,
+  "previous_sha256": "fbc8e732c723400111ea0b2f0b3c00a8c26b30688368e97f98d72b9000e7f265",
+  "kind": "response",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "5043883994be763d45784871c7945c22986ed566ea3e8624f34e710ac6145f3f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Persistent flags declared on a command are held in its `PersistentFlags()` set (`command.go:1725–1727`). Propagation is handled by `mergePersistentFlags`, whose comment says it adds missing persistent flags of all parents; it calls `updateParentsPflags()` and adds the current command's persistent set to `c.Flags()` (`command.go:1848–1851`). `LocalFlags()` invokes that merge (`command.go:1669–1670`). The separate `persistentFlag(name)` helper recursively finds a matching persistent flag (`command.go:1805–1807`); the excerpts do not show the parent traversal or collision implementation.\n",
+  "sha256": "b3e2292f6f98eb9f4c60943121306ee46dcde1aa9eaf3619f61fb7cd0d411687"
+}

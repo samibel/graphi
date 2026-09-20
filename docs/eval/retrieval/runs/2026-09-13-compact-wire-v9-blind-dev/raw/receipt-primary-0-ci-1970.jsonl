@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-0280-7770-bb1e-69052b033f22"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `cmd.Flags()` to get the command’s complete `*flag.FlagSet`, including local and persistent flags declared on the command and its parents (`command.go:1641-1653`, `Command.Flags`).\n\nFor subsets, use `cmd.LocalFlags()` (`command.go:1669-1672`) or `cmd.InheritedFlags()` (`command.go:1695-1698`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16411,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":189,"reasoning_output_tokens":103}}

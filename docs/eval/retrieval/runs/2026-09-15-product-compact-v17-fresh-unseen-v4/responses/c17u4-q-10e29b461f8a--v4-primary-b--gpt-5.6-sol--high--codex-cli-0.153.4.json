@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-10e29b461f8a",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "8721fc8c2ef661d54f3d55b50efa8073006b6a00f40b7041ff4a5fea4cfe8d4c",
+  "bundle_sha256": "45d989c2930162b590ca57f06b959500ca1b033a402e35aa954f1618a115ddeb",
+  "prompt_sha256": "c9b5c821488d3247c49a1e70f1d86ac3e0ba68841b687262443cc614295f3c91",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `cobra.go` lines 180–185, `tmpl`:\n\n1. Creates a template named `\"top\"` with `template.New(\"top\")`.\n2. Registers the shared `templateFuncs` function map via `t.Funcs(templateFuncs)`.\n3. Parses the supplied template text; `template.Must(t.Parse(text))` panics on a parse error.\n4. Executes the parsed template with `data`, writing output to `w`, and returns the execution error from `t.Execute(w, data)`.\n\nThe registered functions can be extended through `AddTemplateFunc` and `AddTemplateFuncs` (`cobra.go` lines 82–95).",
+  "responded_at": "2026-09-15T20:24:14Z",
+  "sha256": "e6e10ac0a45c9dbee2ef49399f35aa62a63410f541d7bf5275a877589fad38ae"
+}

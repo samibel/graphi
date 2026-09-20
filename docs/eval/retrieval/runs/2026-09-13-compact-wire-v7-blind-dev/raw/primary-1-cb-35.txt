@@ -1,0 +1,9 @@
+Completion is a default Cobra command named `"completion"` (`completions.go:95-102`). `Command.InitDefaultCompletionCmd` adds it unless completion is disabled, the command has no subcommands, or a program-defined completion command already exists (`completions.go:678-685`).
+
+Generated scripts complete commands and flags; noun and flag-value completion can be customized, including static noun choices through `ValidArgs` (`site/content/completions/_index.md:115-127`). Descriptions can be disabled with:
+
+```go
+rootCmd.CompletionOptions.DisableDescriptions = true
+```
+
+(`site/content/completions/_index.md:112-120`).

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q024",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "52f7a7aeec47aad9037c3f6895020e543a3e3a1344b445a0cdc7283d19a8318f",
+  "bundle_sha256": "0b67dc46f19cb3e29769b62f4ae4229be9c87c23c4e7458aad3803e974608438",
+  "prompt_sha256": "5d25f0d7f04cf52644f032cb4f8caaa0d4a6bbdbe9070f811956910877d80b20",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The context passed to the later context-taking method wins. Both `ExecuteContext(ctx)` and `ExecuteContextC(ctx)` unconditionally assign `c.ctx = ctx` before executing (`command.go:1027-1033` and `command.go:1042-1048`), overwriting any context previously set via `SetContext`.",
+  "responded_at": "2026-09-13T15:23:05Z",
+  "sha256": "b45a864319234c8c9e55f4ea59367e74a2223cd178b9ee5a770a3a75d9ba8e02"
+}

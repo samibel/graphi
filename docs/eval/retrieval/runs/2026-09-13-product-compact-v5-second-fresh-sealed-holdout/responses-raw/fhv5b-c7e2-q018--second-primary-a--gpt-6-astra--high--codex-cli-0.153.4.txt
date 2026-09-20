@@ -1,0 +1,7 @@
+Filename extensions are attached as a flag annotation. In `shell_completions.go:65–69`, `MarkFlagFilename` accepts `extensions ...string` and calls:
+
+```go
+return flags.SetAnnotation(name, BashCompFilenameExt, extensions)
+```
+
+`Command.MarkFlagFilename` passes `c.Flags()` to this helper (`42–46`); `MarkPersistentFlagFilename` passes `c.PersistentFlags()` (`58–63`). The annotation key, `BashCompFilenameExt`, is `"cobra_annotation_bash_completion_filename_extensions"` (`bash_completions.go:30`).

@@ -1,0 +1,39 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "query_id": "fhv6c-b7e4-q043",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv6c-b7e4-q043",
+    "rater_id": "third-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+    "query_text_sha256": "f16b7758e799321e97a5de626fdcda2eb543db5a340fabf28b76a2010800be1f",
+    "bundle_sha256": "17f69bbb573b1e4838a5a18b4b53b0c5df8e19746d18f3cf51d57113e72b7599",
+    "prompt_sha256": "f748d9f38ab0947dab4fd2ff6e86e7c3ee9ef7fce28ee83a9f5f2cf798e68ae2",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "`Traverse` descends recursively:\n\n1. It scans arguments, collecting flags and their values (`command.go:793–816`).\n2. At the first non-flag argument, it resolves the immediate child with `c.findNext(arg)` (`command.go:818`).\n3. It parses the current parent’s collected flags using `c.ParseFlags(flags)` (`command.go:823`).\n4. It calls `cmd.Traverse(args[i+1:])`, passing the remaining arguments to that child (`command.go:826`).\n\nFor two nested subcommands, step 4 repeats on the first child: it finds the second child and recursively traverses into it. If an argument does not match a child, it returns the current command and arguments unchanged (`command.go:819–821`).",
+    "responded_at": "2026-09-15T08:36:17Z",
+    "sha256": "a1a7371bdb322b8660265f570c202605afcb6a954ed2c7fbfa0cefe87cd5316f"
+  },
+  "disclosure": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "query_id": "fhv6c-b7e4-q043",
+    "adjudicator_response_sha256": "a1a7371bdb322b8660265f570c202605afcb6a954ed2c7fbfa0cefe87cd5316f",
+    "disclosed_artifact_sha256": [
+      "098ffabd9db851339bb594d695de77b96e8c81aeb5d5d1b7e184628f0c415d32",
+      "9c3025966ac5628c8979ff12da6029329602406aba57a88ff17409f16509ca06",
+      "9ff28ef43e87e81b8ac22f039ab7189aae24300e01f66e7cac50be9a81040bb9",
+      "d819aa6b378eda74f3038c1d6e30fb27156a00d266b06999ce497e4728b3fc8d"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

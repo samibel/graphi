@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad7-6707-7413-825d-45d010ce8c24"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly distinguishes the general output writer used by Print methods from the error output writer used by PrintErr methods, with stderr fallback for both. The cited bundle spans support the writer selection and delegation of line and format variants."}}
+{"type":"turn.completed","usage":{"input_tokens":18144,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

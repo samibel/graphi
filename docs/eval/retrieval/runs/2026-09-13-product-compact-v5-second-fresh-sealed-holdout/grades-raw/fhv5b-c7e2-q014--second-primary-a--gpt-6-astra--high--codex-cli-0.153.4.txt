@@ -1,0 +1,1 @@
+FAIL: The response identifies the bundle’s missing update code but does not answer how ld updates its matrix. The preserved cobra.go:187–202 span supports allocation and boundary initialization only; the essential cell-update behavior is absent.

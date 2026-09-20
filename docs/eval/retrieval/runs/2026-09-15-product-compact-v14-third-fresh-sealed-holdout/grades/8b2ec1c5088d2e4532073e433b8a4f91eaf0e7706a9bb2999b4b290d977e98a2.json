@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q037",
+  "response_sha256": "8b2ec1c5088d2e4532073e433b8a4f91eaf0e7706a9bb2999b4b290d977e98a2",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response explains the LocalFlags insertion guard but does not identify the verification test that applies two normalizers sequentially and checks differently cased lookups for duplicate instances. That essential test behavior is absent from the preserved transcript.",
+  "graded_at": "2026-09-15T08:34:27Z",
+  "sha256": "4811ec33ae84ea88e111e785b9464ba0239333ea3f6ac824eba77cf1b97f79fc"
+}

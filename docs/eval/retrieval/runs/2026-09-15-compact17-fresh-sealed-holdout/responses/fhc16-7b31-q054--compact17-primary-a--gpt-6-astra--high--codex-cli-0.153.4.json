@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q054",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "2117427d5330ee427c50acde06ee7797853e2d8e4f599fb59e1efacd24388b52",
+  "bundle_sha256": "73aa2915a20b2886e74e883e33b837d33581d68ab2cebcb3afb06dca72eda593",
+  "prompt_sha256": "bab00f3b1f209243928e150fd7cfe3124535336dea60d908875286d6e26e080d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`linkHandler` receives a **filename string** for a command’s internal documentation link and returns a **string used as the link target**. That target can be a URL path such as `/commands/\u003clowercased-name\u003e/`, rather than a Markdown filename.\n\nEvidence: `site/content/docgen/md.md:107–114` says “given a filename” and shows `linkHandler` stripping the extension and returning `\"/commands/\" + strings.ToLower(base) + \"/\"`. Its `func(string) string` signature appears in `doc/md_docs.go:57`.",
+  "responded_at": "2026-09-15T18:44:23Z",
+  "sha256": "f7c4fa05171d99b91b27059dd01946e6c95ea325fffa9b951337eeccbeec709e"
+}

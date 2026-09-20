@@ -1,0 +1,7 @@
+`OnFinalize` appends every variadic function argument to the package-level `finalizers []func()` slice, preserving existing entries and argument order:
+
+```go
+finalizers = append(finalizers, y...)
+```
+
+Evidence: `cobra.go:43` declares `finalizers`, and `cobra.go:104-106` defines `OnFinalize` and performs the append.

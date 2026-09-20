@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `initCompleteCmd` in `completions.go:193–194` and the hidden command name `ShellCompRequestCmd = "__complete"` at lines 27–29, but omits the command body that transforms, emits, and conditionally removes completion results.

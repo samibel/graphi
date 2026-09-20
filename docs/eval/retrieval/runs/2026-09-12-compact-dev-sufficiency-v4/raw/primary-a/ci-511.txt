@@ -1,0 +1,1 @@
+INSUFFICIENT The response mentions `OnInitialize` and `PersistentFlags`, but does not show when flag values are parsed relative to initialization or how to retrieve those values in an initialization callback.

@@ -1,0 +1,1 @@
+`ArgsLenAtDash()` exposes the number of positional arguments in `c.Flags().Args` at the moment the parser encountered `--`. It delegates directly to the command’s flag set via `c.Flags().ArgsLenAtDash()` (`command.go`, lines 867–872).

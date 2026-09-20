@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 37,
+  "previous_sha256": "24705af6f4cc02d1184fb58e7f77fb75036bacb16b02a7dbdb9622e41c454f0b",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "13642216e0d7858b672fa6a5759c92064410db67b642eace171b72c9ab1f418c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "You cannot read parsed persistent-flag values in Go’s package `init()` because parsing occurs later during command execution (`command.go:883–898`).\n\nRegister a callback with `OnInitialize(...)` instead (`cobra.go:97–101`). It runs via `preRun()` after `ParseFlags(a)` (`command.go:926`, `command.go:1015–1019`). Inside that callback, access the command’s flag with `cmd.Flag(\"name\")`; `Command.Flag` searches both local and persistent flags (`command.go:1794–1803`).",
+  "sha256": "157600c681faddf5b2fac4b2130b4fb7385b1e3c5a68e17f2ca8e9a5f90d8bca"
+}

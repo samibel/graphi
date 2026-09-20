@@ -1,0 +1,1 @@
+PASS: The response correctly identifies deprecated, hidden, and parent-help commands as unavailable, then states the required positive condition: runnable via Run or RunE, or having an available subcommand. All claims and citations are supported by the preserved bundle.

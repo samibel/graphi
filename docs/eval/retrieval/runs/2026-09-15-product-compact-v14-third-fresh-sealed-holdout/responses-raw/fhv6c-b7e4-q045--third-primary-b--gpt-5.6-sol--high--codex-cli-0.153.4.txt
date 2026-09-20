@@ -1,0 +1,1 @@
+INSUFFICIENT The response gives test commands (`go test ./...` or `make test`) in `CONTRIBUTING.md:33-34`, but truncates the formatting requirement at line 35 before specifying the remaining check.

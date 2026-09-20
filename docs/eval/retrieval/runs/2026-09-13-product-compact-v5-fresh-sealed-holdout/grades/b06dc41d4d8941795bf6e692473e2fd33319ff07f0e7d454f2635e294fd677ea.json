@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q034",
+  "response_sha256": "b06dc41d4d8941795bf6e692473e2fd33319ff07f0e7d454f2635e294fd677ea",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response identifies bundle gaps but does not trace the requested flow. The bundle supports root delegation and ExecuteContextC context setup, but lacks command selection, selected-command context propagation, execution, and error/help handling.",
+  "graded_at": "2026-09-13T12:51:07Z",
+  "sha256": "dc71eff876c10310b04f10bd47e67381dc034eca092e7ac8874520633c7d2e9c"
+}

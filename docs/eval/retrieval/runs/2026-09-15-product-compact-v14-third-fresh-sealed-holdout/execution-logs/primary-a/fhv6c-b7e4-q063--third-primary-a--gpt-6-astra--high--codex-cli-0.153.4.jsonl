@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-8ffc-7013-a700-dd89baead84c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT\nThe responses name `TestWrongGroupForHelp` at `command_test.go:1954` but omit its body and the validation logic needed to determine what happens when the help command has a wrong group."}}
+{"type":"turn.completed","usage":{"input_tokens":17464,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":106,"reasoning_output_tokens":54}}

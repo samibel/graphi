@@ -1,0 +1,1 @@
+FAIL: It explains how annotations are stored but omits the method's material purpose: Cobra errors when more than one flag in the group is supplied.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q004",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "02e5c32ed6130c2eb370767dd1943f02659940ee41ffee73e1375c5ab3e2c8b4",
+  "bundle_sha256": "1e9321886bf8aa4eba4181f039845579b4c995816ce0ff71c03e7a21d78c6644",
+  "prompt_sha256": "685b23badf35929d730cfe688191aa41cd9facbd55cf3fdb2b8246dda06e1cbf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shortHasNoOptDefVal` uses the first byte of `name` for shorthand lookup: `fs.ShorthandLookup(name[:1])` in `command.go:636`.",
+  "responded_at": "2026-09-15T18:35:32Z",
+  "sha256": "d508e8c4cb9acc368ec0cd707a86eba6427f24b197a9f301db6c9497c2f138f2"
+}

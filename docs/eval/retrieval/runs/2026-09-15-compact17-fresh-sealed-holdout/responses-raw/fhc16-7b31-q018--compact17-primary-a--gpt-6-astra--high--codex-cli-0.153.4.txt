@@ -1,0 +1,8 @@
+`defaultLinkHandler` produces reStructuredText hyperlink markup: `` `name <ref.rst>`_ ``, using `name` as the link text and appending `.rst` to `ref`.
+
+Evidence: `doc/rest_docs.go`, lines 52–54:
+```go
+func defaultLinkHandler(name, ref string) string {
+	return fmt.Sprintf("`%s <%s.rst>`_", name, ref)
+}
+```

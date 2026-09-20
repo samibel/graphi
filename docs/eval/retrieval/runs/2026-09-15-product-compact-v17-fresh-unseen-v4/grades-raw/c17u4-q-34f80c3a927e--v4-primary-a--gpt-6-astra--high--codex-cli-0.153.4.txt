@@ -1,0 +1,1 @@
+PASS: The response directly identifies `SetHelpCommand(customHelpCmd)` and explains that it assigns `c.helpCommand = cmd`, matching the essential behavior preserved in `command.go:327–330`. The citation resolves inside the bundle, and no unsupported material claims appear.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-36c025e93f71",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "5166acafb97394c8f28d5ecdcf80d5cebe7741cfa86727fc780eef3de1e958b8",
+  "bundle_sha256": "c83a99ecd429e4ae5c0fed101635e2d1d9e85848984f2a73ded8e75d7e986053",
+  "prompt_sha256": "1110090d9d719f2dcd8f5d35572809c51243d5e10367098386cf67c4d5f10ae2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "- **`command.DisableSuggestions`**: set to `true` to disable unknown-command suggestions. `(*Command).findSuggestions` returns `\"\"` when this is enabled (`command.go:750–753`).\n- **`command.SuggestionsMinimumDistance`**: controls the Levenshtein distance threshold. Values `\u003c= 0` default to **2** (`command.go:754–756`). Despite its name, suggestions qualify when their distance is **at most** this value: `levenshteinDistance \u003c= c.SuggestionsMinimumDistance` (`command.go:837`).",
+  "responded_at": "2026-09-15T20:30:10Z",
+  "sha256": "76c2ba9c34b1a2b53ce1c862274c7e4dd29608429c31f4522df3279992e4bbc3"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q036",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "1f7195ee20f9bc7c76a955ecebff8aa1c677f437703046adfcc21d7e11e0560c",
+  "bundle_sha256": "fe4d5f824d7e822b6a37a3bec47313467d92332e2919cb73bd755c7d72307931",
+  "prompt_sha256": "1861b08b13c63ce41780eb2fcdedb52996239c52ec8dac0ccd35bc12d7eaa991",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `GenBashCompletion` calling `gen(buf, c)` between `writePreamble` and `writePostscript` (`bash_completions.go:685–697`), but does not include `gen` or the command-function assembly/tree-walking implementation.",
+  "responded_at": "2026-09-13T15:24:35Z",
+  "sha256": "8b95d62c68c3a5d65dd5cdc5090d477fcca9ac717e7664585ff9c05927c53e69"
+}

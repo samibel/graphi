@@ -1,0 +1,1 @@
+`stringInSlice` uses exact, case-sensitive Go string equality. In `cobra.go:222–230`, it iterates over `list` and returns `true` only when `b == a`; otherwise it returns `false`.

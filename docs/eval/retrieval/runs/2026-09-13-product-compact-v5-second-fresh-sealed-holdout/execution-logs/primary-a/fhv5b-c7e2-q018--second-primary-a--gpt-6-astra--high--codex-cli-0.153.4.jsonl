@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-6585-7cd2-9e71-4dc131e61b2e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Filename extensions are attached as a flag annotation. In `shell_completions.go:65–69`, `MarkFlagFilename` accepts `extensions ...string` and calls:\n\n```go\nreturn flags.SetAnnotation(name, BashCompFilenameExt, extensions)\n```\n\n`Command.MarkFlagFilename` passes `c.Flags()` to this helper (`42–46`); `MarkPersistentFlagFilename` passes `c.PersistentFlags()` (`58–63`). The annotation key, `BashCompFilenameExt`, is `\"cobra_annotation_bash_completion_filename_extensions\"` (`bash_completions.go:30`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17523,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":124,"reasoning_output_tokens":0}}

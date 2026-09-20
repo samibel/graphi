@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-9865-7412-a8f5-903a84a45941"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The snippet for `TestFParseErrWhitelistSiblingCommand` in `command_test.go:2437–2452` stops at the sibling’s declaration, omitting its configuration, parsing calls, and assertions needed to establish sibling whitelist behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":17303,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":110,"reasoning_output_tokens":52}}

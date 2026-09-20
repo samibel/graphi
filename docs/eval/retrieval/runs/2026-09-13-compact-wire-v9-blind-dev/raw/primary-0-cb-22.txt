@@ -1,0 +1,5 @@
+The shown man-page generator performs a depth-first, post-order traversal.
+
+In `doc/man_docs.go:52-59`, `GenManTreeFromOpts` iterates over `cmd.Commands()`, skips children that are unavailable or additional help topics, and recursively calls itself for every remaining child. After processing all descendants, it generates the current command’s page via `GenMan(cmd, &headerCopy, f)` (`doc/man_docs.go:61-80`).
+
+Thus, eligible child commands are documented before their parent. The response only shows declarations—not traversal logic—for the Markdown generators (`doc/md_docs.go:125,133`).

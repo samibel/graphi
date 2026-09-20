@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 61,
+  "previous_sha256": "ecb513e63d65f423ddf520ff80acf20b0f0928125d0318638e2896ca5dfeb2e1",
+  "kind": "response",
+  "query_id": "cb-27",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "356435e2af40d7a1040f8b0e9791dbe8f61396b1d817c29ff88a3be0d62922b9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set cobra.EnablePrefixMatching = true; the package variable is declared in cobra.go:55. During command lookup, exact name or alias matches win first; with prefix matching enabled, matching name/alias prefixes are collected, and a command is returned only if exactly one prefix match remains (command.go:770-785).\n",
+  "sha256": "da227ffdeeb82b48b7d380e9fa3d5533866773734273b78e2ed2b3529ef7a316"
+}

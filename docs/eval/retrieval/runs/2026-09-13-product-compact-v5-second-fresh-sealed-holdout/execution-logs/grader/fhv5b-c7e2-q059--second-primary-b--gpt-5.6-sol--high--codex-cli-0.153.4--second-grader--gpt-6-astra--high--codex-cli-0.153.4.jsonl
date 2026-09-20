@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b72-d16c-7920-89e0-69b0d3d16d73"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that HasAlias delegates each alias comparison to commandNameMatches, which uses strings.EqualFold when EnableCaseInsensitive is enabled and exact equality otherwise. All cited spans exist in the bundle and support the claims, including case sensitivity by default."}}
+{"type":"turn.completed","usage":{"input_tokens":18132,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

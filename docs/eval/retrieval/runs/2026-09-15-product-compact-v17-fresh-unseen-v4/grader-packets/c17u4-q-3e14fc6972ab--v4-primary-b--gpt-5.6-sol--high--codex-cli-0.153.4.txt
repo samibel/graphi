@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f4146e6a446a24207684c3d1ea8b1e7fd00ee1408d95c5c485c343efa645bcda
+QUERY ID: c17u4-q-3e14fc6972ab
+
+QUESTION:
+What version-flag help behavior is verified when shorthand `-v` is already owned by another flag?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:1084-1095 anchor="func TestLongVersionFlagOnlyInHelpWhenShortPredefined(t *testing.T)" reason=The test reserves v, then verifies the combined shorthand form is absent while the long version flag remains.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 386115952a5d; read in order (287/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":521,"end_line":532,"text":"\nfunc helpOrVersionFlagPresent(cmd *Command) bool {\n\tif versionFlag := cmd.Flags().Lookup(\"version\"); versionFlag != nil &&\n\t\tlen(versionFlag.Annotations[FlagSetByCobraAnnotation]) > 0 && versionFlag.Changed {\n\t\treturn true\n\t}\n\tif helpFlag := cmd.Flags().Lookup(\"help\"); helpFlag != nil &&\n\t\tlen(helpFlag.Annotations[FlagSetByCobraAnnotation]) > 0 && helpFlag.Changed {\n\t\treturn true\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":883,"end_line":886,"text":"\t// initialize help and version flag at the last point possible to allow for user\n\t// overriding\n\tc.InitDefaultHelpFlag()\n\tc.InitDefaultVersionFlag()"},{"path":"command.go","start_line":373,"end_line":377,"text":"\n// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1549,"end_line":1553,"text":"\n// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"completions.go","start_line":300,"end_line":301,"text":"\t// Let's add the --help and --version flag ourselves but only if the finalCmd\n\t// has not disabled flag parsing; if flag parsing is disabled, it is up to the"},{"path":"command.go","start_line":109,"end_line":110,"text":"\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the"},{"path":"command.go","start_line":450,"end_line":452,"text":"// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {"}],"provenance":{"input_sha256":"a5bba47a7d6c13f45112e4c92ddebeb207917323c8d8ea2424b3a4e9c6a2e9ae","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response lacks the relevant test or implementation showing what help output is expected when another flag already owns shorthand `-v`.
+----- END THE RATER'S RESPONSE -----

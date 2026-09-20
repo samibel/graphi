@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cb-aed9-7793-a658-d9c608c4e2e3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states both behaviors shown in cobra.go: return s unchanged when strings.Contains is true; otherwise return s + \" \" + stringToAppend. Its line references resolve within the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17795,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

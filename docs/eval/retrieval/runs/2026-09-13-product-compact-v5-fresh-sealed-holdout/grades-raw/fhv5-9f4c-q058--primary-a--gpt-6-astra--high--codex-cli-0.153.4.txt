@@ -1,0 +1,1 @@
+PASS: The preserved comment at command.go:1292–1294 explicitly says sorting is skipped when children are already sorted or sorting is disabled, supporting the response’s conclusion that their current order can be returned unchanged.

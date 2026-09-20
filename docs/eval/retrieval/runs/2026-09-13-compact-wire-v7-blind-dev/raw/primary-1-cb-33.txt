@@ -1,0 +1,9 @@
+Flags modify command behavior. Cobra supports POSIX-compliant flags and Go’s `flag` package (`README.md:68-72`).
+
+A command supports:
+
+- `Flags()`: the complete applicable `FlagSet`, including local and persistent flags declared by the command and its parents (`command.go:1641-1653`).
+- `LocalFlags()`: flags set on the current command, including persistent flags while excluding unshadowed parent persistent flags (`command.go:1668-1693`).
+- `LocalNonPersistentFlags()`: current-command flags that do not propagate to subcommands (`command.go:1655-1666`).
+
+The response also shows that persistent flags are merged through `mergePersistentFlags()` (`command.go:1849`), but its implementation is not included.

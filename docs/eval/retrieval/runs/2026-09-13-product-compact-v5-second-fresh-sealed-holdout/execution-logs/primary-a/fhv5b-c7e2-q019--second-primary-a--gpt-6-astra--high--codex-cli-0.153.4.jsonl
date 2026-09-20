@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-8a95-7920-8bdc-edf4b7b7e265"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MarkFlagDirname` sets the named flag’s `BashCompSubdirsInDir` annotation to an empty string slice (`[]string{}`), marking completions as directory names only. Evidence: `shell_completions.go:94–98`, specifically `flags.SetAnnotation(name, BashCompSubdirsInDir, []string{})` on line 97."}}
+{"type":"turn.completed","usage":{"input_tokens":17435,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":80,"reasoning_output_tokens":0}}

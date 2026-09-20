@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows group-ID setters and group-list helpers (`command.go:332–345` and `1332–1359`), but omits the `GroupID` field documentation and code that uses it to determine command behavior or presentation.

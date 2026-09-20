@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-40c63ea817f5",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "daacd3e9bfd77017b96cbb7651e628c0acccbf5c7a5f0f05eb8eddb44215b3d4",
+  "bundle_sha256": "280a586ffac3257c5e96f573f35d509451bd76e6f34ac2da64ea8b4925bad289",
+  "prompt_sha256": "b358592ccbee1d8f55d3483b284180c71a7dc27ae210564a4bbadcdbb3034030",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response lacks a test or output showing that invoking a deprecated shorthand emits its notice; `command.go:1833–1835` only shows parsing and a condition for handling buffered warnings.",
+  "responded_at": "2026-09-15T20:31:31Z",
+  "sha256": "7ffae396c15f1eb5873403a3a65dc9840090b36a7763d753d2482c69506f3fad"
+}

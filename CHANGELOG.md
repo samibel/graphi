@@ -26,8 +26,31 @@ file:
 
 ## [Unreleased]
 
+**v0.13.0 release-candidate status (2026-09-15): qualification pending.** The
+candidate passes the architecture-flow, natural-language, exact-identifier and
+bundle-coverage targets. The independent holdout evidence remains published in
+the repository without an override; this section becomes the v0.13.0 release
+entry only after the release gate authorizes it.
+
 ### Added
 
+- **`task_context/2-compact/17` projects query-directed answer regions within
+  the unchanged 1,200-token budget.** It preserves identifier-shaped query
+  terms, hydrates bounded hits to declarations, promotes exact field and named
+  declaration evidence, centers long-function windows on dense query clusters,
+  completes small declarations, and keeps Markdown explanations with their
+  attached fenced examples. On the committed development gate it reaches
+  architecture-flow nDCG@10 0.46247 (required 0.45786), natural-language
+  nDCG@10 0.70290, exact-identifier Top-1 1.0, and bundle coverage 6/6.
+- **Release evidence now binds Contract 2 holdouts and records the complete
+  candidate verdict.** The candidate-bound run reproduces 64/64 MCP payloads,
+  digests and real-token counts, stays at or below 1,184/1,200 tokens, and
+  publishes its immutable decision without weakening the release gate.
+- **The exact `cl100k_base` counter is hermetic in evaluation and fail-closed in
+  production.** Evaluators verify a deterministic embedded artifact; the static
+  model setup installs the same SHA-pinned vocabulary for the runtime. Retiring
+  the obsolete descriptor rollback copy and compressing its reviewable catalog
+  keeps the CGo-free Linux release below the unchanged 37,000,000-byte gate.
 - **`compound` is the second operation with a real engine-side handler.** The
   new `engine.compound` built-in module contributes the existing catalog spec
   together with `engine/query/compound.Handler`, bound only to its declared

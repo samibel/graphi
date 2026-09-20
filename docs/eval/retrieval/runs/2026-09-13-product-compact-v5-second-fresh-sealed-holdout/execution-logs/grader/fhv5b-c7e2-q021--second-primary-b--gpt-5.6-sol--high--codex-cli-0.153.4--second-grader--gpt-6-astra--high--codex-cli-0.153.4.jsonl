@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b69-83cf-7f80-bdb1-dcd653e8cfc9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle supports default section `\"1\"` and separator `\"_\"`, their non-empty option overrides, replacing command-path spaces with the separator, and constructing the filename with `filepath.Join(opts.Path, basename+\".\"+section)`."}}
+{"type":"turn.completed","usage":{"input_tokens":18344,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":453,"reasoning_output_tokens":401}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q040",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "b07d715839d9b6a7b4e1ddeae2e0f0426f69ce62ae725d92d5c9ce3299eeab40",
+  "bundle_sha256": "96cc9839a71fa39220ab1162de1e2e7107ef0b351c428eb8c9df9e54d3e327d9",
+  "prompt_sha256": "441b3ffa026d827ca5647eb0e22b86bb1d6ca9d099ae4773b6e94b11a5d433d0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response lacks the `Traverse` implementation or a test showing child resolution without parent flags; `command.go:224–225` only describes `TraverseChildren`, and `command_test.go:2187` only names `TestTraverseWithParentFlags`.",
+  "responded_at": "2026-09-15T08:30:31Z",
+  "sha256": "57a7243928d8b60bbf8196a981ab5d48d44171e2ff9df298329645e29ed50982"
+}

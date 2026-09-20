@@ -1,0 +1,1 @@
+FAIL: The response does not answer whether output destinations are inherited or identify the final fallback. The preserved bundle lacks the output-resolution code needed to support those essential facts.

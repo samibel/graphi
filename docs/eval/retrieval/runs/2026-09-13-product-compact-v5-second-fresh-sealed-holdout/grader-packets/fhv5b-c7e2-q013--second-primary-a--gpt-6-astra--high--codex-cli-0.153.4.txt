@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 0533cdc27e39f6f0222f30096bdaebc7ffc1c6f7b4db98e9fe27eb905bbd8260
+QUERY ID: fhv5b-c7e2-q013
+
+QUESTION:
+In cobra.go, which kinds does Eq compare and which collection kinds make it panic?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:141-157 anchor="panic(\"Eq called on unsupported type\")" reason=It compares integer kinds by Int and strings by String; arrays, channels, maps, and slices panic as unsupported.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query b7d863bf7392; read in order (302/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"completions.go","start_line":95,"end_line":102,"text":"\nconst (\n\t// Constants for the completion command\n\tcompCmdName              = \"completion\"\n\tcompCmdNoDescFlagName    = \"no-descriptions\"\n\tcompCmdNoDescFlagDesc    = \"disable completion descriptions\"\n\tcompCmdNoDescFlagDefault = false\n)"},{"path":"cobra.go","start_line":143,"end_line":157,"text":"// Eq takes two types and checks whether they are equal. Supported types are int and string. Unsupported types will panic.\nfunc Eq(a interface{}, b interface{}) bool {\n\tav := reflect.ValueOf(a)\n\tbv := reflect.ValueOf(b)\n\n\tswitch av.Kind() {\n\tcase reflect.Array, reflect.Chan, reflect.Map, reflect.Slice:\n\t\tpanic(\"Eq called on unsupported type\")\n\tcase reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n\t\treturn av.Int() == bv.Int()\n\tcase reflect.String:\n\t\treturn av.String() == bv.String()\n\t}\n\treturn false\n}"},{"path":"doc/man_docs.go","start_line":202,"end_line":222,"text":"func genMan(cmd *cobra.Command, header *GenManHeader) []byte {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\t// something like `rootcmd-subcmd1-subcmd2`\n\tdashCommandName := strings.ReplaceAll(cmd.CommandPath(), \" \", \"-\")\n\n\tbuf := new(bytes.Buffer)\n\n\tmanPreamble(buf, header, cmd, dashCommandName)\n\tmanPrintOptions(buf, cmd)\n\tif len(cmd.Example) > 0 {\n\t\tbuf.WriteString(\"# EXAMPLE\\n\")\n\t\tbuf.WriteString(fmt.Sprintf(\"```\\n%s\\n```\\n\", cmd.Example))\n\t}\n\tif hasSeeAlso(cmd) {\n\t\tbuf.WriteString(\"# SEE ALSO\\n\")\n\t\tseealsos := make([]string, 0)\n\t\tif cmd.HasParent() {\n\t\t\tparentPath := cmd.Parent().CommandPath()\n\t\t\tdashParentPath := strings.ReplaceAll(parentPath, \" \", \"-\")"},{"path":"cobra.go","start_line":112,"end_line":119,"text":"// Maps and Slices, Gt will compare their lengths. Ints are compared directly while strings are first parsed as\n// ints and then compared.\nfunc Gt(a interface{}, b interface{}) bool {\n\tvar left, right int64\n\tav := reflect.ValueOf(a)\n\n\tswitch av.Kind() {\n\tcase reflect.Array, reflect.Chan, reflect.Map, reflect.Slice:"},{"path":"doc/util.go","start_line":48,"end_line":48,"text":"type byName []*cobra.Command"},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"},{"path":"cobra.go","start_line":55,"end_line":63,"text":"var EnablePrefixMatching = defaultPrefixMatching\n\n// EnableCommandSorting controls sorting of the slice of commands, which is turned on by default.\n// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting\n\n// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive\n"},{"path":"cobra.go","start_line":45,"end_line":50,"text":"const (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false\n)"},{"path":"cobra.go","start_line":187,"end_line":194,"text":"// ld compares two strings and returns the levenshtein distance between them.\nfunc ld(s, t string, ignoreCase bool) int {\n\tif ignoreCase {\n\t\ts = strings.ToLower(s)\n\t\tt = strings.ToLower(t)\n\t}\n\td := make([][]int, len(s)+1)\n\tfor i := range d {"}],"provenance":{"input_sha256":"a9a6550a9944eeb07feb5829d67d5c74d3f798ba72a78c108615813059187fd7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`Eq` compares signed integer kinds (`reflect.Int`, `Int8`, `Int16`, `Int32`, `Int64`) using `av.Int() == bv.Int()`, and `reflect.String` using `av.String() == bv.String()` (`cobra.go:151–154`).
+
+It panics with `"Eq called on unsupported type"` when the first argument’s kind is `reflect.Array`, `reflect.Chan`, `reflect.Map`, or `reflect.Slice` (`cobra.go:148–150`). Other kinds return `false` (`cobra.go:156`).
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,1 @@
+PASS: The response correctly states that `trimRightSpace` and `trimTrailingWhitespaces` remove Unicode whitespace only from the right edge using `strings.TrimRightFunc(s, unicode.IsSpace)`. Its additional claims about `trim` and help-template usage are supported, and all citations resolve within the bundle.

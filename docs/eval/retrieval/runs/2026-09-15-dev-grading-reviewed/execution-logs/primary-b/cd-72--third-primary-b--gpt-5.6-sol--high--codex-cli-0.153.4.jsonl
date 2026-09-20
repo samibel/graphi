@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-5718-7f11-abe3-aaeed9c75cab"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`AddGroup` is a variadic method on `*Command` that appends one or more `*Group` values to the command’s existing groups:\n\n```go\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}\n```\n\nEvidence: `command.go:1356–1359`. A `Group` contains `ID` and `Title` fields (`command.go:41–45`), and the registered groups can be retrieved with `Command.Groups()` (`command.go:1331–1334`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16334,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":147,"reasoning_output_tokens":22}}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 19,
+  "previous_sha256": "961ae7b833c3c9f322be5246b42a5cf452e240c090e5e7427a568f7bd2a45526",
+  "kind": "response",
+  "query_id": "cb-25",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "76d6be98885c9112f040778a5c8f9001f0938abd922576a381cf47ebd9c05da9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the root command’s completion option before command initialization/execution:\n\n```go\nrootCmd.CompletionOptions.DisableDefaultCmd = true\n```\n\nEvidence: `completions.go:103-116` defines `CompletionOptions.DisableDefaultCmd` as preventing creation of the default `completion` command, and `completions.go:683-687` shows `InitDefaultCompletionCmd()` returns immediately when it is true.",
+  "sha256": "9457698bc6c2183316b5829058e61ff141b02326de0a5bc9775f20b6645fe353"
+}

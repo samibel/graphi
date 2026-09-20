@@ -1,0 +1,9 @@
+Add `--no-descriptions` when generating completions, then load the generated script. For example:
+
+```bash
+source <(helm completion bash --no-descriptions)
+```
+
+Replace `helm` with your command’s name.
+
+Evidence: `site/content/completions/_index.md:384` explicitly documents this flag on the default `completion` command; lines 392–394 show it removing descriptions.

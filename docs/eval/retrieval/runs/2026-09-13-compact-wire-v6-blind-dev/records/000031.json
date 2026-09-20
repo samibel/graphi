@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 31,
+  "previous_sha256": "423fc9a3a3581460123f46a65baa6911d523de1010f78eda4e86eac82dd8730d",
+  "kind": "response",
+  "query_id": "cb-21",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "19c69e9ff31d40330e827d0a9dd167372bff83ef4fd7f3362dc92f4fde1be5b2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`parent.AddCommand(children...)` rejects adding the parent to itself, assigns `child.parent = parent`, updates the parent's maximum display lengths, propagates any global normalization function, appends each child to `parent.commands`, and marks the collection unsorted (`command.go:1302-1330`). `Parent()` simply returns that stored pointer (`command.go:1842-1845`).",
+  "sha256": "3b6c764bbf87ce77a1eb5e7fbfeeb61b434133e1744e2cdfc4f4bb7a7eeb1a87"
+}

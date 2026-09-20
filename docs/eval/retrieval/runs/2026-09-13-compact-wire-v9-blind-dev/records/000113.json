@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 113,
+  "previous_sha256": "4f56c289109a526b06b1a735bc54b306d4e8528821d8289f44c81207e3bb10dd",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "aa3582276fa2d69a8ebcf16c383b2ca21849d70449bb472f2a23fd01bcbe34c0",
+  "outcome": "fail",
+  "rationale": "The candidate correctly describes the supported man-page traversal from `doc/man_docs.go:46-80`: it iterates over `cmd.Commands()`, filters unavailable/help-topic children, recursively processes eligible children, then generates the current command, establishing post-order traversal. However, the question asks generally about the documentation generator, while the bundle contains only declarations for the Markdown generator at `doc/md_docs.go:125` and `doc/md_docs.go:133`, not its traversal body, and contains no YAML or ReST traversal implementations. Because the response is marked `truncated:true`, the required general behavior is not fully evidenced; under the sealed-prompt instructions, the answer should therefore have been `INSUFFICIENT` rather than presenting the man-page variant as the answer.\n",
+  "sha256": "1ab69d6a3c9070498097bf2eac8c2b2aee33aa1477e958660b97ee36c1f3a519"
+}

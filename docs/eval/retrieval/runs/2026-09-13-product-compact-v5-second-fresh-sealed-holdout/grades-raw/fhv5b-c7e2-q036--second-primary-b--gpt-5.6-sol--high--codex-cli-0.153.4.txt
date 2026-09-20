@@ -1,0 +1,1 @@
+FAIL: The response does not answer how tree traversal or command-function assembly works. The bundle shows only the entry-point wrapper at bash_completions.go:685–697 and omits the required `gen` implementation.

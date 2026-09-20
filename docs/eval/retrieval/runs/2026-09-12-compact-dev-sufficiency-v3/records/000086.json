@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 86,
+  "previous_sha256": "272e3c08932278fc3f3104264f29a8e6dcfcba70dc99791e665b53249346d6a8",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "e2a824fda15788571ca68b5ce42d98e2c8f8b789f68d5757ee881c143c194670",
+  "outcome": "pass",
+  "rationale": "The full preserved tree-generator implementation supports the described recursion, skipped help topics, file creation and Markdown-writing behavior.\n",
+  "sha256": "4f8a82ee4b4a80f9114c7b59459c5af61a5612dc4d0c3058c9dae38e5e76f6db"
+}

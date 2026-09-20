@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+what does the group id on commands do
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"what does the group id on commands do\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":332,"end_line":339,"text":"// SetHelpCommandGroupID sets the group id of the help command.\nfunc (c *Command) SetHelpCommandGroupID(groupID string) {\n\tif c.helpCommand != nil {\n\t\tc.helpCommand.GroupID = groupID\n\t}\n\t// helpCommandGroupID is used if no helpCommand is defined by the user\n\tc.helpCommandGroupID = groupID\n}"},{"path":"command.go","start_line":341,"end_line":345,"text":"// SetCompletionCommandGroupID sets the group id of the completion command.\nfunc (c *Command) SetCompletionCommandGroupID(groupID string) {\n\t// completionCommandGroupID is used if no completion command is defined by the user\n\tc.Root().completionCommandGroupID = groupID\n}"},{"path":"command.go","start_line":1331,"end_line":1334,"text":"// Groups returns a slice of child command groups.\nfunc (c *Command) Groups() []*Group {\n\treturn c.commandgroups\n}"},{"path":"command.go","start_line":1347,"end_line":1349,"text":"func (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {"},{"path":"command.go","start_line":1357,"end_line":1358,"text":"func (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)"},{"path":"command.go","start_line":1172,"end_line":1172,"text":"func (c *Command) checkCommandGroups() {"},{"path":"command.go","start_line":1337,"end_line":1337,"text":"func (c *Command) AllChildCommandsHaveGroup() bool {"},{"path":"command.go","start_line":41,"end_line":41,"text":"// Group Structure to manage groups for commands"}],"provenance":{"input_sha256":"4b836b5c6fdc615ef7da4140a9a93150681ce1c5abf132c6a5607526c11fdbc8","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

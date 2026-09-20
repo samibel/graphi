@@ -1,0 +1,10 @@
+In `command.go:680–717`, `(*Command).argsMinusFirstX`:
+
+1. Returns empty input unchanged, then merges persistent flags before reading `c.Flags()`. The merge includes the command’s and its parents’ persistent flags (`mergePersistentFlags`, `command.go:1846–1853`).
+2. Scans arguments left to right, stopping at `--`; nothing after that marker is considered for removal.
+3. Skips the next argument when encountering a long flag without `=` and without an optional default, or a two-character short flag with the same conditions. The extra `pos++` followed by `continue` prevents that flag’s value from being mistaken for a command.
+4. Considers only arguments without a leading `-`. On the first `s == x`, it joins `args[:pos]` with `args[pos+1:]` and returns immediately, preserving later matches. If none matches, it returns the original arguments.
+
+`hasNoOptDefVal` checks whether a registered flag’s `NoOptDefVal` is nonempty (`command.go:622–629`); the short-flag branch calls `shortHasNoOptDefVal`, whose implementation is not shown. Flags containing `=` do not trigger a next-argument skip.
+
+The function’s comment gives the motivation: removing the command `admin` must preserve the later positional `admin` in `openshift admin policy add-role-to-user admin my-user`.

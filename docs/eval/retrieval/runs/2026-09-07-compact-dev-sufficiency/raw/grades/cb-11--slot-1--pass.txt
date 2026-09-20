@@ -1,0 +1,1 @@
+The preserved comment and declaration at command.go:1146-1148 directly identify ValidateRequiredFlags as the implementation that checks required flags and reports an error. This concretely answers the location question. The response accurately mentions the visible parsing-disable condition and explicitly refrains from inferring execution ordering from the absent call site.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 106,
+  "previous_sha256": "9ec18568412ebb6155cccbd912861d7afa2bb51ad8afb949fb8e1db4d68cfbf3",
+  "kind": "grade",
+  "query_id": "cb-21",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "6ed863d819218931bfcdcb6b45898b948342b09b726d26e55b63276ce5ff8669",
+  "outcome": "pass",
+  "rationale": "command.go:1302-1329 contains the concrete AddCommand operation and every stated parent-pointer and command-list update.\n",
+  "sha256": "c430bdcdfa93aee955b23e4b75a43e87a47f36a15568a904d5b2c6f715d6d2b2"
+}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `RunE`/`Run` followed by `PostRunE` in `command.go:981-992`, but omits argument validation, persistent/local hook ordering, and flag-group checks.

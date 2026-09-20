@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d6-3273-7b82-8a76-3f3bbc6790af"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response explains inheritance and duplicate prevention but omits the essential behavior: initializing help on the child preserves the parent flag’s custom usage instead of replacing it with default usage. The bundle also lacks the test and its assertion."}}
+{"type":"turn.completed","usage":{"input_tokens":17617,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":108,"reasoning_output_tokens":56}}

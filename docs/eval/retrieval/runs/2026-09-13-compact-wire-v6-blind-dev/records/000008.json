@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 8,
+  "previous_sha256": "7d56f770f302b5707c73a2a70b35ac64e3d12c4aaee457de2e5805d9da43c432",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "b87d3bcd6272d6718dc090c366602f246e66196f8705f7ee2ac9dd17810e7191",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.RegisterFlagCompletionFunc(flagName, func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) { ... })`. It errors if the flag does not exist or already has a registered function, and stores the function in a mutex-protected map keyed by `*pflag.Flag` (`completions.go:35-36,132-148`).",
+  "sha256": "20de1434515bc7d96a27f27381114754a2a4abd7eb49552d440ba4701b7ec63e"
+}

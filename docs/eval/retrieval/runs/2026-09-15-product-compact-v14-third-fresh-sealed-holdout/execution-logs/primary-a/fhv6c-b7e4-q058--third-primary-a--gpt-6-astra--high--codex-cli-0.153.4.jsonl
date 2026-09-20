@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-4abe-7c43-ae13-044d9e35181f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`TestChildSameName` in `command_test.go:399–402` covers an application named `foo` with a subcommand also named `foo`, executed as `foo foo`.\n\nThe child check in `command.go:1304–1308` rejects the command itself (`cmds[i] == c`), not a matching name. The test body and assertions are absent, so the expected execution result is not shown."}}
+{"type":"turn.completed","usage":{"input_tokens":16868,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":186,"reasoning_output_tokens":93}}

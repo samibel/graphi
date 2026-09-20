@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-13:primary-a
+Outcome: fail
+Rationale: Response begins exactly INSUFFICIENT; bundle omits suggestion candidate selection and threshold/application logic.

@@ -1,0 +1,1 @@
+The requested computation is concretely located at cobra.go:187-188, where the preserved comment and signature identify ld as the Levenshtein function. command.go:835-837 directly shows the available-command guard, call arguments and distance-threshold comparison.

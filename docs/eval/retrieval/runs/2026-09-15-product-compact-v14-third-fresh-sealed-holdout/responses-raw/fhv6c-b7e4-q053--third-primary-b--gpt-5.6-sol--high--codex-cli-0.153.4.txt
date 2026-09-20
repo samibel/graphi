@@ -1,0 +1,7 @@
+Install the generator with:
+
+```sh
+go install github.com/spf13/cobra-cli@latest
+```
+
+Evidence: `README.md`, lines 95–105, identifies `cobra-cli` as the application generator and provides this installation command.

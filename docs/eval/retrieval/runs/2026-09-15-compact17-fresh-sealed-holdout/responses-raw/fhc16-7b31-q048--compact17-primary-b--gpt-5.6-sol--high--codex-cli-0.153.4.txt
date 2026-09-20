@@ -1,0 +1,10 @@
+Default completion-command options are configured on the root command’s `CompletionOptions` field (`site/content/completions/_index.md:92-96`).
+
+The four documented controls are:
+
+- `DisableDefaultCmd`: don’t create the default `completion` command.
+- `HiddenDefaultCmd`: hide the default `completion` command.
+- `DisableNoDescFlag`: don’t add the `--no-descriptions` flag.
+- `DisableDescriptions`: disable all completion descriptions.
+
+These fields are defined in `CompletionOptions` (`completions.go:103-116`).

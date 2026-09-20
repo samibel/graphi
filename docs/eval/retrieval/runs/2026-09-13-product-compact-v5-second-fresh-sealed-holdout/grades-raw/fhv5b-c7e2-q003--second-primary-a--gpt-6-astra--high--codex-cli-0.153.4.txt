@@ -1,0 +1,1 @@
+PASS: The response correctly states that ArbitraryArgs performs no validation and always returns nil, directly supported by the comment and unconditional return in the supplied args.go:68–71.

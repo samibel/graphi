@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the Shell Completions guide at `_index.md` as the destination, supported by the explicit referral in `site/content/completions/fish.md` lines 1–4 of the preserved transcript.

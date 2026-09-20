@@ -1,0 +1,7 @@
+In `completions.go:604-622`, `checkIfFlagCompletion`:
+
+- Finds `=` with `strings.Index(lastArg, "=")`.
+- For `--flag=value`, extracts the flag name as `lastArg[2:index]`.
+- For shorthand tokens such as `-asd=value`, extracts only the final shorthand character as `lastArg[index-1:index]`—`d` in that example.
+- Extracts the value-to-complete as `lastArg[index+1:]`.
+- Sets `flagWithEqual = true`; `trimmedArgs` remains the original `args`.

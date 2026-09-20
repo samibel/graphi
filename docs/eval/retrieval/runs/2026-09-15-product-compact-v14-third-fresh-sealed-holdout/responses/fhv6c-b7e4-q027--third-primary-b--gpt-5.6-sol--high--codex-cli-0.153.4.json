@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q027",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "e4fc0049fa70111723dea188500ef098f80b98e4b757fa1a35eb0a7d35618c9f",
+  "bundle_sha256": "60b6309b0f7eb1b508b12e7198626afd2320cf99e0cacd991bf26a5b051f4868",
+  "prompt_sha256": "0079e7a214d9c8092536ade01cb011cc28c016fcec479e8aceeb31902c2efba8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetIn(nil)` makes `InOrStdin()` return the parent command’s input if one exists; otherwise it returns `os.Stdin`.\n\nEvidence: `SetIn` assigns `nil` to `c.inReader` (`command.go:300–304`), `InOrStdin` calls `c.getIn(os.Stdin)` (`command.go:389–392`), and `getIn` falls back through the parent before returning its default (`command.go:414–422`).",
+  "responded_at": "2026-09-15T08:29:55Z",
+  "sha256": "badc00dd1ca52cd51725c75aaa3f68577d8a5da6a46ad5467dcae2f4b9e8ee20"
+}

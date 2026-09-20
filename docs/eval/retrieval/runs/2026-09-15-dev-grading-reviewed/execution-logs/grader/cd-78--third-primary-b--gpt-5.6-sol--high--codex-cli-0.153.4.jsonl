@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-ccc6-7052-841a-2726c4fcc703"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript at command.go:874-877 explicitly checks for a nil receiver and immediately returns the stated error, before flag parsing or run hooks execute."}}
+{"type":"turn.completed","usage":{"input_tokens":19123,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":36,"reasoning_output_tokens":0}}

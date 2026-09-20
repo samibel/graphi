@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 21,
+  "previous_sha256": "ee5a207cd675013d4fb0982d0b3b53d4b8805a220d560f783b14f70aa3daf24f",
+  "kind": "response",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "35964c2590fb68e02ed6bf731bb0d954650095018bd625765c99adc1dd06b8b5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the package variable `cobra.EnablePrefixMatching = true`; it defaults to `false` and is deliberately opt-in because automatic prefix matching can be dangerous (`cobra.go:45-56`). When enabled, subcommand lookup adds commands whose name or alias has the supplied prefix (`command.go:774-777`, `command.go:1526-1528`).\n",
+  "sha256": "2130dc166c1fd190ae7687797dbdb5965b4c6fc9db04d0c2f8bb0faa78829c03"
+}

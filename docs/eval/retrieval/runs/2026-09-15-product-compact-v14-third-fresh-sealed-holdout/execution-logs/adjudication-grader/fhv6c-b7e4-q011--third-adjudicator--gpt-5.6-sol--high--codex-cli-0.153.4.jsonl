@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a436-1966-7263-82a1-57071cb38a3c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the preserved callback’s non-empty-args return, prefix filtering of both described choices, and default directive for matching completions. Both cited locations exist in the transcript and support the callback definition and signature match."}}
+{"type":"turn.completed","usage":{"input_tokens":17978,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":96,"reasoning_output_tokens":43}}

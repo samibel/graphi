@@ -1,0 +1,1 @@
+FAIL: The bundle proves that cmd.Flag finds a parent persistent *pflag.Flag, but it does not expose any API or field for extracting that object's parsed value. Saying it contains the current value is not the concrete, byte-supported retrieval procedure the question asks for.

@@ -1,0 +1,4 @@
+The response shows two uses of “prefix”:
+
+- **Error message prefix:** `cmd.SetErrPrefix(s)` sets it (`command.go:357–360`). `ErrPrefix()` uses the command’s nonempty prefix, otherwise inherits its parent’s prefix, otherwise returns `"Error:"` (`command.go:611–621`). Errors print with `c.PrintErrln(c.ErrPrefix(), err.Error())` when `SilenceErrors` is false (`command.go:1097–1099`).
+- **Command prefix matching:** Set `EnablePrefixMatching` to `true` to enable automatic prefix matching (`cobra.go:52–55`). `hasNameOrAliasPrefix` checks the command name and aliases with `strings.HasPrefix`, recording the matching name or alias in `c.commandCalledAs.name` (`command.go:1524–1538`).

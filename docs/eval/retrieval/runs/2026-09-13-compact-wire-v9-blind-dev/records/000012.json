@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 12,
+  "previous_sha256": "14a94ada01ebe28d33a74ef6a968461df8d0a227a1076e8112891072ecca7c07",
+  "kind": "response",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "29b459a416dc24a5c139ed4d983b50f446ac55ea1e1cfa0ea3bd9566ddf25c1e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The version flag is handled automatically during command execution:\n\n- `Command.InitDefaultVersionFlag()` only acts when `c.Version` is non-empty (`command.go:1200-1208`).\n- It preserves an existing `version` flag. Otherwise, it creates a Boolean `--version` flag, adding `-v` only when that shorthand is available (`command.go:1209-1223`).\n- The generated flag receives the `FlagSetByCobraAnnotation` annotation (`command.go:1223`).\n- During execution, Cobra reads it using `c.Flags().GetBool(\"version\")`. A non-Boolean custom flag produces `\"version\" flag declared as non-bool. Please correct your code` and returns the error (`command.go:908-913`).\n- When true, it renders `c.VersionTemplate()` to `c.OutOrStdout()` and returns, including any template error (`command.go:914-919`).",
+  "sha256": "96377f24fd3a3f60ff48306a32b630df31a908d1eda1b24e028e00793ac23d6f"
+}

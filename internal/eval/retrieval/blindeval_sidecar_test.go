@@ -283,11 +283,13 @@ func TestQrelBlindSmoke_AnOverBroadRunDirectoryIsRefused(t *testing.T) {
 	// And the capture instrument applies it before it observes anything, so an
 	// over-broad exclusion cannot be recorded in the first place.
 	probe := RepoProbe{
-		HeadSHA:       func(context.Context, string) (string, error) { return strings.Repeat("a", 40), nil },
-		WorktreeClean: func(context.Context, string) (bool, error) { return true, nil },
+		HeadSHA:              func(context.Context, string) (string, error) { return strings.Repeat("a", 40), nil },
+		WorktreeClean:        func(context.Context, string) (bool, error) { return true, nil },
+		WorktreeCleanOutside: func(context.Context, string, string) (bool, error) { return true, nil },
 		PathsDifferingOutside: func(context.Context, string, string, string, string) ([]string, error) {
 			return nil, nil
 		},
+		DiffOutside: func(context.Context, string, string, string, string) ([]byte, error) { return nil, nil },
 	}
 	_, err := ObserveCandidateBinding(context.Background(), probe, CandidateBindingOptions{
 		CandidateRoot: "/candidate", FrozenCandidateSHA: strings.Repeat("0", 40),
@@ -459,5 +461,29 @@ func TestQrelBlindSmoke_WriteOnceIsAnExclusiveCreate(t *testing.T) {
 		if err := WriteBlindEvalJSONWriteOnce("grade", path, map[string]int{"outcome": 1}); err != nil {
 			t.Fatalf("re-sealing identical material was refused: %v", err)
 		}
+	}
+}
+
+// TestQrelBlindSmoke_SidecarManifestCarriesTheRunsContractVersion: the
+// manifest is stamped with the pre-registration's version, and a manifest
+// from a version-1 run does not bind a version-2 run.
+func TestQrelBlindSmoke_SidecarManifestCarriesTheRunsContractVersion(t *testing.T) {
+	dir := t.TempDir()
+	pre := PreRegistration{ContractVersion: QrelBlindSmokeContractVersion2, SHA256: strings.Repeat("a", 64)}
+	manifest, err := SealSidecarManifest(dir, pre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.ContractVersion != QrelBlindSmokeContractVersion2 {
+		t.Fatalf("manifest contract_version = %q", manifest.ContractVersion)
+	}
+	stale := manifest
+	stale.ContractVersion = QrelBlindSmokeContractVersion
+	if err := checkSidecarManifestBinding(stale, pre); err == nil || !strings.Contains(err.Error(), "pre-registration is") {
+		t.Fatalf("error = %v, want the run-version refusal", err)
+	}
+	stale.ContractVersion = "sw280-qrel-blind-smoke-evaluation/3"
+	if err := checkSidecarManifestBinding(stale, pre); err == nil || !strings.Contains(err.Error(), "want") {
+		t.Fatalf("error = %v, want the unknown-version refusal", err)
 	}
 }

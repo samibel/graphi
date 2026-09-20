@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 33521018aaf5e475db810aa63f4ac82d782cc6c23960b06fcb091bf5cc6db904
+QUERY ID: fhv6c-b7e4-q003
+
+QUESTION:
+nonCompletableFlag
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- bash_completions.go:699-701 anchor="func nonCompletableFlag(" reason=The complete declaration defines exactly which flags the legacy Bash generator excludes.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 49ba3031a04c; read in order (320/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"bash_completions.go","start_line":699,"end_line":701,"text":"func nonCompletableFlag(flag *pflag.Flag) bool {\n\treturn flag.Hidden || len(flag.Deprecated) > 0\n}"},{"path":"command.go","start_line":82,"end_line":103,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.\n\t// It is a dynamic version of using ValidArgs.\n\t// Only one of ValidArgs and ValidArgsFunction can be used for a command.\n\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n\n\t// Expected arguments\n\tArgs PositionalArgs\n\n\t// ArgAliases is List of aliases for ValidArgs.\n\t// These are not suggested to the user in the shell completion,\n\t// but accepted if entered manually.\n\tArgAliases []string\n\n\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator.\n\t// For portability with other shells, it is recommended to instead use ValidArgsFunction\n\tBashCompletionFunction string\n\n\t// Deprecated defines, if this command is deprecated and should print this string when used.\n\tDeprecated string\n"},{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"bash_completions.go","start_line":567,"end_line":592,"text":"\t\tif nonCompletableFlag(flag) {\n\t\t\treturn\n\t\t}\n\t\twriteFlag(buf, flag, cmd)\n\t\tif len(flag.Shorthand) > 0 {\n\t\t\twriteShortFlag(buf, flag, cmd)\n\t\t}\n\t\t// localNonPersistentFlags are used to stop the completion of subcommands when one is set\n\t\t// if TraverseChildren is true we should allow to complete subcommands\n\t\tif localNonPersistentFlags.Lookup(flag.Name) != nil && !cmd.Root().TraverseChildren {\n\t\t\twriteLocalNonPersistentFlag(buf, flag)\n\t\t}\n\t})\n\tcmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {\n\t\tif nonCompletableFlag(flag) {\n\t\t\treturn\n\t\t}\n\t\twriteFlag(buf, flag, cmd)\n\t\tif len(flag.Shorthand) > 0 {\n\t\t\twriteShortFlag(buf, flag, cmd)\n\t\t}\n\t})\n\n\tWriteStringAndCheck(buf, \"\\n\")\n}\n"},{"path":"bash_completions.go","start_line":658,"end_line":683,"text":"\t\t\tcontinue\n\t\t}\n\t\tgen(buf, c)\n\t}\n\tcommandName := cmd.CommandPath()\n\tcommandName = strings.ReplaceAll(commandName, \" \", \"_\")\n\tcommandName = strings.ReplaceAll(commandName, \":\", \"__\")\n\n\tif cmd.Root() == cmd {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"_%s_root_command()\\n{\\n\", commandName))\n\t} else {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"_%s()\\n{\\n\", commandName))\n\t}\n\n\tWriteStringAndCheck(buf, fmt.Sprintf(\"    last_command=%q\\n\", commandName))\n\tWriteStringAndCheck(buf, \"\\n\")\n\tWriteStringAndCheck(buf, \"    command_aliases=()\\n\")\n\tWriteStringAndCheck(buf, \"\\n\")\n\n\twriteCommands(buf, cmd)\n\twriteFlags(buf, cmd)\n\twriteRequiredFlag(buf, cmd)\n\twriteRequiredNouns(buf, cmd)\n\twriteArgAliases(buf, cmd)\n\tWriteStringAndCheck(buf, \"}\\n\\n\")\n}"}],"provenance":{"input_sha256":"e9cbfc11e31b02e8c0729bc7ce5796961282bcd76e92cf2593206bd36846be85","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`nonCompletableFlag(flag *pflag.Flag) bool` returns whether a flag is hidden or deprecated:
+
+```go
+return flag.Hidden || len(flag.Deprecated) > 0
+```
+
+Defined in `bash_completions.go:699–701`. Completion generation checks it and skips matching flags before calling `writeFlag` or `writeShortFlag`, including inherited flags (`bash_completions.go:567–587`).
+----- END THE RATER'S RESPONSE -----

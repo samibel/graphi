@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `CommandDisplayNameAnnotation` and `CommandPath()` in `command.go` (lines 32–36 and 1425–1434), but identifies no plugin or its display name.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-25f37b91486c",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "a9743869ee5381fb4ea2de5c66606ece79ab1f93dc47f9bee691ab8aad99e86f",
+  "bundle_sha256": "16317ef5f6f127ba0a9a836f814617cd24eda6595977235ba461d51162c60911",
+  "prompt_sha256": "7f05e19985e4c6ef14ba2999f85e8cd934fcc1c54da404a760c1a8000aae3b01",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A command is unavailable if:\n\n- `Deprecated` is non-empty or `Hidden` is true (`command.go:1562–1564`).\n- It is its parent’s help command (`command.go:1566–1568`).\n\nOtherwise, it becomes available if it is runnable—meaning `Run` or `RunE` is set (`command.go:1549–1553`)—or if it has at least one available subcommand (`command.go:1570–1572`, `1614–1623`).",
+  "responded_at": "2026-09-15T20:26:56Z",
+  "sha256": "31067cb5a563cc27bbfb194f414c7d5d7c5c7eb4b831990a16e9ec5b81693356"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 15,
+  "previous_sha256": "57a82440a140bc5625776b12a275173148361e2122dde43cbcc07172f8b7abc1",
+  "kind": "response",
+  "query_id": "cb-20",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "5b235bc7dc36a2f319f56f387d313fc4e3b12f0d0db333ba9cb96c8bbce3eb5e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Persistent flags are declared in a command's separate `PersistentFlags()` set (`command.go:1725-1735`). Before a child uses its effective flags, `mergePersistentFlags` refreshes `parentsPflags`, then adds both the child's persistent set and the accumulated parent set to `c.Flags()` (`command.go:1847-1857`). Lookup likewise checks the current command's persistent flags and then refreshes and searches `parentsPflags` (`command.go:1805-1816`). Thus parent persistent flags become part of each descendant's effective flag set, while remaining distinguishable as inherited flags.\n",
+  "sha256": "83dc24625a34915c4fb17835fee1ecde67f3955962ac3ed964d825f2ec14a4e4"
+}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the command-selection and execution connection and most Run-hook invocation code, so it cannot establish the full lifecycle from Execute through the hooks.

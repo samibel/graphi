@@ -1,0 +1,1 @@
+PASS: The preserved command.go:788–829 supports recursive descent through two subcommands via findNext and cmd.Traverse(args[i+1:]), parsing parent flags before each descent and returning the grandchild with remaining arguments when no further subcommand matches. The stated flag-parsing error behavior is also supported.

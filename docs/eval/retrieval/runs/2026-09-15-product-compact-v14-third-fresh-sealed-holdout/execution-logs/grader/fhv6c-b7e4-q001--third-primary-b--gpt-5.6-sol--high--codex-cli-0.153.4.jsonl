@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-6a4a-7b53-b261-aa3dc708772d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes getCommand in args_test.go:23–33: it returns a *Command with Use \"c\", Args args, Run emptyRun, and ValidArgs set to {\"one\", \"two\", \"three\"} only when withValid is true. The cited span directly supports these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18010,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":67,"reasoning_output_tokens":0}}

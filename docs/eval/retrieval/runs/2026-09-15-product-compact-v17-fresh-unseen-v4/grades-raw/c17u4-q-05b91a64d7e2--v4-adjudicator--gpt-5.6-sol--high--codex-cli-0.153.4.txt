@@ -1,0 +1,1 @@
+PASS: The response accurately describes both branches: usable shorthand is included positionally with the raw default and formatted usage; absent or deprecated shorthand is omitted, and the default is also normalized with forceMultiLine. Its citations resolve within the preserved bundle.

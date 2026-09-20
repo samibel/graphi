@@ -1,0 +1,1 @@
+Call `cmd.CalledAs()`. It returns the command name or alias used to invoke that command, or `""` if it has not been called (`command.go`, lines 1515–1522, symbol `(*Command).CalledAs`).

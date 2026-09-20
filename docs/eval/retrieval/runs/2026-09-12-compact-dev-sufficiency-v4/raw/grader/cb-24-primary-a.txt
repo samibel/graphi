@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-24:primary-a
+Outcome: pass
+Rationale: Accurately describes required-group and mutually-exclusive completion metadata changes and DisableFlagParsing bypass using the explicit enforceFlagGroupsForCompletion contract.

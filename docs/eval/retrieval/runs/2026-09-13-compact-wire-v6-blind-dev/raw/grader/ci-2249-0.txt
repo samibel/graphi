@@ -1,0 +1,1 @@
+PASS: It correctly identifies the accessors and predicates a test can use to inspect inherited and available inherited flags.

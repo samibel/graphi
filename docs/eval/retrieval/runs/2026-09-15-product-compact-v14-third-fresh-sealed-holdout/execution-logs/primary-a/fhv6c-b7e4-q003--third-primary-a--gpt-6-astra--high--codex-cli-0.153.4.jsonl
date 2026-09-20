@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-732e-76a0-88b7-6857b4fe9f74"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`nonCompletableFlag(flag *pflag.Flag) bool` returns whether a flag is hidden or deprecated:\n\n```go\nreturn flag.Hidden || len(flag.Deprecated) > 0\n```\n\nDefined in `bash_completions.go:699–701`. Completion generation checks it and skips matching flags before calling `writeFlag` or `writeShortFlag`, including inherited flags (`bash_completions.go:567–587`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17410,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":91,"reasoning_output_tokens":0}}

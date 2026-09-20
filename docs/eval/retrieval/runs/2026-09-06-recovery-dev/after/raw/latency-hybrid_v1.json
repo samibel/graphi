@@ -1,0 +1,376 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/3",
+  "series": "latency",
+  "baseline": "hybrid_v1",
+  "collected": true,
+  "samples": 132,
+  "queries": [
+    {
+      "id": "cb-01",
+      "samples_us": [
+        1455,
+        1311,
+        1282
+      ]
+    },
+    {
+      "id": "cb-02",
+      "samples_us": [
+        353,
+        329,
+        328
+      ]
+    },
+    {
+      "id": "cb-03",
+      "samples_us": [
+        460,
+        447,
+        440
+      ]
+    },
+    {
+      "id": "cb-04",
+      "samples_us": [
+        388,
+        370,
+        376
+      ]
+    },
+    {
+      "id": "cb-07",
+      "samples_us": [
+        704,
+        668,
+        664
+      ]
+    },
+    {
+      "id": "cb-08",
+      "samples_us": [
+        678,
+        712,
+        670
+      ]
+    },
+    {
+      "id": "cb-09",
+      "samples_us": [
+        628,
+        602,
+        617
+      ]
+    },
+    {
+      "id": "cb-11",
+      "samples_us": [
+        3622,
+        3656,
+        3576
+      ]
+    },
+    {
+      "id": "cb-12",
+      "samples_us": [
+        4978,
+        4769,
+        4723
+      ]
+    },
+    {
+      "id": "cb-13",
+      "samples_us": [
+        3447,
+        3179,
+        2977
+      ]
+    },
+    {
+      "id": "cb-14",
+      "samples_us": [
+        3305,
+        3365,
+        3449
+      ]
+    },
+    {
+      "id": "cb-15",
+      "samples_us": [
+        2814,
+        2739,
+        2766
+      ]
+    },
+    {
+      "id": "cb-16",
+      "samples_us": [
+        365,
+        349,
+        341
+      ]
+    },
+    {
+      "id": "cb-19",
+      "samples_us": [
+        4180,
+        4137,
+        4204
+      ]
+    },
+    {
+      "id": "cb-20",
+      "samples_us": [
+        3400,
+        3574,
+        3349
+      ]
+    },
+    {
+      "id": "cb-21",
+      "samples_us": [
+        2847,
+        2625,
+        2610
+      ]
+    },
+    {
+      "id": "cb-22",
+      "samples_us": [
+        3314,
+        3293,
+        3275
+      ]
+    },
+    {
+      "id": "cb-24",
+      "samples_us": [
+        3392,
+        3366,
+        3236
+      ]
+    },
+    {
+      "id": "cb-25",
+      "samples_us": [
+        4359,
+        4338,
+        4249
+      ]
+    },
+    {
+      "id": "cb-26",
+      "samples_us": [
+        2841,
+        2806,
+        2871
+      ]
+    },
+    {
+      "id": "cb-27",
+      "samples_us": [
+        2273,
+        2283,
+        2348
+      ]
+    },
+    {
+      "id": "cb-28",
+      "samples_us": [
+        3015,
+        3174,
+        3225
+      ]
+    },
+    {
+      "id": "cb-30",
+      "samples_us": [
+        3707,
+        3528,
+        3530
+      ]
+    },
+    {
+      "id": "cb-31",
+      "samples_us": [
+        2119,
+        2230,
+        2099
+      ]
+    },
+    {
+      "id": "cb-32",
+      "samples_us": [
+        1598,
+        1579,
+        1598
+      ]
+    },
+    {
+      "id": "cb-33",
+      "samples_us": [
+        1924,
+        1939,
+        1893
+      ]
+    },
+    {
+      "id": "cb-35",
+      "samples_us": [
+        1971,
+        1975,
+        2024
+      ]
+    },
+    {
+      "id": "cb-36",
+      "samples_us": [
+        315,
+        286,
+        296
+      ]
+    },
+    {
+      "id": "cb-37",
+      "samples_us": [
+        354,
+        356,
+        356
+      ]
+    },
+    {
+      "id": "cb-38",
+      "samples_us": [
+        269,
+        266,
+        264
+      ]
+    },
+    {
+      "id": "ci-467",
+      "samples_us": [
+        971,
+        963,
+        991
+      ]
+    },
+    {
+      "id": "ci-511",
+      "samples_us": [
+        2865,
+        2781,
+        2803
+      ]
+    },
+    {
+      "id": "ci-678",
+      "samples_us": [
+        3717,
+        3783,
+        3851
+      ]
+    },
+    {
+      "id": "ci-771",
+      "samples_us": [
+        3490,
+        3531,
+        3563
+      ]
+    },
+    {
+      "id": "ci-943",
+      "samples_us": [
+        2150,
+        2081,
+        2085
+      ]
+    },
+    {
+      "id": "ci-1133",
+      "samples_us": [
+        4609,
+        4617,
+        4571
+      ]
+    },
+    {
+      "id": "ci-1222",
+      "samples_us": [
+        3812,
+        3656,
+        3645
+      ]
+    },
+    {
+      "id": "ci-1236",
+      "samples_us": [
+        3230,
+        3298,
+        3254
+      ]
+    },
+    {
+      "id": "ci-1358",
+      "samples_us": [
+        2220,
+        2317,
+        2185
+      ]
+    },
+    {
+      "id": "ci-1408",
+      "samples_us": [
+        2691,
+        2701,
+        2681
+      ]
+    },
+    {
+      "id": "ci-1970",
+      "samples_us": [
+        3912,
+        3932,
+        3919
+      ]
+    },
+    {
+      "id": "ci-1991",
+      "samples_us": [
+        3615,
+        3580,
+        3719
+      ]
+    },
+    {
+      "id": "ci-2249",
+      "samples_us": [
+        3754,
+        3707,
+        3705
+      ]
+    },
+    {
+      "id": "ci-2314",
+      "samples_us": [
+        1507,
+        1765,
+        1520
+      ]
+    }
+  ],
+  "index_ms": {
+    "status": "measured",
+    "value": 830,
+    "unit": "ms"
+  },
+  "peak_rss_mb": {
+    "status": "measured",
+    "value": 441.203125,
+    "unit": "MB"
+  },
+  "vector_sidecar_bytes": {
+    "status": "not_applicable",
+    "reason": "no vector sidecar: this baseline ranks without vectors"
+  }
+}

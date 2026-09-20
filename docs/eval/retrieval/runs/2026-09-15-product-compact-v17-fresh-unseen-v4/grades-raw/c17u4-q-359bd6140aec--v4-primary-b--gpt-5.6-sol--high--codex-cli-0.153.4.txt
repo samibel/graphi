@@ -1,0 +1,1 @@
+PASS: The response states that parsing is disabled and all flags reach the command as arguments, supported by command.go:236-237. Its completion claim is supported by completions.go:301-305, and both citations resolve inside the bundle.

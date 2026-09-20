@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 681391acaf33593ad9430334990429042fc4b9a8974a987b933d9732ad9f455c
+QUERY ID: fhv5b-c7e2-q010
+
+QUESTION:
+What does OnInitialize do with multiple initializer callbacks?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:97-101 anchor="initializers = append(initializers, y...)" reason=It appends every callback, in supplied order, to the package initializer sequence run by command execution.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 1c5e3077e831; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"cobra.go","start_line":96,"end_line":101,"text":"\n// OnInitialize sets the passed functions to be run when each command's\n// Execute method is called.\nfunc OnInitialize(y ...func()) {\n\tinitializers = append(initializers, y...)\n}"},{"path":"cobra.go","start_line":89,"end_line":89,"text":"// AddTemplateFuncs adds multiple template functions that are available to Usage and"},{"path":"command.go","start_line":1200,"end_line":1216,"text":"// InitDefaultVersionFlag adds default version flag to c.\n// It is called automatically by executing the c.\n// If c already has a version flag, it will do nothing.\n// If c.Version is empty, it will do nothing.\nfunc (c *Command) InitDefaultVersionFlag() {\n\tif c.Version == \"\" {\n\t\treturn\n\t}\n\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"version\") == nil {\n\t\tusage := \"version for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}"},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"},{"path":"cobra.go","start_line":89,"end_line":95,"text":"// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"},{"path":"command.go","start_line":1015,"end_line":1019,"text":"func (c *Command) preRun() {\n\tfor _, x := range initializers {\n\t\tx()\n\t}\n}"},{"path":"cobra.go","start_line":103,"end_line":107,"text":"// OnFinalize sets the passed functions to be run when each command's\n// Execute method is terminated.\nfunc OnFinalize(y ...func()) {\n\tfinalizers = append(finalizers, y...)\n}"},{"path":"completions.go","start_line":398,"end_line":403,"text":"\t\t\t\t\t// If the flag is not already present, or if it can be specified multiple times (Array or Slice)\n\t\t\t\t\t// we suggest it as a completion\n\t\t\t\t\tcompletions = append(completions, getFlagNameCompletions(flag, toComplete)...)\n\t\t\t\t}\n\t\t\t}\n"},{"path":"command.go","start_line":55,"end_line":62,"text":"\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the\n\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command.\n\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are\n\t//       optional, they are enclosed in brackets ([ ]).\n\t// Example: add [-F file | -D dir]... [-f format] profile\n\tUse string\n"},{"path":"cobra.go","start_line":100,"end_line":100,"text":"\tinitializers = append(initializers, y...)"}],"provenance":{"input_sha256":"9a1351a435fa88150ba27b9735e9b686a78adeb5d48ebb74186a02c953c5d497","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`OnInitialize` appends all supplied callbacks to the `initializers` slice, preserving their order and retaining callbacks registered by earlier calls (`cobra.go:99–100`, `initializers = append(initializers, y...)`).
+
+`Command.preRun` then invokes each callback sequentially in that order (`command.go:1015–1019`, `for _, x := range initializers { x() }`). The comment documents that they run when each command’s `Execute` method is called (`cobra.go:97–98`).
+----- END THE RATER'S RESPONSE -----

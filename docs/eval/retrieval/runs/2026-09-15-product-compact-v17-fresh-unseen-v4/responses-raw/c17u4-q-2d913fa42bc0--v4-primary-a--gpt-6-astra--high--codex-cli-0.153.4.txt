@@ -1,0 +1,1 @@
+`SetOutput` preserves the legacy ability to route both usage and error messages to one writer. It changes `c.outWriter` and `c.errWriter` to the supplied `output` (`command.go:283–285`). Its comments mark it deprecated in favor of `SetOut` and/or `SetErr` and document `os.Stderr` when output is nil (`command.go:280–282`).

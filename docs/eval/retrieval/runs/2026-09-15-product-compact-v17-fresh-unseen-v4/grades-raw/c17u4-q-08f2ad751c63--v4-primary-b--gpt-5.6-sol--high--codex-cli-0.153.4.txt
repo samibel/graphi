@@ -1,0 +1,1 @@
+PASS: The response accurately explains hidden/deprecated filtering, prefix matching for long and nonempty shorthand spellings, omission of `--flag=`, and tab-separated usage descriptions. All claims and citations are supported by the preserved bundle.

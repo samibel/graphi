@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to retrieve parent command flag value?
+
+----- BEGIN task_context/compact-dev/6 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"How to retrieve parent command flag value?\"; read in order (242/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/6","sources":[{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":1842,"end_line":1845,"text":"// Parent returns a commands parent command.\nfunc (c *Command) Parent() *Command {\n\treturn c.parent\n}"},{"path":"command.go","start_line":73,"end_line":77,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n\n\t// Long is the long message shown in the 'help \u003cthis-command\u003e' output.\n\tLong string"},{"path":"command.go","start_line":50,"end_line":50,"text":"// definition to ensure usability."},{"path":"command.go","start_line":1855,"end_line":1874,"text":"// updateParentsPflags updates c.parentsPflags by adding\n// new persistent flags of all parents.\n// If c.parentsPflags == nil, it makes new.\nfunc (c *Command) updateParentsPflags() {\n\tif c.parentsPflags == nil {\n\t\tc.parentsPflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tc.parentsPflags.SetOutput(c.flagErrorBuf)\n\t\tc.parentsPflags.SortFlags = false\n\t}\n\n\tif c.globNormFunc != nil {\n\t\tc.parentsPflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\tc.Root().PersistentFlags().AddFlagSet(flag.CommandLine)\n\n\tc.VisitParents(func(parent *Command) {\n\t\tc.parentsPflags.AddFlagSet(parent.PersistentFlags())\n\t})\n}"},{"path":"command.go","start_line":1805,"end_line":1816,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}\n\n\tif flag == nil {\n\t\tc.updateParentsPflags()\n\t\tflag = c.parentsPflags.Lookup(name)\n\t}\n\treturn\n}"},{"path":"command.go","start_line":1643,"end_line":1645,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)"},{"path":"command.go","start_line":1655,"end_line":1655,"text":"// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands."},{"path":"command.go","start_line":1766,"end_line":1770,"text":"// HasInheritedFlags checks if the command has flags inherited from its parent command.\nfunc (c *Command) HasInheritedFlags() bool {\n\treturn c.InheritedFlags().HasFlags()\n}\n"},{"path":"command.go","start_line":1695,"end_line":1696,"text":"// InheritedFlags returns all flags which were inherited from parent commands.\nfunc (c *Command) InheritedFlags() *flag.FlagSet {"}],"provenance":{"input_sha256":"2465e61e693c57ce80689a621a51d504a7d6a15a535897c317d541b7f8fb43d1","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/6 RESPONSE BYTES -----

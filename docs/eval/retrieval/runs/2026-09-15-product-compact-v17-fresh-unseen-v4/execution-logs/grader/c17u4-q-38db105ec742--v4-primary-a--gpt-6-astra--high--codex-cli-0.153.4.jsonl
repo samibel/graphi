@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d5-1074-7ab2-a00c-bd76e77d46dd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies `TestEnablePrefixMatching` at `command_test.go:305–332` and describes the bundle-supported proof: enabling prefix matching, executing `\"a\"` with `\"one\", \"two\"`, checking for no error or output, and verifying the captured arguments equal `onetwo`."}}
+{"type":"turn.completed","usage":{"input_tokens":17846,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":119,"reasoning_output_tokens":51}}

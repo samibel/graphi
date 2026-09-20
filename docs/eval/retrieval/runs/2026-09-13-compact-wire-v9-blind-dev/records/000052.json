@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 52,
+  "previous_sha256": "6d87dae6d8b477d5eccda9e23116fb93262f923ce76ad85c18cd2752a7846a78",
+  "kind": "response",
+  "query_id": "cb-15",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "29b459a416dc24a5c139ed4d983b50f446ac55ea1e1cfa0ea3bd9566ddf25c1e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "When a command executes, it initializes the default version flag at the last possible point (`command.go:883`).\n\n`InitDefaultVersionFlag` (`command.go:1200-1224`) behaves as follows:\n\n- If `c.Version` is empty, no version flag is added.\n- If a `version` flag already exists, it is preserved.\n- Otherwise, Cobra adds a Boolean `--version` flag.\n- It also assigns `-v` unless that shorthand is already taken.\n- The usage text is `version for \u003ccommand name\u003e` or `version for this command`.\n- The generated flag is marked with `FlagSetByCobraAnnotation`.\n\nDuring execution (`command.go:908-919`), when `c.Version` is nonempty, Cobra reads `version` as a Boolean. If it was declared with another type, it prints `\"version\" flag declared as non-bool. Please correct your code` and returns the error. If enabled, it renders `c.VersionTemplate()` to `c.OutOrStdout()` using the command as template data, prints any rendering error, and returns immediately.",
+  "sha256": "1fadcb528f73a1c425841b06bdfa9e5d4b8b94fea121e8d5b8ab337cca09e602"
+}

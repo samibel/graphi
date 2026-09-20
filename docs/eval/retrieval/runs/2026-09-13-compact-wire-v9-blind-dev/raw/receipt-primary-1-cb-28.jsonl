@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-3872-7651-a7ab-7149b2f74b44"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"A command’s `GroupID` assigns that subcommand to a group in its parent command’s help output (`command.go:73-75`). Groups have an `ID` and display `Title` (`command.go:41-45`) and are registered on the parent with `AddGroup` (`command.go:1356-1359`).\n\nThe built-in help and completion commands can also be assigned group IDs via `SetHelpCommandGroupID` and `SetCompletionCommandGroupID` (`command.go:332-345`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16346,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":111,"reasoning_output_tokens":0}}

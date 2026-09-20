@@ -1,0 +1,1 @@
+Set the package-level `EnablePrefixMatching` variable to `true` (`cobra.go:52–55`, conventionally `cobra.EnablePrefixMatching = true` from a caller). When enabled, command lookup collects commands satisfying `hasNameOrAliasPrefix(next)` and returns a prefix match when exactly one exists (`command.go:774–782`).

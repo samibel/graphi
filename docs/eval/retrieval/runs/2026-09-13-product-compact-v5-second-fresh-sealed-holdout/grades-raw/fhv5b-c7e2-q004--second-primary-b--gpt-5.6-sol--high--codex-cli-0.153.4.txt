@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the `len(args) < n` comparison, the error reporting both required minimum and actual count, and the otherwise `nil` return. Its citations and test example are supported by the preserved bundle.

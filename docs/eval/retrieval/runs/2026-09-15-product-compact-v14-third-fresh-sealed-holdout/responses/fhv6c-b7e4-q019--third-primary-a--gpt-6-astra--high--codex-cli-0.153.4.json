@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q019",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "5acfae2dd73d93a849b53f0ec7861f67962b4c43d6dafb8b99ac3c8e53435f5f",
+  "bundle_sha256": "ed1ae7b5f8043edc5f8db6ba4dc3bcc0d4f6372766022e5a06939b3a5c1d75db",
+  "prompt_sha256": "8e17398b793a427b4d0f38a584759805cbd130e121f81de070d5ba5b56f9e9be",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`doc/man_docs_test.go` belongs to package `doc` (line 15). The response shows three helpers and six test functions.\n\n**Helpers**\n\n- `assertNoErr`: calls `t.Error(e)` when an error is non-nil (lines 30–34).\n- `translate`: replaces `-` with `\\-` (lines 36–38).\n- `assertLineFound`: scans for an exact matching line and returns `nil` when found; its remaining behavior is omitted (lines 190–194).\n\n**Tests**\n\n- `TestGenManDoc`: creates a `GenManHeader` with title `\"Project\"` and section `\"2\"`, then calls `GenMan(echoCmd, header, buf)` (lines 40–49).\n- `TestGenManNoHiddenParents`: begins with the same header configuration (lines 70–76).\n- `TestGenManNoGenTag`: enables `echoCmd.DisableAutoGenTag` and defers resetting it (lines 106–111).\n- `TestGenManSeeAlso`: constructs a root command and commands named `aaa`, `bbb`, and `ccc`; `aaa` is hidden (lines 128–132).\n- `TestManPrintFlagsHidesShortDeprecated`: marks flag `foo`’s shorthand `f` deprecated, calls `manPrintFlags`, and checks output containing only the long flag (lines 153–166).\n- `TestGenManTree`: creates a command, section header, and temporary directory, schedules directory cleanup, and calls `GenManTree` (lines 168–177).\n\nThe response is explicitly truncated, so it does not establish the complete imports, declarations, or test bodies.",
+  "responded_at": "2026-09-15T08:29:33Z",
+  "sha256": "a11adcd1bec3721842b36814d7b2985aa87bba17de9741bee9c34a3aa13a129a"
+}

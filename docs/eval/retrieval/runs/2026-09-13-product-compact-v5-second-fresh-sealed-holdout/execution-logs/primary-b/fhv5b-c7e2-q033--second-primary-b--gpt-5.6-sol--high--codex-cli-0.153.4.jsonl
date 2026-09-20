@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5e-4fdd-7ca3-9a75-b7280517d802"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ErrPrefix()` walks up the command’s parent chain. If the current command’s `errPrefix` is empty, it calls `c.parent.ErrPrefix()` recursively, so the nearest ancestor with a non-empty customized prefix wins. If no command defines one, it returns `\"Error:\"` (`command.go:611–621`). Customization stores the value through `SetErrPrefix` (`command.go:357–360`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16572,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+FAIL: The response does not answer which portion becomes the command name. The preserved bundle shows UseLine() but omits the Name() behavior needed to establish that the name is the first space-delimited word of Use.

@@ -1,0 +1,1 @@
+The answer identifies the completion-command initializer and concrete configuration behavior. completions.go:681-685 supplies both early-return conditions and the existing-command comment. The DisableDescriptions assignment is preserved at site/content/completions/_index.md:111-114, and the stdout/debugging warning is explicit at line 270.

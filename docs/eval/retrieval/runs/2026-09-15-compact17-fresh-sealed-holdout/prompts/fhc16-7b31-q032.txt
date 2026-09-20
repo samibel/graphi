@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Which child commands must have a group for AllChildCommandsHaveGroup to return true?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query fbec8a98dacc; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1330,"end_line":1354,"text":"\n// Groups returns a slice of child command groups.\nfunc (c *Command) Groups() []*Group {\n\treturn c.commandgroups\n}\n\n// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\n// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1559,"end_line":1576,"text":"\n// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"command.go","start_line":1169,"end_line":1181,"text":"\n// checkCommandGroups checks if a command has been added to a group that does not exists.\n// If so, we panic because it indicates a coding error that should be corrected.\nfunc (c *Command) checkCommandGroups() {\n\tfor _, sub := range c.commands {\n\t\t// if Group is not defined let the developer know right away\n\t\tif sub.GroupID != \"\" && !c.ContainsGroup(sub.GroupID) {\n\t\t\tpanic(fmt.Sprintf(\"group id '%s' is not defined for subcommand '%s'\", sub.GroupID, sub.CommandPath()))\n\t\t}\n\n\t\tsub.checkCommandGroups()\n\t}\n}"},{"path":"site/content/user_guide.md","start_line":535,"end_line":536,"text":"Cobra supports grouping of available commands in the help output.  To group commands, each group must be explicitly\ndefined using `AddGroup()` on the parent command.  Then a subcommand can be added to a group using the `GroupID` element"},{"path":"completions.go","start_line":438,"end_line":439,"text":"\t\t\t// If TraverseChildren is true on the root command we don't check for\n\t\t\t// local flags because we can use a local flag on a parent command"},{"path":"command.go","start_line":1072,"end_line":1074,"text":"\t// Now that all commands have been created, let's make sure all groups\n\t// are properly created also\n\tc.checkCommandGroups()"},{"path":"command.go","start_line":1631,"end_line":1631,"text":"// HasParent determines if the command is a child command."}],"provenance":{"input_sha256":"5e3fca81cc18a95d7c219fa31d67e632956f0ed4e00c0586bccc722ee8ba8d8a","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

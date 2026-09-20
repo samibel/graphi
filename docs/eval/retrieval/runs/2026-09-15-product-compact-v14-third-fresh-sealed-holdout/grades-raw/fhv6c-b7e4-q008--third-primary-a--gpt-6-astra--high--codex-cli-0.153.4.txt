@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper’s nil-error check, exact expected argument-count error message, and fatal failure on mismatch, all supported by args_test.go:99–108 in the preserved transcript.

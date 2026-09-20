@@ -1,0 +1,1 @@
+PASS: The response accurately describes hasSeeAlso returning true for a parent or an available child that is not an additional help-topic command, and false otherwise. Its explanation and cited locations are supported by the preserved transcript.

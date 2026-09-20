@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 7,
+  "previous_sha256": "23cb2d81097d2164ab1fa20330d4a0703f01176bcc94d401cfb5bdd1cf0ac633",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "6d1f3fd9b09e629ca54011773c5dc372bd7d993e027437f752d48d514120ef31",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response only contains partial excerpts from `shell_completions.go`, and the question does not specify what information about the file is wanted.",
+  "sha256": "2c1d270c91bb6d9b02a33230405a1f0fba6e3c24892e18b4deabeae315c2080f"
+}

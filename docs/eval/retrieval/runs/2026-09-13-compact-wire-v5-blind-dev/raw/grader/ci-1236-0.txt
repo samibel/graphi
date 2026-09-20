@@ -1,0 +1,1 @@
+FAIL: CalledAs is supported, but the response's ExecuteC route cites command.go:1051-1056 and 1035-1042, neither of which is in this prompt bundle. The claim that ExecuteC returns the selected command is a material unsupported addition.

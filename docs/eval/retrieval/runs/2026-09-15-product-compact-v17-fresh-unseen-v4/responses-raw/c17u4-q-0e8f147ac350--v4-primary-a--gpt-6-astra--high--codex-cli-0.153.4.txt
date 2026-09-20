@@ -1,0 +1,1 @@
+`OnFinalize(y ...func())` appends all supplied functions to the package-level `finalizers []func()` slice using `finalizers = append(finalizers, y...)`. Repeated calls accumulate functions in order, preserving earlier entries (`cobra.go`, lines 105–106; slice declaration at line 43).

@@ -1,0 +1,1 @@
+The completion-command overview is grounded in completions.go:681-685, including the two visible return conditions and existing-command comment. site/content/completions/_index.md:111-114 directly supports disabling descriptions; 268-270 supplies CompErrorln and the reason to avoid stdout debug traces.

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q025",
+  "response_sha256": "67e53afa22a4258eb1d6a4e08435f2b6a8b41901fbcf5666c5e2643957ba408e",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The bundle shows the validator call and error text at flag_groups.go:183, but omits the condition linking that error to zero set members. The response’s central claim therefore cannot be verified from the preserved bundle.",
+  "graded_at": "2026-09-13T12:48:43Z",
+  "sha256": "d6ed6ee50c017520e18a8215aa2d074cf8764a3f8fb3d613817ebe13e24d7c0c"
+}

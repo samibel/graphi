@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-01a41c9e72d0",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "6638aa528fda5b7318489ef9d15630e60d422fa1aec409b4df72db37929ab24b",
+  "bundle_sha256": "b19dd1386f362fba231c18c455e64ddc36dcb15cbbec2edab94ce1380e058e47",
+  "prompt_sha256": "b468b714300891b508619eeea36a3ea908e89ab3367afc2ec4b412936ad5f23b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`legacyArgs` accepts:\n\n- Any arguments for a command with no subcommands (`args.go:28-31`).\n- Any arguments for a subcommand, even if it has its own subcommands (`args.go:34-38`, guarded by `!cmd.HasParent()`).\n- No arguments for a root command with subcommands (`args.go:34-38`).\n\nIt returns `unknown command \"\u003cfirst arg\u003e\" for \"\u003ccommand path\u003e\"` only when the command is a root, has subcommands, and receives at least one argument (`args.go:34-35`). It appends suggestions from `cmd.findSuggestions(args[0])`; `command.go:749-764` shows these are omitted when suggestions are disabled or none exist, otherwise formatted under `Did you mean this?`.",
+  "responded_at": "2026-09-15T20:22:07Z",
+  "sha256": "a48915880f7c2bc6d330d4a2494acf0dafbf5df3a755dd0ab8ae6795f20f3bb5"
+}

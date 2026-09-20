@@ -1,0 +1,10 @@
+The responses identify three alias mechanisms:
+
+- **Command aliases:** `Command.Aliases []string` contains alternatives to the first word in `Use` (`command.go:63-66`). `HasAlias` checks them using `commandNameMatches` (`command.go:1505-1513`).
+- **Noun/argument aliases:** Define alternatives alongside `ValidArgs` using `ArgAliases` (`site/content/completions/_index.md:151-157`); Bash completion emits them through `writeArgAliases` (`bash_completions.go:647-653`).
+- **Bash aliases with completion:** Configure both the shell alias and its completion function (`site/content/completions/_index.md:402-409`):
+
+```bash
+alias aliasname=origcommand
+complete -o default -F __start_origcommand aliasname
+```

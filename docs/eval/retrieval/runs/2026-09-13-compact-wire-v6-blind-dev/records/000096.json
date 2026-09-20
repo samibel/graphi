@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 96,
+  "previous_sha256": "ec5661eb29adde01acca47182f46879e40184c4b66e795c96b0bb2c7695a1f65",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "dc77d7799a9f87087634764b6cff511fbb02f0bb9cdd4c7f1419337c8b415803",
+  "outcome": "fail",
+  "rationale": "FAIL: It describes the validator's scan but omits the execution call site and timing requested by the question.",
+  "sha256": "991d73e62941d2067b2f13268809e9a6db77b139bddf8e4dd5e6298f9f81c314"
+}

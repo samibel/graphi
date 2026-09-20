@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 102,
+  "previous_sha256": "faedd50075033e67a58b3c917e8521962eb21ce2007be17b85c5b413ca0236c1",
+  "kind": "grade",
+  "query_id": "cb-15",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "275184d3e6e6e2ae6974ed9a694abaac0ac1f4cfaed21ca68f3149229cab0370",
+  "outcome": "fail",
+  "rationale": "FAIL: The answer covers flag initialization but not what happens when --version is invoked: the execution-time check, template rendering, and early return. The bundle does not contain that key span, so this is not a sufficient answer to the behavior question.\n",
+  "sha256": "db780b2b4783f686713f15b24a99ff3f3218af9eba3ced33e3aa68facc4679b4"
+}

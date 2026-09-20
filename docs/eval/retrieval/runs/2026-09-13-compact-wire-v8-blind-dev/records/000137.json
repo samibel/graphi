@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 137,
+  "previous_sha256": "7467387e5a0e3082d25de4d411e958bcc471cbb032152ab9a826a6aa17bc5db7",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "76b09385b554030e5bfdd7ad726f6f15b9b25bb5b6f2b979fa8857c40989b859",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly identifies `cmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")`. The preserved bundle supports every material claim: `flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)`; lines 67-71 look up each flag and panic when absent; lines 63-64 state that using more than one flag from the set causes an error; and lines 72-73 state that each call creates a separate group and permits membership in multiple groups. Although the bundle lacks the user-guide example and runtime validation site, those details are not necessary for this concrete answer.\n",
+  "sha256": "f5fdc48c59d2f9a6b427a8bfea89a732d52d2b7fa0caba215d7823e0f0135b07"
+}

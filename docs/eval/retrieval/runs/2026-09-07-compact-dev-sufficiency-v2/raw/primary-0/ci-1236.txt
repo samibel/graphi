@@ -1,0 +1,1 @@
+Use cmd.CalledAs() on a command to inspect the name or alias used to invoke it. It returns an empty string if the command has not been called; otherwise it returns c.commandCalledAs.name (command.go:1515–1522).

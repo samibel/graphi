@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 56,
+  "previous_sha256": "218675221460985acdc3dacc4b249d1df89996bb76e8e8230b0047993818b0c9",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "092fe37d316eb158ef8f4716cf0893dfe358b93a13aef83b7ece82a8017719b5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows that `OnInitialize` callbacks run from `preRun` during execution, but it does not show how to retrieve a persistent flag's parsed value inside such a callback.",
+  "sha256": "ad12d0bcb563ba1c062b113576e6ac57ea1eefa5c95e2622bb0273ea8ec78fee"
+}

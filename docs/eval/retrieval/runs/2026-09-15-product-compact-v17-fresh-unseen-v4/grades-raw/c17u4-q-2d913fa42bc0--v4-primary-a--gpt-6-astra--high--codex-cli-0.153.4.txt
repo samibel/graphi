@@ -1,0 +1,1 @@
+PASS: The response identifies the deprecated compatibility behavior of routing usage and error messages to the same writer, correctly names `c.outWriter` and `c.errWriter`, and cites lines preserved in the bundle. Its deprecation and nil-output statements match the bundled comments.

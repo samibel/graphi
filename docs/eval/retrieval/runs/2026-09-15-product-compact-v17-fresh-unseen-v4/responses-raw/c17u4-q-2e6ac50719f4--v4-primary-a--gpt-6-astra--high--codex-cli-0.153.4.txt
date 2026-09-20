@@ -1,0 +1,6 @@
+The four boolean switches in `CompletionOptions` (`completions.go:105–116`) are:
+
+- **`DisableDefaultCmd`**: Prevents creation of the default `completion` command (lines 106–107).
+- **`DisableNoDescFlag`**: Prevents creation of `--no-descriptions` for shells supporting descriptions (lines 108–110).
+- **`DisableDescriptions`**: Turns off all completion descriptions for shells supporting them (lines 111–113).
+- **`HiddenDefaultCmd`**: Hides the default `completion` command (lines 114–115).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-3f8b-7f01-bb0e-0c57298c8b41"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).GetFlagCompletionFunc(flagName string)` retrieves a flag’s completion callback and a boolean indicating whether it is registered.\n\n- Resolves the flag using `c.Flag(flagName)`; returns `nil, false` if absent (`completions.go:150–153`).\n- Reads `flagCompletionFunctions[flag]` under `flagCompletionMutex.RLock()` and returns the callback and map-presence boolean (`completions.go:156–160`).\n- The callback signature is `func(*Command, []string, string) ([]string, ShellCompDirective)` (`completions.go:149`).\n\nFlag lookup checks the command’s flags, then `c.persistentFlag(name)` (`command.go:1794–1803`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17235,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":158,"reasoning_output_tokens":0}}

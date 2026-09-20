@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+what is the lifecycle of running a root command from Execute to the Run hooks
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"15 ranked source span(s) for \"what is the lifecycle of running a root command from Execute to the Run hooks\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command_test.go","start_line":2588,"end_line":2589,"text":"func TestNoRootRunCommandExecutedWithoutVersionSet(t *testing.T) {\n\trootCmd := \u0026Command{Use: \"root\", Long: \"Long description\"}"},{"path":"command_test.go","start_line":2574,"end_line":2575,"text":"func TestNoRootRunCommandExecutedWithVersionSet(t *testing.T) {\n\trootCmd := \u0026Command{Use: \"root\", Version: \"1.0.0\", Long: \"Long description\"}"},{"path":"command.go","start_line":1056,"end_line":1058,"text":"\n\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {"},{"path":"command.go","start_line":943,"end_line":944,"text":"\t\t\t// When EnableTraverseRunHooks is set:\n\t\t\t// - Execute all persistent pre-runs from the root parent till this command."},{"path":"command_test.go","start_line":32,"end_line":32,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {"},{"path":"command_test.go","start_line":37,"end_line":37,"text":"func executeCommandWithContext(ctx context.Context, root *Command, args ...string) (output string, err error) {"},{"path":"command_test.go","start_line":241,"end_line":242,"text":"\n\trootCmd := \u0026Command{Use: \"root\", Run: run, PreRun: run}"},{"path":"command_test.go","start_line":185,"end_line":186,"text":"\n\trootCmd := \u0026Command{Use: \"root\", Run: ctxRun, PreRun: ctxRun}"},{"path":"command_test.go","start_line":214,"end_line":215,"text":"\n\trootCmd := \u0026Command{Use: \"root\", Run: ctxRun, PreRun: ctxRun}"},{"path":"command.go","start_line":1029,"end_line":1030,"text":"// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {"},{"path":"command.go","start_line":1038,"end_line":1038,"text":"func (c *Command) Execute() error {"},{"path":"command.go","start_line":1046,"end_line":1046,"text":"func (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {"},{"path":"command.go","start_line":257,"end_line":257,"text":"// Context returns underlying command context. If command was executed"},{"path":"command.go","start_line":1402,"end_line":1402,"text":"\tc.Print(fmt.Sprintln(i...))"},{"path":"command.go","start_line":1422,"end_line":1422,"text":"\tc.PrintErr(fmt.Sprintf(format, i...))"}],"provenance":{"input_sha256":"0d32108ce984b0e2cd6a345e89a4717f0d1730027341e719a8417bf3b0a9589e","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

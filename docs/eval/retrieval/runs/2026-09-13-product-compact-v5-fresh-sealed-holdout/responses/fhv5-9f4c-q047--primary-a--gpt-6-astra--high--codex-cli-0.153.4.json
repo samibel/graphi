@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q047",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "2aeb34120ac1c15311996e798bb8c904f6338d7f1657a88c5d71d6560600c21f",
+  "bundle_sha256": "43faec66082e8ebae92eb1f185308c98c538f48a99240a24d2eac9583f8c071b",
+  "prompt_sha256": "735b40b902396638999887e0d940c8866d4706110c66437526824e2be2a2673c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "- Setting `\u003cPROGRAM\u003e_ACTIVE_HELP=0` disables Active Help for that program: `GetActiveHelpConfig` reads the program-specific variable, and completion removes all Active Help entries when the returned value is `\"0\"` (`active_help.go:46–57`; `completions.go:216–217`).\n- Setting `COBRA_ACTIVE_HELP=0` globally disables Active Help for programs using this mechanism, overriding their program-specific settings: `GetActiveHelpConfig` is documented to always return `\"0\"` in that case (`active_help.go:49–56`).",
+  "responded_at": "2026-09-13T12:37:04Z",
+  "sha256": "20a5720d07fc96ab73b4477d2e1965524c5ba616ac618cd2830e9c1e306d194c"
+}

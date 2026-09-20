@@ -1,0 +1,1 @@
+The validator returned by `ExactArgs(2)` returns the error `accepts 2 arg(s), received 3`. In `args.go`, `ExactArgs` checks `len(args) != n` (line 96) and formats that error with `n` and `len(args)` (line 97).

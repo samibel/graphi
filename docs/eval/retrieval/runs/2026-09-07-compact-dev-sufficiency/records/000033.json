@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 33,
+  "previous_sha256": "a6e243a77d8a962ca64052d9fcf8989b7d9bbf3962221f4a1063395b53d9a38e",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "8a809cbab683ea11ae335155af22ef81cf377e87568c02102923fcd847107431",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows how `Parent()` returns the parent command (`command.go:1843–1844`) and names flag accessors, but omits the flag-value retrieval API and the behavior needed to distinguish local parent flags from inherited persistent flags.\n",
+  "sha256": "72edd47d536e2fc9515a5eb6719cb3fcafa74192b3f7c88e9e0ef6f1bbc64735"
+}

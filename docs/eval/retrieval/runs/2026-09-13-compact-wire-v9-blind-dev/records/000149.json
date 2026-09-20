@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 149,
+  "previous_sha256": "4b09834c4526fcd4e05d680922bbf32b654a266a93d23e987499ccc39fecaf4c",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "bb1c043a7032316787d322815e558e75051653309115800c1b84a2dc9ca39427",
+  "outcome": "fail",
+  "rationale": "The candidate correctly explains that the default `BoolP(\"help\", \"h\", ...)` flag makes the two spellings indistinguishable, but it does not answer the broader question correctly. The bundle explicitly says `InitDefaultHelpFlag` “will do nothing” when `c.Flags().Lookup(\"help\") != nil` (`command.go:1183-1198`), supporting the possibility of predeclaring a custom `help` flag and handling `-h` separately. The candidate’s qualified “No” omits this supported customization path, so it is insufficient.\n",
+  "sha256": "902315690fd015ae100f165ea9da72ffd0c1fd81c7f01bc74570d9e81a72ee93"
+}

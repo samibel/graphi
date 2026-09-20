@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-771:primary-a
+Outcome: fail
+Rationale: Describes portable callbacks for already supported shells but omits the development key's custom-shell integration mechanism: invoking __complete and parsing completion lines, the final directive, and stderr.

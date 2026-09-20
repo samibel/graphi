@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-14:primary-b
+Outcome: pass
+Rationale: Accurately traces shell requests through hidden __complete, initCompleteCmd configuration, and its Run callback to getCompletions using completions.go:27-29,193-208.

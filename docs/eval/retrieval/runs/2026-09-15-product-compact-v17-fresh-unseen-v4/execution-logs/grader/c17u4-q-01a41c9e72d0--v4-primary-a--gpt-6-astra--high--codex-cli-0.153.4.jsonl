@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c8-64c5-7621-b1fa-c837b956b950"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies all accepted argument cases and the root-with-subcommands, nonempty-arguments error condition. Its error formatting and suggestion behavior are supported by the preserved spans, and all citations resolve inside the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17838,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":49,"reasoning_output_tokens":0}}

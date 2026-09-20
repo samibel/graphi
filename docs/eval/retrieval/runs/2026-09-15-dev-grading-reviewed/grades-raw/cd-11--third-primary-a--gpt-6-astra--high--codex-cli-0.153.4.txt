@@ -1,0 +1,1 @@
+PASS: The response accurately describes hasSeeAlso’s parent check, qualifying subcommand check, and false fallback. Its explanation of IsAvailableCommand and all cited paths and line ranges are supported by the preserved transcript.

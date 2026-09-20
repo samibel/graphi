@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-7d4b-77d2-8c5d-8acafc3151dc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"To create a Bash alias with completions, use:\n\n```bash\nalias aliasname=origcommand\ncomplete -o default -F __start_origcommand aliasname\n```\n\nReplace `origcommand` with your program’s command name and `aliasname` with your chosen alias. The “Aliases” section explicitly documents this setup in `site/content/completions/_index.md:402–408`."}}
+{"type":"turn.completed","usage":{"input_tokens":18341,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+Required flags are validated by `(*Command).ValidateRequiredFlags` in `command.go:1146-1169`. Unless flag parsing is disabled, it visits all applicable flags, finds those annotated `BashCompOneRequiredFlag=true` that were not changed, and returns `required flag(s) ... not set` listing the missing names.

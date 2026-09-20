@@ -1,0 +1,1 @@
+Set your command's CompletionOptions.DisableDefaultCmd = true before default completion initialization. completions.go:106–107 documents that this prevents creation of the default completion command, and lines 684–686 return immediately when the option is true.

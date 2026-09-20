@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 88,
+  "previous_sha256": "ba8ae16f24953b5b4937bc7a42f95144a71d20071eee12e1488686329b3743b5",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "c85bfdfd65ea7364a4e10908056967125a2c8f8c942b2fa63b6f7f7bf0356c1b",
+  "outcome": "pass",
+  "rationale": "The answer locates and explains the requested registration method using its preserved comment and signature at completions.go:132-134. The callback contract is fully shown, cross-shell support appears at shell_completions.go:52-53, and the getter's comment/signature at completions.go:148-150 supports retrieval and availability.\n",
+  "sha256": "57cec6f732c372e63bcbca553cd158052533678242976b75e667c82a13d14460"
+}

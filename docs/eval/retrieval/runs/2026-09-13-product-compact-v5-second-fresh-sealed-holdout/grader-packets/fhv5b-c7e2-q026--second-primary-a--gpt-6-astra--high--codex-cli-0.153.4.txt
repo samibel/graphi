@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 9c7ccf17c5645b1fdd44d3b5e45385fcd6b3a6af13bd746242eeaf8a3dc23b05
+QUERY ID: fhv5b-c7e2-q026
+
+QUESTION:
+Where does usage rendering look for a custom function, and what does the built-in fallback prepare and render?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:424-441 anchor="c.mergePersistentFlags()" reason=It prefers the current command's custom function, inherits from parents, and otherwise merges persistent flags and executes the usage template to the ordinary output-with-stderr fallback while reporting template errors.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 0bda4c851374; read in order (322/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":443,"end_line":448,"text":"// Usage puts out the usage for the command.\n// Used when a user provides invalid input.\n// Can be defined by user by overriding UsageFunc.\nfunc (c *Command) Usage() error {\n\treturn c.UsageFunc()(c)\n}"},{"path":"site/content/user_guide.md","start_line":548,"end_line":560,"text":"cmd.SetHelpFunc(f func(*Command, []string))\ncmd.SetHelpTemplate(s string)\n```\n\nThe latter two will also apply to any children commands.\n\n## Usage Message\n\nWhen the user provides an invalid flag or invalid command, Cobra responds by\nshowing the user the 'usage'.\n\n### Example\nYou may recognize this from the help above. That's because the default help"},{"path":"command.go","start_line":424,"end_line":441,"text":"// UsageFunc returns either the function set by SetUsageFunc for this command\n// or a parent, or it returns a default usage function.\nfunc (c *Command) UsageFunc() (f func(*Command) error) {\n\tif c.usageFunc != nil {\n\t\treturn c.usageFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().UsageFunc()\n\t}\n\treturn func(c *Command) error {\n\t\tc.mergePersistentFlags()\n\t\terr := tmpl(c.OutOrStderr(), c.UsageTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t\treturn err\n\t}\n}"},{"path":"command.go","start_line":445,"end_line":445,"text":"// Can be defined by user by overriding UsageFunc."},{"path":"command.go","start_line":306,"end_line":309,"text":"// SetUsageFunc sets usage function. Usage can be defined by application.\nfunc (c *Command) SetUsageFunc(f func(*Command) error) {\n\tc.usageFunc = f\n}"},{"path":"command.go","start_line":311,"end_line":311,"text":"// SetUsageTemplate sets usage template. Can be defined by Application."},{"path":"command.go","start_line":544,"end_line":553,"text":"func (c *Command) UsageTemplate() string {\n\tif c.usageTemplate != \"\" {\n\t\treturn c.usageTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.UsageTemplate()\n\t}\n\treturn `Usage:{{if .Runnable}}\n  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}"},{"path":"command.go","start_line":97,"end_line":100,"text":"\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator.\n\t// For portability with other shells, it is recommended to instead use ValidArgsFunction\n\tBashCompletionFunction string\n"},{"path":"command.go","start_line":48,"end_line":48,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires"},{"path":"bash_completions.go","start_line":536,"end_line":540,"text":"func prepareCustomAnnotationsForFlags(cmd *Command) {\n\tflagCompletionMutex.RLock()\n\tdefer flagCompletionMutex.RUnlock()\n\tfor flag := range flagCompletionFunctions {\n\t\t// Make sure the completion script calls the __*_go_custom_completion function for"},{"path":"bash_completions.go","start_line":551,"end_line":551,"text":"func writeFlags(buf io.StringWriter, cmd *Command) {"},{"path":"cobra.go","start_line":89,"end_line":95,"text":"// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"}],"provenance":{"input_sha256":"f6f94fa7f357b067d5bf71b6097ebc442f1c2e8da9b4f3836c6a456c66af1776","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`Usage()` calls `c.UsageFunc()(c)` (`command.go:446–448`). `UsageFunc()` first checks the command’s own `c.usageFunc`, set by `SetUsageFunc`, then recursively checks its parents (`command.go:306–309, 424–432`).
+
+If none is found, the built-in fallback calls `c.mergePersistentFlags()`, then renders `c.UsageTemplate()` to `c.OutOrStderr()` with the command `c` as template data. It prints any rendering error using `c.PrintErrln(err)` and returns that error (`command.go:433–441`).
+----- END THE RATER'S RESPONSE -----

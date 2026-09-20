@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 69,
+  "previous_sha256": "4d6760271bdb652736a8c6e6c0ab6d201e3435754db3aac2fc32d14a40c74635",
+  "kind": "response",
+  "query_id": "ci-1236",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "5757a759eea9e355b7089d971844b7b58cc9cc6ed728f7c9fbc7ce7e12fe284b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use cmd.CalledAs() on the command you want to check. It returns the recorded invocation name when c.commandCalledAs.called is true, otherwise an empty string (command.go:1517-1522). Thus a nonempty result identifies a command recorded as called; the supplied excerpt does not show how to obtain the selected child from the root.\n",
+  "sha256": "0920ff4541b29c806f0263b44e6057848303e422bd875e0c2f86ad0a642eb906"
+}

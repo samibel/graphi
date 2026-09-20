@@ -1,0 +1,1 @@
+For this exact-path query the answer describes actual symbols in the named file. The annotation constants are preserved at flag_groups.go:25-29, the complete lookup loop at 111-119 supports the missing-name behavior, and 144-158 shows sorted groups, unset collection and both skip conditions. It correctly limits the validator description to the shown prefix.

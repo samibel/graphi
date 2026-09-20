@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 166,
+  "previous_sha256": "2fd4673ad64bd899c953376b9e3233fb2c3cec9c04a2243c238144c5e851e8e6",
+  "kind": "grade",
+  "query_id": "cb-09",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "8d965a23a02ae90b543c449dd03a785def53aabbab5a1ddcf400ed5ef3de6989",
+  "outcome": "pass",
+  "rationale": "The candidate concretely and accurately summarizes all declarations preserved in the bundle. Package `cobra` is supported at shell_completions.go:15; the nine listed function signatures are supported at lines 24, 29–31, 35–38, 42–44, 54, 58–61, 71–77, 83, and 94–96. The stated behaviors are supported by the preserved comments, including required-flag handling (29–38), filename/extension completion (42–44 and 58–61), directory completion (94–96), and Bash-only custom completion with the recommendation to use `RegisterFlagCompletionFunc` for cross-shell support (71–77).\n",
+  "sha256": "2cb621cd1a6dbd3658b49cde7a22a3975dd961b297875edb1a25095608b55c1c"
+}

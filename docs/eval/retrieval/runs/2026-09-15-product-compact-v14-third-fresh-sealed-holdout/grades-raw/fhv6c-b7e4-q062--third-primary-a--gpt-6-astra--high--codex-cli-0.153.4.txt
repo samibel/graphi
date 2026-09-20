@@ -1,0 +1,1 @@
+FAIL: The Bash alias setup is supported by `site/content/completions/_index.md:402–408`, but the response omits the essential command-alias emission behavior in `writeCmdAliases`. The transcript preserves only its signature at `bash_completions.go:632`; the follow-up provides no implementation details.

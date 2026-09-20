@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-9b4d-7491-ab17-c748cc265143"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`CompError` prefixes the diagnostic with `[Error] ` and routes it to standard error by calling `CompDebug(msg, true)` (`completions.go`, lines 892–896)."}}
+{"type":"turn.completed","usage":{"input_tokens":16380,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

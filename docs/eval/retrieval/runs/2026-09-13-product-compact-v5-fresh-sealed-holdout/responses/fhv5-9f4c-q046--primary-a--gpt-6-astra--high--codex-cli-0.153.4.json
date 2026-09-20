@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q046",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "66e474a91af6b3a987700f8e5108e772d1e6895b8ba1d8ead519a58efdcd0edd",
+  "bundle_sha256": "9a5e125aa09220180a3c2b3731f4de2083ea4cbb0587d3a29b8c355b8b3b46e5",
+  "prompt_sha256": "911e4b1c07c4f3fafc7324537067fe05a6b778a98089031181be078de3e111f3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response documents `\u003cPROGRAM\u003e_ACTIVE_HELP` naming (`site/content/active_help.md:143`) but contains no application completion code showing how it calls `GetActiveHelpConfig` or uses the returned value.",
+  "responded_at": "2026-09-13T12:36:56Z",
+  "sha256": "571ac0aaaa76156eca35ec8421cc932158a068679aed0a43bab3784bbcbf294a"
+}

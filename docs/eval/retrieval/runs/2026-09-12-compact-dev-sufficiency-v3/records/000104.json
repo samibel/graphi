@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 104,
+  "previous_sha256": "494eb589d1f837a29986887990c6f5ad8304c1bd7d99615fa7f103c94e5b54bb",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "ff7ffe08d5a92cffd81381bc5c67fd248fd9b5e4ec5ed940ae7101f47967ad93",
+  "outcome": "pass",
+  "rationale": "The merge body adds own and collected parent persistent flags to Flags, while the preserved updateParentsPflags comment and local accessors support the remaining claims.\n",
+  "sha256": "30bde15179735c45180ec4551820365a4f3d8ccc43fafebdc2212c9d4ce7c123"
+}

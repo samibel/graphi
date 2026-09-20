@@ -1,0 +1,3 @@
+No. `HasPersistentFlags()` returns `c.PersistentFlags().HasFlags()` (`command.go:1757–1758`). `PersistentFlags()` returns `c.pflags`, documented as flags “specifically set in the current command” (`command.go:1725–1734`).
+
+Parent persistent flags are stored separately in `parentsPflags` (`command.go:160–161`) and merged into `c.Flags()`, not `c.PersistentFlags()` (`command.go:1847–1853`). Thus, flags inherited only from a parent do not make `HasPersistentFlags()` return true.

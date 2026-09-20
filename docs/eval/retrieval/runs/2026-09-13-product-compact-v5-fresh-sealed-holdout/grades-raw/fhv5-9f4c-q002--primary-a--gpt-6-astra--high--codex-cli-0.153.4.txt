@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that COBRA_ACTIVE_HELP="0" overrides the program-specific setting; otherwise, the program-specific value is returned without a global fallback. The variable naming rules and cited locations are supported by the preserved bundle.

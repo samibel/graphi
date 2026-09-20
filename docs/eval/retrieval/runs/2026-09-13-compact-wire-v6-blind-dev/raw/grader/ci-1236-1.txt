@@ -1,0 +1,1 @@
+PASS: It correctly explains CalledAs's selected-command state and empty result for a command that was not called.

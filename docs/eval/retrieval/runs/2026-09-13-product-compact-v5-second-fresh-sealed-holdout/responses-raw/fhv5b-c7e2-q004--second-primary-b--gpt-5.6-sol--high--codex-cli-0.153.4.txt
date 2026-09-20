@@ -1,0 +1,7 @@
+`MinimumNArgs` compares `len(args) < n`. If true, it returns:
+
+```go
+fmt.Errorf("requires at least %d arg(s), only received %d", n, len(args))
+```
+
+Otherwise, it returns `nil` ([args.go, lines 73–81](args.go)). The test confirms that `MinimumNArgs(2)` with one argument produces `"requires at least 2 arg(s), only received 1"` ([args_test.go, lines 66–75](args_test.go)).

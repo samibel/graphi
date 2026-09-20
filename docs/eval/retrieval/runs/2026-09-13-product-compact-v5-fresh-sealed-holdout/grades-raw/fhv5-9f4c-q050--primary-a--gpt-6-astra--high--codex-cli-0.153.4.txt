@@ -1,0 +1,1 @@
+FAIL: The response does not identify the unsupported annotations, helpers, or directives. The preserved bundle names filtering directives but does not establish that Fish ignores them or supply the required annotation and helper details.

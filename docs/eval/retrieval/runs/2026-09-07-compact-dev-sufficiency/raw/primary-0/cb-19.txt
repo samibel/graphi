@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the execution bodies connecting `Execute` to command selection, validation, and the ordered Run hooks, showing only root-execution and persistent-pre-run comments (`command.go:1057–1058`, `command.go:943–944`).

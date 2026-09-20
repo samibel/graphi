@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-8e0c-7871-98ed-683a7e7c5187"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Use `MatchAll`, passing each `PositionalArgs` validator:\n\n```go\ncmd := &cobra.Command{\n    Args: cobra.MatchAll(\n        cobra.ExactArgs(2),\n        cobra.OnlyValidArgs,\n    ),\n}\n```\n\n`args.go:113-123` shows that `MatchAll(pargs ...PositionalArgs)` runs each validator in order and returns the first error. The same combination is demonstrated in `site/content/user_guide.md:386-400`."}}
+{"type":"turn.completed","usage":{"input_tokens":17147,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":103,"reasoning_output_tokens":0}}

@@ -1,0 +1,16 @@
+Use `GenReSTTreeCustom` and supply a `linkHandler func(string, string) string`:
+
+```go
+err := doc.GenReSTTreeCustom(cmd, dir, filePrepender,
+    func(name, ref string) string {
+        return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
+    },
+)
+```
+
+The handler receives the command name and reference and returns the rendered link. Evidence:
+
+- `site/content/docgen/rest.md:107` says `linkHandler` customizes command links and specifically mentions Sphinx `:ref:`.
+- `doc/rest_docs.go:143-145` defines `GenReSTTreeCustom(..., linkHandler func(string, string) string)`.
+- `doc/rest_docs.go:51-54` shows the default handler returns `` `name <ref.rst>`_ ``.
+- `doc/rest_docs.go:132-141` shows plain `GenReSTTree` uses that default handler.

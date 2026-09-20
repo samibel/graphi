@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows only the beginnings of Find and findNext, without the command-matching and argument-consumption logic needed to explain subcommand selection.

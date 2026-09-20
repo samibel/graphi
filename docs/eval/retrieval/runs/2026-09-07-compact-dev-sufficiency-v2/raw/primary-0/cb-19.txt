@@ -1,0 +1,1 @@
+INSUFFICIENT The response provides Execute signatures and a partial hook-order description, but no execution body connecting Execute to argument resolution, validation, and the Run hooks.

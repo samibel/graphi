@@ -1,0 +1,1 @@
+PASS: The response accurately describes calling fn on the immediate parent before recursively visiting successive ancestors, stopping when no parent exists. Its explanation of root visitation and all cited line ranges are supported by the preserved transcript.

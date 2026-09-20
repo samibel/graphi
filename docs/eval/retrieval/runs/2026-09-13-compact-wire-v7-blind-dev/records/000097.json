@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 97,
+  "previous_sha256": "ff6ea9edca9721bb52a597fbd173c42493288ae9318a3c9e2f6138528dac47a4",
+  "kind": "grade",
+  "query_id": "cb-14",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2e53e1ad5fc306f07fc58cc595a466488c18f8ba7a5ead89013e02062a089303",
+  "outcome": "pass",
+  "rationale": "The answer correctly identifies the dispatch chain supported by the bundle: `completions.go:26-33` defines `__complete` (`ShellCompRequestCmd`) as the hidden command used by shell completion scripts; the Bash, Zsh, Fish, and PowerShell generator snippets select that command; and `completions.go:205-215` shows the command’s `Run` handler calling `cmd.getCompletions(args)`, which is the concrete handoff to completion logic. It also correctly cites the `ShellCompNoDescRequestCmd` constant and the handler’s `cmd.CalledAs() == ShellCompNoDescRequestCmd` check for description-free requests.\n",
+  "sha256": "a0a0e559da281f248099c8089aee9eca26082685dc2f7de2c41181fcb55da1e4"
+}

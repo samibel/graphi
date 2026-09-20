@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c4-145d-7e42-987a-0e272e613ddf"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`help child` targets the **child command’s help**. In `command_test.go:931–961`, `TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag` calls `executeCommand(parent, \"help\", \"child\")` and requires output containing `Usage: parent child [flags]` and `help for child`. It also requires the child’s `--foo` to shadow the parent’s `--foo`, while the parent’s unshadowed `--bar` appears under `Global Flags`."}}
+{"type":"turn.completed","usage":{"input_tokens":17268,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":110,"reasoning_output_tokens":0}}

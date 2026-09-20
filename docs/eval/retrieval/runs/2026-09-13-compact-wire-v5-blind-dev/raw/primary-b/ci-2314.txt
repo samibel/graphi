@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows one shared help flag initialized by `InitDefaultHelpFlag` and one overridable `HelpFunc`, but it does not show any mechanism for distinguishing whether that flag was invoked as `-h` versus `--help`.

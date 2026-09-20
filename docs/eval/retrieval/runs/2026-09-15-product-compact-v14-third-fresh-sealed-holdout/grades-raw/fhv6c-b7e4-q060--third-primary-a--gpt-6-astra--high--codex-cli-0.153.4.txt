@@ -1,0 +1,1 @@
+FAIL: The response explains positional-argument validation but omits the essential behavior of blank argument strings surrounding a valid flag. The transcript preserves only the `TestEmptyInputs` declaration, not its body, and the follow-up guide does not supply that missing behavior.

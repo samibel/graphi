@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-3a40-7941-b9a1-c691d4aac2ea"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Command.SetOutput(output io.Writer)` sets both `c.outWriter` and `c.errWriter` to the same writer; it is deprecated in favor of `SetOut`/`SetErr` ([command.go:280–286]). Output resolution uses the command’s writer, then inherits from its parent, then falls back to the supplied default ([command.go:394–402]). A `nil` output ultimately defaults usage and error messages to `os.Stderr` ([command.go:280–282])."}}
+{"type":"turn.completed","usage":{"input_tokens":16331,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":175,"reasoning_output_tokens":66}}

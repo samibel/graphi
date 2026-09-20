@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 40,
+  "previous_sha256": "a88130543165a67f44354187e45f63fcd475b821485c6f1a5b9bc5b296fd1d47",
+  "kind": "response",
+  "query_id": "ci-943",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "b456c1ead0e7596ba87cdc5de6f9a20bd59f153b258e88b30ad90fc5ca50d8dd",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`--version` is only created automatically when the command's `Version` field is non-empty and the command has not already defined a `version` flag (`command.go:108-109`, `command.go:1202-1203`). Set `cmd.Version` before execution; Cobra then adds its boolean version flag and marks it as Cobra-created (`command.go:1221-1225`). If needed, customize the rendered output with `SetVersionTemplate` (`command.go:352-355`); otherwise the inherited/default template prints the command name and version (`command.go:598-609`).\n",
+  "sha256": "967cbce0e4dc452e95f87ddbf212dbfb4291413984fcee5c52854454eb06dbc0"
+}

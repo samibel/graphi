@@ -1,0 +1,1 @@
+`shortHasNoOptDefVal` uses the first byte of `name` for shorthand lookup: `fs.ShorthandLookup(name[:1])` in `command.go:636`.

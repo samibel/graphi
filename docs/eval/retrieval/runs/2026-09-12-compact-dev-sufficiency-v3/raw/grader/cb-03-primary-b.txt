@@ -1,0 +1,1 @@
+The full preserved tree-generator implementation supports the described recursion, skipped help topics, file creation and Markdown-writing behavior.

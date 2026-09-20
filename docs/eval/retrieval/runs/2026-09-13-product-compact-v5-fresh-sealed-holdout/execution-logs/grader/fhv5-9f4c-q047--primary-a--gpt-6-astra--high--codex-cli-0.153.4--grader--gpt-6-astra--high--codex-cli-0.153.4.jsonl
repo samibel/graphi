@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad5-29fe-7ed3-9254-e30480a103f7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle supports both effects: the program-specific value \"0\" causes completion to remove Active Help entries, while COBRA_ACTIVE_HELP=0 overrides program-specific settings and forces GetActiveHelpConfig to return \"0\". The cited ranges exist and support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18041,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":29}}

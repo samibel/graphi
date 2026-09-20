@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 59,
+  "previous_sha256": "bc3fb81524e134637c89d1b95a1a97cd0b339247e2fa01e146456c4f0904aa0c",
+  "kind": "response",
+  "query_id": "cb-25",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "96c3f30d9b47b9e362a0385c3761c1d41abbd693e1c0e7d1c2f6e29ef3aded66",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set `rootCmd.CompletionOptions.DisableDefaultCmd = true` before the default completion command is initialized. The field is explicitly documented to prevent creation of the default `completion` command (`completions.go:106–107`), and `InitDefaultCompletionCmd` immediately returns when `c.CompletionOptions.DisableDefaultCmd` is true (`completions.go:678–686`).\n",
+  "sha256": "b7ef297b88dee79a49346509de05cd3101754ca93888b2533f23046db820edc9"
+}

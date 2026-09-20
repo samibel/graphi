@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-34f80c3a927e",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "ad0f2e405806b4cd7fdbac6d2f07bdad8c8309b79802477b72fb499ede197806",
+  "bundle_sha256": "18ecbf2f16a08a2e43e9932100249a901a84d5edc4faf2864eb081e01655d506",
+  "prompt_sha256": "70170ba0785bcef97f288927051ebb4ba8484286b26b74ae1961db652ee8e09d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Install a custom help command by calling:\n\n```go\nparentCmd.SetHelpCommand(customHelpCmd)\n```\n\nEvidence: [`command.go:326-330`](command.go:326) defines `func (c *Command) SetHelpCommand(cmd *Command)` and assigns the supplied command to `c.helpCommand`. Cobra otherwise automatically adds a help command when subcommands exist, per [`site/content/user_guide.md:492-495`](site/content/user_guide.md:492).",
+  "responded_at": "2026-09-15T20:28:48Z",
+  "sha256": "1f2b252ae7b8fb1a2a602b2595fa3de55e350bdf2ab2fb126f289f40420617b5"
+}

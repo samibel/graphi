@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q022",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "528084fa84dcde6a482457f58f2e1098f49db1f7915d95e0296ea0ac25b90b0a",
+  "bundle_sha256": "c1571b6c773e86504605384222d78d086c7e7ee6fa590b09a66b3da339f0a7e0",
+  "prompt_sha256": "609700a46554dab444402bb8f73c4050216be7100e24672c1dc9693cc2f0a4ca",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "When launched from Explorer on Windows, if `MousetrapHelpText` is non-empty, the command prints that text (`command_win.go:31–32`, `mousetrap.StartedByExplorer()` and `c.Print(MousetrapHelpText)`). The default message tells the user to open `cmd.exe` and run the tool there (`cobra.go:67–75`). Its configured display duration defaults to five seconds (`cobra.go:77–83`).",
+  "responded_at": "2026-09-13T12:33:14Z",
+  "sha256": "f4686db20da126ede3f949397a9e0aac26cdbfc605d487f68f72c3ae4a6c9db4"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d3-987b-7ab1-a52a-5d3c357dce73"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response shows installing a custom callback with SetUsageFunc, matching the reviewed setter behavior. The template alternative and callback invocation are supported by the bundle, and all cited spans resolve within it."}}
+{"type":"turn.completed","usage":{"input_tokens":17656,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":44,"reasoning_output_tokens":0}}

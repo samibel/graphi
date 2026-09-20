@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q026",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "578a3ff26a571aa1ac9df68a69e342ead3d22afec5ce016d1fc1deae7ec46b18",
+  "bundle_sha256": "9861bdb8f2a31517dd8604f743933f571f73d54919133b4ab1894df859bdf199",
+  "prompt_sha256": "144524afc9c641b1edab786ed75ffb6e560de3d62b73341af161f1f03512e0cd",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetErr(nil)` makes `ErrOrStderr()` return the nearest ancestor’s non-nil error writer, or `os.Stderr` if none exists.\n\nEvidence: `SetErr` clears `c.errWriter` (`command.go:294–298`); `ErrOrStderr` calls `c.getErr(os.Stderr)` (`384–387`); `getErr` checks the current writer, recursively checks parents, then returns the default (`404–412`).",
+  "responded_at": "2026-09-15T08:29:51Z",
+  "sha256": "a20bc555375e96d36fe9e13c96ae2902aafbd29b61208fae10e6a63437ba8760"
+}

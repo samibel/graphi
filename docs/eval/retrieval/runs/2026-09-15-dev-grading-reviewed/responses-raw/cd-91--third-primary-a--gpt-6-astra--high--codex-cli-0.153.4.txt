@@ -1,0 +1,15 @@
+`Group` is a struct for managing command groups, defined in `command.go:41–45`:
+
+```go
+type Group struct {
+    ID    string
+    Title string
+}
+```
+
+Related command functionality:
+
+- `GroupID string` identifies the group under which a subcommand appears in its parent’s help output (`command.go:73–74`).
+- `(*Command).AddGroup(groups ...*Group)` appends groups to the parent command (`command.go:1356–1359`).
+- `(*Command).Groups() []*Group` returns its child command groups (`command.go:1331–1334`).
+- `(*Command).ContainsGroup(groupID string) bool` checks whether any stored group’s `ID` matches the supplied ID (`command.go:1346–1354`).

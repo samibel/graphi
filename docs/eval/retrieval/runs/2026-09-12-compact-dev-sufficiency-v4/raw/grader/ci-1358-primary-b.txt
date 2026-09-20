@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-1358:primary-b
+Outcome: pass
+Rationale: Gives the correct MarkFlagsMutuallyExclusive procedure after flag definition and the at-most-one invocation rule, both supported by the marker contract; completion behavior is also documented.

@@ -1,0 +1,1 @@
+PASS: The response identifies the templateFuncs map and its built-in helpers, explains its registration and execution in tmpl, and accurately describes function registration and template inheritance. The cited spans exist and support these behaviors.

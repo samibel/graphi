@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-8e81-7773-9974-9c1de8b61b44"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `cmd.SetUsageTemplate` with your template string:\n\n```go\ncmd.SetUsageTemplate(\"Usage: myapp [options]\\n\")\n```\n\nThe guide documents this method in `site/content/user_guide.md:583–591`. Its implementation stores the string in `c.usageTemplate` (`command.go:311–314`), and the default usage function renders `c.UsageTemplate()` with the command as template data (`command.go:424–441`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17332,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":0}}

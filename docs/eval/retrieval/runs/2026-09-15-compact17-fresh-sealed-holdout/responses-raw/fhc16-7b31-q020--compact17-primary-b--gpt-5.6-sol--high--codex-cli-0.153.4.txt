@@ -1,0 +1,8 @@
+In `doc/yaml_docs.go`, the fields with explicit snake_case YAML names are:
+
+- `cmdDoc.InheritedOptions` → `inherited_options`
+- `cmdDoc.SeeAlso` → `see_also`
+
+Additionally, the nested `cmdOption.DefaultValue` field → `default_value`.
+
+Evidence: `doc/yaml_docs.go:29-46`, specifically the tags `yaml:"inherited_options,omitempty"`, `yaml:"see_also,omitempty"`, and `yaml:"default_value,omitempty"`.

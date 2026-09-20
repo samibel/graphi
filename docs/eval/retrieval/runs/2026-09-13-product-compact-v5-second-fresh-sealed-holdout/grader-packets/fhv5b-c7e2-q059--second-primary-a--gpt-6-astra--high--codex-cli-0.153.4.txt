@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 126acd95bec1401c81e05594bc44bf595ca7ff42c81b03f992a5a76039b9e8ff
+QUERY ID: fhv5b-c7e2-q059
+
+QUESTION:
+Does alias recognition always require exact case, or can the global command-name setting affect it?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1505-1513 anchor="if commandNameMatches(a, s)" reason=Every alias comparison delegates to commandNameMatches, so the global case-insensitive command-name setting applies.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 34a7cf291bff; read in order (322/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":48,"end_line":55,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:\n\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n\t//   ... indicates that you can specify multiple values for the previous argument."},{"path":"command.go","start_line":206,"end_line":206,"text":"\tcommandsAreSorted bool"},{"path":"command.go","start_line":1524,"end_line":1538,"text":"// hasNameOrAliasPrefix returns true if the Name or any of aliases start\n// with prefix\nfunc (c *Command) hasNameOrAliasPrefix(prefix string) bool {\n\tif strings.HasPrefix(c.Name(), prefix) {\n\t\tc.commandCalledAs.name = c.Name()\n\t\treturn true\n\t}\n\tfor _, alias := range c.Aliases {\n\t\tif strings.HasPrefix(alias, prefix) {\n\t\t\tc.commandCalledAs.name = alias\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"cobra.go","start_line":61,"end_line":62,"text":"// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive"},{"path":"command.go","start_line":1876,"end_line":1885,"text":"// commandNameMatches checks if two command names are equal\n// taking into account case sensitivity according to\n// EnableCaseInsensitive global configuration.\nfunc commandNameMatches(s string, t string) bool {\n\tif EnableCaseInsensitive {\n\t\treturn strings.EqualFold(s, t)\n\t}\n\n\treturn s == t\n}"},{"path":"command.go","start_line":1505,"end_line":1513,"text":"// HasAlias determines if a given string is an alias of the command.\nfunc (c *Command) HasAlias(s string) bool {\n\tfor _, a := range c.Aliases {\n\t\tif commandNameMatches(a, s) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1525,"end_line":1525,"text":"// with prefix"},{"path":"command.go","start_line":1109,"end_line":1110,"text":"\t// We have to pass global context to children command\n\t// if context is present on the parent command."},{"path":"command.go","start_line":1051,"end_line":1051,"text":"// ExecuteC executes the command."},{"path":"shell_completions.go","start_line":21,"end_line":26,"text":"// MarkFlagRequired instructs the various shell completion implementations to\n// prioritize the named flag when performing completion,\n// and causes your command to report an error if invoked without the flag.\nfunc (c *Command) MarkFlagRequired(name string) error {\n\treturn MarkFlagRequired(c.Flags(), name)\n}"},{"path":"command.go","start_line":1540,"end_line":1543,"text":"// NameAndAliases returns a list of the command name and all aliases\nfunc (c *Command) NameAndAliases() string {\n\treturn strings.Join(append([]string{c.Name()}, c.Aliases...), \", \")\n}"},{"path":"command.go","start_line":1147,"end_line":1147,"text":"func (c *Command) ValidateRequiredFlags() error {"}],"provenance":{"input_sha256":"1bb99fbd413270b0d5d3a5dff45229aef3af83fe138f9bef1b076c4dc13a77a1","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Alias recognition does **not always require exact case**. `HasAlias` calls `commandNameMatches(a, s)` (`command.go:1505–1513`), which uses `strings.EqualFold` when global `EnableCaseInsensitive` is true and exact `s == t` otherwise (`command.go:1876–1885`). The setting is documented as case-sensitive by default (`cobra.go:61–62`).
+
+The separate alias-prefix check uses `strings.HasPrefix` directly, so it remains case-sensitive (`command.go:1524–1538`).
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 71,
+  "previous_sha256": "1ff88fb21b4f2d180c9c84c939e1153258bddc37fcc1ae23411dda98b91a9a35",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "76b9f41f2a8144d84d5ec66c425ecfea27fe957472bf6167b179de5c6aa2ce91",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the global option as a persistent flag on an ancestor, then access it from the running subcommand with `cmd.Flag(\"long-name\")`. `Flag` first checks the command's flags and then recursively searches matching persistent flags up the command tree (`command.go:1794-1807`). For a one-letter shorthand, resolve it through `cmd.Flags().ShorthandLookup` or `cmd.InheritedFlags().ShorthandLookup` before calling `cmd.Flag` with the long name, as `findFlag` demonstrates (`completions.go:841-858`).\n",
+  "sha256": "a294a4e40b95421ea7f6f03762ae340ac11cfdf7330acfcdc8cd67f7a4761a0f"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 116,
+  "previous_sha256": "ee7c8099896c2cf40786a155978787c741ffe4d645d437a7516e3669f185ec19",
+  "kind": "grade",
+  "query_id": "cb-30",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "74a8b61109690d32fcd54dfc0e6fa508304d2d743abf615d558b2f8ab1785a9e",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-30:primary-b\nOutcome: pass\nRationale: Gives a supported tree-generation API with Path, optional Header, error handling, and visible child filtering from GenManTreeFromOpts.\n",
+  "sha256": "1c2e7512fe65f149ca20c6d37c86bc3f459df719bb0ed00f18b01ee9666b782d"
+}

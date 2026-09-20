@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 0d9d48c8021c70ac9520810c5f426b02529cf553a1c43dea405dbf7f23e785bc
+QUERY ID: fhv5b-c7e2-q034
+
+QUESTION:
+Trace how command lookup descends the tree while preserving flags and remaining arguments.
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:724-748 anchor="return innerfind(cmd, c.argsMinusFirstX(innerArgs, nextSubCmd))" reason=Find strips flags to identify the next subcommand, recursively removes only that command token while retaining flag/value structure, stops at the deepest match, then applies legacy validation only when Args is nil.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query bfb4ca157087; read in order (320/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":109,"end_line":110,"text":"\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the"},{"path":"command.go","start_line":162,"end_line":162,"text":"\t// globNormFunc is the global normalization function"},{"path":"command.go","start_line":643,"end_line":679,"text":"func stripFlags(args []string, c *Command) []string {\n\tif len(args) == 0 {\n\t\treturn args\n\t}\n\tc.mergePersistentFlags()\n\n\tcommands := []string{}\n\tflags := c.Flags()\n\nLoop:\n\tfor len(args) > 0 {\n\t\ts := args[0]\n\t\targs = args[1:]\n\t\tswitch {\n\t\tcase s == \"--\":\n\t\t\t// \"--\" terminates the flags\n\t\t\tbreak Loop\n\t\tcase strings.HasPrefix(s, \"--\") && !strings.Contains(s, \"=\") && !hasNoOptDefVal(s[2:], flags):\n\t\t\t// If '--flag arg' then\n\t\t\t// delete arg from args.\n\t\t\tfallthrough // (do the same as below)\n\t\tcase strings.HasPrefix(s, \"-\") && !strings.Contains(s, \"=\") && len(s) == 2 && !shortHasNoOptDefVal(s[1:], flags):\n\t\t\t// If '-f arg' then\n\t\t\t// delete 'arg' from args or break the loop if len(args) <= 1.\n\t\t\tif len(args) <= 1 {\n\t\t\t\tbreak Loop\n\t\t\t} else {\n\t\t\t\targs = args[1:]\n\t\t\t\tcontinue\n\t\t\t}\n\t\tcase s != \"\" && !strings.HasPrefix(s, \"-\"):\n\t\t\tcommands = append(commands, s)\n\t\t}\n\t}\n\n\treturn commands\n}"},{"path":"command.go","start_line":1794,"end_line":1794,"text":"// Flag climbs up the command tree looking for matching flag."},{"path":"command.go","start_line":1805,"end_line":1805,"text":"// Recursively find matching persistent flag."},{"path":"flag_groups.go","start_line":225,"end_line":226,"text":"func (c *Command) enforceFlagGroupsForCompletion() {\n\tif c.DisableFlagParsing {"},{"path":"flag_groups.go","start_line":282,"end_line":282,"text":"\t\t\t\t\tif fName != flagName {"},{"path":"completions.go","start_line":276,"end_line":276,"text":"\t// check if we need to traverse here to parse local flags on parent commands"},{"path":"completions.go","start_line":323,"end_line":323,"text":"\tif err = finalCmd.ParseFlags(finalArgs); err != nil {"},{"path":"command.go","start_line":788,"end_line":788,"text":"// Traverse the command tree to find the command, and parse args for"},{"path":"command.go","start_line":795,"end_line":795,"text":"\t\tswitch {"},{"path":"command.go","start_line":1818,"end_line":1838,"text":"// ParseFlags parses persistent flag tree and local flags.\nfunc (c *Command) ParseFlags(args []string) error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tif c.flagErrorBuf == nil {\n\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t}\n\tbeforeErrorBufLen := c.flagErrorBuf.Len()\n\tc.mergePersistentFlags()\n\n\t// do it here after merging all flags and just before parse\n\tc.Flags().ParseErrorsWhitelist = flag.ParseErrorsWhitelist(c.FParseErrWhitelist)\n\n\terr := c.Flags().Parse(args)\n\t// Print warnings if they occurred (e.g. deprecated flag messages).\n\tif c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {\n\t\tc.Print(c.flagErrorBuf.String())\n\t}\n"}],"provenance":{"input_sha256":"a12516cd7d2949369e83d40383a7a1a5db05b9398ca7d03401c030a9094010cd","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response includes `stripFlags` (`command.go:643–679`) and part of `ParseFlags` (`command.go:1818–1838`), but omits the command lookup implementation needed to trace child selection, tree descent, and preservation of flags and remaining arguments.
+----- END THE RATER'S RESPONSE -----

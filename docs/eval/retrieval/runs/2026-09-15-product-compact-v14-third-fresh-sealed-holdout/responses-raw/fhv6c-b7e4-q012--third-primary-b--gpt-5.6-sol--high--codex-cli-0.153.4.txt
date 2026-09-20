@@ -1,0 +1,6 @@
+`cobra_test.go` is in package `cobra` (line 15) and the supplied excerpts show:
+
+- `assertNoErr(t *testing.T, e error)` (lines 22–26), a helper that calls `t.Error(e)` when the error is non-nil.
+- `TestAddTemplateFunctions(t *testing.T)` (lines 28–42), which registers template functions via `AddTemplateFunc` and `AddTemplateFuncs`, applies them to a `Command` usage template, and verifies that `UsageString()` equals `"Hello, world."`.
+
+The response is marked `"truncated": true`, so it does not establish whether the file contains additional declarations.

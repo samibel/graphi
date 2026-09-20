@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a662-09d7-7da0-91de-99d31443d8ed"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response does not document the default for Zsh noun file completion or how to disable it per argument; `site/content/completions/_index.md:452–462` only discusses Zsh setup and disabling completion descriptions."}}
+{"type":"turn.completed","usage":{"input_tokens":17244,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

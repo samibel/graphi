@@ -1,0 +1,39 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "query_id": "fhv6c-b7e4-q014",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv6c-b7e4-q014",
+    "rater_id": "third-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+    "query_text_sha256": "6ce055cd4b826efcda65e783804ba1fdee53aec5935191cf9e9a99a66b9827a6",
+    "bundle_sha256": "dc10df1804f59a96119e955af0e8b709696d168c1c9d8e7c6a2df46ebeb57a1a",
+    "prompt_sha256": "a0ef99a2d7c60a6f1cf645473e7209ddd7dde5a21dc90ec51f6b593756123823",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "`bash_completionsV2_test.go` belongs to package `cobra` ([line 15]) and declares `TestBashCompletionV2WithActiveHelp` ([lines 23–33]).\n\nThe test:\n\n- Creates a `Command` named `\"c\"` using `emptyRun`.\n- Generates Bash V2 completion with active help enabled via `c.GenBashCompletionV2(buf, true)`.\n- Computes the command’s active-help environment variable with `activeHelpEnvVar(c.Name())`.\n- Uses `checkOmit` to verify the generated output does not contain `\u003cactiveHelpVar\u003e=0`, confirming active help was not disabled.",
+    "responded_at": "2026-09-15T08:36:18Z",
+    "sha256": "35457bd54021ff545df544428917592ab8948c5e493d2ad987bff908a31f6208"
+  },
+  "disclosure": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "query_id": "fhv6c-b7e4-q014",
+    "adjudicator_response_sha256": "35457bd54021ff545df544428917592ab8948c5e493d2ad987bff908a31f6208",
+    "disclosed_artifact_sha256": [
+      "05e3c7a40f643125c973f28c98bcc498ebc6ec5b45613998a9d97a1ee95c7190",
+      "6aaeca017ac8f0af0d94f1ba52fb45931fb5821fd486812178cfd6ed7d682b2f",
+      "6fbf20acd77e571af7a40ecd9e7901832d363604d9eef879f227fdb6c152cefd",
+      "bef690dbeec1367202f2061f7f15ab749ac74fcc3a5fed723d436d4ec870d540"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

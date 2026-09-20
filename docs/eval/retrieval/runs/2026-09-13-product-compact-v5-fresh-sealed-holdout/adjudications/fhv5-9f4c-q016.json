@@ -1,0 +1,37 @@
+{
+  "query_id": "fhv5-9f4c-q016",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv5-9f4c-q016",
+    "rater_id": "adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+    "query_text_sha256": "06145d73a68260d350abe0891b69750b8fd5e28d126c965f4becb88a09a2ffbf",
+    "bundle_sha256": "d18ac57a59646b5a381005554f6602950d5d3e8c6f8af33e981153d4e337aa71",
+    "prompt_sha256": "45890139d34ba92965ad8fd53907c38dddc43998155115e05a7fe335f65102d8",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "Validation succeeds when either none of the group’s flags are set or all are set (`flag_groups.go:154-156`). If only a subset is set, the error identifies the group and the sorted list of missing flags: `\"if any flags in the group [%v] are set they must all be set; missing %v\"` (`flag_groups.go:158-160`).",
+    "responded_at": "2026-09-13T13:02:42Z",
+    "sha256": "a144216b096307b10a8ec92da6f34893bc9c28c976f6d8d70d6ac30cb3bb1acc"
+  },
+  "disclosure": {
+    "query_id": "fhv5-9f4c-q016",
+    "adjudicator_response_sha256": "a144216b096307b10a8ec92da6f34893bc9c28c976f6d8d70d6ac30cb3bb1acc",
+    "disclosed_artifact_sha256": [
+      "52c58c1c94581f59949b71525cc0dc46700aac18d44597bcc255ea27d5f53e4e",
+      "d0ad2797bbc7441f7382a856500e4619e9bf6975c6c293fbb7460abc9048b3a6",
+      "e5f1143d3bd7506f837fc48f66562eccec927a5cf492060bd3131360e3cafb0e",
+      "f052d514941b17de06fc33bfee047f76bdb53405332fab382efdb326109435b6"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

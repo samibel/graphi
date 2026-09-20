@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-b6ad-7231-9355-762e3b8627bf"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies Apache License Version 2.0, supported by LICENSE.txt:1–5, and accurately cites the confirmation in README.md:110–112."}}
+{"type":"turn.completed","usage":{"input_tokens":17876,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":39,"reasoning_output_tokens":0}}

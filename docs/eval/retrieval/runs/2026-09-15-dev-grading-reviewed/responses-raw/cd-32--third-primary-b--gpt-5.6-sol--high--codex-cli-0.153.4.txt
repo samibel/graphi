@@ -1,0 +1,7 @@
+During completion, Cobra calls `helpOrVersionFlagPresent(cmd)` in `completions.go:522-532`. It:
+
+- Looks up `"version"` and `"help"` in `cmd.Flags()`.
+- For each flag, verifies it exists, has a non-empty `FlagSetByCobraAnnotation`, and its `Changed` field is true.
+- Returns `true` if either matches; otherwise `false`.
+
+The annotation distinguishes Cobra-created flags from user-defined flags. For example, `InitDefaultHelpFlag` creates `--help` and applies `FlagSetByCobraAnnotation` in `command.go:1183-1198`.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 76,
+  "previous_sha256": "b8bce661f4d30a91fbf972892a6875ac49949a4620161db9fce890092f95e07f",
+  "kind": "response",
+  "query_id": "ci-467",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "fb6272e2466ee267932ed9b05a997343ade5a74dd60036c69551b6301c4bda7a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows a `Traverse` routine that parses arguments for each parent and that execution chooses between `Traverse` and `Find`, but it omits the condition/configuration that enables traversal and does not establish which intervening positional arguments or flags are accepted.\n",
+  "sha256": "d3fbc4693624cc7d3c8c3d334b4f54c737c12263820d56eff73c4c7df401fcae"
+}

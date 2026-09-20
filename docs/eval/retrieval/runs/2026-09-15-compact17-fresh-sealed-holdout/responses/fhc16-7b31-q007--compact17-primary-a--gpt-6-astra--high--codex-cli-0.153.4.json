@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q007",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "4bf29b4c949d0f9ff3b6559834eb0c15a207100b1da15a38785897ee5a729612",
+  "bundle_sha256": "340e25bc4aeb049e50ec279d84838f3d1b1940aff6cf97d1be886a29a8cc5ff0",
+  "prompt_sha256": "9890685d91319baf5ee5738df5af278116f8aceee5bb51c06a51f64d23beaab0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`CompDebugln` appends a newline with `fmt.Sprintf(\"%s\\n\", msg)`, then calls `CompDebug` with that string and the unchanged `printToStdErr` flag (`completions.go:888–890`). Delegating preserves `CompDebug` behavior, including its `[Debug] ` prefix (`completions.go:864–865`) and the documented logging controlled by `BASH_COMP_DEBUG_FILE` (`completions.go:884–887`).",
+  "responded_at": "2026-09-15T18:36:00Z",
+  "sha256": "3a13ac2d64ba5ccc26c347d9b67866aa0e9e45c528578fca07d75e561034c72e"
+}

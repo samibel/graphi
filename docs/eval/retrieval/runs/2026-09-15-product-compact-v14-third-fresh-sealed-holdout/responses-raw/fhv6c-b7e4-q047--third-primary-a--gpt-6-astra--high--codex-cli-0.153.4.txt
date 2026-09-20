@@ -1,0 +1,9 @@
+Use your program’s hidden `__complete` command to inspect completion output; Active Help uses the same debugging mechanism (`site/content/active_help.md:141–142`).
+
+Control Active Help through environment variables:
+
+- **Enabled:** Set `<PROGRAM>_ACTIVE_HELP` to an enabling value supported by your program. There is no universal enabling value: `on`, `off`, and `local` are example program-defined settings (`site/content/active_help.md:88–102`). Ensure `COBRA_ACTIVE_HELP` is not `"0"`.
+- **Disabled for this program:** Set `<PROGRAM>_ACTIVE_HELP=0`. Cobra suppresses all Active Help output, including messages added with `cobra.AppendActiveHelp(...)` (`site/content/active_help.md:127`).
+- **Disabled for all Cobra programs:** Set `COBRA_ACTIVE_HELP=0`; this overrides the program-specific setting (`site/content/active_help.md:129`).
+
+Replace `<PROGRAM>` with the root command’s name uppercased, with non-ASCII-alphanumeric characters replaced by `_` (`active_help.go:59–67`).

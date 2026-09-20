@@ -1,0 +1,3 @@
+`hasSeeAlso` returns `true` if the command has a parent, or if any child command passes `IsAvailableCommand()` and is not an `IsAdditionalHelpTopicCommand()`. Otherwise, it returns `false` (`doc/util.go:26–37`).
+
+An available child must be neither deprecated nor hidden nor the parent’s help command, and must be runnable or have available subcommands (`command.go:1562–1576`). A parent alone is sufficient; no child checks are required.

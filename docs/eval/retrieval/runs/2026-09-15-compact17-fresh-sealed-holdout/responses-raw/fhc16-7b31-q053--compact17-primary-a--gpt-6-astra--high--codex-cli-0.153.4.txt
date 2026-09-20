@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains no documentation of Zsh completion behavior for repeated flags or the equals form; `zsh_completions.go:25` only shows the `GenZshCompletionFile` signature.

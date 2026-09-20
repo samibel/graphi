@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q018",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "fa783f6f3f4e09982ff4bc59a6feb0ae583c946d8ca4d2fbbc508ea2280d6d44",
+  "bundle_sha256": "fac6f824bfa1981702c7ca674da37c1ba7b3c3d6bcde71b2775d14d8cedb0052",
+  "prompt_sha256": "eb7f56a7590ec0bc7fd3849155ad90d333f171ac08c88043cdf2b5e4630b961b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Filename extensions are attached as a flag annotation. In `shell_completions.go:65–69`, `MarkFlagFilename` accepts `extensions ...string` and calls:\n\n```go\nreturn flags.SetAnnotation(name, BashCompFilenameExt, extensions)\n```\n\n`Command.MarkFlagFilename` passes `c.Flags()` to this helper (`42–46`); `MarkPersistentFlagFilename` passes `c.PersistentFlags()` (`58–63`). The annotation key, `BashCompFilenameExt`, is `\"cobra_annotation_bash_completion_filename_extensions\"` (`bash_completions.go:30`).",
+  "responded_at": "2026-09-13T15:23:13Z",
+  "sha256": "0f38f29c0ade0e9e0ce00ff3b8a6e835d25e10cfad028efb7bc782d900219b8d"
+}

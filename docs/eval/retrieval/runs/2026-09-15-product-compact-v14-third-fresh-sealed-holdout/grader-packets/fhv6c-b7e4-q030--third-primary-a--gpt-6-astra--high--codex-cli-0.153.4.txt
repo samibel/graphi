@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 697306542ac4c0bdddfafa0580d93b41c94588be4c42a1026eec0e2925ab2e24
+QUERY ID: fhv6c-b7e4-q030
+
+QUESTION:
+What happens when OnlyValidArgs receives a value outside the configured valid set?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args_test.go:150-154 anchor="validOnlyWithInvalidArgs(err, t)" reason=The focused test supplies an invalid value and requires the shared invalid-argument assertion.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"6 ranked source span(s); query 497a8ac850d4; read in order (274/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"args.go","start_line":49,"end_line":66,"text":"// OnlyValidArgs returns an error if there are any positional args that are not in\n// the `ValidArgs` field of `Command`\nfunc OnlyValidArgs(cmd *Command, args []string) error {\n\tif len(cmd.ValidArgs) > 0 {\n\t\t// Remove any description that may be included in ValidArgs.\n\t\t// A description is following a tab character.\n\t\tvar validArgs []string\n\t\tfor _, v := range cmd.ValidArgs {\n\t\t\tvalidArgs = append(validArgs, strings.Split(v, \"\\t\")[0])\n\t\t}\n\t\tfor _, v := range args {\n\t\t\tif !stringInSlice(v, validArgs) {\n\t\t\t\treturn fmt.Errorf(\"invalid argument %q for %q%s\", v, cmd.CommandPath(), cmd.findSuggestions(args[0]))\n\t\t\t}\n\t\t}\n\t}\n\treturn nil\n}"},{"path":"cobra.go","start_line":223,"end_line":230,"text":"func stringInSlice(a string, list []string) bool {\n\tfor _, b := range list {\n\t\tif b == a {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1425,"end_line":1434,"text":"// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":750,"end_line":765,"text":"func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance <= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}"},{"path":"command.go","start_line":55,"end_line":56,"text":"\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"args.go","start_line":24,"end_line":26,"text":"// legacyArgs validation has the following behaviour:\n// - root commands with no subcommands can take arbitrary arguments\n// - root commands with subcommands will do subcommand validity checking"}],"provenance":{"input_sha256":"a0009dc3eb5b143efe6be9a7c1e1c73ce97ed3d457d7688ad7eaf43898b8f4a0","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+When `cmd.ValidArgs` is nonempty, `OnlyValidArgs` returns immediately on the first invalid value with an error formatted as `invalid argument %q for %q%s`, containing the value, full command path, and any suggestions (`args.go:59–62`).
+
+Matching uses exact string equality after stripping tab-separated descriptions from valid entries (`args.go:53–57`; `cobra.go:223–230`). Suggestions are based on `args[0]`, even if a later argument is invalid (`args.go:61`; `command.go:750–765`).
+
+If `cmd.ValidArgs` is empty, validation is skipped and it returns `nil` (`args.go:52–65`).
+----- END THE RATER'S RESPONSE -----

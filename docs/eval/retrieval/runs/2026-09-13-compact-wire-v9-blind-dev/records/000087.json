@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 87,
+  "previous_sha256": "630a210e3515481e6771a694dafb7dfd29545c9d3a685f9a441d6754be79eb5b",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "8747d7d3a146fb94f20020672e83668ce301467cbaf16f8f7344bcdf6071c51e",
+  "outcome": "pass",
+  "rationale": "The candidate accurately and concretely describes the method using only preserved bundle evidence. `completions.go:132–146` supports the exact signature, lookup via `c.Flag(flagName)`, missing-flag and duplicate-registration errors, mutex locking, map assignment, and `nil` return. `completions.go:35–39` supports the global `map[*pflag.Flag]func(...)` and `sync.RWMutex`, while `completions.go:148–160` supports the stated corresponding lookup method `GetFlagCompletionFunc`.\n",
+  "sha256": "55d16ed8cc1f8464361d491e1a8af1dcf63fbbddce854ead9348b387eab95e4e"
+}

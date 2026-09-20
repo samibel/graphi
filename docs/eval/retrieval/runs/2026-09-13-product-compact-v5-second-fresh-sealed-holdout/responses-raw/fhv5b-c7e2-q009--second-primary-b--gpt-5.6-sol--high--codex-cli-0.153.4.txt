@@ -1,0 +1,9 @@
+`AddTemplateFuncs` iterates over the supplied `template.FuncMap` and assigns every key/value pair into the package-level `templateFuncs` map:
+
+```go
+for k, v := range tmplFuncs {
+    templateFuncs[k] = v
+}
+```
+
+Thus, new names are added and existing names are overwritten by the supplied functions (`cobra.go:88–95`). The destination map is the built-in `templateFuncs` map declared at `cobra.go:32–40`.

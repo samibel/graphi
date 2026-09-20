@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the named flag’s `BashCompSubdirsInDir` annotation and its empty string slice value (`[]string{}`), directly supported by the cited `shell_completions.go:94–98` bundle span.

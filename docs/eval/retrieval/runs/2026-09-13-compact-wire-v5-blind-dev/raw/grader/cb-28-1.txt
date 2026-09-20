@@ -1,0 +1,1 @@
+FAIL: The answer's key claim about Command.GroupID and parent help output cites command.go:73-75, a span absent from this bundle. External repository knowledge cannot repair that missing evidence.

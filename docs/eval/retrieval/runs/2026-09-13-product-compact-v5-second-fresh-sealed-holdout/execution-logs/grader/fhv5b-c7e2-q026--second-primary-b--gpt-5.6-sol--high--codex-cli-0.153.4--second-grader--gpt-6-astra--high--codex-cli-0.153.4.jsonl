@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6b-19f2-7042-ad0d-8645d96c838a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies current-command then recursive parent lookup, and the fallback’s persistent-flag merge, usage-template rendering with command data to OutOrStderr(), and printing and returning template errors. Its citations exist in the bundle and support the claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18256,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":83,"reasoning_output_tokens":25}}

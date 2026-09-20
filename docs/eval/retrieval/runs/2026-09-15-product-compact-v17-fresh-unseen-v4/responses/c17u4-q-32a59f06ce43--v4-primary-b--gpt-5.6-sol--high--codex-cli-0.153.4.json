@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-32a59f06ce43",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "46dd4050265d3cd996004218fc13f5b91c25df38ce98ddc6e43203f4729ef097",
+  "bundle_sha256": "c7fba31de89747f460d152f9992c3473d25dc9250fcb64de5a13d44a55e11c16",
+  "prompt_sha256": "86b444fceb9a7b0d27c925f8be7c9e4ce48466b69ca8c070fa9d73550528f9e9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`FlagErrorFunc`, configured via `SetFlagErrorFunc`, can customize flag-parsing errors. Its signature is `func(*Command, error) error` (`command.go:496-511`). The `flagErrorFunc` field is explicitly described as user-defined and called when flag parsing returns an error (`command.go:170-171`).",
+  "responded_at": "2026-09-15T20:28:33Z",
+  "sha256": "59c2d39247cbb3038e22985db901522fc0898cfe44ab17c0d67df6073d047ad7"
+}

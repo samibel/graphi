@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-90ef-7861-a6ce-703020f0ccbe"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript supports alias invocation selecting and returning the same command, recording the supplied invocation token, and matching aliases exactly unless EnableCaseInsensitive enables strings.EqualFold. All cited ranges exist and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":17998,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":36}}

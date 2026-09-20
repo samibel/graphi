@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 57,
+  "previous_sha256": "ad12d0bcb563ba1c062b113576e6ac57ea1eefa5c95e2622bb0273ea8ec78fee",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "33ae7b631a9317a432aa18fbb2a8d0b244c47e8a5bbf3bf05edf66861cef5c93",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `cmd.SetArgs([]string{\"--flag\", \"value\"})` before executing the command in the test. `SetArgs` overrides the default `os.Args[1:]` specifically for cases such as testing (`command.go:274-279`).",
+  "sha256": "46ca9394fe39cc064ef62c3e6174242096ec1f82382d7f5b66135c39b3cd8a9c"
+}

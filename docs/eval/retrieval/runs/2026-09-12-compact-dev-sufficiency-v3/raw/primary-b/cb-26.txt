@@ -1,0 +1,1 @@
+Use <PROGRAM>_ACTIVE_HELP, with the root command name uppercased and non-ASCII-alphanumeric characters replaced by underscores. GetActiveHelpConfig reads this program-specific variable unless COBRA_ACTIVE_HELP is "0", which globally forces the result to "0" (active_help.go:46-62). The global variable's literal name is also defined at active_help.go:29.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-9d08-7220-804e-dc84bce08dd0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the helper’s nil-error check, exact expected message \"accepts 2 arg(s), received 3\", and fatal assertion on mismatch. All cited lines exist in the preserved args_test.go:88–97 span and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":17669,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

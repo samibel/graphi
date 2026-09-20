@@ -1,0 +1,1 @@
+PASS: The response correctly identifies deprecated commands, hidden commands, the parent’s configured help command, and non-runnable commands without available subcommands as excluded. All four categories and the cited control flow are supported by command.go:1560–1576 in the preserved bundle.

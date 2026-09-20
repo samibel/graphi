@@ -1,0 +1,1 @@
+FAIL: The preserved transcript shows only the start of TestSingleCommand (lines 88–92), omitting its children, Run callback, execution, and assertion. The response therefore does not identify the essential reviewed behavior: verifying that root positional arguments reach the root’s Run callback.

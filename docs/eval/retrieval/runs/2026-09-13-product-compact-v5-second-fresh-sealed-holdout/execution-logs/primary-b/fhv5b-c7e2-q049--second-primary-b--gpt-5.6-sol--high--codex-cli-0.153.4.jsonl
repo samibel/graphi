@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b60-bdbe-72a0-82a6-a71c92ab1cdc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Use `cobra-cli` when you want the easiest, fastest setup: it scaffolds a Cobra application and generates command files (`site/content/user_guide.md:29-33`; `README.md:96-97`).\n\nUse the Cobra library manually when you want to build and organize the CLI yourself. You must create a bare `main.go`, a root command file, and any optional additional commands (`site/content/user_guide.md:36-39`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16442,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":96,"reasoning_output_tokens":0}}

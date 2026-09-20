@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q027",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "b857d9996e64bc0f9120a967b55ddd7a0a0bac04350ecf9ab1921c1f94198ab1",
+  "bundle_sha256": "2e89c7c321591fad07f28d6a15b746b3d0c3d09acaaaf589c4b37f7f9c7fdc55",
+  "prompt_sha256": "2528709ce222ed41dd28034b615940031af23ff24b8a1287c9f6159593ce46f2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows parent-child linkage in `command.go:1302-1329`, but contains no normal-output destination inheritance logic or final fallback.",
+  "responded_at": "2026-09-13T12:33:46Z",
+  "sha256": "df53b9faa992e0e603c6eb5e7fcfe3accacdc11e48ef32c1536e3336927dd019"
+}

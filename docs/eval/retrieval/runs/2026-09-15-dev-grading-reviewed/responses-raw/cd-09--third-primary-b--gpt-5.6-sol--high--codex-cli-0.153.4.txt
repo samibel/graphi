@@ -1,0 +1,11 @@
+`GetFlagCompletionFunc` retrieves a command flag’s registered shell-completion function.
+
+In [`completions.go`, lines 149–160], it:
+
+1. Resolves `flagName` using `c.Flag(flagName)`.
+2. Returns `(nil, false)` if the flag does not exist.
+3. Acquires `flagCompletionMutex.RLock()`.
+4. Looks up the flag in `flagCompletionFunctions`.
+5. Returns `(completionFunc, exists)`.
+
+The registry is a global `map[*pflag.Flag]func(...)` protected by a `sync.RWMutex` ([`completions.go`, lines 35–39]). `Command.Flag` searches the command’s flags first, then its persistent flags ([`command.go`, lines 1794–1803]).

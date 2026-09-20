@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `CompletionOptions.DisableDefaultCmd` as preventing creation (`completions.go:106–107`), but omits the conditions following `completions.go:679` and the body of `InitDefaultCompletionCmd`, so the complete set of conditions is missing.

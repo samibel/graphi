@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 12,
+  "previous_sha256": "34580492233a9a20759b4d0f4bce7ed7520770109186795d798212add10ad9de",
+  "kind": "response",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e611f8f7e2a8ccf08967b3d7ff8e2a7e48835eac24866d29a3845a22afad8a4f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "During command execution, Cobra initializes the help and version flags at the last possible point so applications can override them (`command.go:883-886`). `InitDefaultVersionFlag` does nothing if `Command.Version` is empty or a `version` flag already exists; otherwise it creates `--version`, adds `-v` only if that shorthand is free, and marks the flag as Cobra-created (`command.go:1200-1225`). Completion detects a changed, Cobra-created version flag through its annotation (`completions.go:522-533`).\n",
+  "sha256": "fdfbb4332f94c3b3df1dac3484e2fed183a8f4f9edc6539a56848fc85a8d523f"
+}

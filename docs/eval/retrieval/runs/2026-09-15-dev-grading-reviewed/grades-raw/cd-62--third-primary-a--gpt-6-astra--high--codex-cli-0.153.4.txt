@@ -1,0 +1,1 @@
+PASS: The response identifies templateFuncs and its built-ins, explains registration and rendering through tmpl, and accurately summarizes the shown version and help template fallback behavior. Its citations match supporting transcript spans, and it correctly notes that the default help template is only partially shown.

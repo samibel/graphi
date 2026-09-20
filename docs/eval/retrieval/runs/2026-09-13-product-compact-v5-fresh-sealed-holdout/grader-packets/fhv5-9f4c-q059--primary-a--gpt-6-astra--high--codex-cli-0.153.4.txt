@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 2e976d4645d5f2f3b9540093bd73391c6261db6d5f95a0a0d67654062fc597cf
+QUERY ID: fhv5-9f4c-q059
+
+QUESTION:
+When a child command is removed, is only the slice entry deleted or is related parent and layout state updated too?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1361-1393 anchor="command.parent = nil" reason=The child's parent is cleared, the slice is rebuilt, and maximum use, command-path, and name lengths are recomputed from remaining children.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 315c4972e1db; read in order (246/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":86,"end_line":86,"text":"\t// Only one of ValidArgs and ValidArgsFunction can be used for a command."},{"path":"command.go","start_line":123,"end_line":123,"text":"\t//"},{"path":"command.go","start_line":1361,"end_line":1393,"text":"// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}\nmain:\n\tfor _, command := range c.commands {\n\t\tfor _, cmd := range cmds {\n\t\t\tif command == cmd {\n\t\t\t\tcommand.parent = nil\n\t\t\t\tcontinue main\n\t\t\t}\n\t\t}\n\t\tcommands = append(commands, command)\n\t}\n\tc.commands = commands\n\t// recompute all lengths\n\tc.commandsMaxUseLen = 0\n\tc.commandsMaxCommandPathLen = 0\n\tc.commandsMaxNameLen = 0\n\tfor _, command := range c.commands {\n\t\tusageLen := len(command.Use)\n\t\tif usageLen > c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(command.CommandPath())\n\t\tif commandPathLen > c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(command.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t}\n}"},{"path":"command.go","start_line":1292,"end_line":1293,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {"},{"path":"command.go","start_line":1277,"end_line":1283,"text":"// ResetCommands delete parent, subcommand and help command from c.\nfunc (c *Command) ResetCommands() {\n\tc.parent = nil\n\tc.commands = nil\n\tc.helpCommand = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1331,"end_line":1331,"text":"// Groups returns a slice of child command groups."},{"path":"command.go","start_line":1336,"end_line":1336,"text":"// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group"},{"path":"command.go","start_line":1306,"end_line":1307,"text":"\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}"},{"path":"command.go","start_line":1336,"end_line":1344,"text":"// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"}],"provenance":{"input_sha256":"85665ab5b2d10ad2bf605972aed3eda84a4d7405628e76474bd25990581a41a6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Related parent and layout state is updated too. In `command.go`, `(*Command).RemoveCommand`:
+
+- Clears each removed child’s parent with `command.parent = nil` (line 1368).
+- Rebuilds the slice without removed children and assigns `c.commands = commands` (lines 1369–1374).
+- Resets `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen` to zero, then recomputes them from the remaining children’s `Use`, `CommandPath()`, and `Name()` (lines 1375–1392).
+----- END THE RATER'S RESPONSE -----

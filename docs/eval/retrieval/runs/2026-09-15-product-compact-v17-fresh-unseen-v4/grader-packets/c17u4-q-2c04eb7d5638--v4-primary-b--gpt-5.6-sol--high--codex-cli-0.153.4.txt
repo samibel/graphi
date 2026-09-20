@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 175fe3a705fccd305ddb4e3cb3bec44c14c363ed63e04f17c60ce0bb6d8f0272
+QUERY ID: c17u4-q-2c04eb7d5638
+
+QUESTION:
+How does the recursive legacy Bash generator name command functions and populate each function body?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- bash_completions.go:655-683 anchor="func gen(buf io.StringWriter, cmd *Command)" reason=It recurses into available children, normalizes command paths, distinguishes the root function, then invokes all metadata writers.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 7ece0ec99244; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/completions/_index.md","start_line":416,"end_line":420,"text":"### Bash legacy dynamic completions\n\nFor backward compatibility, Cobra still supports its bash legacy dynamic completion solution.\nPlease refer to [Bash Completions](bash.md) for details.\n"},{"path":"site/content/completions/_index.md","start_line":426,"end_line":430,"text":"A new V2 bash completion version is also available.  This version can be used by calling `GenBashCompletionV2()` or\n`GenBashCompletionFileV2()`.  The V2 version does **not** support the legacy dynamic completion\n(see [Bash Completions](bash.md)) but instead works only with the Go dynamic completion\nsolution described in this document.\nUnless your program already uses the legacy dynamic completion solution, it is recommended that you use the bash"},{"path":"site/content/completions/bash.md","start_line":5,"end_line":7,"text":"## Bash legacy dynamic completions\n\nFor backward compatibility, Cobra still supports its legacy dynamic completion solution (described below).  Unlike the `ValidArgsFunction` solution, the legacy solution will only work for Bash shell-completion and not for other shells. This legacy solution can be used along-side `ValidArgsFunction` and `RegisterFlagCompletionFunc()`, as long as both solutions are not used for the same command.  This provides a path to gradually migrate from the legacy solution to the new solution."},{"path":"bash_completions.go","start_line":684,"end_line":697,"text":"\n// GenBashCompletion generates bash completion file and writes to the passed writer.\nfunc (c *Command) GenBashCompletion(w io.Writer) error {\n\tbuf := new(bytes.Buffer)\n\twritePreamble(buf, c.Name())\n\tif len(c.BashCompletionFunction) > 0 {\n\t\tbuf.WriteString(c.BashCompletionFunction + \"\\n\")\n\t}\n\tgen(buf, c)\n\twritePostscript(buf, c.Name())\n\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"bash_completionsV2.go","start_line":391,"end_line":396,"text":"\n// GenBashCompletionV2 generates Bash completion file version 2\n// and writes it to the passed writer.\nfunc (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error {\n\treturn c.genBashCompletion(w, includeDesc)\n}"},{"path":"command.go","start_line":97,"end_line":98,"text":"\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator.\n\t// For portability with other shells, it is recommended to instead use ValidArgsFunction"},{"path":"bash_completions.go","start_line":36,"end_line":38,"text":"func writePreamble(buf io.StringWriter, name string) {\n\tWriteStringAndCheck(buf, fmt.Sprintf(\"# bash completion for %-36s -*- shell-script -*-\\n\", name))\n\tWriteStringAndCheck(buf, fmt.Sprintf(`"},{"path":"command.go","start_line":1806,"end_line":1806,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {"}],"provenance":{"input_sha256":"9c4a220af0dd9204a8248a69c73acdf16b7441a3355e68f3ad2a6c3def019be4","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows `gen(buf, c)` being called in `bash_completions.go:690`, but omits `gen`’s implementation, including its recursive naming logic and function-body generation.
+----- END THE RATER'S RESPONSE -----

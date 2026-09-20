@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 12,
+  "previous_sha256": "2e53e1ad5fc306f07fc58cc595a466488c18f8ba7a5ead89013e02062a089303",
+  "kind": "response",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "5581f13405c045a23af5323757f2f34100937875e25ca68fa04cdf475f96dd0b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The version flag is handled in two stages:\n\n- `Command.InitDefaultVersionFlag()` creates it only when `c.Version` is non-empty and no `version` flag already exists. It uses `--version` with `-v` unless `-v` is already taken, then adds only `--version`. It also marks the flag with `FlagSetByCobraAnnotation` (`command.go:1200–1224`).\n- During execution, Cobra reads the flag as a boolean. If declared as a non-boolean, it prints `\"version\" flag declared as non-bool. Please correct your code` and returns the error. When true, it renders `c.VersionTemplate()` to `c.OutOrStdout()` and returns immediately (`command.go:908–919`).\n\nThe default help and version flags are initialized late to allow user configuration (`command.go:883`).",
+  "sha256": "8e9878dce4f140a6d6887a553155ea72250a6ae454b5f238ebfacc2b7885b61e"
+}

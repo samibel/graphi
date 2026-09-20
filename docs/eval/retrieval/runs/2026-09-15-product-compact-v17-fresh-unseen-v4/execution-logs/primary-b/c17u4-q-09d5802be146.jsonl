@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-0129-73d3-8c1f-c1eef215f794"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It preserves the `choices []string` slice and `directive ShellCompDirective` passed to `FixedCompletions`, returning those same captured values on every callback invocation regardless of `cmd`, `args`, or `toComplete` (`completions.go`, lines 123–129: `return choices, directive`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16462,"cached_input_tokens":6016,"cache_write_input_tokens":0,"output_tokens":68,"reasoning_output_tokens":0}}

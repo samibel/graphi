@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-739a-7fc2-81a5-472a1c3acedc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Add `--no-descriptions` when generating the completion script:\n\n```bash\nsource <(helm completion bash --no-descriptions)\n```\n\nThis disables completion descriptions, as shown in `site/content/completions/_index.md:380-395`. The underlying Cobra option is `DisableDescriptions` (`completions.go:111-112`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17050,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":74,"reasoning_output_tokens":0}}

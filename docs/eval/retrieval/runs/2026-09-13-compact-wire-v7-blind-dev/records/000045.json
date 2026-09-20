@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 45,
+  "previous_sha256": "10cf9c41285ce4315dd0b8da0304c66d0673b414a25c3e4e174d15072e8b400b",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "68be826588bb1d0b2bf23070823caf5be8d54a1e6063d9ec78a31149c48773d2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response contains only truncated fragments of `flag_groups.go` (lines 1–40, 111–121, and 144–145), not the complete file or a specific question about it.",
+  "sha256": "1f562dd867f7f11b12e6f8ad72d4b93f5555a207bc681cac0690fd55a9c8b080"
+}

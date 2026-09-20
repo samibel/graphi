@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/client"
@@ -767,6 +769,15 @@ func textResult(b []byte) map[string]any {
 	}
 }
 
+type compactTaskContextToolResult struct {
+	Content []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	} `json:"content"`
+	StructuredContent taskcompact.Structured `json:"structuredContent"`
+	IsError           bool                   `json:"isError"`
+}
+
 func derefInt(p *int) int {
 	if p == nil {
 		return 0
@@ -825,8 +836,9 @@ func (s *Server) symbolContextCall(ctx context.Context, p callParams) (any, *rpc
 
 // taskContextCall (P0 agent intelligence, labs) returns the ranked,
 // token-budgeted task-context bundle in the C1 contract shape through the
-// shared client.TaskContext composition (ONE assembly, ONE encoder — byte
-// parity with `graphi task-context`).
+// shared client.TaskContext composition. Version 1 retains CLI byte parity;
+// version 2 projects that canonical engine result into directly encoded,
+// compact structuredContent so the actor is not charged for nested JSON.
 //
 // version is SW-264's opt-in: 0/1 selects the lexical-seeded /1 path; 2
 // selects the retrieval-seeded /2 path with claim_type on every evidence
@@ -844,6 +856,55 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	if derefInt(p.Arguments.Version) == 2 {
+		if derefInt(p.Arguments.TokenBudget) < 0 {
+			// The canonical engine result already implements the documented
+			// negative-budget "no snippets" mode. Do not reactivate source
+			// reads while projecting the MCP-specific compact representation.
+			return textResult(b), nil
+		}
+		root := s.repository().Root
+		if root == "" {
+			root = "."
+		}
+		sourceBudget := taskcompact.DefaultSourceBudget
+		if requested := derefInt(p.Arguments.TokenBudget); requested > 0 && requested < sourceBudget {
+			sourceBudget = requested
+		}
+		secureRoot, err := os.OpenRoot(root)
+		if err != nil {
+			return nil, &rpcError{Code: -32603, Message: err.Error()}
+		}
+		defer secureRoot.Close()
+		compact, err := taskcompact.Build(ctx, p.Arguments.Task, b, secureRoot.FS(), sourceBudget)
+		if err != nil {
+			if errors.Is(err, taskcompact.ErrSummaryNotAttested) {
+				// The envelope carries no audit block at all (the
+				// unavailable shell). There is nothing to project and
+				// nothing to say about retrieval; hand back the canonical
+				// bundle bytes rather than turning it into an RPC failure.
+				return textResult(b), nil
+			}
+			if errors.Is(err, taskcompact.ErrRetrievalNotReady) {
+				if !s.evaluationLexicalCompactControl {
+					return textResult(b), nil
+				}
+				compact, err = taskcompact.BuildEvaluationControl(ctx, p.Arguments.Task, b, secureRoot.FS(), sourceBudget)
+				if err != nil {
+					return nil, &rpcError{Code: -32603, Message: err.Error()}
+				}
+			} else {
+				return nil, &rpcError{Code: -32603, Message: err.Error()}
+			}
+		}
+		return compactTaskContextToolResult{
+			Content: []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			}{{Type: "text", Text: compact.Summary}},
+			StructuredContent: compact.Structured,
+		}, nil
 	}
 	return textResult(b), nil
 }

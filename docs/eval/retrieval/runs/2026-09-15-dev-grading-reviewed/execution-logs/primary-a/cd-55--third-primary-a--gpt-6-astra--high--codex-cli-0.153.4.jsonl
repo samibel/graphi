@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-9dab-72c0-bab2-b5ef9dff7b44"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).Root() *Command` returns the root command by recursively following parents. If the command has no parent, it returns itself (`command.go`, lines 860–866).\n\nThe parent check uses `HasParent()`, which returns `c.parent != nil` (`command.go`, lines 1631–1634)."}}
+{"type":"turn.completed","usage":{"input_tokens":17084,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":71,"reasoning_output_tokens":0}}

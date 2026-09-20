@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the effective flag set is assembled. The bundle omits `updateParentsPflags()` and the merge implementation needed to establish ancestor collection, normalization, root command-line imports, and merging into `Flags()`.

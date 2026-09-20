@@ -1,0 +1,1 @@
+INSUFFICIENT The response is marked `"truncated": true` and shows only scattered excerpts from `cobra.go` (lines 18, 43, 61–81, 111–115, 173–202, and 240–243), so the file’s complete structure and declarations are missing.

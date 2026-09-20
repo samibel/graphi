@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 100,
+  "previous_sha256": "d30e3b37e6ce47857a4c0be7c8d315bdc177fb797ec7231706e5afd0351e4b0b",
+  "kind": "grade",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "bcdc779790b909070b58bf77dacf907dd82f8c0dc5d83de9d8583defc7b43441",
+  "outcome": "fail",
+  "rationale": "FAIL: Its overall logic is plausible, but the case-insensitive behavior of ld is not established by the exact bundle because ld's definition was not retrieved.",
+  "sha256": "7cd9a3e1a0a9fab2d79b1c866ca675b366c6b6630cdbd65d146045cf429698df"
+}

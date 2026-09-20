@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do I disable the default completion command
+
+----- BEGIN task_context/compact-dev/5 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"how do I disable the default completion command\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/5","sources":[{"path":"completions.go","start_line":103,"end_line":117,"text":"\n// CompletionOptions are the options to control shell completion\ntype CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool\n\t// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag\n\t// for shells that support completion descriptions\n\tDisableNoDescFlag bool\n\t// DisableDescriptions turns off all completion descriptions for shells\n\t// that support them\n\tDisableDescriptions bool\n\t// HiddenDefaultCmd makes the default 'completion' command hidden\n\tHiddenDefaultCmd bool\n}\n"},{"path":"completions.go","start_line":684,"end_line":687,"text":"\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n"},{"path":"command.go","start_line":1226,"end_line":1232,"text":"// InitDefaultHelpCmd adds default help command to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}"},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"powershell_completions.go","start_line":323,"end_line":325,"text":"func (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, true)\n}"},{"path":"completions.go","start_line":118,"end_line":119,"text":"// NoFileCompletions can be used to disable file completion for commands that should\n// not trigger file completions."},{"path":"completions.go","start_line":683,"end_line":683,"text":"func (c *Command) InitDefaultCompletionCmd() {"},{"path":"zsh_completions.go","start_line":49,"end_line":50,"text":"// default for every argument. One can disable file completion on a per-argument\n// basis by using ValidArgsFunction and ShellCompDirectiveNoFileComp."},{"path":"command.go","start_line":342,"end_line":344,"text":"func (c *Command) SetCompletionCommandGroupID(groupID string) {\n\t// completionCommandGroupID is used if no completion command is defined by the user\n\tc.Root().completionCommandGroupID = groupID"},{"path":"powershell_completions.go","start_line":288,"end_line":293,"text":"func (c *Command) genPowerShellCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)\n\tgenPowerShellComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"}],"provenance":{"input_sha256":"fbd96bd41adf62ddb4ec96f8b456dc2a4046aeb7a89680cf79532f2204b63053","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/5 RESPONSE BYTES -----

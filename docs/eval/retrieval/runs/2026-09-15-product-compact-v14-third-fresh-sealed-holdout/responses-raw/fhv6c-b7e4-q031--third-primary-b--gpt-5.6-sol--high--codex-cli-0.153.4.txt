@@ -1,0 +1,3 @@
+It returns an error: `requires at least 2 arg(s), only received 1`.
+
+Evidence: [`args.go`, lines 73–81] defines `MinimumNArgs(n)` to check `len(args) < n` and return `fmt.Errorf("requires at least %d arg(s), only received %d", n, len(args))`.

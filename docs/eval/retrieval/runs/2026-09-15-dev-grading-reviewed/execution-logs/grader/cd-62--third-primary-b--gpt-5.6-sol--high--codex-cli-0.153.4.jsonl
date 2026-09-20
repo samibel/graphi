@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-28ad-7ce1-b152-c87bcfdf38bc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies the templateFuncs map and its built-in helpers, explains its registration and execution in tmpl, and accurately describes function registration and template inheritance. The cited spans exist and support these behaviors."}}
+{"type":"turn.completed","usage":{"input_tokens":17970,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":220,"reasoning_output_tokens":173}}

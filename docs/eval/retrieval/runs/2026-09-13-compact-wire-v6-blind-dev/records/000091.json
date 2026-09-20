@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 91,
+  "previous_sha256": "354a625d782468c8705d06ad68261c97f23c2ed54e5ced03f082ea4fb598abdf",
+  "kind": "grade",
+  "query_id": "cb-08",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e452b3b5ad49bab28ded385c5853ca21fe8e6351f8f727dd71c5f33ce42fb9ab",
+  "outcome": "pass",
+  "rationale": "PASS: It accurately summarizes GenMan, fillHeader defaults, SOURCE_DATE_EPOCH handling, and the tree options shown in the bundle.",
+  "sha256": "dbb9247a81ddc27df575f2c7299762eb4321084ca740e9c2d5a84b73ae602c64"
+}

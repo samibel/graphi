@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-9351-77b3-853f-70846e1ca051"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call either public setter on the command:\n\n```go\ncmd.SetUsageFunc(func(cmd *Command) error {\n    // custom usage behavior\n    return nil\n})\n```\n\nOr install a custom usage template:\n\n```go\ncmd.SetUsageTemplate(\"...\")\n```\n\nEvidence: `site/content/user_guide.md:584-591` documents both override methods; `command.go:305-309` shows that `SetUsageFunc` stores the callback in `c.usageFunc`; and `command.go:442-448` shows `Usage()` invoking it through `c.UsageFunc()(c)`."}}
+{"type":"turn.completed","usage":{"input_tokens":16453,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":126,"reasoning_output_tokens":0}}

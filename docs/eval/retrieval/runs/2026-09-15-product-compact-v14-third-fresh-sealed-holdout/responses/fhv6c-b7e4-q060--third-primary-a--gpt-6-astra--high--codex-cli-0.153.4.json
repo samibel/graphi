@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q060",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "2d0a7ea8dbf92cab366fe20c1b6e4c52a0fe2db920648ede96587dee258d0b20",
+  "bundle_sha256": "24fbd546f755c2b3f99bdb743e24eb3904a162b810664a01bfe378b0b64c9785",
+  "prompt_sha256": "0ae217d4b1bf6ab6ddb136f30d059649307f694c0395401ff17d267901cd2afb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "An empty positional-argument list is accepted by default: `Command.ValidateArgs` calls `ArbitraryArgs` when `Args == nil` (`command.go:1139–1144`), and `ArbitraryArgs` always returns `nil` (`args.go:68–71`).\n\n- To **require input**, set `Args: cobra.MinimumNArgs(1)`. The guide documents this validator and demonstrates it before accessing `args[0]` (`site/content/user_guide.md:367–421`).\n- To **allow only zero arguments**, use `NoArgs`; it rejects only when `len(args) \u003e 0` (`args.go:41–47`). Thus, `[]string{\"\"}` is rejected by `NoArgs`: it contains one argument, despite that argument being an empty string.",
+  "responded_at": "2026-09-15T08:31:47Z",
+  "sha256": "73c2f9a87882468b42832f252985617131cfa78e1fc4640658f0ebc1c3bb13d6"
+}

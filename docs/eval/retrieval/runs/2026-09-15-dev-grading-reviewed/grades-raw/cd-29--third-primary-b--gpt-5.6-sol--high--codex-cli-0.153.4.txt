@@ -1,0 +1,1 @@
+FAIL: The response does not answer how shorthand resolution works. It correctly identifies that the transcript shows shorthand suggestions but omits the required `findFlag` behavior: converting shorthand through local and inherited flag sets to a long name before `Flag` lookup.

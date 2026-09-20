@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains only `command.go` and `doc/md_docs.go` implementation snippets, with no user-guide recommendations about root-command file placement or top-level error handling.

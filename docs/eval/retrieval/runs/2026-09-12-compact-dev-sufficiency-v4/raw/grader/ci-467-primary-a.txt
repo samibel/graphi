@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-467:primary-a
+Outcome: fail
+Rationale: Response begins exactly INSUFFICIENT; bundle lacks flag stripping, first-positional-token selection, and the TraverseChildren condition needed to distinguish interleaved flags from positional arguments.

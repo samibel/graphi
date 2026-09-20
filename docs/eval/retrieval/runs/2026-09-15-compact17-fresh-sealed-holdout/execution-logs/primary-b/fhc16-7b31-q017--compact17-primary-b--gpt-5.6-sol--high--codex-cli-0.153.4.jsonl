@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-7464-7802-b432-b9454f994d10"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `cmd.NonInheritedFlags()` under `### Options` in `doc/md_docs.go:32-36`, but omits the code handling inherited options and their Markdown heading."}}
+{"type":"turn.completed","usage":{"input_tokens":16343,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":124,"reasoning_output_tokens":76}}

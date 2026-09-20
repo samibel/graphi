@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 158,
+  "previous_sha256": "78f94d8e326876766c8d9035747fc6c549ab91e1aec397f53ea18055bdd2d309",
+  "kind": "grade",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "04f5257acf0fc6149559b76c7536a769bbf8133738d97d93e6195bb1a8d03518",
+  "outcome": "fail",
+  "rationale": "The bundle supports the candidate’s protocol claims: `completions.go:26-33` names `__complete`/`__completeNoDesc`, `completions.go:194-205` shows the hidden command accepts command-line arguments, and `completions.go:240-251` specifies stdout candidates, the final `:\u003cdirective\u003e` line, and ignored stderr. However, the preserved bytes omit the directive bit values and semantics needed to map results into another shell’s completion behavior (only a fragment at `completions.go:65-67` is present). The candidate acknowledges this missing evidence but still presents a partial procedure instead of using the sealed prompt’s required `INSUFFICIENT` response format. Thus it is not a fully sufficient answer to how to create the integration.\n",
+  "sha256": "708de2005f23eafc5863f9d6ab33fd7d834c361b92e7e567dac05cf811ab74f1"
+}

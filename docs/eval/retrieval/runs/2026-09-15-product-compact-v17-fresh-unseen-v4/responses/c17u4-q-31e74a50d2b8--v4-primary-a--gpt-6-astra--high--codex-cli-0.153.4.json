@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-31e74a50d2b8",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "8c812f619276719656915de47fb382b9d0481f69a8f7b3ff17e00825b70511ef",
+  "bundle_sha256": "7aae8603377f7bac105ef44f5d599324a1013d68510dabe81403cd96b218f192",
+  "prompt_sha256": "85b73610d24762c96d4ecb1129b2917d8ec88add239cd8db7efc3ac64bd18f16",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.SetUsageFunc` with a function of type `func(*Command) error`. The setter stores it in `c.usageFunc` (`command.go:305–309`), and `cmd.Usage()` invokes the resolved usage function with the command: `c.UsageFunc()(c)` (`command.go:442–448`).\n\nTo customize the usage template instead, call `cmd.SetUsageTemplate(s)` with a string. Both public customization methods are documented under “Defining your own usage” (`site/content/user_guide.md:583–590`).",
+  "responded_at": "2026-09-15T20:29:33Z",
+  "sha256": "d98c245bb4263f98b6140e94159352210e0d8e5575c4cd68668455796484297d"
+}

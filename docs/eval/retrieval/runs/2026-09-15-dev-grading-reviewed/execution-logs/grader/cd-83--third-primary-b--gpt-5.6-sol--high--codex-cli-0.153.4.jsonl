@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a484-029e-76f3-a729-d2929990957d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The preserved follow-up supports the response’s full sequence: help initialization, buffered sections, option-error propagation, parent and filtered child links, inherited generation-tag suppression, optional dated notice, and final buffer write with error return."}}
+{"type":"turn.completed","usage":{"input_tokens":19059,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":309,"reasoning_output_tokens":257}}

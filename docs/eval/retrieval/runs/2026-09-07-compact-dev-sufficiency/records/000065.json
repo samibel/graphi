@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 65,
+  "previous_sha256": "56cba8541ca50528b0c6b1f283e5d3811faba87b246513883e5abf0ee46e787d",
+  "kind": "response",
+  "query_id": "cb-33",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "553c98656e58ac5f95c39da4df46a28d55622b914616ad16fed77368310ef963",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).Flags() *flag.FlagSet` is documented as returning the complete flag set applying to the command, including local and persistent flags declared there and by parents (`command.go:1641–1643`). If `c.flags` is nil, it creates a set named `c.Name()` with `flag.ContinueOnError` (`command.go:1644–1645`). Related methods are `LocalFlags()` for flags set on the current command (`command.go:1668–1670`), `InheritedFlags()` for parent flags (`command.go:1695–1697`), and `ResetFlags()` to delete all command flags (`command.go:1737–1740`).\n",
+  "sha256": "b467cdbb62c07431aed58b414b07c574b23f58d1783f847fe477a2d4dd90ee6f"
+}

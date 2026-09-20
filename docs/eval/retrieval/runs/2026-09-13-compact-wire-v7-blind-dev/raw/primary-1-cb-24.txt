@@ -1,0 +1,8 @@
+During completion, `completions.go:379-381` calls `finalCmd.enforceFlagGroupsForCompletion()` before generating flag completions.
+
+That method, documented in `flag_groups.go:220-228`, adjusts flags so standard completion logic enforces groups:
+
+- If one group flag is present, mark the other group flags required.
+- If no flag in a one-required group is present, mark every group flag required.
+- If a mutually exclusive flag is present, hide the others so completion won’t suggest them (`flag_groups.go:273-277`).
+- It skips enforcement entirely when `c.DisableFlagParsing` is true (`flag_groups.go:227-228`).

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 33,
+  "previous_sha256": "3819a60e785655bb296e93d09ab3cd5e063e64795b4c5757b550e4722c73db36",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "b24e81af5c0ae1098582f87f8dd3a28c6f351dcb1b6912757b7c6192b02fd0dd",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows that `cmd.Flag(name)` finds a parent persistent flag (`command.go:1794-1816`), but it does not show the API for extracting that flag's parsed value.\n",
+  "sha256": "c3624d8e11331bccca5768d024a89b8942e107e09bcc11845aaa2df6cd47089f"
+}

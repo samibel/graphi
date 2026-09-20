@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q053",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "e6331eca832d7c3d46787c09a095c07db3049cbc9fb3bb0c233de54c1e283c61",
+  "bundle_sha256": "130ac4253a22be42c24800895fb72121ac1755a9cfa5a27beb09b3e264a39f5f",
+  "prompt_sha256": "523dcbb2a80a0edbc8d58633c5acc166862d81dde1cbc5590abae8022496c675",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes only CONTRIBUTING.md’s heading (line 1) and Slack guidance (lines 13–14), with no instructions for bug reports or feature requests.",
+  "responded_at": "2026-09-13T12:37:47Z",
+  "sha256": "f3791056957dfda9205ac0c7bfe15e73a7733858cc3f0871920d79690f3266be"
+}

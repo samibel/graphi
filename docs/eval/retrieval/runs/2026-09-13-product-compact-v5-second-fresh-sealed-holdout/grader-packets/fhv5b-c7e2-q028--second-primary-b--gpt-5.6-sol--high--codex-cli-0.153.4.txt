@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: cf7b62914dad4959582f1d854fa38b855354fef706f5850606fbccada586a192
+QUERY ID: fhv5b-c7e2-q028
+
+QUESTION:
+What happens when any nested command names a group ID that its parent never defined?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1170-1181 anchor="panic(fmt.Sprintf(\"group id '%s' is not defined" reason=Recursive group checking panics and identifies the missing group and offending subcommand path because the condition is treated as a programming error.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 82905ec4ec93; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":73,"end_line":75,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n"},{"path":"command.go","start_line":47,"end_line":47,"text":"// Command is just that, a command for your application."},{"path":"command.go","start_line":41,"end_line":45,"text":"// Group Structure to manage groups for commands\ntype Group struct {\n\tID    string\n\tTitle string\n}"},{"path":"command.go","start_line":1170,"end_line":1181,"text":"// checkCommandGroups checks if a command has been added to a group that does not exists.\n// If so, we panic because it indicates a coding error that should be corrected.\nfunc (c *Command) checkCommandGroups() {\n\tfor _, sub := range c.commands {\n\t\t// if Group is not defined let the developer know right away\n\t\tif sub.GroupID != \"\" && !c.ContainsGroup(sub.GroupID) {\n\t\t\tpanic(fmt.Sprintf(\"group id '%s' is not defined for subcommand '%s'\", sub.GroupID, sub.CommandPath()))\n\t\t}\n\n\t\tsub.checkCommandGroups()\n\t}\n}"},{"path":"command.go","start_line":1356,"end_line":1359,"text":"// AddGroup adds one or more command groups to this parent command.\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}"},{"path":"command.go","start_line":1346,"end_line":1354,"text":"// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1072,"end_line":1075,"text":"\t// Now that all commands have been created, let's make sure all groups\n\t// are properly created also\n\tc.checkCommandGroups()\n"},{"path":"command.go","start_line":1104,"end_line":1104,"text":"\tcmd.commandCalledAs.called = true"},{"path":"command.go","start_line":1515,"end_line":1517,"text":"// CalledAs returns the command name or alias that was used to invoke\n// this command or an empty string if the command has not been called.\nfunc (c *Command) CalledAs() string {"},{"path":"command.go","start_line":1525,"end_line":1525,"text":"// with prefix"},{"path":"site/content/user_guide.md","start_line":537,"end_line":538,"text":"of that subcommand. The groups will appear in the help output in the same order as they are defined using different\ncalls to `AddGroup()`.  If you use the generated `help` or `completion` commands, you can set their group ids using"},{"path":"command.go","start_line":1336,"end_line":1344,"text":"// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"}],"provenance":{"input_sha256":"7f116bf92fa3b0a235a9df34840f0bc4882bd838463566f4ac2be89e68f48e19","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The program panics during recursive group validation. `checkCommandGroups` walks every subcommand, and when `sub.GroupID` is nonempty but absent from the parent’s groups (`!c.ContainsGroup(sub.GroupID)`), it panics with:
+
+`group id '<ID>' is not defined for subcommand '<command path>'`
+
+Evidence: `command.go:1170-1181`. The validation runs after command creation (`command.go:1072-1075`), and `ContainsGroup` checks only the parent’s `commandgroups` (`command.go:1346-1354`).
+----- END THE RATER'S RESPONSE -----

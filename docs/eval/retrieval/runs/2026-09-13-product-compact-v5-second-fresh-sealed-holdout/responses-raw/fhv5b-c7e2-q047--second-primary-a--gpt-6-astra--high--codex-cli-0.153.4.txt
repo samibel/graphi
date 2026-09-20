@@ -1,0 +1,1 @@
+INSUFFICIENT The README.md excerpt (lines 67–74) describes flags inherited by child commands and command-local flags, but does not identify the underlying flag library.

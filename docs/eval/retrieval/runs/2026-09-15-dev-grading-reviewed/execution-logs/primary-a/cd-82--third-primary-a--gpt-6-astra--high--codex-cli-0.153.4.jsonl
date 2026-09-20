@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-c5e2-7eb2-8b3b-b81606beed9e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra considers a command to have an available subcommand when **at least one direct child passes `IsAvailableCommand()`** (`command.go:1615–1629`, `HasAvailableSubCommands`).\n\nThat child must:\n\n- Have an empty `Deprecated` field and not be `Hidden`.\n- Not be its parent’s designated `helpCommand`.\n- Be `Runnable()` **or recursively have an available subcommand**.\n\nThese checks appear in `command.go:1560–1576`, `IsAvailableCommand`. If no child qualifies, `HasAvailableSubCommands()` returns `false`; its comment explicitly ties this check to the default usage/help template’s “available commands” section."}}
+{"type":"turn.completed","usage":{"input_tokens":17246,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":143,"reasoning_output_tokens":0}}

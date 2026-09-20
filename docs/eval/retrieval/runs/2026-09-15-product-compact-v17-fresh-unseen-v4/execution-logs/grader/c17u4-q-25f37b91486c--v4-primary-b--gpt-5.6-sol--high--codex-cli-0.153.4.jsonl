@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d0-db84-7100-9808-5cdbd40b2a97"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies deprecated, hidden, and parent-help commands as unavailable, then states the required positive condition: runnable via Run or RunE, or having an available subcommand. All claims and citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17663,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

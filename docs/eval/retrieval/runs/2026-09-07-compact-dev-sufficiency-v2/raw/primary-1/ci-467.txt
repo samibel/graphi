@@ -1,0 +1,1 @@
+INSUFFICIENT The response exposes calls to `Traverse` and `Find` but omits the traversal cases and flag/positional-argument rules needed to determine what may appear between the root command and a subcommand.

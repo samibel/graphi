@@ -1,0 +1,1 @@
+INSUFFICIENT The excerpts show that `InitDefaultVersionFlag` does nothing for an empty `c.Version` (`command.go:1203–1205`) and initialization is delayed for overrides (`command.go:883–884`), but omit flag creation, parsing, output, and execution behavior when the flag is supplied.

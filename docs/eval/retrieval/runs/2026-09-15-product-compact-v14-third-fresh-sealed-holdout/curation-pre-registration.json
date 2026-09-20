@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-15-product-compact-v14-third-fresh-sealed-holdout",
+  "status": "curated_sealed_pre_capture",
+  "base_commit": "4664d19efa0f6bc63bc1ee73bb321d377cdfb520",
+  "candidate_commit": "to be bound at freeze",
+  "corpus": {
+    "repo": "cobra",
+    "commit": "a0a6ae020bb3899ff0276067863e50523f897370"
+  },
+  "dataset": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/sealed-dataset.json",
+    "sha256": "a96cfa7d002dad127ff0a1fe7bdffed2515615c7e4cd14fb66dba45fffcf0190",
+    "n": 64,
+    "unique_family_count": 64,
+    "split": "holdout",
+    "relevant_min_grade": 3,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "nl_behaviour": 11,
+      "architecture_flow": 11,
+      "config_docs": 10,
+      "ambiguous": 10,
+      "no_hit": 0
+    }
+  },
+  "decision_rule": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "measurement_contract_version": "sw266-measurement-contract/2",
+    "followup_max_lines": 120,
+    "n": 64,
+    "k": 56,
+    "confidence_level_basis_points": 9500,
+    "method": "two-sided exact Clopper-Pearson interval",
+    "lower_bound_floor": "3/4"
+  },
+  "answer_span_ceiling": {
+    "protocol": "answer-span-ceiling/1",
+    "report": "answer-span-ceiling.json",
+    "report_sha256": "889503379fb6a8149293fd44f1f97a0a9bd5bf10311541e9ba473f3c9de48df8",
+    "any_complete_feasible": 64,
+    "answerable_queries": 64
+  },
+  "frozen_public_inputs": {
+    "methodology_sha256": "47fae9f7c4df86d41eae6ae2f12aeb8be5019fe30ac0398fd80d05100fa7212e",
+    "budgets_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+    "targets_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+    "grading_rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918"
+  },
+  "sequence_invariant": "The complete candidate capture, two-response prompts, and preserved transcripts must be hashed and committed before any primary, grader, or adjudicator execution.",
+  "stage_flags": {
+    "dataset_curated": true,
+    "dataset_sealed": true,
+    "candidate_capture_performed": false,
+    "primary_execution_performed": false,
+    "grader_execution_performed": false,
+    "adjudicator_execution_performed": false
+  }
+}

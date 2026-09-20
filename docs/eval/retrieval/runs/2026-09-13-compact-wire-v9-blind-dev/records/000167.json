@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 167,
+  "previous_sha256": "2cb621cd1a6dbd3658b49cde7a22a3975dd961b297875edb1a25095608b55c1c",
+  "kind": "grade",
+  "query_id": "cb-14",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "23f36c8e750cbca440b377a53aabe601701df72accf6e3a91876249d754a466c",
+  "outcome": "pass",
+  "rationale": "The answer concretely and correctly traces the dispatch path using preserved evidence: `completions.go:26-33` identifies the hidden request commands, the shell generator snippets assign `ShellCompRequestCmd`, and `completions.go:205-215` shows the request command’s `Run` handler calling `cmd.getCompletions(args)` and checking `cmd.CalledAs()` for the no-description variant. This sufficiently answers how the shell request reaches completion logic without relying on external facts.\n",
+  "sha256": "e7bfa05856579568282b8f0969871247c96ea4215a167d41ba7a00c597c20293"
+}

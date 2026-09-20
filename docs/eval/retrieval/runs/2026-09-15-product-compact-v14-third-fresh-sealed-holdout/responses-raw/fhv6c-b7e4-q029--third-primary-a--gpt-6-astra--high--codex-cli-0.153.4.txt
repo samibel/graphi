@@ -1,0 +1,1 @@
+No. In `args.go:41–43`, `NoArgs` is documented to “return an error if any args are included” and checks `if len(args) > 0`. A single positional value meets that condition regardless of `ValidArgs`. The `ValidArgs` check belongs to `OnlyValidArgs` (`args.go:49–66`).

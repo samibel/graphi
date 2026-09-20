@@ -1,0 +1,1 @@
+PASS: The response correctly explains that Command.MarkFlagFilename delegates to the flag-set helper, which attaches the extensions using SetAnnotation(name, BashCompFilenameExt, extensions). The persistent-flag variant, annotation key, and all cited locations are supported by the preserved bundle.

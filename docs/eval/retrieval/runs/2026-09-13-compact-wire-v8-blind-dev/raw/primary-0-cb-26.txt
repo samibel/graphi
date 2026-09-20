@@ -1,0 +1,1 @@
+Active Help is controlled by the program-specific environment variable `<PROGRAM>_ACTIVE_HELP` (`active_help.go:45-57`), where `<PROGRAM>` is the uppercase root command name with non-alphanumeric characters replaced by `_` (`active_help.go:59-67`). The global `COBRA_ACTIVE_HELP=0` disables it regardless of the program-specific value (`active_help.go:29,49-57`).

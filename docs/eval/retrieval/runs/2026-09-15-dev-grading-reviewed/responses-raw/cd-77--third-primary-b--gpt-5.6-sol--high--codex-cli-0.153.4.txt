@@ -1,0 +1,10 @@
+The `Makefile` defines:
+
+- `default: all`; `all` runs `fmt` and `test` (`Makefile:10–12`).
+- `fmt` checks every Go file found by `find . -name "*.go"` and fails with a diff if `gofmt` reports changes (`Makefile:2,14–16`).
+- `lint` runs `golangci-lint run -v` (`Makefile:18–20`), with a warning when the executable is unavailable (`Makefile:4–6`).
+- `test` depends on `install_deps`, then runs `go test -v ./...` (`Makefile:22–24`).
+- `richtest` similarly runs `richgo test -v ./...` (`Makefile:26–28`).
+- `install_deps` runs `go get -v ./...` (`Makefile:30–32`).
+- `clean` removes `./bin` via `rm -rf $(BIN)` (`Makefile:1,34–35`).
+- Declared phony targets are `fmt lint test install_deps clean`; `all`, `default`, and `richtest` are not included (`Makefile:8`).

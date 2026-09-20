@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q031",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "e9c95e51e6ba150f188bc61a0a7a53af15e922b549e08725d6111bc239c5baca",
+  "bundle_sha256": "d0b058ada220b2347ee6b1708738dce9ac488c7f9ec6980bbe9e53cb0ca6cc5e",
+  "prompt_sha256": "064fbb5bdb246a7850d88cf00d43e27bc4b905db85774c169a93837b269735c4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It returns the error `requires at least 2 arg(s), only received 1`. In `args.go`, `MinimumNArgs` checks `len(args) \u003c n` (line 76) and returns that formatted error (line 77).",
+  "responded_at": "2026-09-15T08:30:05Z",
+  "sha256": "211f9b09b07d520107226fbd992ca5c6234b71b446e384f78d1cd1dbbf2b76cf"
+}

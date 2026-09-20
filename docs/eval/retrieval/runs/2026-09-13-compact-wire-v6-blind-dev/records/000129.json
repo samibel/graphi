@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 129,
+  "previous_sha256": "582a6aff49e42714bca85ed7e13e81b3c98aa9fe55d57171ae25551aa26ecfd4",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1a653c69b2402c8cc3544ca404f6f24801e60d5a40e08c83840290700da18ebf",
+  "outcome": "pass",
+  "rationale": "PASS: It accurately describes InitDefaultCompletionCmd's guards and the generated command's principal settings.",
+  "sha256": "63ee314c72f99474d315196bb122d56bef38a04fa5f0ca6f9b7fa84bb85fa7a9"
+}

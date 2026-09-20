@@ -1,0 +1,1 @@
+PASS: The response correctly identifies AddGroup as a variadic method on *Command that appends supplied groups to c.commandgroups, supported by command.go:1356–1359. Its additional claims about Group fields and Groups() are supported by the cited transcript spans.

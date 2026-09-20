@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q058",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "be0e1f71a293c7e11547c890d3264b2a36eb7526df2f75b67ba2da48941cd68c",
+  "bundle_sha256": "d40c7c2d87bde6e9172e5904ac878e5facc5751d654aa0b1dcad732fa9ec3188",
+  "prompt_sha256": "548efa0658d9bd4324267de287047c60e3272c7ddc77ac533a4aa6a35ef2461f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Requesting children does **not always sort them**. In `command.go:1292–1294`, `(*Command).Commands()` explicitly comments: “do not sort commands if it already sorted or sorting was disabled.” Thus their current order can be returned unchanged when sorting is disabled or they are already sorted.",
+  "responded_at": "2026-09-13T12:38:28Z",
+  "sha256": "ab7328021fa66d034314f125439d187e74286d28f12d7e86151ad2809351c0eb"
+}

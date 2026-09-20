@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 98,
+  "previous_sha256": "ad0464b7e7b2163b17f1dc0e3fde2f88e7aabc907796e5d07daa475143d445cb",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "71430f2edcae3990c8189703724c225712f3068375cc00ca7ae10fc5effee3f5",
+  "outcome": "pass",
+  "rationale": "The candidate accurately and concretely explains the supported Find path: `command.go:724-748` shows recursive downward traversal, `stripFlags(innerArgs, c)`, selection of `argsWOflags[0]`, lookup through `c.findNext`, removal via `c.argsMinusFirstX`, and stopping at the current command when no match exists. It also correctly describes `findNext` from `command.go:767-786`: exact name or alias matches return immediately, while enabled prefix matching succeeds only for one unique match and otherwise returns nil. The final legacy-validation statement is also supported by `command.go:743-747`. Although the bundle lacks the separate `Traverse` implementation, the question is fully answered by the preserved `Find` and `findNext` evidence.\n",
+  "sha256": "2b44761491c31fb5ac44bb8501085bdcc092d3096b4c2e2506c80da58cd4d037"
+}

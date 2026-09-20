@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 101,
+  "previous_sha256": "2ee58467f70019fb8bb0d226f0495970124a9a3d352f1fab7bdbab8c73770b42",
+  "kind": "grade",
+  "query_id": "cb-16",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ef6d9272169b3cbafaf70c222f1b7b6a1c5ddaec7ef2c735ff1a7c52ace77ab6",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies `cobra.go` lines 187–221 and the `ld(s, t string, ignoreCase bool)` symbol as the Levenshtein implementation. The preserved bundle explicitly shows the matrix allocation and initialization, nested recurrence loops, and `return d[len(s)][len(t)]`. It also correctly cites the call at `command.go:836`, `levenshteinDistance := ld(typedName, cmd.Name(), true)`, and the threshold comparison at `command.go:837`. These claims are concrete and fully supported by the bundle bytes.\n",
+  "sha256": "42f12dc061b9da870b67726a8376d7f5924de7d099eedfe63fcc23b274016a3b"
+}

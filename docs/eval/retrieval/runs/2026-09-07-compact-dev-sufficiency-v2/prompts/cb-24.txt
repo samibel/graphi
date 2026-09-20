@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do flag groups get enforced during completion
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"how do flag groups get enforced during completion\"; read in order (138/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"flag_groups.go","start_line":225,"end_line":240,"text":"func (c *Command) enforceFlagGroupsForCompletion() {\n\tif c.DisableFlagParsing {\n\t\treturn\n\t}\n\n\tflags := c.Flags()\n\tgroupStatus := map[string]map[string]bool{}\n\toneRequiredGroupStatus := map[string]map[string]bool{}\n\tmutuallyExclusiveGroupStatus := map[string]map[string]bool{}\n\tc.Flags().VisitAll(func(pflag *flag.Flag) {\n\t\tprocessFlagForGroupAnnotation(flags, pflag, requiredAsGroup, groupStatus)\n\t\tprocessFlagForGroupAnnotation(flags, pflag, oneRequired, oneRequiredGroupStatus)\n\t\tprocessFlagForGroupAnnotation(flags, pflag, mutuallyExclusive, mutuallyExclusiveGroupStatus)\n\t})\n\n\t// If a flag that is part of a group is present, we make all the other flags"},{"path":"flag_groups.go","start_line":121,"end_line":127,"text":"func processFlagForGroupAnnotation(flags *flag.FlagSet, pflag *flag.Flag, annotation string, groupStatus map[string]map[string]bool) {\n\tgroupInfo, found := pflag.Annotations[annotation]\n\tif found {\n\t\tfor _, group := range groupInfo {\n\t\t\tif groupStatus[group] == nil {\n\t\t\t\tflagnames := strings.Split(group, \" \")\n"},{"path":"flag_groups.go","start_line":81,"end_line":85,"text":"func (c *Command) ValidateFlagGroups() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n"},{"path":"flag_groups.go","start_line":144,"end_line":144,"text":"func validateRequiredFlagGroups(data map[string]map[string]bool) error {"},{"path":"flag_groups.go","start_line":167,"end_line":167,"text":"func validateOneRequiredFlagGroups(data map[string]map[string]bool) error {"},{"path":"flag_groups.go","start_line":188,"end_line":188,"text":"func validateExclusiveFlagGroups(data map[string]map[string]bool) error {"},{"path":"completions.go","start_line":149,"end_line":149,"text":"func (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {"},{"path":"shell_completions.go","start_line":21,"end_line":21,"text":"// MarkFlagRequired instructs the various shell completion implementations to"}],"provenance":{"input_sha256":"142653b5acf55aaa9f86ff9ea1e3d813e2a9507bc891565313233d6a28e49e62","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

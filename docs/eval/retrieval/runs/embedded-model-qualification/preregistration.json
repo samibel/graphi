@@ -1,0 +1,58 @@
+{
+  "arms": {
+    "M0_lexical": {
+      "label": "M0_lexical"
+    },
+    "M1_potion_512": {
+      "admission_sha256": "d686c1edad9ba106d210c6a73d36242871f3fdc70f978ef735e14b1d0d09a966",
+      "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+      "fingerprint_canonical": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n30:runtime-bound-graph-generation",
+      "label": "M1_potion_512",
+      "manifest_sha256": "d919fce66e91e9afd693b2387655592be8014d9b77e2f51712c6ae286ec97f78"
+    },
+    "M2_potion_8192": {
+      "admission_sha256": "6e5cd9953e0fdb6d1119d29856894f0f53bf8885741169a8bd8748650cd69649",
+      "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree-eval-max-8192:6e5cd9953e0f",
+      "fingerprint_canonical": "161:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree-eval-max-8192:6e5cd9953e0f\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n30:runtime-bound-graph-generation",
+      "label": "M2_potion_8192",
+      "manifest_sha256": "d919fce66e91e9afd693b2387655592be8014d9b77e2f51712c6ae286ec97f78"
+    },
+    "M3_coderank": {
+      "admission_sha256": "99962bccb96ee21e34babf981f1132ffd3e498de888686f1f667f9c7e74b3a6c",
+      "embedder_id": "coderank:nomic-ai/CodeRankEmbed@3c4b60807d71f79b43f3c4363786d9493691f8b1:51402e2c6919e250f36af879e35deae3fd6c2474c2b5eff9e468773e539399d9",
+      "fingerprint_canonical": "137:coderank:nomic-ai/CodeRankEmbed@3c4b60807d71f79b43f3c4363786d9493691f8b1:51402e2c6919e250f36af879e35deae3fd6c2474c2b5eff9e468773e539399d9\n40:3c4b60807d71f79b43f3c4363786d9493691f8b1\n64:8f651727eb12644935f9c6faaf276ba9707ee3ffc4618c5a80cfe2190902ad76\n64:418e99ca78903ffd5ec3ba8b76576febba7b2e16301c3125369e6ed38172247e\n3:768\n2:v3\n931:{\"schema_version\":1,\"protocol\":\"graphi-coderank/3\",\"endpoint\":\"\",\"model\":{\"id\":\"nomic-ai/CodeRankEmbed\",\"revision\":\"3c4b60807d71f79b43f3c4363786d9493691f8b1\",\"sha256\":\"8f651727eb12644935f9c6faaf276ba9707ee3ffc4618c5a80cfe2190902ad76\"},\"tokenizer\":{\"id\":\"nomic-ai/CodeRankEmbed\",\"revision\":\"3c4b60807d71f79b43f3c4363786d9493691f8b1\",\"sha256\":\"418e99ca78903ffd5ec3ba8b76576febba7b2e16301c3125369e6ed38172247e\"},\"runtime\":{\"name\":\"sentence-transformers\",\"version\":\"6.1.0\",\"sha256\":\"1c76d17b6e76e6c8fc6766f383b8f8ec86a836bbca7542f1182337e2d690008a\"},\"dimension\":768,\"precision\":\"float32\",\"normalization\":\"l2\",\"compute\":\"cpu\",\"admission\":{\"max_tokens\":1536,\"reserve\":0,\"algorithm\":\"first-n-tokens\",\"algorithm_version\":\"1\"},\"query\":{\"id\":\"coderank-code-search-query\",\"version\":\"1\",\"instruction\":\"Represent this query for searching relevant code: \",\"instruction_sha256\":\"142a69412548000d1ecc269939858453524546a159f156a51eb1d4a3eea53efb\"}}\n30:runtime-bound-graph-generation",
+      "label": "M3_coderank",
+      "manifest_sha256": "74788d487a3b24578d1c7d8f1ccbcdc306fcda8397655ecd026a7d20c5b62538"
+    }
+  },
+  "bootstrap_samples": 100000,
+  "bootstrap_seed": 1077775116515082045,
+  "candidate_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "candidate_sha": "9996961215522b92a30bfdc23710c88f95d6ba6f",
+  "compact_version": "task_context/2-compact/17",
+  "dataset_sha256": "33760861d5c78f551d4203342f2e3b7350e030882bd74ab6ce166d00ce8168ba",
+  "grader_prompt_sha256": "ec24be9ffc0ba0496094b1641e1d747162d48c2ecd09cc2a8a4ebe89d75d17e4",
+  "reader_prompt_sha256": "9e6f38c03e1e21e0c71d1d646ac13cd1073116b567cfebfa05b0e8522b1faccb",
+  "reference_machine": {
+    "background_load": "operator-process-inventory-v1; single-user workstation; no other measured workload scheduled during the run",
+    "cpu": "Apple M2 Max",
+    "os": "darwin",
+    "os_version": "25.6.0",
+    "physical_cores": 12,
+    "runtime_threads": 8
+  },
+  "schema_version": 1,
+  "source_repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "thresholds": {
+    "bootstrap_confidence": 0.95,
+    "max_artifact_bytes": 1073741824,
+    "max_query_p95_millis": 1000,
+    "max_reindex_seconds": 600,
+    "max_sidecar_rss_bytes": 2147483648,
+    "min_paired_gain": 9,
+    "min_passes": 56,
+    "min_query_samples": 100,
+    "min_weak_strata_with_positive_gain": 2
+  },
+  "token_budget": 1200
+}

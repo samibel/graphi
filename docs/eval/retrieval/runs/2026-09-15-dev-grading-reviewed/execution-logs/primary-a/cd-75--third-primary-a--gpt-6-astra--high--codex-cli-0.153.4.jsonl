@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-77cd-7561-a59d-5086744091ec"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`go.mod` (lines 1–10) declares:\n\n```go\nmodule github.com/spf13/cobra\n\ngo 1.15\n\nrequire (\n\tgithub.com/cpuguy83/go-md2man/v2 v2.0.3\n\tgithub.com/inconshreveable/mousetrap v1.1.0\n\tgithub.com/spf13/pflag v1.0.5\n\tgopkg.in/yaml.v3 v3.0.1\n)\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":17219,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":0}}

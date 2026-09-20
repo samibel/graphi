@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How would I create a custom Zsh Completion, but for another shell?
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s) for \"How would I create a custom Zsh Completion, but for another shell?\"; read in order (247/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"completions.go","start_line":194,"end_line":208,"text":"func (c *Command) initCompleteCmd(args []string) {\n\tcompleteCmd := \u0026Command{\n\t\tUse:                   fmt.Sprintf(\"%s [command-line]\", ShellCompRequestCmd),\n\t\tAliases:               []string{ShellCompNoDescRequestCmd},\n\t\tDisableFlagsInUseLine: true,\n\t\tHidden:                true,\n\t\tDisableFlagParsing:    true,\n\t\tArgs:                  MinimumNArgs(1),\n\t\tShort:                 \"Request shell completion choices for the specified command-line\",\n\t\tLong: fmt.Sprintf(\"%[2]s is a special command that is used by the shell completion logic\\n%[1]s\",\n\t\t\t\"to request completion choices for the specified command-line.\", ShellCompRequestCmd),\n\t\tRun: func(cmd *Command, args []string) {\n\t\t\tfinalCmd, completions, directive, err := cmd.getCompletions(args)\n\t\t\tif err != nil {\n\t\t\t\tCompErrorln(err.Error())"},{"path":"completions.go","start_line":240,"end_line":251,"text":"\t\t\t\t// Print each possible completion to stdout for the completion script to consume.\n\t\t\t\tfmt.Fprintln(finalCmd.OutOrStdout(), comp)\n\t\t\t}\n\n\t\t\t// As the last printout, print the completion directive for the completion script to parse.\n\t\t\t// The directive integer must be that last character following a single colon (:).\n\t\t\t// The completion script expects :\u003cdirective\u003e\n\t\t\tfmt.Fprintf(finalCmd.OutOrStdout(), \":%d\\n\", directive)\n\n\t\t\t// Print some helpful info to stderr for the user to understand.\n\t\t\t// Output from stderr must be ignored by the completion script.\n\t\t\tfmt.Fprintf(finalCmd.ErrOrStderr(), \"Completion ended with directive: %s\\n\", directive.string())"},{"path":"completions.go","start_line":25,"end_line":33,"text":"\nconst (\n\t// ShellCompRequestCmd is the name of the hidden command that is used to request\n\t// completion results from the program.  It is used by the shell completion scripts.\n\tShellCompRequestCmd = \"__complete\"\n\t// ShellCompNoDescRequestCmd is the name of the hidden command that is used to request\n\t// completion results without their description.  It is used by the shell completion scripts.\n\tShellCompNoDescRequestCmd = \"__completeNoDesc\"\n)"},{"path":"completions.go","start_line":36,"end_line":37,"text":"var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}\n"},{"path":"completions.go","start_line":27,"end_line":27,"text":"\t// ShellCompRequestCmd is the name of the hidden command that is used to request"}],"provenance":{"input_sha256":"1d8495197e47bae936e2794dc58f4d108dd7f7169f0de1782b78a9414bcece8b","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----

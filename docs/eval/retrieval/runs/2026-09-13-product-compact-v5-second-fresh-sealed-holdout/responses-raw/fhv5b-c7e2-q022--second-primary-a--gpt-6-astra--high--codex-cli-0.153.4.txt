@@ -1,0 +1,8 @@
+`GenReSTTreeCustom` uses child-first recursion, then prepends content, then generates the current command’s page:
+
+1. Iterates through `cmd.Commands()`, skips unavailable commands and additional help topics, and recursively processes each remaining child before handling the current command (`doc/rest_docs.go:146–153`).
+2. Creates the current command’s `.rst` file, replacing spaces in `cmd.CommandPath()` with underscores (`155–161`).
+3. Writes `filePrepender(filename)` to that file (`163–165`).
+4. Calls `GenReSTCustom(cmd, f, linkHandler)` to write the page after the prepended content (`166–168`).
+
+Any error from recursion, file creation, prepending, or page generation immediately returns.

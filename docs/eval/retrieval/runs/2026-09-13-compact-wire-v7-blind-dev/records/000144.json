@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 144,
+  "previous_sha256": "7b5014e94144bfce19aac83918d5d9cbe61380689ab43f12d3efabfb70be954d",
+  "kind": "grade",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "47fdd53449dab3a0f7e90afdc07585e0261c92a3d1fc4bb2a8dfb8802b0cd352",
+  "outcome": "pass",
+  "rationale": "The candidate gives the key supported solution: register a callback with `OnInitialize` (`cobra.go:97-101`). It correctly establishes that flag parsing occurs first at `command.go:883-891`, followed by `c.preRun()` at `command.go:926`, whose loop invokes registered initializers at `command.go:1015-1019`. It also correctly cites `Command.Flag(name)` as looking up local flags and then persistent flags via `c.persistentFlag(name)` (`command.go:1794-1803`). Thus the proposed callback can access the parsed persistent flag value, while package initialization itself should only register that callback.\n",
+  "sha256": "99c254b610b3d5f24fc702bddad1345197d2f541567ff51b6dc9d5cc23731ef1"
+}

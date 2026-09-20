@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-f07b-7cb2-8dd3-cfd1f473980e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`RegisterFlagCompletionFunc` can return two errors:\n\n- `\"RegisterFlagCompletionFunc: flag '%s' does not exist\"` if `c.Flag(flagName)` returns `nil` (`completions.go:134–136`).\n- `\"RegisterFlagCompletionFunc: flag '%s' already registered\"` if `flagCompletionFunctions[flag]` already exists (`completions.go:141–142`).\n\nRegistration acquires `flagCompletionMutex.Lock()` and defers `Unlock()`, protecting both the duplicate check and the assignment `flagCompletionFunctions[flag] = f`. Successful registration returns `nil`, with the deferred unlock releasing the mutex (`completions.go:138–145`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17393,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":145,"reasoning_output_tokens":0}}

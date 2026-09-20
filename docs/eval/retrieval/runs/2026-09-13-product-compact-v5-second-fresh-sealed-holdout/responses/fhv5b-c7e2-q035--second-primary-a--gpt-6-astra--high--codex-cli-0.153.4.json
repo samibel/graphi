@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q035",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "733bc8af4f6bf5668a0d1d0cfe339610f3d4a417abe2692bf097635c0a3a8cdd",
+  "bundle_sha256": "5beec56fd206c3893be682f42d72750ae0fca22f684e4d23638b1ada902545f0",
+  "prompt_sha256": "11726fa70ee6dc27d41cadfd6352a8a777b1b08e38f80ef9c626f5ae76a6305f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `c.ParseFlags(flags)` in `command.go:823–825` and `ParseFlags` in `command.go:1818–1840`, but omits the traversal logic that accumulates parent flag arguments and enters the child command.",
+  "responded_at": "2026-09-13T15:25:38Z",
+  "sha256": "5f457ae355a0e23f83af3d0a3f971050fbbe4ddb7f3e86de334d2413b4f4551a"
+}

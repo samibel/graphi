@@ -1,0 +1,21 @@
+`flag_groups.go` is in package `cobra` (`flag_groups.go:15`) and implements flag-group annotation, validation, and completion behavior.
+
+Declarations shown in the response:
+
+- Annotation constants (`flag_groups.go:25-29`):
+  - `requiredAsGroup`
+  - `oneRequired`
+  - `mutuallyExclusive`
+- Public `Command` methods:
+  - `MarkFlagsRequiredTogether(flagNames ...string)` (`flag_groups.go:31-34`)
+  - `ValidateFlagGroups() error` (`flag_groups.go:79-89`), which skips validation when `DisableFlagParsing` is set.
+- Internal helpers:
+  - `hasAllFlags` (`flag_groups.go:111-112`)
+  - `processFlagForGroupAnnotation` (`flag_groups.go:121-123`)
+  - `validateRequiredFlagGroups` (`flag_groups.go:144-145`)
+  - `validateOneRequiredFlagGroups` (`flag_groups.go:167-168`)
+  - `validateExclusiveFlagGroups` (`flag_groups.go:188-189`)
+- Completion support:
+  - `(*Command).enforceFlagGroupsForCompletion()` (`flag_groups.go:220-227`), which marks related flags required or hidden according to their group semantics.
+
+The response is truncated, so this is not necessarily an exhaustive declaration list.

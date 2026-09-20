@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 162,
+  "previous_sha256": "80a49b42dab4c361f9aaf73e7dfe8f96fab4da2587a0be22b869ad5d493bc02c",
+  "kind": "grade",
+  "query_id": "ci-467",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2cd2a30f159c735c29ff1d0bfc86ebe85b3532f622f7bd14ea80c4dfdda50e2f",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `command.go:1087-1091` shows that `TraverseChildren` selects `c.Traverse(args)`, while `command.go:225-226` identifies the configuration field. `command.go:793-816` shows flags and space-separated flag values being accumulated before subcommand lookup, and `command.go:824-827` shows those flags parsed on the parent before descending into the subcommand. The positional-argument limitation is also supported: `command.go:819-822` returns without descending when the first non-flag token is not a child command.\n",
+  "sha256": "c385b278c99785f0ce20683db761dfd20e7f4b716f7dd52263e7c1252fcc19bd"
+}

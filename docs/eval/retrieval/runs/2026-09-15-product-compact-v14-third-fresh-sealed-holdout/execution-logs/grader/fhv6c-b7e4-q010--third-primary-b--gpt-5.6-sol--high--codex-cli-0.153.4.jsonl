@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-b7b7-7061-a4b3-51c5f003377b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the helper replacing global `pflag.CommandLine` with a fresh flag set using `os.Args[0]` and `pflag.ExitOnError`, exactly supported by the cited `command_test.go` lines 70–72."}}
+{"type":"turn.completed","usage":{"input_tokens":18025,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}

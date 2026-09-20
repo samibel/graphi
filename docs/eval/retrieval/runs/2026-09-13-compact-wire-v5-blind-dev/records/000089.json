@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 89,
+  "previous_sha256": "dc256c7bcad67e5076191a3b69bf45f83d8cc72bc285198cdfbabd64791069c0",
+  "kind": "grade",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3e8c9e12324e1f69b403966996b63cb0f71b4147b38efa573c84c379f24f6d6a",
+  "outcome": "pass",
+  "rationale": "PASS: For this exact-path query, the response identifies and accurately summarizes several concrete declarations and behaviors present in the supplied flag_groups.go spans.\n",
+  "sha256": "bfc72609c312166c873d961a5dc9943f6e313a5735d092d3a5dfd471ba003387"
+}

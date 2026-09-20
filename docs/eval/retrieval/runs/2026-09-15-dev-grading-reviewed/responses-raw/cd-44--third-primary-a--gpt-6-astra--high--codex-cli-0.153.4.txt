@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows the check `localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed` (`completions.go:444`), but omits its body and the control flow that suppresses subcommand-name completions.

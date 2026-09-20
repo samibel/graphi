@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q004",
+  "response_sha256": "1c4bdde4862771df5f120a0f0568429f80ffb1e22a0b3e0662f88b1135839c4e",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately describes args_test.go:44–53: the helper fails on a nil error and otherwise checks for the exact text `invalid argument \"a\" for \"c\"`, reporting mismatches with t.Errorf. All cited lines and claims are supported by the preserved transcript.",
+  "graded_at": "2026-09-15T08:32:55Z",
+  "sha256": "bc9c50249cb68c805fad1f12e9321523061789aa891c502b1c0d5a1d258908ca"
+}

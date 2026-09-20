@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 114,
+  "previous_sha256": "03c0dbf60a5ab78c968009ec6f46a1315b19d9f9bb8188afa001fb16cc72e287",
+  "kind": "grade",
+  "query_id": "cb-30",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v2-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "f7c9ee6fa6065ffb435267f494138c1f1e1886a8f20611908970252b4d1e9898",
+  "outcome": "pass",
+  "rationale": "PASS: The answer identifies the development key’s GenManTree entry point and concretely states command-and-descendant generation in a supplied directory with a possibly nil header, all explicit in doc/man_docs.go:33–34. Lines 46 and 82–83 support the GenManTreeFromOpts/GenManTreeOptions alternative. The answer accurately notes that exact invocation signatures are absent; naming the generator and documented inputs/effect suffices for this general usage question.\n",
+  "sha256": "9273f10137fb6614cd3ec8b8b9a0d14637e4a9d4d35c306bb4bbd34eda1f60ca"
+}

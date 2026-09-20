@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 131,
+  "previous_sha256": "e95ec0dbff4f87750d9fe7436e2fd9584bc2d75464c87aefabe24ed25d59e353",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "c3ad163c4d058a604d285a0efa74804f13fa49b79ef8f517e4d717c89a0ffa45",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: ci-1408:primary-a\nOutcome: pass\nRationale: Gives the supported subcommand Flag(name) route for a global/parent flag object, grounded in the explicit tree-climbing contract, and limits claims because typed value getters are absent.\n",
+  "sha256": "76cac28d1699b5759f3abf34924c524cc8320a49f33a2a611081c3c127337d14"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-93b4-7ee1-8dbc-aac072003b7e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The responses identify `command_test.go:1954`’s `TestWrongGroupForHelp` but omit its body and the relevant help-command creation logic needed to determine what “wrong help group” means."}}
+{"type":"turn.completed","usage":{"input_tokens":16697,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":118,"reasoning_output_tokens":66}}

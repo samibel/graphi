@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q014",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "45cb4726b41fa11c2ef4806dfa4884351f326507f65d2a6ab8030b7d2d8089a4",
+  "bundle_sha256": "0a97858aece54ce015df6f716822f092a5f8355ca22e4485b0c0e8dc67230baa",
+  "prompt_sha256": "e542f677189814c79361111754b8073a25d0630fe68a2a6101f324a3f76d47b7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "If the current command’s `outWriter` is `nil`, `getOut` checks `HasParent()` and recursively calls `c.parent.getOut(def)`. This searches ancestors for a non-nil output writer. If no parent provides one, it returns the supplied default writer (`def`) ([command.go, lines 393–402]).",
+  "responded_at": "2026-09-13T12:32:12Z",
+  "sha256": "62e7ddf977a1e625ce0ebbc9a97847e2aacf33236e526c84f908f29631b8c500"
+}

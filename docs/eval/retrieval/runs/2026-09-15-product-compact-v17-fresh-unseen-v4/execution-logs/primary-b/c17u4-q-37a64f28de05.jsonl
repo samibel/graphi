@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-45f8-7181-9563-78a91a6ebb7c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains no test or implementation snippet showing the behavior when an application and its direct child share the same command name."}}
+{"type":"turn.completed","usage":{"input_tokens":16551,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":32,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-0bea-7262-941f-128028e22834"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ArbitraryArgs` performs no validation. It always returns `nil`, regardless of the command or arguments (`args.go:68–71`, symbol `ArbitraryArgs`; comment: “never returns an error”). It is also the default when `Command.Args` is `nil` (`command.go:1139–1144`, `ValidateArgs`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16596,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":75,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+Set cobra.EnablePrefixMatching = true; the package variable is declared in cobra.go:55. During command lookup, exact name or alias matches win first; with prefix matching enabled, matching name/alias prefixes are collected, and a command is returned only if exactly one prefix match remains (command.go:770-785).

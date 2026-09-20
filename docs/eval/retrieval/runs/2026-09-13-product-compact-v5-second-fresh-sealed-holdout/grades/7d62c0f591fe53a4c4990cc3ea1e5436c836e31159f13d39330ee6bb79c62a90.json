@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q037",
+  "response_sha256": "7d62c0f591fe53a4c4990cc3ea1e5436c836e31159f13d39330ee6bb79c62a90",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not substantively answer how flags are classified. The preserved bundle shows local nonpersistent flag entries and shorthand handling but lacks the hidden-flag filtering, inherited-flag processing, and TraverseChildren condition needed to explain the essential behavior.",
+  "graded_at": "2026-09-13T15:40:49Z",
+  "sha256": "cfecfa73e88909baef3fc2069a1f18e7c79f84154c41f3c63420fc590434c5f2"
+}

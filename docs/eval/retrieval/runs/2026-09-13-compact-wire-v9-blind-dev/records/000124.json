@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 124,
+  "previous_sha256": "2af24d2c54d8edc009c807b08cf0840b36c55c37762209db91353540fe44a09c",
+  "kind": "grade",
+  "query_id": "cb-28",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "608d8b7d2cb3b41071e2c22b436f2d3c23ddb823b4e2946367c14c22edb4fd99",
+  "outcome": "pass",
+  "rationale": "The answer directly and correctly states the documented purpose of `GroupID`: it groups a subcommand in its parent’s help output, exactly supported by `command.go:73-75`. Its supporting explanation is also grounded in the bundle: `Group` contains `ID` and `Title` (`command.go:41-45`), groups are registered through `AddGroup` (`command.go:1356-1359`), and dedicated setters exist for the built-in help and completion commands (`command.go:332-345`).\n",
+  "sha256": "fe49cf040440016049043429f725325fdef59e24d7daf33d982d996965f3504d"
+}

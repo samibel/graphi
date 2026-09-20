@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-3c43-7c71-be9b-b3b983c477f5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Set `DisableSuggestions` to `true` on your command:\n\n```go\ncommand.DisableSuggestions = true\n```\n\nThe user guide explicitly documents this in `site/content/user_guide.md:710–714`. In `command.go:750–753`, `(*Command).findSuggestions` checks `c.DisableSuggestions` and immediately returns an empty string when enabled."}}
+{"type":"turn.completed","usage":{"input_tokens":17241,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":78,"reasoning_output_tokens":0}}

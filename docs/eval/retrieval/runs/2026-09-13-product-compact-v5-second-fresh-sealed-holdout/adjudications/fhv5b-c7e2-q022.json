@@ -1,0 +1,37 @@
+{
+  "query_id": "fhv5b-c7e2-q022",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv5b-c7e2-q022",
+    "rater_id": "second-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+    "query_text_sha256": "39669b5ce2a37c65edc036263345b2befbc456de221f517af06061bc34fbb4b8",
+    "bundle_sha256": "4958fc2348626b9fe3ce89636de358bb2f2bdc708246ef00da82108111c64487",
+    "prompt_sha256": "a28ddc81ce637284fa41bc636bbdbe5a82f0de7a282dc5ec49735a323cfe2d14",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "`GenReSTTreeCustom` uses post-order traversal:\n\n1. It recursively processes each available, non-help child command first via `GenReSTTreeCustom(c, ...)` (`doc/rest_docs.go:146–153`).\n2. It then creates the current command’s `.rst` file, whose basename comes from `cmd.CommandPath()` with spaces replaced by underscores (`doc/rest_docs.go:156–162`).\n3. It writes `filePrepender(filename)` to the new file (`doc/rest_docs.go:165–167`).\n4. Finally, it generates the current command’s page content with `GenReSTCustom(cmd, f, linkHandler)` (`doc/rest_docs.go:168–170`).\n\nThus, children are fully generated before their parent; within each file, prepended content is written before the generated ReST page.",
+    "responded_at": "2026-09-13T15:49:14Z",
+    "sha256": "07ff455e1f69108106bdceaeb499e52d5ab6e7cca90b588af522c6432241f820"
+  },
+  "disclosure": {
+    "query_id": "fhv5b-c7e2-q022",
+    "adjudicator_response_sha256": "07ff455e1f69108106bdceaeb499e52d5ab6e7cca90b588af522c6432241f820",
+    "disclosed_artifact_sha256": [
+      "390ae228d1477bf8e0f5d646e7e2ebf59179f323f1193853913caf97f2e70947",
+      "4c17c4c6981981e7c316ceb0f74ce99785fa20c306e9f3ea691dc9a27c7b7dda",
+      "764be6e9e1ecfaef5e18127712e3b08952f5d7598354dc595b1b37825eb7b5cd",
+      "eacc1bf3ab7b65c040acec2f17cc7c39a65e4d97e5449d41f0eea6db8b554fe7"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

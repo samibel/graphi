@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 80,
+  "previous_sha256": "f84d2cf2d1678f4c8792c22889272428d03daf34738598ad925bd67107bd40b7",
+  "kind": "response",
+  "query_id": "ci-943",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "e20234707c33b690195a997a21171129d95346d6d62ae992ccd1550b2bdc8b03",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Check that the command's `Version` is nonempty, for example `cmd.Version = \"1.0.0\"`. `InitDefaultVersionFlag` returns immediately when `c.Version == \"\"` (`command.go:1202–1207`), and the `Version` field comment says a nonempty value enables addition of the boolean version flag when one has not already been defined (`command.go:108–109`). An existing version flag also prevents default creation (`command.go:1202`). Setting a version template alone sets `c.versionTemplate`, not `c.Version` (`command.go:352–355`). The bundle does not show your command configuration, so these are the supported conditions to check rather than a confirmed diagnosis of your instance.\n",
+  "sha256": "48b233d4cd040cd74f46540d6e136d36752702a3960ab49386420e303cfe8771"
+}

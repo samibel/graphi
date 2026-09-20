@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 100,
+  "previous_sha256": "dce4f0122367022bef87495ec9b62ee0247580857f41702fdc9c99934ea5e808",
+  "kind": "grade",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "770082afa046318e5ec6a74cc20c28330079e1eb50a50f173ae2e05bf9994782",
+  "outcome": "pass",
+  "rationale": "The answer accurately and concretely follows the preserved code. `command.go:831-850` supports filtering to `cmd.IsAvailableCommand()`, testing `ld(typedName, cmd.Name(), true) \u003c= c.SuggestionsMinimumDistance`, the case-insensitive prefix check, and case-insensitive matches against `cmd.SuggestFor`, with `cmd.Name()` appended. `command.go:1495-1503` supports that `Name()` is the first word of `Use`. `command.go:750-765` supports disabling suggestions, defaulting a nonpositive threshold to 2, and formatting nonempty results under “Did you mean this?”. The `ld` signature at `cobra.go:187-188` identifies its third parameter as `ignoreCase`, supporting the case-insensitive distance description.\n",
+  "sha256": "6e67ca71b43ca964ea096feb3e62c2e95bfda094cba3f357c59e23d0c225b5ae"
+}

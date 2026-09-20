@@ -1,0 +1,49 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 9f13f4a8356589de7372fd8399fbac50869fa65fa35ea30ef25e455346e59220
+QUERY ID: c17u4-q-268c51e30ab9
+
+QUESTION:
+How does Cobra recursively classify an additional help-topic command?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1578-1598 anchor="func (c *Command) IsAdditionalHelpTopicCommand() bool" reason=The method rejects runnable, deprecated, or hidden nodes and recursively requires every child to be another help topic.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s); query 5dffb91de2a5; read in order (283/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1577,"end_line":1613,"text":"\n// IsAdditionalHelpTopicCommand determines if a command is an additional\n// help topic command; additional help topic command is determined by the\n// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated.\n// Concrete example: https://github.com/spf13/cobra/issues/393#issuecomment-282741924.\nfunc (c *Command) IsAdditionalHelpTopicCommand() bool {\n\t// if a command is runnable, deprecated, or hidden it is not a 'help' command\n\tif c.Runnable() || len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\t// if any non-help sub commands are found, the command is not a 'help' command\n\tfor _, sub := range c.commands {\n\t\tif !sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn false\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no non-help sub commands\n\treturn true\n}\n\n// HasHelpSubCommands determines if a command has any available 'help' sub commands\n// that need to be shown in the usage/help default template under 'additional help\n// topics'.\nfunc (c *Command) HasHelpSubCommands() bool {\n\t// return true on the first found available 'help' sub command\n\tfor _, sub := range c.commands {\n\t\tif sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no available 'help' sub commands\n\treturn false\n}"},{"path":"command.go","start_line":1549,"end_line":1553,"text":"\n// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"site/content/user_guide.md","start_line":494,"end_line":495,"text":"Cobra automatically adds a help command to your application when you have subcommands.\nThis will be called when a user runs 'app help'. Additionally, help will also"},{"path":"command.go","start_line":469,"end_line":476,"text":"\n// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"}],"provenance":{"input_sha256":"797e4837d576b2588ebac7f9ff670fe7055b564e8b01daa6b486f3eca8c29893","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Cobra’s `(*Command).IsAdditionalHelpTopicCommand` recursively classifies a command as an additional help topic when:
+
+- The command is not runnable (`Run` and `RunE` are both nil), not deprecated, and not hidden (`command.go:1584-1587`; `Runnable` is defined at `command.go:1551-1553`).
+- Every child in `c.commands` is itself an additional help-topic command. It recursively calls `sub.IsAdditionalHelpTopicCommand()` and returns false upon the first child that fails (`command.go:1589-1594`).
+
+Thus, a qualifying command either has no subcommands or has only recursively qualifying help-topic subcommands (`command.go:1596-1597`).
+----- END THE RATER'S RESPONSE -----

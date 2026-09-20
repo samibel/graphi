@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-833d-7cc3-a3a5-185f29f91d09"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When `EnableCaseInsensitive` is enabled, `commandNameMatches(s, t)` switches from exact comparison (`s == t`) to `strings.EqualFold(s, t)`, making command-name matching case-insensitive (`command.go`, lines 1876–1885). This also affects aliases because `HasAlias` calls `commandNameMatches(a, s)` (`command.go`, lines 1505–1513)."}}
+{"type":"turn.completed","usage":{"input_tokens":16394,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":0}}

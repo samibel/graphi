@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 24,
+  "previous_sha256": "7a30c6eeed4939d908678ac0bc0323c7d1e593a74a47e44e93f192a3c6b166b3",
+  "kind": "response",
+  "query_id": "cb-15",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "8fe8ff18446b6353f07e72c2e0281a1e93f2075ee497df9cf12a6f6808b3bb9c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "During execution, `InitDefaultVersionFlag` does nothing when `Command.Version` is empty or a `version` flag already exists. Otherwise it creates boolean `--version`, adds `-v` only if that shorthand is free, and marks the flag with `FlagSetByCobraAnnotation` (`command.go:1200-1225`). Completion logic recognizes a changed Cobra-created version flag via that annotation (`completions.go:522-533`).",
+  "sha256": "5367f5d93585c3576862f34e72792ccfda3560e1fb6fc01971607e47c06c0bfa"
+}

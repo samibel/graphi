@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 17,
+  "previous_sha256": "dc77d7799a9f87087634764b6cff511fbb02f0bb9cdd4c7f1419337c8b415803",
+  "kind": "response",
+  "query_id": "cb-12",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "cf9b8a23ffcc8038942f825ace3790cd0009791357fecf7a7d2f332924a67084",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).Find` recursively searches downward from the highest command (`command.go:724-748`). At each level it strips flags, takes the first remaining argument, resolves it with `findNext`, removes that command token, and recurses; if no subcommand matches, it returns the current command and remaining args. It then applies `legacyArgs` only when the selected command has no custom `Args` validator.",
+  "sha256": "fd0628375000dbb2161c6e42c2833b5f3eb11516099a261d7381fd7708de9a73"
+}

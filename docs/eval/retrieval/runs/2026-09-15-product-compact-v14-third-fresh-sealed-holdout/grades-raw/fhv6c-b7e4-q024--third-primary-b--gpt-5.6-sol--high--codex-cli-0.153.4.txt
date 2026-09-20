@@ -1,0 +1,1 @@
+PASS: The response correctly explains inheritance from the nearest ancestor with a non-nil input reader and fallback to the provided default. All cited locations exist in the transcript and support the attached claims.

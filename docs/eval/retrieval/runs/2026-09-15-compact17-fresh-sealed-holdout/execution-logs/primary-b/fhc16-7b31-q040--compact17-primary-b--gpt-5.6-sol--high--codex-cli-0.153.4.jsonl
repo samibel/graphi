@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65e-6622-71b1-bbf5-f56a5eb854ab"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows flag-name suggestions in `getFlagNameCompletions`, but omits the completion logic around `completions.go:308` needed to distinguish `--flag=value` from a separate value after `--flag`."}}
+{"type":"turn.completed","usage":{"input_tokens":16601,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 29,
+  "previous_sha256": "cb59dbcdfe527a7f43df22007a47b88831302695d0679ed28ab9662e57261cb0",
+  "kind": "response",
+  "query_id": "ci-1236",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "db4947204648451839c5edcd48451ec66e48c78985f26424a42136e806ab8cfb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.CalledAs()` on a command you want to check. It is documented to return the command name or alias used to invoke that command, or an empty string if it has not been called (`command.go:1515–1518`). Thus a nonempty result identifies that command as having been invoked and tells you the spelling or alias used.\n",
+  "sha256": "e1b9fa61a4db00518677238bb50b4c4624827b63e1ae9cc17a92daa76f24cb0c"
+}

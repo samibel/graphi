@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 39,
+  "previous_sha256": "55d1ecfa51102db8bce5c1a53b1ac2617f7c8cc2d96974288d35b665b703c8d2",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "a8aea119788ed93dbfd5ea89faeadaf112b5c0b7c220de55042c96f6a3e37a02",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use Go completion callbacks: `ValidArgsFunction` for command arguments and `RegisterFlagCompletionFunc()` for flags. The documentation explicitly says these callbacks are portable across `bash`, `zsh`, `fish`, and `powershell`, while legacy Bash-script custom completions and `BashCompCustom` are ignored by zsh (`site/content/completions/_index.md:477–478`). Generate the completion file for the desired supported shell; the supported set is listed in `site/content/user_guide.md:742–743`. For zsh, `GenZshCompletion(w)` writes the generated script with descriptions to a writer (`zsh_completions.go:29–33`, `80–85`).\n",
+  "sha256": "ceca76382c319f0ea96a791f8e10c4f0b3d21094aadc966cce20dfd189247cda"
+}

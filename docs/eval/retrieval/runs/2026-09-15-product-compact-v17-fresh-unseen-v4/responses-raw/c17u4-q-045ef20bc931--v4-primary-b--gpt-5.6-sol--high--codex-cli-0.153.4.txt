@@ -1,0 +1,7 @@
+`forceMultiLine` appends `"\n"` exactly when the input string is longer than 60 characters and does not already contain a newline:
+
+```go
+if len(s) > 60 && !strings.Contains(s, "\n")
+```
+
+Evidence: `doc/util.go`, lines 41–44.

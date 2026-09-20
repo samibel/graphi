@@ -1,0 +1,1 @@
+Use cmd.CalledAs() on the command you want to check. It returns the recorded invocation name when c.commandCalledAs.called is true, otherwise an empty string (command.go:1517-1522). Thus a nonempty result identifies a command recorded as called; the supplied excerpt does not show how to obtain the selected child from the root.

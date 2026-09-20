@@ -1,0 +1,1 @@
+`(*Command).Execute() error` is defined in `command.go:1038–1040`: it calls `c.ExecuteC()`, discards the returned command, and returns its error. Its preceding comment describes finding command and flag matches through the command tree (`command.go:1036–1037`). `ExecuteContext(ctx)` sets `c.ctx` before calling `Execute()` (`command.go:1030–1032`).

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 74,
+  "previous_sha256": "e7394a1153e3404da7d975b83133ad36d9844dc5d95f3d17f629aadc56186806",
+  "kind": "response",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "05991bbe4205ba3ac6d83fa1aaa6e35a3bd99cccba814aa8e048977c514e12a0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To test whether a command has inherited flags, call `cmd.HasInheritedFlags()`: it returns `c.InheritedFlags().HasFlags()` (`command.go:1767–1768`), and `InheritedFlags()` first merges persistent flags (`command.go:1696–1697`). If you mean writing unit tests for inheritance behavior, relevant test names include `TestNormPassedOnInherited`, `TestChildFlagShadowsParentPersistentFlag`, and `TestPersistentRequiredFlags` (`command_test.go:1688,754,836`), but their setup and assertions are not supplied.\n",
+  "sha256": "ee45007caf0073c98f723cc95dd3933bdd1f0edaf2aa06d4bcdf57d01e275b83"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 5,
+  "previous_sha256": "0136a8d2300c4fde0d82e09758bf37058b71805f207535e857286d119c2e0252",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v2-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "9e7245e9e6b9fd41a71902ef53f348b0148517415c7b42f5201695e8aeef3cc1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "flag_groups.go contains flag-group annotation constants requiredAsGroup, oneRequired, and mutuallyExclusive (lines 24–29), a hasAllFlags helper that returns false if any named flag is missing from a pflag FlagSet (lines 111–119), and validateRequiredFlagGroups (lines 144–158). The shown validator iterates sorted group keys, collects unset flags, and skips groups whose flags are either all set or all unset.\n",
+  "sha256": "01b113c72a1f8632f8ec24957bff7a9a9af6dd786228aaa77e4227e4afc02c88"
+}

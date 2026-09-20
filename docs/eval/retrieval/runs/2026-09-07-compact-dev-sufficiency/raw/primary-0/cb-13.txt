@@ -1,0 +1,1 @@
+INSUFFICIENT The response says unknown-command suggestions are based on Levenshtein distance (`command.go:248–249`) but omits the `SuggestionsFor` computation, thresholds, and candidate-selection logic beyond its initialization (`command.go:831–833`).

@@ -1,0 +1,1 @@
+FAIL: It incorrectly concludes that the response does not establish a supported mechanism; declaring a custom help flag prevents Cobra's combined default and permits a separate -h flag.

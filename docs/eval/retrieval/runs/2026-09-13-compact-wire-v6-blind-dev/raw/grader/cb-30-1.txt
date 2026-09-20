@@ -1,0 +1,1 @@
+PASS: It correctly identifies the tree-generation entry point and the available customization options.

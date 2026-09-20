@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c0-bab4-7250-80e0-080ce563d2a5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Help-function inheritance resolves from the command upward: `HelpFunc()` returns `c.helpFunc` if set; otherwise it recursively calls `c.Parent().HelpFunc()`. The nearest ancestor with a custom function wins; if none has one, it returns the default function (`command.go:452–459`).\n\nDefault help merges persistent flags, then renders `c.HelpTemplate()` through `tmpl(c.OutOrStdout(), ...)`. The snippet explicitly says help should go to **stdout**; rendering errors are passed to `c.PrintErrln(err)` (`command.go:460–466`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17289,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":122,"reasoning_output_tokens":0}}

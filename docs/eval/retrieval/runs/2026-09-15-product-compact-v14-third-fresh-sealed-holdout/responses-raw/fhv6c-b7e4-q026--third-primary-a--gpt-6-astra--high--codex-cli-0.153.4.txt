@@ -1,0 +1,3 @@
+`SetErr(nil)` makes `ErrOrStderr()` return the nearest ancestor’s non-nil error writer, or `os.Stderr` if none exists.
+
+Evidence: `SetErr` clears `c.errWriter` (`command.go:294–298`); `ErrOrStderr` calls `c.getErr(os.Stderr)` (`384–387`); `getErr` checks the current writer, recursively checks parents, then returns the default (`404–412`).

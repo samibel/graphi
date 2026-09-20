@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 93,
+  "previous_sha256": "d1bab689f010bf13ed45ba713d8d3ff99492fe37df9b702fe803b25033557c7e",
+  "kind": "grade",
+  "query_id": "cb-09",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f0e174457d31f95a891b7e613a3bc5cf39294bd8121e286a959eab283db8b083",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly identifies the file's shell-completion annotations and the local versus persistent filename helpers.",
+  "sha256": "5e1ef488689aabdfa5f8e86aa4aa0044420c6a0fb32c6e7da996e48deed285f8"
+}

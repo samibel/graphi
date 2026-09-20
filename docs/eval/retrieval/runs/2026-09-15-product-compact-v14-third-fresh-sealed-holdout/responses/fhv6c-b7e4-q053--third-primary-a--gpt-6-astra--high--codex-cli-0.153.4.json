@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q053",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "544ab1d03740f47a1d3a18a6b80075756718dfefdd922625eadc6809e35541c3",
+  "bundle_sha256": "0202048ada59d8982a0b5d783501d0a233b5ef123d1be8372ff78bee0e57fd04",
+  "prompt_sha256": "e083af24e572a901bce4b2287da9d936dab373f981e635d481f42f79f9b155ef",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Run:\n\n```sh\ngo install github.com/spf13/cobra-cli@latest\n```\n\nEvidence: `README.md`, lines 95–104, identifies `cobra-cli` as the application generator and gives this installation command.",
+  "responded_at": "2026-09-15T08:31:24Z",
+  "sha256": "556fff0515a28d6609cdb0f2052a8d27813a678f112ff3ded796ab1ad49fa518"
+}

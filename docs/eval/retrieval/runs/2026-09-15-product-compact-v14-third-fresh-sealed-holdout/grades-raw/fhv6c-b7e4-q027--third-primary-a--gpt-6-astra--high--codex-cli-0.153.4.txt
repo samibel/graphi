@@ -1,0 +1,1 @@
+PASS: The transcript shows SetIn(nil) clears the local reader, and InOrStdin calls getIn(os.Stdin), which searches parents for a non-nil reader before falling back to os.Stdin. All cited line ranges exist and support the response.

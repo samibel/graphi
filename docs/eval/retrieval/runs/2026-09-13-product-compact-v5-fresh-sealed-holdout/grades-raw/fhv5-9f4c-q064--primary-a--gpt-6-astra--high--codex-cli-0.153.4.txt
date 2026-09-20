@@ -1,0 +1,1 @@
+FAIL: The response does not answer which flag is exposed. The bundle shows only inherited-view initialization at command.go:1700–1701 and omits the local-name exclusion check needed to establish its collision behavior.

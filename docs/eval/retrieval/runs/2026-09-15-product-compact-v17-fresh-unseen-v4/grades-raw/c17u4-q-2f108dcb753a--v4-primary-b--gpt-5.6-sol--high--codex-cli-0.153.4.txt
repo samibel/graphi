@@ -1,0 +1,1 @@
+PASS: The response correctly distinguishes ValidArgs candidates for the first positional argument from dynamic ValidArgsFunction candidates for any argument. The preserved function signature and zsh_completions.go:61-64 support this distinction; command.go:86-87 explicitly establishes mutual exclusivity. Both citations resolve inside the bundle.

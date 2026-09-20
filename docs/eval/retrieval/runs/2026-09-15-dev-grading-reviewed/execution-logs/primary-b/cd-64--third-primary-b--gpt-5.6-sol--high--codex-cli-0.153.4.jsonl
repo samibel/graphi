@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-f3e3-7051-b7d1-249861408c26"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The error-message prefix defaults to `Error:`. Calling `cmd.SetErrPrefix(s)` sets a custom prefix; child commands inherit their parent’s prefix unless they define their own (`command.go:357–360`, `command.go:611–621`). It is printed before `err.Error()` when errors aren’t silenced (`command.go:1095–1101`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16303,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":140,"reasoning_output_tokens":59}}

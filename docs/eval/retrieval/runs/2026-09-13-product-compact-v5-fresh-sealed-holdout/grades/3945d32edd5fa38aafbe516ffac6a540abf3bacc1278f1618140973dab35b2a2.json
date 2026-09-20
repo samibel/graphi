@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q045",
+  "response_sha256": "3945d32edd5fa38aafbe516ffac6a540abf3bacc1278f1618140973dab35b2a2",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not identify the supported shells or Bash version constraint. The preserved bundle includes only the introductory heading at site/content/active_help.md:20, omitting the essential shell list and version requirement.",
+  "graded_at": "2026-09-13T12:53:58Z",
+  "sha256": "651b9c045ec07aaf587d110c2ee9390e497b8d6409f391c14822a94c3a2f2446"
+}

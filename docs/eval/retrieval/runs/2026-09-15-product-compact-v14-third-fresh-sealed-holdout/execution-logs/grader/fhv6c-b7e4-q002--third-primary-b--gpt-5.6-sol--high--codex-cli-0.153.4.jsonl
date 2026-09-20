@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-6a6d-78a2-b13b-bc9b8eaee54d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes expectSuccess’s empty-output and nil-error checks, including t.Errorf and t.Fatalf behavior, supported by args_test.go:35–42. Its usage example is supported by args_test.go:246–250."}}
+{"type":"turn.completed","usage":{"input_tokens":18086,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

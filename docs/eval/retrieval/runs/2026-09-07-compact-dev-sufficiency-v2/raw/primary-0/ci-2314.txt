@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows overridable help initialization and HelpFunc invocation, but omits how -h and --help are registered and parsed or any mechanism to distinguish them.

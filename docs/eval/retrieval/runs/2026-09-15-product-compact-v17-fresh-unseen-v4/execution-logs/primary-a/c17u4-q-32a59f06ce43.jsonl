@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-b880-7373-8dc5-a0cd6faad26a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The `flagErrorFunc` callback, configured with `SetFlagErrorFunc`, customizes flag-parsing errors. Its signature is `func(*Command, error) error`.\n\nEvidence: `command.go:170–171` says it is user-defined and called when flag parsing returns an error. `Command.FlagErrorFunc()` in `command.go:496–511` returns the configured callback from the command or a parent, defaulting to returning the original error."}}
+{"type":"turn.completed","usage":{"input_tokens":17377,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":97,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+PASS: The response accurately describes the Makefile’s declared phony targets, formatting check, lint command, and test dependency and recipe. Its additional target descriptions and all cited line locations are supported by the preserved Makefile transcript.

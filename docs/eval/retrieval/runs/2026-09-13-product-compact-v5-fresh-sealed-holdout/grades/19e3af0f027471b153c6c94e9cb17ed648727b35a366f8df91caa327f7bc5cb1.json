@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q021",
+  "response_sha256": "19e3af0f027471b153c6c94e9cb17ed648727b35a366f8df91caa327f7bc5cb1",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer when shorthand is included. The bundle contains only genFlagResult’s declaration and initial variable, omitting the required condition that shorthand be nonempty and its deprecation marker empty.",
+  "graded_at": "2026-09-13T12:47:35Z",
+  "sha256": "ca8785732ebc3c097ecf3e65ee48d6d31ee4738272ca90ebc83f6a82675e3676"
+}

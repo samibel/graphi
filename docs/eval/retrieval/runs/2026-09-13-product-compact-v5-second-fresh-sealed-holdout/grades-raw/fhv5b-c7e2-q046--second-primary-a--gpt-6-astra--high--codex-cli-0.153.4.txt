@@ -1,0 +1,1 @@
+FAIL: The response does not answer the question. The preserved bundle contains only command.go snippets and lacks the README’s commands-as-actions, arguments-as-things, flags-as-modifiers distinction and recommended CLI sentence patterns.

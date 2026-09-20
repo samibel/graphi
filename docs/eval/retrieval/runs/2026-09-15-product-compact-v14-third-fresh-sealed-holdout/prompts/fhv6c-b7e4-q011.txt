@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+validArgsFunc2
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 5c2582cd27a2; read in order (314/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"completions_test.go","start_line":40,"end_line":52,"text":"func validArgsFunc2(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\tif len(args) != 0 {\n\t\treturn nil, ShellCompDirectiveNoFileComp\n\t}\n\n\tvar completions []string\n\tfor _, comp := range []string{\"three\\tThe third\", \"four\\tThe fourth\"} {\n\t\tif strings.HasPrefix(comp, toComplete) {\n\t\t\tcompletions = append(completions, comp)\n\t\t}\n\t}\n\treturn completions, ShellCompDirectiveDefault\n}"},{"path":"args_test.go","start_line":23,"end_line":33,"text":"func getCommand(args PositionalArgs, withValid bool) *Command {\n\tc := &Command{\n\t\tUse:  \"c\",\n\t\tArgs: args,\n\t\tRun:  emptyRun,\n\t}\n\tif withValid {\n\t\tc.ValidArgs = []string{\"one\", \"two\", \"three\"}\n\t}\n\treturn c\n}"},{"path":"args_test.go","start_line":44,"end_line":53,"text":"func validOnlyWithInvalidArgs(err error, t *testing.T) {\n\tif err == nil {\n\t\tt.Fatal(\"Expected an error\")\n\t}\n\tgot := err.Error()\n\texpected := `invalid argument \"a\" for \"c\"`\n\tif got != expected {\n\t\tt.Errorf(\"Expected: %q, got: %q\", expected, got)\n\t}\n}"},{"path":"command_test.go","start_line":32,"end_line":35,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {\n\t_, output, err = executeCommandC(root, args...)\n\treturn output, err\n}"},{"path":"command.go","start_line":82,"end_line":108,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.\n\t// It is a dynamic version of using ValidArgs.\n\t// Only one of ValidArgs and ValidArgsFunction can be used for a command.\n\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n\n\t// Expected arguments\n\tArgs PositionalArgs\n\n\t// ArgAliases is List of aliases for ValidArgs.\n\t// These are not suggested to the user in the shell completion,\n\t// but accepted if entered manually.\n\tArgAliases []string\n\n\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator.\n\t// For portability with other shells, it is recommended to instead use ValidArgsFunction\n\tBashCompletionFunction string\n\n\t// Deprecated defines, if this command is deprecated and should print this string when used.\n\tDeprecated string\n\n\t// Annotations are key/value pairs that can be used by applications to identify or\n\t// group commands or set special options.\n\tAnnotations map[string]string\n\n\t// Version defines the version for this command. If this value is non-empty and the command does not"}],"provenance":{"input_sha256":"ce29f52f99f1acebfba6f8af493dc73a57e783ea8b91c4be19a5538688b24672","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q055",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "5d1ccf8dc2c0534c760fe9ae11cdd723c7a0ea44f2eac9f0c299aa8ebb12da04",
+  "bundle_sha256": "5f90a2c68bb4d69ead27bda6af63344ec14f11d33d69c1f0508f79f3c1ecf1c6",
+  "prompt_sha256": "894aa0d399dae23819aace417ee2fded7aebba0470d60b5531027acbafd3c71f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A command alias selects the same command as its name: `command.go:768–772` checks `commandNameMatches(cmd.Name(), next) || cmd.HasAlias(next)`, records the supplied invocation token in `cmd.commandCalledAs.name`, and returns that command.\n\n`HasAlias` searches `c.Aliases` (`command.go:1505–1513`). Matching is exact by default; with `EnableCaseInsensitive`, it uses `strings.EqualFold` (`command.go:1876–1885`).",
+  "responded_at": "2026-09-15T08:31:28Z",
+  "sha256": "4f9225b4553e0407c577d4b83980f57e61058747357cc4cc992d2d7bba71c3c0"
+}

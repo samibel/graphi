@@ -1,0 +1,1 @@
+Yes. `(*Command).HasExample()` in `command.go:1545–1548` returns `len(c.Example) > 0` without trimming whitespace, so nonempty whitespace-only text counts as an example.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows flag-name suggestions in `getFlagNameCompletions`, but omits the completion logic around `completions.go:308` needed to distinguish `--flag=value` from a separate value after `--flag`.

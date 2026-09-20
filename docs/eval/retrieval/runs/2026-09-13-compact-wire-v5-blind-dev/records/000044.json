@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 44,
+  "previous_sha256": "775cb00921106b6bdde74c063b08a23c7ff2a4c3d0570812efcc91a41cf3fa8b",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "333eb563024bd371db45e06043f2cf1c7034dd4f1e659c365e9d92e47dbe6ead",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).RegisterFlagCompletionFunc` registers a portable Go completion callback with signature `func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)`. It errors if the flag does not exist or already has a callback, otherwise stores the callback in a mutex-protected map keyed by the `*pflag.Flag` (`completions.go:132-148`, `completions.go:35-36`). The registered callback can be retrieved with `GetFlagCompletionFunc` (`completions.go:148-160`).\n",
+  "sha256": "503447c0c959e18524f34a9409b5820f437c331564384bb2c5ae346ac4c2722b"
+}

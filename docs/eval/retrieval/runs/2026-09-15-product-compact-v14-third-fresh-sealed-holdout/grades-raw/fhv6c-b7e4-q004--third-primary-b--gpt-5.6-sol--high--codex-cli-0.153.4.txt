@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper’s nil-error failure, exact expected message `invalid argument "a" for "c"`, and mismatch reporting with `t.Errorf`, all supported by the cited lines in `args_test.go:44–53`.

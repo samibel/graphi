@@ -45,6 +45,135 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/` — the qrel-blind smoke evaluation.
   Its preserved `task_context/2` bundles carry real-tokenizer counts under the current pin, so a
   rotation must list this directory as stale and regenerate those counts before it can pass.
+- `docs/eval/retrieval/runs/2026-09-06-recovery-dev/` — development-only MCP
+  captures from independent indexes. The preserved payload token counts and
+  their reproducibility comparison must be recomputed after a rotation.
+- `docs/eval/retrieval/runs/2026-09-06-architecture-dev/` — development-only
+  MCP captures for the architecture-ranking experiment.
+- `docs/eval/retrieval/runs/2026-09-06-qwen-dev/` — opt-in alternative-model
+  development experiment; any complete MCP payload counts use the pinned
+  tokenizer. Failed attempts are not complete quality measurements.
+- `docs/eval/retrieval/runs/2026-09-06-bundle-selection-dev/` — development-only
+  exact MCP source-selection ablations and final independent-build captures.
+- `docs/eval/retrieval/runs/2026-09-06-candidate-admission-dev/` — development-only
+  candidate-admission and grouped-declaration captures; all complete MCP
+  payload counts must be recomputed after a tokenizer rotation.
+- `docs/eval/retrieval/runs/2026-09-06-release-preflight-dev/` — development-only
+  frozen GrepRead comparator transcripts and exact per-response token counts;
+  the counts must be recomputed after a tokenizer rotation. This diagnostic
+  blocks a savings claim; it publishes no savings aggregate.
+- `docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/` — development-only
+  answer-source recovery capture; all complete MCP payloads are preserved and
+  verified across two independent index builds.
+- `docs/eval/retrieval/runs/2026-09-07-grepread-v2-dev/` — development-only
+  comparator prototype; its exact response-prefix and transcript counts must
+  be recomputed after a tokenizer rotation.
+- `docs/eval/retrieval/runs/2026-09-07-compact-wire-dev/` — development-only
+  compact task-context frontier; every paired row uses the pinned tokenizer.
+- `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency/` and
+  `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2/` — registered
+  compact development sufficiency runs whose preserved responses carry pinned
+  real-token counts.
+- `docs/eval/retrieval/runs/2026-09-07-compact-wire-v2-dev/` — second compact
+  development frontier with paired real-token measurements.
+- `docs/eval/retrieval/runs/2026-09-12-compact-dev-sufficiency-v3/` and
+  `docs/eval/retrieval/runs/2026-09-12-compact-dev-sufficiency-v4/` — registered
+  blind development runs over tokenizer-counted compact responses.
+- `docs/eval/retrieval/runs/2026-09-12-compact-wire-v3-dev/` and
+  `docs/eval/retrieval/runs/2026-09-12-compact-wire-v4-dev/` — compact frontier
+  measurements under the current tokenizer pin.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v5-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v5-blind-dev/` — v5 frontier
+  and registered blind diagnostic.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v6-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v6-blind-dev/` — v6 frontier
+  and registered blind diagnostic.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v7-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v7-blind-dev/` — v7 compact
+  frontier and its registered blind diagnostic, including a pinned-tokenizer
+  ceiling over every serialized bundle.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v8-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v8-blind-dev/` — v8 compact
+  frontier and registered blind diagnostic with declaration outlines,
+  field-flow closure and evidence-derived summary roadmaps under the same
+  pinned-tokenizer ceiling.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v9-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v9-blind-dev/` — v9 compact
+  frontier and its registered blind development diagnostic with exact-path
+  breadth and source-call-chain role closure under the same pinned-tokenizer
+  ceiling.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-dev/` — two independent
+  production MCP captures of the promoted compact task-context candidate; all
+  payload counts and the byte-reproducibility result depend on the current pin.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v2-dev/` — the reserved
+  candidate-bound development recapture after the capture validator began
+  enforcing the exact 1,200-token wire ceiling with this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v3-dev/` — the final-audit
+  candidate-bound recapture; its serialized wire ceiling uses this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v4-dev/` — the sealed-source
+  snapshot candidate recapture; its byte identity and exact serialized wire
+  ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev/` — the
+  public-version-bound candidate recapture; its byte identity and exact
+  serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev/` — the
+  presealed-rubric successor recapture; its byte identity and exact serialized
+  wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev/` — the exact
+  fresh-holdout capture-candidate development recapture; its byte identity and
+  exact serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-candidate-path-dev/` — the candidate-bound
+  exact-basename retention development recapture; its 44/44 byte identity and
+  exact serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-14-compact14-dev/` — the candidate-bound
+  exact-file, field-declaration and bare-term projection (compact/14)
+  development recapture; its 44/44 byte identity, exact serialized wire
+  ceiling and follow-up read token counts use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-14-compact13-followup-dev/` — the
+  candidate-bound follow-up designation (compact/13) development recapture;
+  its 44/44 byte identity, exact serialized wire ceiling and follow-up read
+  token counts use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-14-compact12-dev/` — the candidate-bound
+  bare-term projection (compact/12) development recapture; its 44/44 byte
+  identity and exact serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-14-compact11-dev/` — the candidate-bound
+  documentation-section hydration (compact/11) development recapture; its
+  44/44 byte identity and exact serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-14-compact10-dev/` — the candidate-bound
+  retrieval-ordered projection (compact/10) development recapture; its 44/44
+  byte identity and exact serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-14-holdout-answer-span-ceiling/` — the
+  aggregate-only answer-span ceilings of the two sealed holdouts; every span
+  cost and both feasibility counts use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-14-named-declaration-dev/` — the
+  candidate-bound named-declaration completion development recapture; its 44/44
+  byte identity, its exact serialized wire ceiling, and the answer-span
+  feasibility ceiling recorded in its result all use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
+  — the completed fresh sealed-holdout capture and its 64 exact response-byte
+  counts are bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/`
+  — the completed second fresh sealed-holdout capture and its exact
+  response-byte counts are bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-dev-grading-reviewed/` — the development
+  grading of the reviewed split with the holdout pipeline; its captured
+  response and follow-up read token counts use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/`
+  — the third fresh sealed-holdout capture under contract version 2: its
+  exact response-byte counts and the designated follow-up read counts are
+  bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout/` — the
+  refused compact-v17 holdout attempt contains exact capture token counts bound
+  to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/` —
+  the refused unseen attempt contains exact capture and follow-up token counts
+  bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3/` —
+  the pre-capture refused attempt records this tokenizer identity and is stale
+  when that identity rotates.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/` —
+  the valid candidate-bound holdout's exact bundle and follow-up token counts
+  are bound to this tokenizer.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains

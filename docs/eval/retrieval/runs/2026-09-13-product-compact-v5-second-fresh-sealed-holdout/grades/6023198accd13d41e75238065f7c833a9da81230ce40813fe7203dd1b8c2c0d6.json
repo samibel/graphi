@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q030",
+  "response_sha256": "6023198accd13d41e75238065f7c833a9da81230ce40813fe7203dd1b8c2c0d6",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer how the sections are separated. The preserved bundle omits the template behavior for group titles, Additional Commands, Flags, Global Flags, and Additional help topics, so those essential facts cannot be verified.",
+  "graded_at": "2026-09-13T15:39:12Z",
+  "sha256": "d2544e2c6e921f1a3bd761a4d052a97170eeec0e274cd80e30bda66668deb584"
+}

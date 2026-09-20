@@ -1,0 +1,43 @@
+{
+  "status": "development_diagnostic_not_release",
+  "comparator_version": "GrepRead/2-dev-prototype",
+  "dataset_sha256": "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "holdout_accessed": false,
+  "population": {
+    "development_records": 44,
+    "grade3_answerable_queries": 40,
+    "no_grade3_records": 4
+  },
+  "result": {
+    "queries_reaching_equal_recall_overlap": 40,
+    "equal_recall_misses": 0,
+    "queries_with_strict_span_containment": 33,
+    "identical_repeated_transcripts": 44,
+    "mean_tokens_to_first_overlap": 990.2,
+    "median_tokens_to_first_overlap": 1076,
+    "mean_complete_transcript_tokens": 3400.4,
+    "median_complete_transcript_tokens": 3757
+  },
+  "development_candidate_comparison": {
+    "candidate_artifact": "../2026-09-07-answer-recovery-dev/bundles-after.json",
+    "candidate_artifact_sha256": "9ab813c03a414b5d5d698581c9f293d78cbbc218f9a2452b96454f5516675b1d",
+    "candidate_mean_complete_response_tokens": 8027.05,
+    "grepread_v2_mean_tokens_to_target": 990.2,
+    "candidate_cheaper_queries": 0,
+    "paired_queries": 40,
+    "paired_median_saving_percent": -731.604595235774,
+    "claim_authorized": false
+  },
+  "artifacts": {
+    "grepread-v2.json": "ed58d7d0d9e1e6f7f6f790ebfb7a1249ecd6d80aea34de97b8e9c05a473f436b"
+  },
+  "inputs": {
+    "internal/eval/retrieval/grepread_v2.go": "f7aa69da4778cfdcc92ab80a51d03d8c74f618ee9121b41e1612e878130c154f",
+    "internal/eval/retrieval/grepread_v2_test.go": "aa8c507a1da510816acc518dbdb0c7b7bd1e99d0b84db63223cea4b4574ace78",
+    "internal/eval/retrieval/grepread_v2_dev_test.go": "ff8822625820ec946395f2bbe3fdd9ea0fd3452e01ecb300f6a243e24f90216a",
+    "docs/eval/retrieval/methodology.md": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+    "docs/eval/retrieval-targets.json": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d"
+  },
+  "note": "Development-only, judgement-blind comparator diagnostic. The frozen methodology and GrepRead/1 are unchanged. No holdout result, release aggregate, confidence interval, or release claim is authorized."
+}

@@ -1,0 +1,1 @@
+FAIL: The transcript supports showing ArgAliases only when subcommands and ValidArgs yield no completions, but does not establish the claimed priority between subcommands and ValidArgs. The reviewed implementation’s intervening required-flags step is also absent from both the transcript and response.

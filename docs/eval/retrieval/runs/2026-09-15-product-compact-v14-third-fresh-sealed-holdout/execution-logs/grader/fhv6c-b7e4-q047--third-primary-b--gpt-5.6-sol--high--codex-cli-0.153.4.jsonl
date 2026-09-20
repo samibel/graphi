@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-4303-7921-a0c5-fe06789647c2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the hidden `__complete` command for inspecting completion output and explains contrasting Active Help settings: program-supported values for enabled levels, program-specific `0` to suppress all Active Help, and global `COBRA_ACTIVE_HELP=0`. The preserved transcript supports these behaviors and the cited locations."}}
+{"type":"turn.completed","usage":{"input_tokens":18868,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":122,"reasoning_output_tokens":53}}

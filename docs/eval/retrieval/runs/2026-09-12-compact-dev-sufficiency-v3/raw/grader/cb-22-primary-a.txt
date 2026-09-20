@@ -1,0 +1,1 @@
+GenManTreeFromOpts visibly recurses through available non-help children before current-page setup, providing a correct tree-walk explanation supported by the development key.

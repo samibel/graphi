@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-8de6-7e70-b00c-fbe01748c48f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetOutput(nil)` clears **both the output and error writers**: it assigns `nil` to `c.outWriter` and `c.errWriter` (`command.go:283–285`).\n\nFor output, this restores parent inheritance, falling back to stdout when accessed through `OutOrStdout()` (`command.go:374–377, 394–402`). The `SetOutput` comment says nil uses stderr (`command.go:280–282`), but the response does not include the error-writer fallback implementation."}}
+{"type":"turn.completed","usage":{"input_tokens":17149,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":111,"reasoning_output_tokens":0}}

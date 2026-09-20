@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q042",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "5e1fe311e805c4ef0a56d7b4ee9ed6ed67b5aa3d9bb88a42c9389566922e0f64",
+  "bundle_sha256": "b78ce0cf440f7bb988458fc4402009f8b0b25d608238bdb04f0cf72d1ce1f75a",
+  "prompt_sha256": "49626a6d83ede5ebcfc3f260b93387c555cc71dcda7d3ef80a055f5bfbc3840a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the body of `enforceFlagGroupsForCompletion` after `flag_groups.go:243`, leaving the one-required and mutually-exclusive behavior, hidden-flag assignments, and actual required-flag updates unspecified.",
+  "responded_at": "2026-09-13T12:36:22Z",
+  "sha256": "be69eb5ec89b6cb754bfc5bcac7852fb6bf228df3df4595d137d96e38d8f5c19"
+}

@@ -1,0 +1,1 @@
+PASS: The follow-up transcript supports splitting at the first `=`, extracting the long name or final shorthand, preserving the remaining value, setting `flagWithEqual`, and returning the resolved flag with unchanged arguments. The cited locations support these claims.

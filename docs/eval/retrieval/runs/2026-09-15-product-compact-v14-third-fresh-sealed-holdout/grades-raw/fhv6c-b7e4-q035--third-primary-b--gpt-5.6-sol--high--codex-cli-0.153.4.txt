@@ -1,0 +1,1 @@
+FAIL: The response explains how LocalFlags applies normalization but omits the essential verification: defining a flag, installing an uppercase normalizer afterward, and checking equivalent lowercase and uppercase lookups. The preserved transcript contains no test establishing that behavior.

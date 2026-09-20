@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d1-9ebe-7523-a191-b30bf7af39bf"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes visiting inherited and non-inherited flag sets directly when parsing may not have merged them, selecting unchanged flags with the one-required annotation, and appending their name completions. All claims and citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17697,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

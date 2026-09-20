@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-8384-77e3-ba11-d895b59c6898"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes args_test.go:44–53: the helper fails on a nil error and otherwise checks for the exact text `invalid argument \"a\" for \"c\"`, reporting mismatches with t.Errorf. All cited lines and claims are supported by the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17667,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":0}}

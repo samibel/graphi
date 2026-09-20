@@ -1,0 +1,1 @@
+PASS: The response identifies GenMarkdown as a wrapper around GenMarkdownCustom with an identity link handler, as preserved at lines 51–54. Its description of the other declarations, recursive subcommand filtering, filename construction, and documented filename ambiguity is supported by the cited transcript spans.

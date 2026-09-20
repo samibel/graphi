@@ -1,0 +1,1 @@
+It returns the error `accepts at most 2 arg(s), received 3`. In `args.go`, `MaximumNArgs` checks `len(args) > n` (line 86) and returns that formatted error (line 87).

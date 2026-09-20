@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-dd99-77b0-85c1-284619cba92d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The provided spans show these declarations in `cobra_test.go`:\n\n- **Package:** `cobra` (line 15).\n- **Helper:** `assertNoErr(t *testing.T, e error)` reports non-nil errors with `t.Error(e)` (lines 22–26).\n- **Test:** `TestAddTemplateFunctions(t *testing.T)` registers template functions through `AddTemplateFunc` and `AddTemplateFuncs`, sets a `Command` usage template, and checks that `UsageString()` returns `\"Hello, world.\"` (lines 28–42).\n\nThe response is marked `truncated: true`, so it does not establish the file’s complete structure or all declarations."}}
+{"type":"turn.completed","usage":{"input_tokens":16750,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":145,"reasoning_output_tokens":0}}

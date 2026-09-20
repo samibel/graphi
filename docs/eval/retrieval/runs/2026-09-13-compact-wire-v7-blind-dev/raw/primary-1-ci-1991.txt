@@ -1,0 +1,1 @@
+INSUFFICIENT — `command.go:1794-1803` shows `Command.Flag(name)` finding a parent flag, but no snippet shows how to extract its value.

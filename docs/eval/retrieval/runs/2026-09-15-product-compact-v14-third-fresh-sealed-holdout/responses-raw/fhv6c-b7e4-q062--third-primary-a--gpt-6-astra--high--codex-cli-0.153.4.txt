@@ -1,0 +1,8 @@
+To create a Bash alias with completions, use:
+
+```bash
+alias aliasname=origcommand
+complete -o default -F __start_origcommand aliasname
+```
+
+Replace `origcommand` with your program’s command name and `aliasname` with your chosen alias. The “Aliases” section explicitly documents this setup in `site/content/completions/_index.md:402–408`.

@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: bd1746abf44b17126e49226c3c40b4bc7ef8eb28111e9ea518a83dc548369ba7
+QUERY ID: fhv5-9f4c-q033
+
+QUESTION:
+When parsing emits a warning such as a deprecated-flag message, when is that warning printed?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1818-1840 anchor="if c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil" reason=New warning text is printed only when parsing succeeded; parsing is a no-op when flag parsing is disabled.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 0863431988d2; read in order (244/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"doc/man_docs.go","start_line":159,"end_line":185,"text":"func manPrintFlags(buf io.StringWriter, flags *pflag.FlagSet) {\n\tflags.VisitAll(func(flag *pflag.Flag) {\n\t\tif len(flag.Deprecated) > 0 || flag.Hidden {\n\t\t\treturn\n\t\t}\n\t\tformat := \"\"\n\t\tif len(flag.Shorthand) > 0 && len(flag.ShorthandDeprecated) == 0 {\n\t\t\tformat = fmt.Sprintf(\"**-%s**, **--%s**\", flag.Shorthand, flag.Name)\n\t\t} else {\n\t\t\tformat = fmt.Sprintf(\"**--%s**\", flag.Name)\n\t\t}\n\t\tif len(flag.NoOptDefVal) > 0 {\n\t\t\tformat += \"[\"\n\t\t}\n\t\tif flag.Value.Type() == \"string\" {\n\t\t\t// put quotes on the value\n\t\t\tformat += \"=%q\"\n\t\t} else {\n\t\t\tformat += \"=%s\"\n\t\t}\n\t\tif len(flag.NoOptDefVal) > 0 {\n\t\t\tformat += \"]\"\n\t\t}\n\t\tformat += \"\\n\\t%s\\n\\n\"\n\t\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(format, flag.DefValue, flag.Usage))\n\t})\n}"},{"path":"command.go","start_line":1834,"end_line":1835,"text":"\t// Print warnings if they occurred (e.g. deprecated flag messages).\n\tif c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {"},{"path":"command.go","start_line":1818,"end_line":1818,"text":"// ParseFlags parses persistent flag tree and local flags."},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"doc/yaml_docs.go","start_line":153,"end_line":153,"text":"\t\t// Todo, when we mark a shorthand is deprecated, but specify an empty message."},{"path":"command.go","start_line":39,"end_line":39,"text":"type FParseErrWhitelist flag.ParseErrorsWhitelist"},{"path":"flag_groups.go","start_line":31,"end_line":31,"text":"// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors"},{"path":"flag_groups.go","start_line":47,"end_line":47,"text":"// MarkFlagsOneRequired marks the given flags with annotations so that Cobra errors"}],"provenance":{"input_sha256":"af117df4ccb6cb096a4e14acea8c0b4afbdbc5ec751756411ad2d6951faf56ef","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The warning is printed after flag parsing only if the warning buffer gained content and parsing succeeded (`err == nil`). Evidence: `command.go:1834–1835`, comment “Print warnings if they occurred” and condition `c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil`.
+----- END THE RATER'S RESPONSE -----

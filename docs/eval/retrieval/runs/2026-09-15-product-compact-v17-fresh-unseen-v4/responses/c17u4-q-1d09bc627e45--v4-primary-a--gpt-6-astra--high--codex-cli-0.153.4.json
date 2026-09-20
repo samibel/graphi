@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1d09bc627e45",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "588404cff9587811175c724fa5b6066ba757fe4742d74bfdb984585d6e53219d",
+  "bundle_sha256": "08ccfaa8b1bdbae12efc391ff4c661b52296e895a7ef65e11579be353eb54345",
+  "prompt_sha256": "9e3697306d99988f54f55a313a71e70766f195363391319d593d9781c4f0fab9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra’s template helpers remove whitespace as follows:\n\n- **`trimRightSpace` and `trimTrailingWhitespaces`** remove trailing Unicode whitespace, using `strings.TrimRightFunc(s, unicode.IsSpace)` (`cobra.go:158–161`). Both names map to `trimRightSpace` (`cobra.go:32–35`).\n- **`trim`** removes leading and trailing whitespace via `strings.TrimSpace` (`cobra.go:33`).\n\nThe default help template applies `trimTrailingWhitespaces` to `.Long` or `.Short`, so it trims only trailing whitespace there (`command.go:593`).",
+  "responded_at": "2026-09-15T20:26:31Z",
+  "sha256": "ce82c3662cd8571f88f134b86e733933389f95cfcbdaa0db28862f524539b66c"
+}

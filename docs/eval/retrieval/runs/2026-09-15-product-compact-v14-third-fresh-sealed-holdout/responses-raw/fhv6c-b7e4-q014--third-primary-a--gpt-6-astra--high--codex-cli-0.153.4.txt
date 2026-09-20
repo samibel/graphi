@@ -1,0 +1,7 @@
+`bash_completionsV2_test.go` belongs to package `cobra` (line 15). The provided excerpt declares one test:
+
+- `TestBashCompletionV2WithActiveHelp(t *testing.T)` (lines 23–33) creates a `Command` named `"c"` with `Run: emptyRun`.
+- It generates Bash V2 completions into a `bytes.Buffer` using `c.GenBashCompletionV2(buf, true)` and checks for an error with `assertNoErr`.
+- It verifies that active help is not disabled: `activeHelpEnvVar(c.Name())` supplies the environment variable name, and `checkOmit` checks that the generated output omits `fmt.Sprintf("%s=0", activeHelpVar)`.
+
+The response is marked `truncated: true`, so it does not establish the file’s remaining structure or declarations.

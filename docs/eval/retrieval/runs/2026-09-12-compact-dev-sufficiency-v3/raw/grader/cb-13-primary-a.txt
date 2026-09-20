@@ -1,0 +1,1 @@
+SuggestionsFor and findSuggestions are preserved with distance/prefix/explicit-name tests, disabled behavior, default distance 2 and output formatting.

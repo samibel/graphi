@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 3,
+  "previous_sha256": "6bd5410a2bd3826db1bccc0ef2fbbb027096c3fe0f01081b91ec622973edf92a",
+  "kind": "response",
+  "query_id": "cb-03",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c09fa44544f9d3f565854d8d90986cd814f7f020be3f0b9b23d49764e361645d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GenMarkdownTree(cmd *cobra.Command, dir string) error` generates Markdown pages for a command and all available descendants in `dir` (`doc/md_docs.go:119-129`).\n\nIt delegates to `GenMarkdownTreeCustom` with:\n\n- An empty file prepender.\n- An identity link handler (`doc/md_docs.go:126-129`).\n\nThe custom implementation recursively skips unavailable/help-topic commands, names files from `cmd.CommandPath()` with spaces replaced by underscores and a `.md` extension, creates each file, then writes output through `GenMarkdownCustom` (`doc/md_docs.go:134-157`; extension at `doc/md_docs.go:30`).\n\nCaveat: command names containing `-` can cause filename collisions or undefined output, such as `cmd sub-third` versus `cmd sub third` (`doc/md_docs.go:121-125`).",
+  "sha256": "9fb5460859463184b46ceff40bad61b57554b7c434b7dd55ed4615eb051f474c"
+}

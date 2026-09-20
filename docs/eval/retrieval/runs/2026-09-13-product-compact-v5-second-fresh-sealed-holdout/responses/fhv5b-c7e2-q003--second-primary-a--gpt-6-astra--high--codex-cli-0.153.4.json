@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q003",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "4078a075b5e6bcc1789c626b49ceca4a6511c43dcbf4edfbe9ed199b4209c610",
+  "bundle_sha256": "07fb742c1e495d716b476355629b53e65de943d47d9d6a95d369d363dad301f0",
+  "prompt_sha256": "c4714d80e22924191aa05e19ac161dfd948b4d8ff6e24693f058dc16c9a2c97c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ArbitraryArgs` performs no validation: it accepts any arguments and always returns `nil`. In `args.go:68–71`, the comment says “ArbitraryArgs never returns an error,” and its body consists solely of `return nil`.",
+  "responded_at": "2026-09-13T15:20:48Z",
+  "sha256": "3687223068b907a85db6f06c180ce6fa522189f4778e890156211a1daa7e6dd0"
+}

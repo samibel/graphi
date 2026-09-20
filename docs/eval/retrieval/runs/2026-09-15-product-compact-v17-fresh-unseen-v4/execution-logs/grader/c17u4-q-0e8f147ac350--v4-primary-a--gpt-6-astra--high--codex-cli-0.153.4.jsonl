@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cb-6ab9-7562-825c-dd4fdaec08e6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle shows `OnFinalize` appending `y...` to the package-level `finalizers []func()` slice, supporting accumulation in order across calls while preserving earlier entries. All cited lines resolve within the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17637,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":75,"reasoning_output_tokens":23}}

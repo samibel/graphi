@@ -1,0 +1,1 @@
+PASS: It correctly identifies the likely empty-Version cause, the required fix, and the existing-version and shorthand conditions.

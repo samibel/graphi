@@ -1,0 +1,1 @@
+PASS: It gives the exact package-level switch and correctly identifies where that switch enables prefix matching.

@@ -1,0 +1,1 @@
+The development key requires a custom shell adapter's __complete protocol and response/directive handling. The answer offers existing-shell callback APIs and explicitly lacks the adapter details; the prompt omits the wire format.

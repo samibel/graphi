@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 104,
+  "previous_sha256": "0166d24e270dd39e169fe2b7e08e307f535caa1c4b54426731f2cb5ca2f07ada",
+  "kind": "grade",
+  "query_id": "cb-15",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1fadcb528f73a1c425841b06bdfa9e5d4b8b94fea121e8d5b8ab337cca09e602",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and supported by the preserved response. `command.go:1200-1224` shows that initialization is skipped when `c.Version` is empty, an existing `version` flag is left untouched, a Boolean `--version` flag is otherwise added with `-v` only when available, the stated usage text is constructed, and `FlagSetByCobraAnnotation` is set. `command.go:883` supports late initialization, while `command.go:908-919` supports Boolean retrieval, the non-Boolean error message, rendering `c.VersionTemplate()` to `c.OutOrStdout()` with `c`, printing rendering errors, and returning afterward.\n",
+  "sha256": "edf8d40d676e63fad5337e677927cc67d98ba0c152700a569df0cbe95419477b"
+}

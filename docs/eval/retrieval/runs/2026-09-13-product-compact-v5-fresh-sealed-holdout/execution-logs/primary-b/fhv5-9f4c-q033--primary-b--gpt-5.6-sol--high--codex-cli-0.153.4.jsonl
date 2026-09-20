@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-710c-75e0-b409-96fc72a7121c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The warning is printed after flag parsing only if the warning buffer gained content and parsing succeeded (`err == nil`). Evidence: `command.go:1834–1835`, comment “Print warnings if they occurred” and condition `c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil`."}}
+{"type":"turn.completed","usage":{"input_tokens":16478,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":125,"reasoning_output_tokens":56}}

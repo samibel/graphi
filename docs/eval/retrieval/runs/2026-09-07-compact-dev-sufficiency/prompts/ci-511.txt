@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to access Persistent Flags values in init function?
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"18 ranked source span(s) for \"How to access Persistent Flags values in init function?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command.go","start_line":1756,"end_line":1758,"text":"// HasPersistentFlags checks if the command contains persistent flags.\nfunc (c *Command) HasPersistentFlags() bool {\n\treturn c.PersistentFlags().HasFlags()"},{"path":"command.go","start_line":1725,"end_line":1727,"text":"// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {"},{"path":"command.go","start_line":1806,"end_line":1807,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {"},{"path":"command.go","start_line":1778,"end_line":1779,"text":"func (c *Command) HasAvailablePersistentFlags() bool {\n\treturn c.PersistentFlags().HasAvailableFlags()"},{"path":"command.go","start_line":1656,"end_line":1656,"text":"func (c *Command) LocalNonPersistentFlags() *flag.FlagSet {"},{"path":"command.go","start_line":1849,"end_line":1849,"text":"func (c *Command) mergePersistentFlags() {"},{"path":"command.go","start_line":1186,"end_line":1186,"text":"func (c *Command) InitDefaultHelpFlag() {"},{"path":"bash_completions.go","start_line":523,"end_line":523,"text":"func writeLocalNonPersistentFlag(buf io.StringWriter, flag *pflag.Flag) {"},{"path":"command.go","start_line":1204,"end_line":1204,"text":"func (c *Command) InitDefaultVersionFlag() {"},{"path":"site/content/user_guide.md","start_line":269,"end_line":271,"text":"\n### Persistent Flags\n"},{"path":"command.go","start_line":1670,"end_line":1671,"text":"\tc.mergePersistentFlags()\n"},{"path":"command.go","start_line":1856,"end_line":1856,"text":"// new persistent flags of all parents."},{"path":"cobra.go","start_line":97,"end_line":97,"text":"// OnInitialize sets the passed functions to be run when each command's"},{"path":"command.go","start_line":84,"end_line":84,"text":"\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion."},{"path":"command.go","start_line":1461,"end_line":1461,"text":"\t\tif x.HasFlags() || x.HasPersistentFlags() {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"site/content/user_guide.md","start_line":306,"end_line":307,"text":"\nfunc init() {"},{"path":"command.go","start_line":1497,"end_line":1497,"text":"\tname := c.Use"}],"provenance":{"input_sha256":"e08d5d32192d94214942469de071813b38ab4733b06cc67e885004a70ce5832f","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

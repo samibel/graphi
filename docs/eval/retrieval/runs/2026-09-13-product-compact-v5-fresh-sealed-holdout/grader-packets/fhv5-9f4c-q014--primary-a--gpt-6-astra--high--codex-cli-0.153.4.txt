@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f2842c22503ce15ea1e22ff8b4a676b6b659910883d3c1f8e12e947162e0a19a
+QUERY ID: fhv5-9f4c-q014
+
+QUESTION:
+In command.go, how does getOut choose a writer when the current command has no output writer?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:394-402 anchor="return c.parent.getOut(def)" reason=It uses the current writer when present, otherwise recursively inherits from the parent, finally falling back to the provided default.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 45cb4726b41f; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":393,"end_line":402,"text":"\nfunc (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":73,"end_line":83,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n\n\t// Long is the long message shown in the 'help <this-command>' output.\n\tLong string\n\n\t// Example is examples of how to use the command.\n\tExample string\n\n\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string"},{"path":"command.go","start_line":121,"end_line":121,"text":"\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current"},{"path":"command.go","start_line":280,"end_line":286,"text":"// SetOutput sets the destination for usage and error messages.\n// If output is nil, os.Stderr is used.\n// Deprecated: Use SetOut and/or SetErr instead\nfunc (c *Command) SetOutput(output io.Writer) {\n\tc.outWriter = output\n\tc.errWriter = output\n}"},{"path":"command.go","start_line":289,"end_line":289,"text":"// If newOut is nil, os.Stdout is used."},{"path":"command.go","start_line":1631,"end_line":1634,"text":"// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":404,"end_line":412,"text":"func (c *Command) getErr(def io.Writer) io.Writer {\n\tif c.errWriter != nil {\n\t\treturn c.errWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getErr(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":288,"end_line":292,"text":"// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"},{"path":"command.go","start_line":374,"end_line":377,"text":"// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"command.go","start_line":379,"end_line":382,"text":"// OutOrStderr returns output to stderr\nfunc (c *Command) OutOrStderr() io.Writer {\n\treturn c.getOut(os.Stderr)\n}"}],"provenance":{"input_sha256":"8a35db22feab21fc6a411017bbf464b7fb7c2b7d0dbd9bccc51a76495dc2fac8","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+When `c.outWriter` is nil, `getOut` recursively calls `c.parent.getOut(def)` if the command has a parent, choosing the nearest ancestor’s non-nil writer. If no ancestor supplies one, it returns the supplied default `def` (`command.go`, lines 394–402). `HasParent()` checks `c.parent != nil` (lines 1631–1634).
+----- END THE RATER'S RESPONSE -----

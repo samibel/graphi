@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Under which conditions does Cobra refrain from adding its default completion command?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query 95644c89afc4; read in order (247/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1302,"end_line":1305,"text":"// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {\n\t\tif cmds[i] == c {"},{"path":"completions.go","start_line":678,"end_line":679,"text":"// InitDefaultCompletionCmd adds a default 'completion' command to c.\n// This function will do nothing if any of the following is true:"},{"path":"completions.go","start_line":683,"end_line":683,"text":"func (c *Command) InitDefaultCompletionCmd() {"},{"path":"command.go","start_line":73,"end_line":74,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string"},{"path":"command.go","start_line":177,"end_line":177,"text":"\t// helpCommand is command with usage 'help'. If it's not defined by user,"},{"path":"completions.go","start_line":302,"end_line":303,"text":"\t// finalCmd itself to handle the completion of *all* flags.\n\tif !finalCmd.DisableFlagParsing {"},{"path":"completions.go","start_line":410,"end_line":410,"text":"\t\t\t// Try to complete non-inherited flags even if DisableFlagParsing==true."},{"path":"completions.go","start_line":103,"end_line":116,"text":"\n// CompletionOptions are the options to control shell completion\ntype CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool\n\t// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag\n\t// for shells that support completion descriptions\n\tDisableNoDescFlag bool\n\t// DisableDescriptions turns off all completion descriptions for shells\n\t// that support them\n\tDisableDescriptions bool\n\t// HiddenDefaultCmd makes the default 'completion' command hidden\n\tHiddenDefaultCmd bool\n}"},{"path":"command.go","start_line":1601,"end_line":1602,"text":"// that need to be shown in the usage/help default template under 'additional help\n// topics'."},{"path":"command.go","start_line":1615,"end_line":1615,"text":"// HasAvailableSubCommands determines if a command has available sub commands that"},{"path":"command.go","start_line":1226,"end_line":1227,"text":"// InitDefaultHelpCmd adds default help command to c.\n// It is called automatically by executing the c or by calling help and usage."},{"path":"command.go","start_line":1240,"end_line":1240,"text":"\t\t\tValidArgsFunction: func(c *Command, args []string, toComplete string) ([]string, ShellCompDirective) {"},{"path":"zsh_completions.go","start_line":29,"end_line":29,"text":"// GenZshCompletion generates zsh completion file including descriptions"}],"provenance":{"input_sha256":"0c6a4ece8523ada788d596f9ff1b96e5fafa582075d39698ad04bcf8035ac533","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

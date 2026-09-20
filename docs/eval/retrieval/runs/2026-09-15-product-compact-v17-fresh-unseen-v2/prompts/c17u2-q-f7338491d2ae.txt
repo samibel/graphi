@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Once completion identifies a flag value, how do filename-extension and subdirectory annotations determine returned candidates and shell directives?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 51e05d41616f; read in order (249/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/completions/_index.md","start_line":320,"end_line":333,"text":"### Specify valid filename extensions for flags that take a filename\n\nTo limit completions of flag values to file names with certain extensions you can either use the different `MarkFlagFilename()` functions or a combination of `RegisterFlagCompletionFunc()` and `ShellCompDirectiveFilterFileExt`, like so:\n```go\nflagName := \"output\"\ncmd.MarkFlagFilename(flagName, \"yaml\", \"json\")\n```\nor\n```go\nflagName := \"output\"\ncmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\treturn []string{\"yaml\", \"json\"}, ShellCompDirectiveFilterFileExt})\n```\n"},{"path":"shell_completions.go","start_line":64,"end_line":69,"text":"\n// MarkFlagFilename instructs the various shell completion implementations to\n// limit completions for the named flag to the specified file extensions.\nfunc MarkFlagFilename(flags *pflag.FlagSet, name string, extensions ...string) error {\n\treturn flags.SetAnnotation(name, BashCompFilenameExt, extensions)\n}"},{"path":"site/content/completions/_index.md","start_line":487,"end_line":490,"text":"## fish completions\n\nCobra supports native fish completions generated from the root `cobra.Command`.  You can use the `command.GenFishCompletion()` or `command.GenFishCompletionFile()` functions. You must provide these functions with a parameter indicating if the completions should be annotated with a description; Cobra will provide the description automatically based on usage information.  You can choose to make this option configurable by your users.\n```"},{"path":"shell_completions.go","start_line":41,"end_line":46,"text":"\n// MarkFlagFilename instructs the various shell completion implementations to\n// limit completions for the named flag to the specified file extensions.\nfunc (c *Command) MarkFlagFilename(name string, extensions ...string) error {\n\treturn MarkFlagFilename(c.Flags(), name, extensions...)\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"}],"provenance":{"input_sha256":"45b8a3e674c97cf9e2ced26c321182839580a5ea75117b37e89ceffdea49bff0","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

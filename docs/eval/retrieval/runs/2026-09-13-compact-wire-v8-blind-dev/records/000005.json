@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 5,
+  "previous_sha256": "c999a531a53f2cbb06f8fa3708f364a7ffb1a97f5c0d7968a1b9cc592b8b28f8",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "d87e9b4b9b06eed475d109be94481235f0b9149a0e79bf58e4294cc4a8b0eb5b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` belongs to package `cobra` (`flag_groups.go:15`) and implements grouped-flag behavior for `Command`.\n\nIts central method, `(*Command).ValidateFlagGroups` (`flag_groups.go:81–109`):\n\n- Skips validation when `DisableFlagParsing` is enabled.\n- Collects status for required-together, one-required, and mutually-exclusive groups.\n- Processes annotations via `processFlagForGroupAnnotation`.\n- Runs `validateRequiredFlagGroups`, `validateOneRequiredFlagGroups`, then `validateExclusiveFlagGroups`, returning the first error.\n\n`processFlagForGroupAnnotation` (`flag_groups.go:121–142`) splits each group’s space-separated flag names, ignores groups whose flags are not all defined, and records each flag’s `Changed` state. The existence check is performed by `hasAllFlags` using `FlagSet.Lookup` (`flag_groups.go:111–119`).\n\nOther shown declarations include:\n\n- `MarkFlagsRequiredTogether` (`flag_groups.go:33`)\n- `validateRequiredFlagGroups` (`flag_groups.go:144`)\n- `validateOneRequiredFlagGroups` (`flag_groups.go:167`)\n- `validateExclusiveFlagGroups` (`flag_groups.go:188`)\n- `enforceFlagGroupsForCompletion` (`flag_groups.go:225`)",
+  "sha256": "17781d6cf8a95ae1753cdee37bbc5e8b49580c99fc2062447e862a9dfbeea367"
+}

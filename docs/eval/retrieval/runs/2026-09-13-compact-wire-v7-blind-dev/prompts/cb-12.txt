@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does cobra find the subcommand for the given arguments
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s) for \"how does cobra find the subcommand for the given arguments\"; read in order (245/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"command.go","start_line":724,"end_line":748,"text":"// Find the target command given the args and command tree\n// Meant to be run on the highest node. Only searches down.\nfunc (c *Command) Find(args []string) (*Command, []string, error) {\n\tvar innerfind func(*Command, []string) (*Command, []string)\n\n\tinnerfind = func(c *Command, innerArgs []string) (*Command, []string) {\n\t\targsWOflags := stripFlags(innerArgs, c)\n\t\tif len(argsWOflags) == 0 {\n\t\t\treturn c, innerArgs\n\t\t}\n\t\tnextSubCmd := argsWOflags[0]\n\n\t\tcmd := c.findNext(nextSubCmd)\n\t\tif cmd != nil {\n\t\t\treturn innerfind(cmd, c.argsMinusFirstX(innerArgs, nextSubCmd))\n\t\t}\n\t\treturn c, innerArgs\n\t}\n\n\tcommandFound, a := innerfind(c, args)\n\tif commandFound.Args == nil {\n\t\treturn commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))\n\t}\n\treturn commandFound, a, nil\n}"},{"path":"args.go","start_line":25,"end_line":25,"text":"// - root commands with no subcommands can take arbitrary arguments"},{"path":"args.go","start_line":35,"end_line":35,"text":"\tif !cmd.HasParent() \u0026\u0026 len(args) \u003e 0 {"},{"path":"command.go","start_line":750,"end_line":751,"text":"func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {"},{"path":"command.go","start_line":767,"end_line":786,"text":"func (c *Command) findNext(next string) *Command {\n\tmatches := make([]*Command, 0)\n\tfor _, cmd := range c.commands {\n\t\tif commandNameMatches(cmd.Name(), next) || cmd.HasAlias(next) {\n\t\t\tcmd.commandCalledAs.name = next\n\t\t\treturn cmd\n\t\t}\n\t\tif EnablePrefixMatching \u0026\u0026 cmd.hasNameOrAliasPrefix(next) {\n\t\t\tmatches = append(matches, cmd)\n\t\t}\n\t}\n\n\tif len(matches) == 1 {\n\t\t// Temporarily disable gosec G602, which produces a false positive.\n\t\t// See https://github.com/securego/gosec/issues/1005.\n\t\treturn matches[0] // #nosec G602\n\t}\n\n\treturn nil\n}"},{"path":"completions.go","start_line":468,"end_line":468,"text":"\t\t\t// Always complete ValidArgs, even if we are completing a subcommand name."},{"path":"completions.go","start_line":497,"end_line":497,"text":"\t\t\t// even if we already found sub-commands."},{"path":"completions.go","start_line":281,"end_line":281,"text":"\t\t// Find(), if those Root commands don't have any sub-commands, they will accept arguments."},{"path":"command.go","start_line":1242,"end_line":1242,"text":"\t\t\t\tcmd, _, e := c.Root().Find(args)"},{"path":"command.go","start_line":1259,"end_line":1259,"text":"\t\t\tRun: func(c *Command, args []string) {"},{"path":"command.go","start_line":1089,"end_line":1089,"text":"\t} else {"}],"provenance":{"input_sha256":"6b5e6fc0c52e9fe44339f5f0da35addbd458945fdfbd718448680ce5c3e47583","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----

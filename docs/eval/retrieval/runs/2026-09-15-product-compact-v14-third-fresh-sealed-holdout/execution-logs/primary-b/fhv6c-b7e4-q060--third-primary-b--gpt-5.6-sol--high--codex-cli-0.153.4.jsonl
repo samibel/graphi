@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-6d91-7101-9ecb-76b29c88f240"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Empty positional arguments are accepted by default: `Command.ValidateArgs` calls `ArbitraryArgs` when `c.Args == nil` (`command.go:1139-1144`), and `ArbitraryArgs` always returns `nil` (`args.go:68-71`).\n\nTo reject empty input, configure `Args: cobra.MinimumNArgs(1)` (documented in `site/content/user_guide.md:367-382`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17148,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":203,"reasoning_output_tokens":108}}

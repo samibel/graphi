@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098dd-8450-71c1-b529-71ca9224127b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"outcome\":\"pass\",\"rationale\":\"The answer is concrete and directly supported by the sealed bundle: `command.go` lines 1515–1522 define `(*Command).CalledAs()` and state that it returns the command name or alias used to invoke the command, or an empty string if it has not been called. The candidate accurately cites this symbol and behavior.\"}"}}
+{"type":"turn.completed","usage":{"input_tokens":17158,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":137,"reasoning_output_tokens":48}}

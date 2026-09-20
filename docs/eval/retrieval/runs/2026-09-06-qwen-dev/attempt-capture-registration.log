@@ -1,0 +1,7 @@
+=== RUN   TestRecoveryDevCapture
+    recovery_dev_test.go:96: independent build 1/2: constructing ollama:127.0.0.1:11434?model=qwen3-embedding:0.6b&digest=ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d&context=8192&runtime=0.33.3&profile=qwen3-code-v1&compute=cpu
+    recovery_dev_test.go:100: task-context eval: embedder "ollama:127.0.0.1:11434?model=qwen3-embedding:0.6b&digest=ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d&context=8192&runtime=0.33.3&profile=qwen3-code-v1&compute=cpu" unavailable: <nil>
+--- FAIL: TestRecoveryDevCapture (0.44s)
+FAIL
+FAIL	github.com/samibel/graphi/internal/eval/retrieval	1.565s
+FAIL

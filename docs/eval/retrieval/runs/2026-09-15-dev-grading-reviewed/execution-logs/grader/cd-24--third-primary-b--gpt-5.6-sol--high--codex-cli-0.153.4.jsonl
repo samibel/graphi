@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-4cd0-7542-8f63-981c5a02f3fa"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript supports both ErrHelp returns: a true help flag and a non-runnable command. It defines Runnable as having Run or RunE set and shows both returns occur before invocation. The cited locations support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":19263,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":47}}

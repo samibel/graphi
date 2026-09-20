@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"strings"
@@ -44,7 +45,7 @@ func init() {
 	// selector can construct it. Importing this package registers the CONSTRUCTOR
 	// only; nothing is constructed or dialed until the selector names it.
 	embed.RegisterScheme(Scheme, func(arg string) (embed.Embedder, error) {
-		return New(arg, defaultModel)
+		return fromSelector(arg)
 	})
 }
 
@@ -52,6 +53,7 @@ func init() {
 type Embedder struct {
 	endpoint string // "host:port", validated loopback
 	model    string
+	binding  *modelBinding // immutable, explicitly pinned selector; nil for legacy
 	// dim is discovered from the first successful response and is written by
 	// two paths (ProbeDim and Embed), so it is guarded: embed.Embedder
 	// requires implementations to be safe for concurrent use.
@@ -82,16 +84,24 @@ func New(endpoint, model string) (*Embedder, error) {
 		model:    model,
 		// Dim is discovered from the first response; 0 until then. The mock and
 		// tests do not require a fixed Dim() up front, and the index tolerates it.
-		dim:    0,
-		client: &http.Client{Timeout: 30 * time.Second},
+		dim: 0,
+		client: &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return fmt.Errorf("ollama: redirects are forbidden (loopback-only)")
+		}},
 	}, nil
 }
 
 // ID implements embed.Embedder.
-func (e *Embedder) ID() string { return Scheme + ":" + e.model }
+func (e *Embedder) ID() string {
+	if b := e.binding; b != nil {
+		return fmt.Sprintf("ollama:%s@%s:ctx=%d:runtime=%s:query=%s:compute=%s:adapter=2", e.model, b.digest, b.context, b.runtime, b.profile, b.compute)
+	}
+	return Scheme + ":" + e.model
+}
 
-// Dim implements embed.Embedder. It is the dimensionality observed from the
-// most recent successful request; 0 before the first one.
+// Dim implements embed.Embedder. It is the first discovered dimensionality;
+// 0 before discovery. Pinned selection checks advertised metadata and then
+// requires the embedding response to agree with it.
 //
 // The value is guarded because embed.Embedder requires implementations to be
 // safe for concurrent use, and two writers exist: ProbeDim (the pre-fingerprint
@@ -123,13 +133,13 @@ func (e *Embedder) setDimOnce(n int) {
 
 // DimProbeText is the text the embedder sends to learn its dim before any
 // real work. It is a single ASCII string so the request shape mirrors the
-// production path exactly; Ollama's /api/embeddings returns the dim
+// production path exactly; the /api/embed vector length reveals its dimension
 // regardless of the input text, so the value is meaningless.
 const DimProbeText = "graphi-dim-probe"
 
-// ProbeDim forces the embedder to send ONE request to the loopback
-// endpoint so the dim field is populated from the response. Ollama
-// reports dim only after a successful call; without this probe, the
+// ProbeDim forces the embedder to send one embedding request to the loopback
+// endpoint. Explicit pins additionally validate model metadata and identity.
+// A legacy selector discovers dim from the response; without this probe, the
 // fingerprint's dim field is 0 until the first real Embed call — and a
 // fingerprint built with dim=0 cannot detect a real dim change
 // (SW-261 review round 2 MAJOR 5). The probe uses the same /api/embed
@@ -141,6 +151,16 @@ const DimProbeText = "graphi-dim-probe"
 // The probe is safe to call concurrently with Embed: the discovered
 // dimension is guarded by dimMu and recorded once (see setDimOnce).
 func (e *Embedder) ProbeDim(ctx context.Context) error {
+	if e.binding != nil {
+		if err := e.checkBinding(ctx); err != nil {
+			return err
+		}
+		if err := e.inspectModel(ctx); err != nil {
+			return err
+		}
+		_, err := e.Embed(ctx, []string{DimProbeText})
+		return err
+	}
 	body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Input: DimProbeText, Truncate: false})
 	if err != nil {
 		return fmt.Errorf("ollama: probe marshal: %w", err)
@@ -182,9 +202,10 @@ func (e *Embedder) ProbeDim(ctx context.Context) error {
 // silently truncating them. The runtime surfaces the rejection as a
 // typed error so the build never publishes a partial generation.
 type ollamaEmbedRequest struct {
-	Model    string `json:"model"`
-	Input    string `json:"input"`
-	Truncate bool   `json:"truncate"`
+	Model    string         `json:"model"`
+	Input    string         `json:"input"`
+	Truncate bool           `json:"truncate"`
+	Options  map[string]int `json:"options,omitempty"`
 }
 
 // ollamaEmbedResponse models the Ollama /api/embed response shape
@@ -208,10 +229,43 @@ type ollamaEmbedResponse struct {
 // fails closed. Endpoint loopback was already enforced fail-closed
 // at construction, so this method dials loopback only.
 func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, error) {
+	if len(texts) == 0 {
+		return [][]float32{}, nil
+	}
+	if e.binding != nil {
+		if err := e.checkBinding(ctx); err != nil {
+			return nil, err
+		}
+		if e.Dim() == 0 {
+			if err := e.inspectModel(ctx); err != nil {
+				return nil, err
+			}
+		}
+	}
+	vecs, err := e.embedTexts(ctx, texts)
+	if err != nil {
+		return nil, err
+	}
+	if e.binding != nil {
+		if err := e.checkBinding(ctx); err != nil {
+			return nil, err
+		}
+	}
+	return vecs, nil
+}
+
+func (e *Embedder) embedTexts(ctx context.Context, texts []string) ([][]float32, error) {
 	out := make([][]float32, 0, len(texts))
 	url := "http://" + e.endpoint + "/api/embed"
 	for _, t := range texts {
-		body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Input: t, Truncate: false})
+		request := ollamaEmbedRequest{Model: e.model, Input: t, Truncate: false}
+		if e.binding != nil {
+			request.Options = map[string]int{"num_ctx": e.binding.context}
+			if e.binding.compute == "cpu" {
+				request.Options["num_gpu"], request.Options["num_thread"] = 0, 1
+			}
+		}
+		body, err := json.Marshal(request)
 		if err != nil {
 			return nil, fmt.Errorf("ollama: marshal request: %w", err)
 		}
@@ -222,7 +276,7 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := e.client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("ollama: request to %s failed: %w", e.endpoint, err)
+			return nil, fmt.Errorf("ollama: request for %d-byte input to %s failed: %w", len(t), e.endpoint, err)
 		}
 		// Check the HTTP status BEFORE decoding: a non-200 (e.g. 400/500
 		// for an oversize input) must report the actual status and the
@@ -241,7 +295,7 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 			}
 		}
 		var decoded ollamaEmbedResponse
-		decErr := json.NewDecoder(resp.Body).Decode(&decoded)
+		decErr := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&decoded)
 		_ = resp.Body.Close()
 		if decErr != nil {
 			return nil, fmt.Errorf("ollama: decode response: %w", decErr)
@@ -262,6 +316,16 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 				Reason:  "ollama: server returned no embedding for the input",
 			}
 		}
+		if e.binding != nil {
+			if len(decoded.Embeddings) != 1 || len(decoded.Embeddings[0]) != e.Dim() {
+				return nil, fmt.Errorf("ollama: embedding shape changed from pinned dimension %d", e.Dim())
+			}
+			for _, v := range decoded.Embeddings[0] {
+				if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+					return nil, fmt.Errorf("ollama: non-finite embedding")
+				}
+			}
+		}
 		if e.Dim() == 0 {
 			e.setDimOnce(len(decoded.Embeddings[0]))
 		}
@@ -277,10 +341,15 @@ var (
 	_ embed.DimDiscoverer    = (*Embedder)(nil)
 	_ embed.Admission        = (*Embedder)(nil)
 	_ embed.AdmissionProfile = (*Embedder)(nil)
+	_ embed.QueryEmbedder    = (*Embedder)(nil)
 )
 
 // Profile implements embed.AdmissionProfile.
 func (e *Embedder) Profile() embed.AdmissionSpec {
+	if b := e.binding; b != nil {
+		return embed.AdmissionSpec{TokenizerID: "ollama-server-bound", TokenizerSHA256: b.digest,
+			TokenizerVersion: b.runtime, MaxTokens: b.context, Algorithm: "server-side-truncate-false", AlgorithmVersion: "2"}
+	}
 	return embed.AdmissionSpec{
 		TokenizerID:      "ollama-server-bound",
 		TokenizerSHA256:  e.digest(),

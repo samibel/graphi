@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the help command is created, completed, executed, or reattached. The bundle omits the necessary `InitDefaultHelpCmd` body, including topic handling and removal and re-addition of the help command.

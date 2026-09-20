@@ -1,0 +1,1 @@
+PASS: The transcript supports inherited PersistentPreRun execution before the child’s Run, SetContext assigning c.ctx, and Context returning c.ctx. The response uses an explicit child reference to replace its context without assuming which command the inherited hook receives.

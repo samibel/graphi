@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q001",
+  "response_sha256": "bae8276fb067f3dde1804e6c674d710b7dfe0e590b5881c5ca755a2049721781",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately identifies getCommand in args_test.go:23–33 and describes its command construction, assigned fields, optional ValidArgs values, and returned pointer, all supported by the preserved transcript.",
+  "graded_at": "2026-09-15T08:32:48Z",
+  "sha256": "174e83666431e79667eb2589bd66263e53f11f3b8cf0ab6f4e2e0448a2bc1752"
+}

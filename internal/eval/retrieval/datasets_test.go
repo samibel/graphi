@@ -142,16 +142,27 @@ func TestDatasets_CobraV2Shape(t *testing.T) {
 		t.Errorf("evidence_class = %q, want it to state that the issue-derived rows were agent-reviewed", ds.Dataset.EvidenceClass)
 	}
 
-	answerable := map[string]int{}
 	byID := map[string]Query{}
 	for _, q := range ds.Dataset.Queries {
 		byID[q.ID] = q
 		if q.FamilyID == "" || q.Provenance == "" {
 			t.Errorf("query %q: family_id=%q provenance=%q, both are required in v2", q.ID, q.FamilyID, q.Provenance)
 		}
-		if q.Stratum != StratumNoHit {
-			answerable[q.Split]++
+	}
+
+	// The answerable population is counted by AnswerableQueries — the one
+	// exported function that applies SW-266 AC-2's contractual definition — and
+	// not by a second `stratum != no_hit` loop written here. This test used to
+	// count that way and reported 41 development queries; SW-279's approval
+	// recorded the same 41. The stricter definition ("at least one grade-3
+	// answer span") yields 40, and the difference is cb-31.
+	answerable := map[string]int{}
+	for _, split := range []string{SplitDev, SplitHoldout} {
+		qs, _, err := AnswerableQueries(ds.Dataset, split)
+		if err != nil {
+			t.Fatalf("AnswerableQueries(%s): %v", split, err)
 		}
+		answerable[split] = len(qs)
 	}
 
 	// Validate already refuses a family that crosses splits; assert it here too,
@@ -176,9 +187,20 @@ func TestDatasets_CobraV2Shape(t *testing.T) {
 		t.Errorf("cb-11 split = %q, want %q; no SW-258 assignment may move", cb11.Split, SplitDev)
 	}
 
-	const want = 30
-	if answerable[SplitDev] < want || answerable[SplitHoldout] < want {
-		t.Errorf("answerable dev=%d holdout=%d, want >= %d on both (SW-266 AC-2)", answerable[SplitDev], answerable[SplitHoldout], want)
+	// SW-266 AC-2's floor, kept because it is the contractual minimum...
+	const floor = 30
+	if answerable[SplitDev] < floor || answerable[SplitHoldout] < floor {
+		t.Errorf("answerable dev=%d holdout=%d, want >= %d on both (SW-266 AC-2)", answerable[SplitDev], answerable[SplitHoldout], floor)
+	}
+	// ...and the EXACT counts beside it, because the floor passes under both
+	// readings of "answerable" and therefore cannot detect the defect it was
+	// meant to catch. 40 + 64 = 104 is the full savings population.
+	if answerable[SplitDev] != wantAnswerableDev || answerable[SplitHoldout] != wantAnswerableHoldout {
+		t.Errorf("answerable dev=%d holdout=%d, want exactly %d and %d (SW-282 AC-1; see %s)",
+			answerable[SplitDev], answerable[SplitHoldout], wantAnswerableDev, wantAnswerableHoldout, AnswerablePopulationRecordPath)
+	}
+	if got := answerable[SplitDev] + answerable[SplitHoldout]; got != wantSavingsPopulation {
+		t.Errorf("full answerable savings population = %d, want exactly %d", got, wantSavingsPopulation)
 	}
 
 	// Every issue-derived query is a natural-language question in one of the three

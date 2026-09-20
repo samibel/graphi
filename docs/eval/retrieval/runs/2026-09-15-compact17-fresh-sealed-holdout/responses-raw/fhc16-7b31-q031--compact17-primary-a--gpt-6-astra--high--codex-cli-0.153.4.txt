@@ -1,0 +1,6 @@
+In `(*Command).InitDefaultHelpFlag`, usage starts as `"help for "`:
+
+- **Named command:** appends `c.Name()`, producing `"help for <name>"`.
+- **Unnamed command** (`c.Name() == ""`): appends `"this command"`, producing `"help for this command"`.
+
+The text is passed to `c.Flags().BoolP("help", "h", false, usage)`. This happens only if no `help` flag already exists after merging persistent flags. Evidence: `command.go`, lines 1186–1195.

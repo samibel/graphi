@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-045ef20bc931",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "74dc21b2234e6d128dfb619d623736cccdf3430b9dcd9a7343927b97f9c09b3d",
+  "bundle_sha256": "21ec9fb39bc07add3e8313f9538f26e98e745329d945de6b9127d93b1e5a147d",
+  "prompt_sha256": "1aade5ce34ea6210bbbb0b20c1bdbe8c256fc57e1c4ceddfd00bd5429d8736ff",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`forceMultiLine` appends `\"\\n\"` exactly when the input string is longer than 60 characters and does not already contain a newline:\n\n```go\nif len(s) \u003e 60 \u0026\u0026 !strings.Contains(s, \"\\n\")\n```\n\nEvidence: `doc/util.go`, lines 41–44.",
+  "responded_at": "2026-09-15T20:22:42Z",
+  "sha256": "384aa65e563f60813181a8d41a99b8e888bb5c619e24e9062ad0af9305ab0b02"
+}

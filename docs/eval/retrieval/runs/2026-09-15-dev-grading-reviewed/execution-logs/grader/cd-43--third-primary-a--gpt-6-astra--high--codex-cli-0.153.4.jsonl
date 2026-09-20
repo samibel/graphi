@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-a2e1-7042-80c5-20748b8d52b3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The transcript supports the response’s parent-first depth-first traversal, recursion through commands without flags, and exact flag-set checks producing [L], [LP], and [P] while avoiding duplicate persistent-flag output. The cited command.go:1453–1493 span exists and supports these behaviors and the described output fields."}}
+{"type":"turn.completed","usage":{"input_tokens":18339,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":95,"reasoning_output_tokens":23}}

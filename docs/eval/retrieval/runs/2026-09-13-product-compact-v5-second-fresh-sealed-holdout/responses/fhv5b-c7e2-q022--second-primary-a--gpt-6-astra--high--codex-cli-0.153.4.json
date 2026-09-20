@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q022",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "39669b5ce2a37c65edc036263345b2befbc456de221f517af06061bc34fbb4b8",
+  "bundle_sha256": "4958fc2348626b9fe3ce89636de358bb2f2bdc708246ef00da82108111c64487",
+  "prompt_sha256": "a28ddc81ce637284fa41bc636bbdbe5a82f0de7a282dc5ec49735a323cfe2d14",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GenReSTTreeCustom` uses child-first recursion, then prepends content, then generates the current command’s page:\n\n1. Iterates through `cmd.Commands()`, skips unavailable commands and additional help topics, and recursively processes each remaining child before handling the current command (`doc/rest_docs.go:146–153`).\n2. Creates the current command’s `.rst` file, replacing spaces in `cmd.CommandPath()` with underscores (`155–161`).\n3. Writes `filePrepender(filename)` to that file (`163–165`).\n4. Calls `GenReSTCustom(cmd, f, linkHandler)` to write the page after the prepended content (`166–168`).\n\nAny error from recursion, file creation, prepending, or page generation immediately returns.",
+  "responded_at": "2026-09-13T15:23:50Z",
+  "sha256": "764be6e9e1ecfaef5e18127712e3b08952f5d7598354dc595b1b37825eb7b5cd"
+}

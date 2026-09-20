@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 43,
+  "previous_sha256": "39716d859732180ab9a8320c35dbefec87cff2e4d1e674c22eb7838705fe59f5",
+  "kind": "response",
+  "query_id": "cb-03",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "a3ad5ab62005a52dda36885fa2313d859efa6db7779fce4dfa8382d18f830727",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "GenMarkdownTree(cmd *cobra.Command, dir string) error delegates to GenMarkdownTreeCustom with an empty file prepender and an identity link handler (doc/md_docs.go:125-129). The custom function recursively processes available child commands, skips additional help topics, then creates the current command's file using its CommandPath with spaces replaced by underscores plus markdownExtension. It writes the prepender and generated Markdown, returning any creation or writing error (doc/md_docs.go:133-158).\n",
+  "sha256": "e2a824fda15788571ca68b5ce42d98e2c8f8b789f68d5757ee881c143c194670"
+}

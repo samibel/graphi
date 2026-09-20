@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q003",
+  "response_sha256": "fcbde7534bd52d7c52499fc83d58a55dfd2b356ce21e9707a19777640ff42cfa",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies hidden flags and flags with nonempty Deprecated strings as excluded, matching bash_completions.go:699-701. The cited flag-processing code at lines 567-592 supports skipping those flags before writing completions.",
+  "graded_at": "2026-09-15T08:32:50Z",
+  "sha256": "812cbb416dd7a2672a16ff6e73f2c07f93968f2ef7daf8bf0701b882afe83fa4"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q017",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "7d4a4cb2cf6abef9de7f25f747fc49ef1002ee60f5f92538cb5fbff8f9a7194f",
+  "bundle_sha256": "dd1150b6d6a3ed13df952ace9f9f4cb50c0aea9a55e32b81626a638bca0c7e93",
+  "prompt_sha256": "26e0656f14f2acf9954e31ff9daf3072b7e7f4025b7a3ead8d0c0ce7f7ece032",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "When `c.flagErrorFunc` is nil, `FlagErrorFunc()` recursively asks the parent via `c.parent.FlagErrorFunc()` if `c.HasParent()` (`command.go:505–506`). This finds the nearest ancestor with a handler. If none exists, it returns a default handler that returns the original error unchanged (`command.go:508–509`).",
+  "responded_at": "2026-09-13T15:23:04Z",
+  "sha256": "1d02c14cb3d7b742d73d8ba20669e8439ff0628bc7132359414601ec53570750"
+}

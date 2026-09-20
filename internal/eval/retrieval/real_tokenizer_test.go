@@ -10,6 +10,24 @@ import (
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
+// loadHermeticRealPayloadCounterForTest keeps tests independent from both the
+// operator's cache and evaluator-wide overrides. Pointing every real tokenizer
+// load at the checked-in, hash-verified artifact also covers nested production
+// paths that load the tokenizer independently from the returned counter.
+func loadHermeticRealPayloadCounterForTest(t *testing.T) PayloadCounter {
+	t.Helper()
+	dir, err := filepath.Abs(filepath.Join("..", "tokenizer", "testdata", "artifact"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GRAPHI_EVAL_TOKENIZER_DIR", dir)
+	counter, err := LoadPinnedRealPayloadCounter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return counter
+}
+
 func TestPinnedRealPayloadCounter_RecomputesPreservedBytesWithoutMutation(t *testing.T) {
 	dir := filepath.Join("..", "tokenizer", "testdata", "artifact")
 	tok, err := evaltokenizer.Load(dir)
@@ -60,6 +78,26 @@ func TestLoadPinnedRealPayloadCounter_MissingArtifactFailsWithoutFallback(t *tes
 		}
 	}
 	t.Logf("observed measurement failure: %s", err)
+}
+
+func TestLoadPinnedRealPayloadCounter_CleanCacheUsesVerifiedEmbeddedArtifact(t *testing.T) {
+	t.Setenv("GRAPHI_EVAL_TOKENIZER_DIR", "")
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+
+	counter, err := LoadPinnedRealPayloadCounter()
+	if err != nil {
+		t.Fatalf("load measurement counter without external cache: %v", err)
+	}
+	if counter.TokenizerID != evaltokenizer.TokenizerID || counter.VocabularySHA256 != evaltokenizer.PinnedVocabularySHA256 {
+		t.Fatalf("PayloadCounter identity = %+v", counter)
+	}
+	got, err := counter.Count([]byte("hello, hermetic evaluator"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == 0 {
+		t.Fatal("embedded tokenizer returned zero tokens for non-empty input")
+	}
 }
 
 func TestNewPinnedRealPayloadCounter_RejectsNil(t *testing.T) {

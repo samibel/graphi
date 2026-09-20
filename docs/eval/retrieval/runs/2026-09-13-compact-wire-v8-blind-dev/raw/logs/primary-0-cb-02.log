@@ -1,0 +1,59 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp/graphi-v8-blind-empty
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a098af-b2e2-73c1-944b-0b19d7bb01c6
+--------
+user
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+MarkFlagsMutuallyExclusive
+
+----- BEGIN task_context/compact-dev/8 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 69abeb31a127; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/8","sources":[{"path":"flag_groups.go","start_line":63,"end_line":77,"text":"// MarkFlagsMutuallyExclusive marks the given flags with annotations so that Cobra errors\n// if the command is invoked with more than one flag from the given set of flags.\nfunc (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a mutually exclusive flag group\", v))\n\t\t}\n\t\t// Each time this is called is a single new entry; this allows it to be a member of multiple groups if needed.\n\t\tif err := c.Flags().SetAnnotation(v, mutuallyExclusive, append(f.Annotations[mutuallyExclusive], strings.Join(flagNames, \" \"))); err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t}\n}"},{"path":"flag_groups.go","start_line":79,"end_line":88,"text":"// ValidateFlagGroups validates the mutuallyExclusive/oneRequired/requiredAsGroup logic and returns the\n// first error encountered.\nfunc (c *Command) ValidateFlagGroups() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tflags := c.Flags()\n\n\t// groupStatus format is the list of flags as a unique ID,"},{"path":"flag_groups.go","start_line":25,"end_line":29,"text":"const (\n\trequiredAsGroup   = \"cobra_annotation_required_if_others_set\"\n\toneRequired       = \"cobra_annotation_one_required\"\n\tmutuallyExclusive = \"cobra_annotation_mutually_exclusive\"\n)"},{"path":"command.go","start_line":56,"end_line":57,"text":"\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the\n\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command."},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"}],"provenance":{"input_sha256":"303ab134c8008c2d5a048d029e4f62670b5cb1bbb89b862df4ec0fdd5e2d03be","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/8 RESPONSE BYTES -----
+
+codex
+`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` defines a set of flags that cannot be used together.
+
+In `flag_groups.go:63-77`, it:
+
+- Merges persistent flags via `c.mergePersistentFlags()`.
+- Looks up every named flag in `c.Flags()`.
+- Panics if a flag does not exist.
+- Adds the annotation key `cobra_annotation_mutually_exclusive` (defined as `mutuallyExclusive` at `flag_groups.go:25-29`) with the space-joined group names.
+- Appends annotations, allowing a flag to belong to multiple mutually exclusive groups.
+
+The resulting annotations are validated by `(*Command).ValidateFlagGroups()` (`flag_groups.go:79-88`), which returns no group-validation error when `DisableFlagParsing` is enabled.
+tokens used
+6.855
+`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` defines a set of flags that cannot be used together.
+
+In `flag_groups.go:63-77`, it:
+
+- Merges persistent flags via `c.mergePersistentFlags()`.
+- Looks up every named flag in `c.Flags()`.
+- Panics if a flag does not exist.
+- Adds the annotation key `cobra_annotation_mutually_exclusive` (defined as `mutuallyExclusive` at `flag_groups.go:25-29`) with the space-joined group names.
+- Appends annotations, allowing a flag to belong to multiple mutually exclusive groups.
+
+The resulting annotations are validated by `(*Command).ValidateFlagGroups()` (`flag_groups.go:79-88`), which returns no group-validation error when `DisableFlagParsing` is enabled.

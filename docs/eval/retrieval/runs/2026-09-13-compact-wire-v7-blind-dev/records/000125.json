@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 125,
+  "previous_sha256": "d79adcaaac6f1ae00bf4e88c76ef8ecc4f793465006c89123c7d1e244590eb7e",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6b417e9542bd4b410b653604584ba58b173232ebce5ec3c90bc9dbdcd106ac9b",
+  "outcome": "fail",
+  "rationale": "The core lookup is supported: command.go:1794–1803 defines `(*Command).Flag(name)`, checking `c.Flags().Lookup(name)` and then `c.persistentFlag(name)`. However, the candidate’s claim that `ExecuteC` “returns the command that executed” is not established by the preserved bytes: command.go:1052–1054 shows only the return signature `ExecuteC() (cmd *Command, err error)`, not what command is returned. The bundle also lacks the `Run`/`RunE` callback signature needed to show how to obtain the currently executing `*Command` inside the command body. Thus the answer includes an unsupported factual claim and does not fully support how `cmd` is obtained.\n",
+  "sha256": "901898c3ab8b6a83bbabb2736fed76c49c865a085ca1dfdab3d31d749636994d"
+}

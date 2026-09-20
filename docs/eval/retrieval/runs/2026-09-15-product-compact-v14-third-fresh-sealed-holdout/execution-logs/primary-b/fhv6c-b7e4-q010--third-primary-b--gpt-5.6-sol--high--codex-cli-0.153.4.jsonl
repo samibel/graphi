@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-cbe2-7270-bbf7-14e66c869d64"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`resetCommandLineFlagSet` is a test helper that replaces the global `pflag.CommandLine` with a fresh flag set named after `os.Args[0]`, configured with `pflag.ExitOnError`:\n\n```go\nfunc resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)\n}\n```\n\nEvidence: `command_test.go`, lines 70–72."}}
+{"type":"turn.completed","usage":{"input_tokens":16523,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":144,"reasoning_output_tokens":45}}

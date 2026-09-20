@@ -1,0 +1,6 @@
+The generated shell scripts dispatch completion requests through a hidden command:
+
+- `ShellCompRequestCmd` is defined as `__complete`; `ShellCompNoDescRequestCmd` is `__completeNoDesc` (`completions.go:26-33`).
+- Bash, Zsh, Fish, and PowerShell generators select `ShellCompRequestCmd` via `compCmd` (`bash_completionsV2.go:32`, `zsh_completions.go:88`, `fish_completions.go:31`, `powershell_completions.go:34-35`).
+- When that hidden command runs, its `Run` callback calls `cmd.getCompletions(args)`, receiving the resolved command, candidates, directive, and error (`completions.go:205-215`).
+- The callback then emits the returned completions and directive; it detects description-free requests with `cmd.CalledAs() == ShellCompNoDescRequestCmd` (`completions.go:205-215`).

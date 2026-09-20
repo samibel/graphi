@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: a024749fecb6c2e86628ea63a0c21283362694cb58f6e5ff8ec64119628bc74e
+QUERY ID: fhv5b-c7e2-q031
+
+QUESTION:
+Which command-tree relationships and caches are cleared by resetting commands?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1277-1283 anchor="c.helpCommand = nil" reason=The receiver loses its parent, child slice, help command, and cached parent persistent flags.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 625e78ec6de7; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":47,"end_line":57,"text":"// Command is just that, a command for your application.\n// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:\n\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the\n\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command."},{"path":"command.go","start_line":105,"end_line":105,"text":"\t// group commands or set special options."},{"path":"command.go","start_line":1277,"end_line":1283,"text":"// ResetCommands delete parent, subcommand and help command from c.\nfunc (c *Command) ResetCommands() {\n\tc.parent = nil\n\tc.commands = nil\n\tc.helpCommand = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1285,"end_line":1286,"text":"// Sorts commands by their names.\ntype commandSorterByName []*Command"},{"path":"command.go","start_line":1292,"end_line":1300,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {\n\t// do not sort commands if it already sorted or sorting was disabled\n\tif EnableCommandSorting && !c.commandsAreSorted {\n\t\tsort.Sort(commandSorterByName(c.commands))\n\t\tc.commandsAreSorted = true\n\t}\n\treturn c.commands\n}"},{"path":"command.go","start_line":1362,"end_line":1365,"text":"func (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}\nmain:\n\tfor _, command := range c.commands {"},{"path":"command.go","start_line":1367,"end_line":1367,"text":"\t\t\tif command == cmd {"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"doc/man_docs.go","start_line":38,"end_line":39,"text":"func GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {\n\treturn GenManTreeFromOpts(cmd, GenManTreeOptions{"},{"path":"doc/man_docs.go","start_line":47,"end_line":47,"text":"// The pages are written to the opts.Path directory."},{"path":"doc/man_docs.go","start_line":48,"end_line":48,"text":"func GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {"},{"path":"command.go","start_line":1425,"end_line":1429,"text":"// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}"}],"provenance":{"input_sha256":"5ca2451261f61df56268d5efa2f6fd103e85d65355394cd7ab226180e6012703","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`Command.ResetCommands` clears four fields: the parent relationship (`c.parent`), child commands (`c.commands`), the cached/help command (`c.helpCommand`), and cached parent persistent flags (`c.parentsPflags`) by setting each to `nil` ([`command.go`, lines 1277–1283]).
+----- END THE RATER'S RESPONSE -----

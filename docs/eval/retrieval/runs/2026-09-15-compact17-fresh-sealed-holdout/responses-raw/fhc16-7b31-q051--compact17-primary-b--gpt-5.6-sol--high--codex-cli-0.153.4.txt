@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains `Command.ParseFlags` (`command.go:1817–1840`) but no `ValidArgsFunction` definition, contract, or call site showing whether flags are parsed beforehand.

@@ -1,0 +1,10 @@
+Aliases are supported in three ways:
+
+- **Command aliases:** Set `Command.Aliases` (`[]string`) to alternative names for the first word in `Use` (`command.go:63–64`). `HasAlias` checks them using `commandNameMatches` (`command.go:1505–1513`).
+- **Argument aliases:** Define noun aliases alongside `ValidArgs` using `ArgAliases` (`site/content/completions/_index.md:151–157`). Bash completion generation sorts these and writes them into `noun_aliases` (`bash_completions.go:647–653`).
+- **Bash aliases with completion:** The documentation gives this setup (`site/content/completions/_index.md:402–409`, follow-up read):
+
+  ```bash
+  alias aliasname=origcommand
+  complete -o default -F __start_origcommand aliasname
+  ```

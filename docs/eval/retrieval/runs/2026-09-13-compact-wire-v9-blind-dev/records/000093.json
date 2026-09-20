@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 93,
+  "previous_sha256": "754c95b3ef80538d28da9c9873fcda805a512498a4a2c5bdfe8993021ac17066",
+  "kind": "grade",
+  "query_id": "cb-09",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "c0e6079c3c79cd2ea715eadddb55cc9e7bd1883fa1e15106eeaba00a7de46eb0",
+  "outcome": "pass",
+  "rationale": "The candidate accurately inventories every declaration preserved in the bundle: package `cobra` at line 15; required-flag helpers at lines 24, 29–31, and 35–38; filename helpers at 42–44 and 58–61; custom Bash helpers at 54 and 71–77; and directory helpers at 83 and 94–96. The signatures support the stated `Command`-method versus `*pflag.FlagSet` structure and show that all declarations return `error`; the comments support the extension filtering and Bash-only/cross-shell recommendation claims. It also appropriately notes the bundle’s explicit `truncated:true` status and does not invent unseen implementation details.\n",
+  "sha256": "3edf741a2871a5735cc13a416e8a23e787684df9b1269cf5ec21f581d657ba61"
+}

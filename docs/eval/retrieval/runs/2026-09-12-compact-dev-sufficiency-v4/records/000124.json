@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 124,
+  "previous_sha256": "1d754b88070144dff10b298e43c5ca39dcc71f1db06a7dc6ae26f26b022f7a78",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "6e9945cc6320c00b506023c610728985ac8932c2cd9a88eced522da868d4e865",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: ci-1133:primary-b\nOutcome: pass\nRationale: Gives the supported Flag(name) and Flags().Lookup(name) operations on the executing command object and accurately explains the shown own/persistent-parent lookup evidence.\n",
+  "sha256": "a6b081e91d971a00d591e43b5d5519d4512d28372b22e90dbf15772653ce7178"
+}

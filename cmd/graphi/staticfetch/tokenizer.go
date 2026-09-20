@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 )
 
 const (

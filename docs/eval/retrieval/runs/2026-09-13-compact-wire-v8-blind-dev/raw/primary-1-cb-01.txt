@@ -1,0 +1,14 @@
+`ExecuteC` is `func (c *Command) ExecuteC() (cmd *Command, err error)` in `command.go:1052`.
+
+It:
+
+- Initializes `c.ctx` with `context.Background()` when nil (`command.go:1053–1055`).
+- Redirects execution to the root command when called on a child: `return c.Root().ExecuteC()` (`command.go:1058–1060`).
+- Runs `preExecHookFn(c)` when configured (`command.go:1063–1066`).
+- Initializes default help, completion, command groups, and the hidden shell-completion command (`command.go:1068–1086`).
+- Uses `c.args`, falling back to `os.Args[1:]` except for `cobra.test` (`command.go:1077–1083`).
+- Resolves the target command with either `Traverse(args)` or `Find(args)`, depending on `TraverseChildren` (`command.go:1088–1094`).
+- On resolution failure, switches error context to the discovered subcommand, optionally prints the error and help hint, then returns (`command.go:1095–1106`).
+- Marks the command as called, records its invoked name, propagates the root context when needed, and invokes `cmd.execute(flags)` (`command.go:1108–1116`).
+
+The response is truncated immediately after `if err != nil {` at `command.go:1116`, so the final execution-error handling and return behavior are not shown.

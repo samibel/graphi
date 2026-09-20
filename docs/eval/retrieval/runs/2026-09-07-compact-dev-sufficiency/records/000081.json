@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 81,
+  "previous_sha256": "7d823664f868f8930d0d567a45b649257e52cf9f20cf46c8737003bd978f501f",
+  "kind": "grade",
+  "query_id": "cb-01",
+  "slot": 0,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "8521e070deee51a7a5ba51186ab4a77f06b374cf70661ad40027a53737130979",
+  "outcome": "pass",
+  "rationale": "The answer identifies the exact ExecuteC declaration requested by the identifier query. Preserved command.go:1051-1054 supplies its receiver, return types and nil-context initialization; command.go:1038-1040 and 1046-1048 directly support both wrapper relationships.\n",
+  "sha256": "ffddfed91be4dc93e7f828a0b7e1cbea04dbdcba366777168f09dcb35f1b86fa"
+}

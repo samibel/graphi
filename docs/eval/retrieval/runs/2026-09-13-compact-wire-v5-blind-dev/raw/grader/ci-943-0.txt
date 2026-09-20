@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the non-empty Version/no-existing-flag conditions and the configurable/default version template from the bundled command.go spans.

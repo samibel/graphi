@@ -1,0 +1,1 @@
+PASS: The preserved follow-up supports the response’s full sequence: help initialization, buffered sections, option-error propagation, parent and filtered child links, inherited generation-tag suppression, optional dated notice, and final buffer write with error return.

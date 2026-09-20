@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-b541-7f72-b029-f8ecd3643946"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`executeCommandWithContext` is a test helper defined in `command_test.go:37–46`. It accepts a `context.Context`, a root `*Command`, and variadic string arguments, then:\n\n1. Creates a buffer and directs both command output and errors to it using `SetOut` and `SetErr`.\n2. Sets the arguments with `root.SetArgs(args)`.\n3. Calls `root.ExecuteContext(ctx)`.\n4. Returns the captured output as a string and the execution error.\n\n`ExecuteContext` assigns the supplied context to `c.ctx` and calls `c.Execute()` (`command.go:1027–1033`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17255,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":136,"reasoning_output_tokens":0}}

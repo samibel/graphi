@@ -1,0 +1,1 @@
+PASS: It correctly names the program-specific variable, its normalization rule, and the global disabling override.

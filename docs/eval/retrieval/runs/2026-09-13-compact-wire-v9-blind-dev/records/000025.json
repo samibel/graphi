@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 25,
+  "previous_sha256": "ddcb6b5b512df23be2a4c00c0e1e5c2cfdb80274dbd01225e5710055d0e947d2",
+  "kind": "response",
+  "query_id": "cb-33",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "aecc6e18796cd3112ce0f174a496f7a33f1bf4baeced01028057c096d918699c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra supports POSIX-compliant flags and Go’s `flag` package. Commands can define:\n\n- Persistent flags inherited by child commands (`README.md:68-74`).\n- Local flags available only to the current command (`README.md:72-74`).\n- `Command.Flags()`, returning all applicable local and persistent flags from the command and its parents (`command.go:1641-1653`).\n- `Command.LocalFlags()`, including current-command flags while handling inherited flags and shadowing (`command.go:1668-1693`).\n- `Command.LocalNonPersistentFlags()`, filtering out persistent flags so only non-inherited command-specific flags remain (`command.go:1655-1666`).",
+  "sha256": "bb5bead6fd2a840cc80dcfa65627e85915b8c6d044427391a150376b4eb179fd"
+}

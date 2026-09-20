@@ -1,0 +1,6 @@
+`command_notwin.go` declares:
+
+- Package `cobra` ([line 18]).
+- Package-level variable `preExecHookFn` with type `func(*Command)` ([line 20]).
+
+The response contains no other visible declarations.

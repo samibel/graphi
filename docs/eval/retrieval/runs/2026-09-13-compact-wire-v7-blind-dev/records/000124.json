@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 124,
+  "previous_sha256": "a753918b318395ae3fe199d71000741fc88cff1e70dd1d2cabe33a31c87c1ef1",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f7b27119cf872e7666e7a61feb0f2ad1516d26adf8dafaca81f7cfd4b1f4d65e",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, accurate summary supported entirely by the preserved bundle. `completions.go:95-102` establishes the command name `completion`; `completions.go:678-685` states that `InitDefaultCompletionCmd` adds the default command and lists the three conditions preventing it; `site/content/completions/_index.md:115-127` supports automatic command/flag completion and customization via `ValidArgs`; and lines 112-120 support the exact `DisableDescriptions` assignment. Although the development key identifies additional shell-specific generators, the one-word query is ambiguous and the candidate correctly addresses the highest-grade completion-command anchor using available evidence.\n",
+  "sha256": "d79adcaaac6f1ae00bf4e88c76ef8ecc4f793465006c89123c7d1e244590eb7e"
+}

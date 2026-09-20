@@ -1,0 +1,1 @@
+Use `<PROGRAM>_ACTIVE_HELP`, where `<PROGRAM>` is the root command name uppercased with non-ASCII-alphanumeric characters replaced by underscores. `GetActiveHelpConfig` documents that `COBRA_ACTIVE_HELP=0` globally overrides it and forces a result of `0` (`active_help.go:46–52`); the suffix and global variable constants appear at `active_help.go:28–29`.

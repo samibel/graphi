@@ -1,0 +1,1 @@
+PASS: The response correctly states all three conditions for appending `" [flags]"`: flags are not disabled in the usage line, available flags exist, and the constructed usage line lacks `"[flags]"`. Its explanation of available flags and both citations are supported by the preserved bundle.

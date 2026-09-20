@@ -1,0 +1,1 @@
+PASS: The response provides a concrete list-of-flags procedure and supports VisitAll with the bundled InheritedFlags implementation.

@@ -1,0 +1,1 @@
+PASS: The response accurately gives the local non-nil outWriter → recursive parent lookup → supplied default order. Both citations resolve within the preserved bundle and support the claims.

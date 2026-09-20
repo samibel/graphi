@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 966fa5e0362ca044cb379ed2554cadffcab405e8b57912930832d87de425476f
+QUERY ID: c17u4-q-061de8f34ab7
+
+QUESTION:
+How does RangeArgs decide whether a positional-argument count is outside its accepted interval?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:103-111 anchor="func RangeArgs(min int, max int) PositionalArgs" reason=The closure checks both inclusive bounds and reports the interval plus actual count.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 90f0330a916c; read in order (322/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"args.go","start_line":82,"end_line":131,"text":"\n// MaximumNArgs returns an error if there are more than N args.\nfunc MaximumNArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) > n {\n\t\t\treturn fmt.Errorf(\"accepts at most %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}\n\n// ExactArgs returns an error if there are not exactly n args.\nfunc ExactArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) != n {\n\t\t\treturn fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}\n\n// RangeArgs returns an error if the number of args is not within the expected range.\nfunc RangeArgs(min int, max int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) < min || len(args) > max {\n\t\t\treturn fmt.Errorf(\"accepts between %d and %d arg(s), received %d\", min, max, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}\n\n// MatchAll allows combining several PositionalArgs to work in concert.\nfunc MatchAll(pargs ...PositionalArgs) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tfor _, parg := range pargs {\n\t\t\tif err := parg(cmd, args); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}\n\n// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead\nfunc ExactValidArgs(n int) PositionalArgs {\n\treturn MatchAll(ExactArgs(n), OnlyValidArgs)\n}"},{"path":"site/content/user_guide.md","start_line":367,"end_line":374,"text":"## Positional and Custom Arguments\n\nValidation of positional arguments can be specified using the `Args` field of `Command`.\nThe following validators are built in:\n\n- Number of arguments:\n  - `NoArgs` - report an error if there are any positional args.\n  - `ArbitraryArgs` - accept any number of args."},{"path":"command.go","start_line":58,"end_line":58,"text":"\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are"},{"path":"args.go","start_line":49,"end_line":49,"text":"// OnlyValidArgs returns an error if there are any positional args that are not in"},{"path":"args.go","start_line":74,"end_line":74,"text":"func MinimumNArgs(n int) PositionalArgs {"}],"provenance":{"input_sha256":"4d1bf0e4ebdeda32b9cd67fe44550ce41bcd4e17601e3322b931020f88d6fc6c","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`RangeArgs` checks whether `len(args) < min || len(args) > max`, so the interval is inclusive. If either condition is true, it returns an error reporting the accepted bounds and actual count; otherwise it returns `nil` (`args.go`, `RangeArgs`, lines 104–112).
+----- END THE RATER'S RESPONSE -----

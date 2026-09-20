@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 133,
+  "previous_sha256": "aa2ddb249dcc50e0112f162fadbf4130c044a2cf611e38f7314529c9d5fb6ffd",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6fdc3300fd018dcc4405a6b09822e068b1570ce4022ce8e50bad3cf69ce2992c",
+  "outcome": "pass",
+  "rationale": "The answer directly gives the supported mechanism: call `cmd.Flag(\"flag-name\")` on the `cmd *Command` supplied to execution hooks. The bundle shows the hook signatures receiving `cmd *Command` in `command.go` lines 124–134 and defines `Command.Flag` in lines 1794–1803, where it checks `c.Flags().Lookup(name)` and then `c.persistentFlag(name)`. The nil check is appropriate because the lookup can remain nil. These citations concretely support the answer.\n",
+  "sha256": "3b56f4784e677b1c769cede3519639dcb75ed11d4330e40234f2a9ad44742324"
+}

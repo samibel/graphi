@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 70,
+  "previous_sha256": "f32e52b5273dccb6cb9181af5d619141756099640f008b6421d02fbd70cad87b",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "0bedccc1346b7a39879a38f7382160de229d7c8f28d52814f1d4fc1f007276c9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the flags first, then pass their names to:\n\n```go\ncmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")\n```\n\n`flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` and states that the command errors if more than one flag in the set is used. Each name must already exist: `c.Flags().Lookup(v)` panics when a flag cannot be found (`flag_groups.go:67-71`). Calling the method multiple times creates separate groups, so a flag may belong to multiple groups (`flag_groups.go:72-75`).",
+  "sha256": "1b1b9a2556c8a7436f27366331bba52860dbd56547cba02a650598b66edba3d5"
+}

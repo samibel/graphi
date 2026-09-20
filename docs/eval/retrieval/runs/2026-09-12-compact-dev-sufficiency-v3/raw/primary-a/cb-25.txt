@@ -1,0 +1,1 @@
+Set `rootCmd.CompletionOptions.DisableDefaultCmd = true` before default completion initialization. The field is documented to prevent creation of the default `completion` command (`completions.go:106–107`), and `InitDefaultCompletionCmd` immediately returns when it is true (`completions.go:683–686`).

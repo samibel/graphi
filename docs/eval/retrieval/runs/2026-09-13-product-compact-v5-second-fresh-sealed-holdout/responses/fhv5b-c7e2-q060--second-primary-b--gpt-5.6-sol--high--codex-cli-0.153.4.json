@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q060",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "0d7a74518ea9274639bb86b7a8a1cbf5f302706a7093999e02e3eb869fa9da59",
+  "bundle_sha256": "ca6b43d4cde4d5c64dde7c0ff563e9322e07f361b37ae8fc8d9e6565833bbf0c",
+  "prompt_sha256": "797f849bf11c1dccb5bbdc9779d2abf62baf1cb4ffbfb0430cc82d017aebe31a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `commandCalledAs` fields in `command.go:207-212`, but not the method that returns the name or alias before invocation.",
+  "responded_at": "2026-09-13T15:28:09Z",
+  "sha256": "2a1a8363468ea6427ef7dc6c18908a9f8cd76413e0f3f5b5c699a6a4b853e077"
+}

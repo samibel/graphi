@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: b22a66efac1f00578115a1b6cbb0a65bfe42a918c246922493bb74ceb80910de
+QUERY ID: fhv5-9f4c-q030
+
+QUESTION:
+When is the default version flag added, and how is a preexisting short -v handled?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1200-1224 anchor="if c.Flags().ShorthandLookup(\"v\") == nil" reason=No flag is added without a version or when version already exists; otherwise Cobra uses -v only if that shorthand is free and marks the generated flag.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 5a62630292da; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/user_guide.md","start_line":594,"end_line":595,"text":"Cobra adds a top-level '--version' flag if the Version field is set on the root command.\nRunning an application with the '--version' flag will print the version to stdout using"},{"path":"completions.go","start_line":678,"end_line":678,"text":"// InitDefaultCompletionCmd adds a default 'completion' command to c."},{"path":"completions.go","start_line":744,"end_line":749,"text":"\tif haveNoDescFlag {\n\t\tbash.Flags().BoolVar(&noDesc, compCmdNoDescFlagName, compCmdNoDescFlagDefault, compCmdNoDescFlagDesc)\n\t}\n\n\tzsh := &Command{\n\t\tUse:   \"zsh\","},{"path":"command.go","start_line":1200,"end_line":1200,"text":"// InitDefaultVersionFlag adds default version flag to c."},{"path":"command.go","start_line":1216,"end_line":1227,"text":"\t\t}\n\t\tif c.Flags().ShorthandLookup(\"v\") == nil {\n\t\t\tc.Flags().BoolP(\"version\", \"v\", false, usage)\n\t\t} else {\n\t\t\tc.Flags().Bool(\"version\", false, usage)\n\t\t}\n\t\t_ = c.Flags().SetAnnotation(\"version\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}\n\n// InitDefaultHelpCmd adds default help command to c.\n// It is called automatically by executing the c or by calling help and usage."},{"path":"command.go","start_line":1266,"end_line":1270,"text":"\t\t\t\t\tcmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown\n\t\t\t\t\tCheckErr(cmd.Help())\n\t\t\t\t}\n\t\t\t},\n\t\t\tGroupID: c.helpCommandGroupID,"},{"path":"command.go","start_line":110,"end_line":110,"text":"\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the"},{"path":"doc/man_docs.go","start_line":204,"end_line":205,"text":"\tcmd.InitDefaultHelpFlag()\n"},{"path":"doc/man_docs.go","start_line":233,"end_line":233,"text":"\t\tfor _, c := range children {"},{"path":"command.go","start_line":1183,"end_line":1198,"text":"// InitDefaultHelpFlag adds default help flag to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help flag, it will do nothing.\nfunc (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}\n\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)\n\t\t_ = c.Flags().SetAnnotation(\"help\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}"},{"path":"doc/yaml_docs.go","start_line":155,"end_line":155,"text":"\t\t// Using len(flag.ShorthandDeprecated) > 0 can't handle this, others are ok."},{"path":"completions.go","start_line":300,"end_line":300,"text":"\t// Let's add the --help and --version flag ourselves but only if the finalCmd"}],"provenance":{"input_sha256":"36282754bdcfc7c2d75c67de53e2f6c09472677adfc4f713c9d979e43b78e6f7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The default top-level `--version` flag is added when the root command’s `Version` field is set (`site/content/user_guide.md:594`).
+
+If short `-v` is unused, `InitDefaultVersionFlag` registers `--version` with shorthand `-v`. If `-v` already exists, it registers only `--version`, leaving the existing `-v` intact (`command.go:1217–1221`, `ShorthandLookup("v")`, `BoolP`, and `Bool`).
+----- END THE RATER'S RESPONSE -----

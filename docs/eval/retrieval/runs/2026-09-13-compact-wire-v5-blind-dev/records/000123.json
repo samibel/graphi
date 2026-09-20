@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 123,
+  "previous_sha256": "2fecc976c345d032d840886dfc7c8ad54e897b3e6d171c57193ae2041343ccf9",
+  "kind": "grade",
+  "query_id": "cb-32",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3df7b6a8a6267eb6669f853939ed0d0426be9e12b44f0ee609d4ecf97f817c82",
+  "outcome": "pass",
+  "rationale": "PASS: The response accurately explains Execute and its context variants using only command.go:1027-1049 and the Execute documentation.\n",
+  "sha256": "2f393d23951918754b6bd2d35c4f2480bddf4cf4a4984074ff94522d11c73e2e"
+}

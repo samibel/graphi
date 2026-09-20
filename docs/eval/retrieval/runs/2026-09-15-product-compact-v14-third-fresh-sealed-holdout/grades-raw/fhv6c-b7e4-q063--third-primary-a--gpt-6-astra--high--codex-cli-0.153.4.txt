@@ -1,0 +1,1 @@
+FAIL: The response does not identify the panic caused by assigning the generated help command to a missing group. The transcript contains only the test declaration at command_test.go:1954, without its body or validation logic, so the essential behavior cannot be verified.

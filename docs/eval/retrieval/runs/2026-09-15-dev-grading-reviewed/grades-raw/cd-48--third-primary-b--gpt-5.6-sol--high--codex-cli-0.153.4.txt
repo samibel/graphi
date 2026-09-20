@@ -1,0 +1,1 @@
+PASS: The response correctly explains using cmd.SetErrPrefix to customize the prefix. The preserved transcript supports the setter, printing behavior, parent-prefix inheritance, default "Error:", and CheckErr’s separately hard-coded prefix. All cited paths and line ranges exist and support their attached claims.

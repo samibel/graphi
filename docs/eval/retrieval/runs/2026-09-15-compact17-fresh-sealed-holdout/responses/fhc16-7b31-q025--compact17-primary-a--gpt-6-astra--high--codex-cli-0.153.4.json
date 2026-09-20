@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q025",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "9e6d094e53005f35c64966657b3fa5be955632b3e54679b39c12cae29343e069",
+  "bundle_sha256": "ad5b3d8c9b7d5a1801f7db735418a56d93d94b2ad52511dd5faa8cc32785da81",
+  "prompt_sha256": "4c15b77174d258daa3c4c203abe0f72c57bf11d204040041ff1de42fe22011a1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `c.SetHelpCommandGroupID(groupID)` (`command.go:332–339`).\n\n- **Before the help command exists:** it stores the value in `c.helpCommandGroupID`; the comment says this is used if no help command is defined by the user.\n- **After it exists:** the `if c.helpCommand != nil` branch immediately sets `c.helpCommand.GroupID = groupID`, and the method also updates the stored value.\n\n`GroupID` specifies the group under which a subcommand appears in its parent’s help output (`command.go:73–74`).",
+  "responded_at": "2026-09-15T18:38:38Z",
+  "sha256": "e4b004b0aca1f70e3dd75dce5ad1afa4a5fac28d75641ae60724ae66ef5cb686"
+}

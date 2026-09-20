@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q054",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "2117427d5330ee427c50acde06ee7797853e2d8e4f599fb59e1efacd24388b52",
+  "bundle_sha256": "73aa2915a20b2886e74e883e33b837d33581d68ab2cebcb3afb06dca72eda593",
+  "prompt_sha256": "bab00f3b1f209243928e150fd7cfe3124535336dea60d908875286d6e26e080d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The `linkHandler` receives a command documentation **filename** as a `string` and returns a `string` containing the customized internal-link target—such as an absolute URL path.\n\nEvidence: `site/content/docgen/md.md:103-115` says it customizes internal command links “given a filename,” and its example strips the filename extension and returns `\"/commands/\" + strings.ToLower(base) + \"/\"`. The signatures in `doc/md_docs.go:56-58` and `site/content/docgen/md.md:76-86` confirm the callback type is `func(string) string`.",
+  "responded_at": "2026-09-15T18:42:14Z",
+  "sha256": "0109ae20b3b4cd52646bd8b23517a02e0b97d68e133aac4e2c966b58f6b56e0c"
+}

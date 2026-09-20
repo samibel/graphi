@@ -1,0 +1,1 @@
+PASS: The response directly answers that a partial required-together group causes an error, supported by flag_groups.go:31-34. The username/password example is supported by site/content/user_guide.md:336-338, and no unsupported claims are added.

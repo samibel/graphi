@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q020",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "cef9dafa491267df3606b9d850aa34cf1e37496af66ff4b49b5d0547705b8fe2",
+  "bundle_sha256": "1062c31b467cf99735ef7faab519e750f802793b6be528189d83cfd210a11632",
+  "prompt_sha256": "63e49cf3cd9691cdadea6bbb187c979dd6666047702027c834898288f93f5899",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`MarkZshCompPositionalArgumentWords` now does nothing: it immediately returns `nil` and is deprecated because it only worked for zsh and has been disabled (`zsh_completions.go:59–68`).\n\nThe documented alternatives are:\n\n- `ValidArgs` for the first argument only.\n- `ValidArgsFunction` for any argument, including the first (`zsh_completions.go:61–64`).\n\nThe zsh documentation specifically recommends `ValidArgsFunction` (`site/content/completions/zsh.md:16–18`).",
+  "responded_at": "2026-09-13T15:22:37Z",
+  "sha256": "c0b4e9c0ff0fccfccbdea849ee11409ae87545bd9329ef03490bb64d22e2a374"
+}

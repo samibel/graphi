@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b72-7b02-7d01-b545-e52d750e9911"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the optional name prefix, `version <Version>`, and trailing newline. Its cited `command.go:599–608` exists in the bundle and supports the custom-template lookup through parents and default fallback."}}
+{"type":"turn.completed","usage":{"input_tokens":18344,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `enforceFlagGroupsForCompletion()` skipping work when `DisableFlagParsing` is true (`flag_groups.go:224–227`), but omits the enforcement body that changes completion behavior for each flag-group constraint.

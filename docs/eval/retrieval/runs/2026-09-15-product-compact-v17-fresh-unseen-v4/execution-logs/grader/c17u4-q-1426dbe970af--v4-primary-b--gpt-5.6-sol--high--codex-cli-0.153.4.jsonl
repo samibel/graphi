@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cc-efe6-7c43-87cc-5e91641aaa33"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes clearing removed children’s parents, rebuilding `c.commands`, and resetting and recomputing all three cached maximum lengths from remaining children. Its citation resolves within the preserved `command.go:1360–1393` span."}}
+{"type":"turn.completed","usage":{"input_tokens":17755,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":54,"reasoning_output_tokens":0}}

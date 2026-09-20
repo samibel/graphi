@@ -1,0 +1,1 @@
+GenManTree's preserved signature, documentation and wrapper body support the concrete invocation, nil header, output directory, options and filename-collision caveat.

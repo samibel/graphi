@@ -1,0 +1,1 @@
+PASS: The bundle confirms that MarkFlagCustom installs BashCompCustom with value []string{f} and warns it works only for Bash completion, recommending c.RegisterFlagCompletionFunc for cross-shell Go callbacks. Both cited line ranges support the claims.

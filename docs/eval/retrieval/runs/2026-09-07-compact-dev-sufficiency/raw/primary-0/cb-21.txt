@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `parent.AddCommand(child)` (`command_test.go:933–934`) and the `AddCommand` declaration (`command.go:1302–1303`) but omits its body, including child insertion and parent-pointer assignment.

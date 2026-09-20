@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 139,
+  "previous_sha256": "cac198afc4b8a874b13fe0136aae5ff4b08e0e69ff99f57efba656c5ccf511ff",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a893f859db78031d5287156c5212d975d7361443d65407fc995161cb2e9a8c2f",
+  "outcome": "pass",
+  "rationale": "PASS: It accurately describes defining and accessing a parent persistent flag from a child command.",
+  "sha256": "426489453ad3abee1239a0033f60890dbeaa91e5f16c06e3484da5a00de70bf4"
+}

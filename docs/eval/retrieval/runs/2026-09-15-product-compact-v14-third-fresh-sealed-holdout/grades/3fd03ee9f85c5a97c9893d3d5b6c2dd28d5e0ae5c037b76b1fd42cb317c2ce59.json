@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q005",
+  "response_sha256": "3fd03ee9f85c5a97c9893d3d5b6c2dd28d5e0ae5c037b76b1fd42cb317c2ce59",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately describes the helper’s non-nil error check and exact comparison against \"requires at least 2 arg(s), only received 1\", including the failure calls, all supported by args_test.go:66–75 in the preserved transcript.",
+  "graded_at": "2026-09-15T08:32:55Z",
+  "sha256": "e50626e5dd8378ad0b60956b912372061a1d738fd2880773381bc6b03610dc7b"
+}

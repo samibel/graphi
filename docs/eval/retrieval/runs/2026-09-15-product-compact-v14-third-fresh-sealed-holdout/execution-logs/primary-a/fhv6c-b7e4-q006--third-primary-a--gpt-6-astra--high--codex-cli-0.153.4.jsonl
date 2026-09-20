@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-95cf-7223-aa64-1337f1d8f279"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`maximumNArgsWithMoreArgs(err error, t *testing.T)` is a test helper in `args_test.go:77–86`. It verifies that:\n\n- `err` is non-nil; otherwise it calls `t.Fatal(\"Expected an error\")` (lines 78–80).\n- `err.Error()` exactly equals `\"accepts at most 2 arg(s), received 3\"`; otherwise it calls `t.Fatalf(\"Expected %q, got %q\", expected, got)` (lines 81–85)."}}
+{"type":"turn.completed","usage":{"input_tokens":16912,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":113,"reasoning_output_tokens":0}}

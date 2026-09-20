@@ -27,12 +27,17 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	"github.com/samibel/graphi/engine/search"
 )
 
 const tool = "search_hybrid"
 
 // MethodVersion stamps the ranking logic version into the summary.
 const MethodVersion = "search_hybrid/1"
+
+// FairCandidateMethodVersion identifies the term-balanced candidate admission
+// used internally by retrieval/6. Search remains the byte-frozen /1 surface.
+const FairCandidateMethodVersion = "search_hybrid-candidates/2"
 
 // Retrieval bounds.
 const (
@@ -100,8 +105,24 @@ var stopwords = map[string]bool{
 	"of": true, "in": true, "on": true, "to": true, "is": true,
 }
 
+var retrievalStopwords = map[string]bool{
+	"would": true, "could": true, "should": true, "but": true,
+	"another": true,
+}
+
 // Search retrieves candidates per token and re-ranks them deterministically.
 func Search(ctx context.Context, p Params) (*contract.Result, error) {
+	return executeSearch(ctx, p, false)
+}
+
+// SearchFairCandidates preserves Search's scoring but reserves candidate
+// capacity for every meaningful query term. It is an internal retrieval input,
+// not a replacement for the byte-frozen search_hybrid/1 surface.
+func SearchFairCandidates(ctx context.Context, p Params) (*contract.Result, error) {
+	return executeSearch(ctx, p, true)
+}
+
+func executeSearch(ctx context.Context, p Params, fairCandidates bool) (*contract.Result, error) {
 	if strings.TrimSpace(p.Query) == "" {
 		return nil, fmt.Errorf("missing query text")
 	}
@@ -115,6 +136,11 @@ func Search(ctx context.Context, p Params) (*contract.Result, error) {
 	}
 
 	tokens := tokenize(p.Query)
+	methodVersion := MethodVersion
+	if fairCandidates {
+		tokens = TokenizeForRetrieval(p.Query)
+		methodVersion = FairCandidateMethodVersion
+	}
 	if len(tokens) == 0 {
 		return shape.Empty(tool, p.Query), nil
 	}
@@ -122,32 +148,57 @@ func Search(ctx context.Context, p Params) (*contract.Result, error) {
 	// Retrieval: the full query first (a phrase may hit directly), then each
 	// token. The backend rank is used for RETRIEVAL ONLY — the ranking below
 	// is this package's own deterministic scoring.
-	seen := map[model.NodeId]struct{}{}
-	var ids []model.NodeId
-	collect := func(q string) error {
+	queries := append([]string{p.Query}, tokens...)
+	channels := make([][]search.Match, 0, len(queries))
+	for _, q := range queries {
 		resp, err := p.Deps.Search.Search(ctx, q, perTokenLimit)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		for _, m := range resp.Matches {
+		channels = append(channels, resp.Matches)
+	}
+	seen := map[model.NodeId]struct{}{}
+	var ids []model.NodeId
+	collect := func(matches []search.Match, limit int) {
+		for i, m := range matches {
+			if i >= limit || len(ids) >= candidateCap {
+				return
+			}
 			id := model.NodeId(m.NodeID)
 			if _, dup := seen[id]; dup {
 				continue
 			}
-			if len(ids) >= candidateCap {
-				return nil
-			}
 			seen[id] = struct{}{}
 			ids = append(ids, id)
 		}
-		return nil
 	}
-	if err := collect(p.Query); err != nil {
-		return nil, err
-	}
-	for _, tok := range tokens {
-		if err := collect(tok); err != nil {
-			return nil, err
+	if fairCandidates {
+		// Preserve the full-query channel, then divide remaining capacity
+		// evenly across terms. Duplicate rows leave capacity for the final
+		// legacy-order fill pass.
+		collect(channels[0], len(channels[0]))
+		if len(tokens) > 0 {
+			remaining := candidateCap - len(ids)
+			quota, extra := remaining/len(tokens), remaining%len(tokens)
+			for i := range tokens {
+				limit := quota
+				if i < extra {
+					limit++
+				}
+				collect(channels[i+1], limit)
+			}
+		}
+		for _, matches := range channels[1:] {
+			if len(ids) == candidateCap {
+				break
+			}
+			collect(matches, len(matches))
+		}
+	} else {
+		// Frozen /1 admission: full query, then terms in query order until
+		// candidateCap is full.
+		for _, matches := range channels {
+			collect(matches, len(matches))
 		}
 	}
 	if len(ids) == 0 {
@@ -281,7 +332,7 @@ func Search(ctx context.Context, p Params) (*contract.Result, error) {
 	r := &contract.Result{
 		Outcome: contract.OutcomeFound,
 		Summary: fmt.Sprintf("search_hybrid: %d result(s) for %q — top %s (score %d); signals: identifier segments, path, bounded degree (%s; weights %s)",
-			len(rows), p.Query, rows[0].node.QualifiedName(), rows[0].score, MethodVersion, WeightsHash()),
+			len(rows), p.Query, rows[0].node.QualifiedName(), rows[0].score, methodVersion, WeightsHash()),
 		Items:    items,
 		Evidence: ev.List(),
 		Confidence: contract.Confidence{
@@ -307,12 +358,22 @@ func Search(ctx context.Context, p Params) (*contract.Result, error) {
 // so search_hybrid's output and retrieval's rerank agree on which tokens
 // get scored.
 func Tokenize(q string) []string {
+	return tokenizeWith(q, func(word string) bool { return stopwords[word] })
+}
+
+// TokenizeForRetrieval removes conversational scaffolding in addition to the
+// byte-frozen /1 stopword set, so late subject terms retain admission budget.
+func TokenizeForRetrieval(q string) []string {
+	return tokenizeWith(q, func(word string) bool { return stopwords[word] || retrievalStopwords[word] })
+}
+
+func tokenizeWith(q string, isStopword func(string) bool) []string {
 	fields := strings.Fields(strings.ToLower(q))
 	out := make([]string, 0, len(fields))
 	seen := map[string]struct{}{}
 	for _, f := range fields {
 		f = strings.Trim(f, ".,;:!?()[]{}\"'`")
-		if len(f) < 2 || stopwords[f] {
+		if len(f) < 2 || isStopword(f) {
 			continue
 		}
 		if _, dup := seen[f]; dup {

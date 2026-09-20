@@ -1,0 +1,7 @@
+`doc/man_examples_test.go` contains the following visible declarations:
+
+- **Package `doc_test`** (line 15).
+- **`ExampleGenManTree()`** (lines 25–35): creates a `cobra.Command` with `Use: "test"` and `Short: "my test program"`, plus a `doc.GenManHeader` with title `"MINE"` and section `"3"`. Calls `doc.GenManTree(cmd, header, "/tmp")` through `cobra.CheckErr`.
+- **`ExampleGenMan()`** (lines 37–49): creates the same command and header, generates a manual into a `bytes.Buffer` using `doc.GenMan`, checks the error with `cobra.CheckErr`, and prints the buffer using `fmt.Print(out.String())`.
+
+The response is marked `truncated: true`, so these snippets do not establish the file’s complete contents.

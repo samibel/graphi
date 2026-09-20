@@ -1,0 +1,25 @@
+Define a callback with this signature and register it for a command flag:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("format",
+    func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+        return []string{"json", "yaml"}, directive
+    },
+)
+```
+
+The required callback type is:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```
+
+Evidence: `completions.go:132-146` defines `RegisterFlagCompletionFunc`; it returns an error if the flag does not exist or already has a completion function.
+
+For constant suggestions, use:
+
+```go
+f := FixedCompletions([]string{"json", "yaml"}, directive)
+```
+
+`FixedCompletions` is defined in `completions.go:124-130` and returns the same choices and directive on every invocation. PowerShell completion scripts can be written to an `io.Writer` using `Command.GenPowerShellCompletion` (`powershell_completions.go:310-314`).

@@ -1,0 +1,1 @@
+The distance is computed by `ld(s, t string, ignoreCase bool) int` in `cobra.go:188` (comment at line 187). The shown implementation optionally lowercases the inputs and fills a two-dimensional distance matrix (`cobra.go:188–213`). Command suggestions call it as `ld(typedName, cmd.Name(), true)` and compare the result with `SuggestionsMinimumDistance` (`command.go:836–837`).

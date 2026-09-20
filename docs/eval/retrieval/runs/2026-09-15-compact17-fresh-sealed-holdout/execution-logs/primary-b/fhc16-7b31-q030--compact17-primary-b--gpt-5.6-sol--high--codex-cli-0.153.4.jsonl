@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-e038-7381-b7ec-29e18799c6bd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The command’s name comes first, followed by aliases in their existing `c.Aliases` order, delimited by a comma and space (`\", \"`). Evidence: `command.go:1539-1543`, where `NameAndAliases` calls `strings.Join(append([]string{c.Name()}, c.Aliases...), \", \")`. The name itself is the first word of `c.Use` (`command.go:1494-1502`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16687,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":96,"reasoning_output_tokens":0}}

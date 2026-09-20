@@ -1,0 +1,1 @@
+PASS: The response accurately identifies the read lock with deferred unlock, initialization of nil annotation maps, and assignment of the root-command-derived BashCompCustom handler for every registered flag. Its citation and explanation of deferred preparation are supported by bash_completions.go:535-549.

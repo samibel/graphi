@@ -1,0 +1,1 @@
+For flag completion, write a callback with signature func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective), and register it with cmd.RegisterFlagCompletionFunc("flag-name", callback). The implementation stores that callback for the named flag, returning an error if the flag does not exist or already has a registered callback (completions.go:132-146).

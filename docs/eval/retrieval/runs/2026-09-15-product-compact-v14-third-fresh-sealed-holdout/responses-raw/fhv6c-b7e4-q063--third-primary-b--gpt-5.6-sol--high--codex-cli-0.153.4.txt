@@ -1,0 +1,1 @@
+INSUFFICIENT The responses identify `command_test.go:1954`’s `TestWrongGroupForHelp` but omit its body and the relevant help-command creation logic needed to determine what “wrong help group” means.

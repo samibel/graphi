@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 4,
+  "previous_sha256": "1c04c653c593ae99c373fd0e0d38658b29a332b2bf1b7bb97e402ebe22b77261",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "95a6d9ca44eb27225a5f1de4d412ea0880221b8ba7f0449c6863421fc13238e6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).RegisterFlagCompletionFunc` in `completions.go:133–146` registers a callback of type `func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)` for a named flag. It rejects nonexistent flags and duplicate registrations, locks `flagCompletionMutex`, and stores the callback in `flagCompletionFunctions[flag]`. `GetFlagCompletionFunc` retrieves it under a read lock (`completions.go:148–160`). The comment in `shell_completions.go:52–53` recommends this Go callback API for completion across all shells.\n",
+  "sha256": "4a84f17407d5ae30d448180f80744af48357f09fcadcc6defdead9b31a8702a2"
+}
