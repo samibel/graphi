@@ -124,3 +124,27 @@ are lifecycle initializers whose names overlap the query's terms. A future
 attempt needs a discriminator between lifecycle-initializer callers and
 flow-carrier callers; none was found here. cd-29 and cd-87 remain missed in
 production.
+
+## Closing quantification: why no single remaining mechanism fixes them
+
+**cd-87's pool is half documentation.** 25 of the 50 ranked rows are
+Markdown (`site/content/completions/_index.md` alone contributes 12), and
+the top 7 is six doc sections plus one code row; the doc sections earn
+500-1500 of name evidence from their section titles. A docs-vs-code
+counterfactual still fails: halving doc name evidence lifts the
+5361-class code rows, and `writeCommands` (base 4431, no name evidence of
+its own) stays below the shifted fold. The caller lift that did reach it
+(→ 17) is the gate-toxic mechanism above. cd-87 is therefore a compound
+miss — semantic gap, doc-dominated top, below-fold graph position — and
+each single mechanism measured or sketched here is insufficient or toxic.
+
+**cd-29 is fold-boundary marginal.** `findFlag` stands at evidence-rank 11
+with final 6611 against a fold at ~6651, with the 325-token source budget
+fully spent (325/325) in both captures. The missing distance is one window
+slot and ~40 points; any rule generic enough to be honest moves the rows
+around it by more than that. Not a target.
+
+This slice is closed: the two misses are diagnosed at row level, one fix
+mechanism was built, measured and rejected, and the remaining directions
+(doc/code balance, caller class discrimination) are recorded with the
+reasons they do not currently work.
