@@ -86,3 +86,41 @@ CGO_ENABLED=0 GRAPHI_MISS_DIAG=1 \
 GRAPHI_PRODUCT_COMPACT_DEV_COBRA=/abs/path/to/cobra-at-a0a6ae02 \
   go test ./internal/eval/retrieval -run '^TestDevMissDiagnostic$' -count=1 -v
 ```
+
+## Addendum: a measured rejected fix (caller-side graph admission)
+
+After the diagnosis above, one ranking change was built and measured, then
+reverted. Mechanism: mirror `expandCallees` across the "calls" edge
+direction — admit the direct callers of the top-16 rows (width 16, cap 4:
+cd-87's supporting callee `writeCmdAliases` sits at evidence-rank 16 and has
+exactly one direct caller, `writeCommands`, verified against the production
+graph), gated so a caller enters only with its own query evidence (an exact
+name-term score, or a leaf-suffix predicate — "command" inside "subcommand"
+— evaluated only against the identifier's own leaf name, never its
+receiver). Unit evidence passed: the name-evidenced caller is admitted, the
+relation-only orchestrator (`ExecuteC`) is not, and no admitted caller can
+outrank its seed.
+
+Measurement against the frozen targets (scratch reports, candidate tree
+`63952b44`+dirty, pinned corpus and embedder, `cobra-v2-dev`):
+
+- cd-87's `writeCommands` moved from evidence-rank 46 to 17 — admitted and
+  raised to its seed's cap, but still below the transcript fold (~7-8).
+- cd-29's `findFlag` moved from 11 to **15** — caller admissions above it
+  (`InitDefaultCompletionCmd`, `IsAvailableCommand` — lifecycle names that
+  lexically overlap completion queries) pushed it further from the fold.
+- architecture-flow nDCG@10 fell from 0.4625 to **0.3625**, below the
+  frozen floor 0.4579 — a MISS on a 5-query stratum. nl_behaviour (0.7127),
+  exact-identifier Top-1 (1.0) and bundle coverage (6/6) passed; the
+  architecture-flow number was identical with and without the partial-score
+  variant, so the caller admissions, not the suffix scoring, drove the
+  damage.
+
+The change was reverted in full; production ranking is unchanged. The
+negative is recorded because it is load-bearing: caller-side graph admission
+at any seed width that reaches rank 16 reshuffles flow rankings
+destructively, because the callers it surfaces on completion-flow queries
+are lifecycle initializers whose names overlap the query's terms. A future
+attempt needs a discriminator between lifecycle-initializer callers and
+flow-carrier callers; none was found here. cd-29 and cd-87 remain missed in
+production.
