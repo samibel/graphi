@@ -1,1 +1,0 @@
-The preserved boolean accessor, parent-set construction and availability accessor support the proposed inherited-flag assertions and filtering behavior.

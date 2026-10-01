@@ -54,7 +54,7 @@ Exactly two inputs, both in-repo and both citable:
 | The proven, classified findings F1–F5 | [`docs/eval/p0/partial-outcome-diagnosis.md`](../eval/p0/partial-outcome-diagnosis.md) (SW-134) |
 | The move bar | [Delta PRD §6.2](../plan/2026-07-graphi-p0-completion-delta-prd.md) and its Story SW-135 outcome conditions |
 
-The published baseline (`docs/eval/runs/2026-07-28-ubuntu-latest/`) is the evidence both
+The published baseline (`historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/`) is the evidence both
 of those rest on, and every number quoted below was re-read from it for this record
 rather than copied from the diagnosis — see [§10](#10-verification).
 
@@ -158,7 +158,7 @@ pinned by `cmd/eval/partialoutcome_characterization_test.go`.
 > (`AMD EPYC 7763`, `AMD EPYC 9V74`, `Intel Xeon Platinum 8573C`,
 > `Intel Xeon Platinum 8370C`; run-a spans 3 models, run-b spans 4). The per-job
 > truth for the gate-bearing grpc-go jobs is at
-> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`. The
+> `historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/p0-baseline.md:272-304`. The
 > determinism claim above is therefore *strengthened* (reproduced across a 3-model
 > and a 4-model run, not a 2-model one). The cross-silicon reproduction claim is
 > *weakened*: the C2/C4 shortfall's host was the `progress-stalls/grpc-go` job,
@@ -187,7 +187,7 @@ reproduces on 4 of the 5 pinned repos (`lo` 0, `uuid` 14, `gin` 23, `grpc-go` 25
 > `AMD EPYC 9V74`, `Intel Xeon Platinum 8573C`, `Intel Xeon Platinum 8370C`;
 > run-a spans 3 models, run-b spans 4). The per-job truth for the
 > `query-latency/grpc-go` job that produced the 25-execution shortfall is at
-> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:284-287`:
+> `historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/p0-baseline.md:284-287`:
 > **AMD EPYC 9V74 in run-a, AMD EPYC 7763 in run-b — both AMD EPYC**. So the
 > shortfall was reproduced across AMD generations, but **not** across Intel and
 > AMD, and §2.2's "two CPU families" framing of the cross-silicon reading is
@@ -246,7 +246,7 @@ F4 and F5 did not exist.
 > **CORRECTION 2026-08-20 (SW-150, CPU attribution sweep) — added, nothing above is
 > rewritten.** "Both runs, two CPU families" is the run-summary shorthand; the
 > per-job truth is four CPU models across the 40 jobs (see §2.2 and
-> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`). The C4
+> `historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/p0-baseline.md:272-304`). The C4
 > argument is *strengthened* (reproduced across a 3-model and a 4-model run), but
 > the cross-silicon reading is *weakened* for the C2/C4 host: the
 > `query-latency/grpc-go` job that produced the 25-execution shortfall ran
@@ -445,7 +445,7 @@ stated or measured against `5815db5` is marked `STALE` — re-marked, never re-p
 | **M1** — reproducible accuracy/performance raw baseline | **UNKNOWN**, `sha: 5815db5…` | → **STALE** for its performance half; its accuracy half was never measured on any candidate. |
 | **WP0**, **M0** | UNKNOWN / STALE, prose citing `5815db5` | citation updated to name this record and the successor freeze record; **not** re-pointed, **not** moved toward green. |
 
-Plus: the two published runs (`docs/eval/runs/2026-07-28-ubuntu-latest/`) become evidence
+Plus: the two published runs (`historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/`) become evidence
 about a superseded candidate. They are **not** deleted, **not** re-labelled and **not**
 re-run in place — Delta PRD §6.1 requires the first honest baseline to be preserved, and
 a red baseline remains useful evidence.
@@ -535,13 +535,13 @@ for d in cmd/*/; do echo "$(go list -deps ./$d | grep -c engine/scenario) $d"; d
 #   → 1 for cmd/eval only; 0 for cmd/graphi and all sixteen other binaries
 
 # the published tallies and the pool                    → §2.2, §6
-jq '.repo.stable_checks' docs/eval/runs/2026-07-28-ubuntu-latest/run-a/query-latency/grpc-go/report.json
+jq '.repo.stable_checks' historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/run-a/query-latency/grpc-go/report.json
 #   → explain_symbol found 234 / partial 16; change_risk 246 / 4;
 #     related_files found 155 / empty 90 / partial 5; agent_brief found 250
 jq '.repo.query_latency.pools' …/report.json
 #   → agent_context_p95: executions 975, minimum 1000, sufficient false,
 #     p50_us 162, p95_us 471250, max_us 499645
-jq '…agent_context_p95…' docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.json
+jq '…agent_context_p95…' historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/p0-baseline.json
 #   → verdict UNKNOWN, agreed true, both runs 975/1000, unknown_is_not_pass present
 
 # the evidence rows this decision puts at risk          → §7
@@ -563,6 +563,6 @@ exactly, and `partial` is the only rejected outcome.
 - [`docs/eval/p0/partial-outcome-diagnosis.md`](../eval/p0/partial-outcome-diagnosis.md) — SW-134; findings F1–F5, §8 correction-touch table, §10 residuals, §11 the 471.250 ms
 - [`docs/plan/2026-07-graphi-p0-completion-delta-prd.md`](../plan/2026-07-graphi-p0-completion-delta-prd.md) — §6.1 preserve the first honest baseline, §6.2 the move bar, Story SW-135 outcome conditions, Story SW-136 correction scope
 - [`docs/decisions/2026-07-p0-candidate-freeze-v070.md`](2026-07-p0-candidate-freeze-v070.md) — the candidate this decision supersedes-in-principle; §9 change control and the STALE rule, §10 the precedent for what a move marks, §11 product-tree byte-identity
-- [`docs/eval/runs/2026-07-28-ubuntu-latest/`](../eval/runs/2026-07-28-ubuntu-latest/) — the published baseline: `p0-baseline.{md,json}`, `run-{a,b}/query-latency/<repo>/report.json`
+- `historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/` (archived in Git history) — the published baseline: `p0-baseline.{md,json}`, `run-{a,b}/query-latency/<repo>/report.json`
 - [`docs/eval/reference-scenario.json`](../eval/reference-scenario.json) — gate `agent_context_p95`: pool membership, 500 ms threshold
 - `docs/rc/evidence-index.yaml` — the rows [§7](#7-the-cost-of-this-decision-stated-before-it-is-paid) names

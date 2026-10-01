@@ -1,1 +1,0 @@
-The complete RegisterFlagCompletionFunc implementation supports the concrete Go callback signature, registration procedure and unknown/duplicate-flag errors.

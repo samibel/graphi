@@ -39,12 +39,34 @@ package main
 // It needs no index, no corpus clone and no network.
 
 import (
+	"context"
 	"slices"
+	"sort"
 	"testing"
 
 	"github.com/samibel/graphi/engine/scenario"
-	"github.com/samibel/graphi/internal/evalreport"
+	"github.com/samibel/graphi/internal/corpus"
 )
+
+var agentContextPool = []string{
+	scenario.OpAgentBrief,
+	scenario.OpExplainSymbol,
+	scenario.OpChangeRisk,
+	scenario.OpRelatedFiles,
+}
+
+func declaredAllowed(t *testing.T) map[string][]string {
+	t.Helper()
+	ops := buildWarmOperations(context.Background(), nil, corpus.Entry{}, []string{"n0", "n1"}, 2)
+	out := map[string][]string{}
+	for _, w := range ops {
+		x := w.prepare(0)
+		allowed := append([]string(nil), x.allowed...)
+		sort.Strings(allowed)
+		out[w.op] = allowed
+	}
+	return out
+}
 
 // TestAgentContextPool_EveryOperationCountsPartial is D1 stated as an assertion.
 //
@@ -113,50 +135,6 @@ func TestAgentContextPool_CorrectionIsBoundedToPartial(t *testing.T) {
 		}
 		if !slices.Equal(got, w) {
 			t.Errorf("%s allowed = %v, want %v: the correction is scoped to the agent-context pool", op, got, w)
-		}
-	}
-}
-
-// TestPublishedBaseline_CorrectedRuleRecoversAllTwentyFiveExecutions proves the
-// correction is load-bearing rather than cosmetic, against the committed
-// evidence rather than a re-run.
-//
-// The tallies are the PUBLISHED ones (docs/eval/runs/2026-07-28-ubuntu-latest/,
-// candidate v0.7.0 at 5815db5); the allowed sets are the LIVE code's. Under the
-// pre-correction sets this replay yields 975 of 1000 with a 16/5/4 split — that
-// is SW-134's characterization test, still present and now pinned against the
-// frozen historical sets. Under the corrected sets it must yield 1000 and 0.
-//
-// This is arithmetic over committed artifacts, not a measurement: it says the
-// instrument would no longer discard those executions. It does NOT say what
-// their latencies are — they were never timed into the published pool, which is
-// precisely why a fresh baseline is required.
-func TestPublishedBaseline_CorrectedRuleRecoversAllTwentyFiveExecutions(t *testing.T) {
-	allowed := declaredAllowed(t)
-	const referenceRepo = "grpc-go"
-
-	for _, run := range []string{"run-a", "run-b"} {
-		checks := readPublishedReport(t, run, referenceRepo)
-		pooled, recovered := 0, 0
-		for _, op := range agentContextPool {
-			c, ok := checks[op]
-			if !ok {
-				t.Fatalf("%s: %s missing from the published stable_checks", run, op)
-			}
-			nLive, causes := rejected(c, allowed[op])
-			if nLive != 0 {
-				t.Errorf("%s/%s: the corrected rule still rejects %d executions (outcomes %v)",
-					run, op, nLive, causes)
-			}
-			nHistorical, _ := rejected(c, sw134HistoricalAllowed[op])
-			recovered += nHistorical - nLive
-			pooled += c.Samples - nLive
-		}
-		if recovered != 25 {
-			t.Errorf("%s: the correction recovers %d executions, want the 25 the diagnosis attributes to partial", run, recovered)
-		}
-		if pooled != evalreport.QueryExecutionMinimum {
-			t.Errorf("%s: pooled %d executions, want FR-8's floor of %d", run, pooled, evalreport.QueryExecutionMinimum)
 		}
 	}
 }

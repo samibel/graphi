@@ -1,1 +1,0 @@
-PASS: The response accurately summarizes the visible portion of ExecuteC and its wrappers, with its claims directly supported by command.go:1035-1082.

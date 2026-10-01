@@ -71,8 +71,8 @@ func (g *Git) loadHead() error {
 }
 
 // ExistsAtHEAD reports whether a repo-relative path names a file or a directory in
-// the HEAD tree. Directories count: `docs/eval/runs/2026-08-20-local-grpc/` is a
-// legitimate evidence citation.
+// the HEAD tree. Directories count, so a citation may refer to a maintained
+// documentation subtree rather than one individual file.
 func (g *Git) ExistsAtHEAD(p string) (bool, error) {
 	if err := g.loadHead(); err != nil {
 		return false, err

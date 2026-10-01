@@ -37,15 +37,8 @@ const PinnedModel = "potion-code-16M-v2"
 // by TestStatic_PinRotationGovernance. A repository maintainer responsible for
 // semantic-search evaluation must approve a rotation. The rotation record must
 // carry the new four-file hashes and upstream reason, a CGo-free byte-exact
-// cross-architecture vector run, regenerated oracle evidence, and fresh static
-// retrieval plus SW-264 task-context measurements. In particular, the current
-// pin owns these retrieval run records, which become stale on rotation:
-//
-//   - docs/eval/retrieval/runs/2026-09-01-static-local/
-//   - docs/eval/retrieval/runs/2026-09-02-capsule-local/
-//   - docs/eval/retrieval/runs/2026-09-02-sw263-local/
-//   - docs/eval/retrieval/runs/2026-09-02-sw263-v3-restoration-local/
-//   - docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local/
+// cross-architecture vector run, regenerated oracle evidence, and the shipped
+// retrieval, privacy, and release test results.
 //
 // Do not change this constant until the new entry and evidence required by
 // PIN_ROTATION.md accompany it. Arbitrary Model2Vec models without a pin-table

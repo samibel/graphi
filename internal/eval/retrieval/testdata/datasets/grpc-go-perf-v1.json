@@ -5,7 +5,7 @@
   "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
   "language": "go",
   "evidence_class": "agent-annotated, human-reviewed",
-  "notes": "SW-258 PERFORMANCE-ONLY dataset over grpc/grpc-go v1.60.1 (corpus/manifest.json pin, the large size class: 831 Go files over 277 directories). It exists so docs/eval/retrieval-budgets.json can carry a measured large-class index-time / query-p95 / peak-RSS budget (AC-8); it is NOT a quality dataset - 8 queries confined to the cheap-to-judge strata (exact_identifier, exact_path, no_hit), too few to set or check any retrieval target, and no target is derived from it. Every span was read from a local read-only clone at the pinned sha; TestDatasets_GrpcGoSpansResolveAtPinnedSHA re-verifies file, line range and anchor whenever that clone is present and SKIPS otherwise. Grades: 3 exact answer span, 2 directly relevant, 1 marginal, 0 negative example.",
+  "notes": "SW-258 PERFORMANCE-ONLY dataset over grpc/grpc-go v1.60.1 (corpus/manifest.json pin, the large size class: 831 Go files over 277 directories). It remains a local evaluator fixture for index-time / query-p95 / peak-RSS measurement; it is NOT a quality dataset and does not authorize a release. Its 8 queries are confined to cheap-to-judge strata (exact_identifier, exact_path, no_hit), too few to establish a retrieval claim. Every span was read from a local read-only clone at the pinned sha; TestDatasets_GrpcGoSpansResolveAtPinnedSHA re-verifies file, line range and anchor whenever that clone is present and SKIPS otherwise. Grades: 3 exact answer span, 2 directly relevant, 1 marginal, 0 negative example.",
   "queries": [
     {
       "id": "gp-01",

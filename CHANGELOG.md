@@ -26,11 +26,20 @@ file:
 
 ## [Unreleased]
 
-**v0.13.0 release-candidate status (2026-09-15): qualification pending.** The
-candidate passes the architecture-flow, natural-language, exact-identifier and
-bundle-coverage targets. The independent holdout evidence remains published in
-the repository without an override; this section becomes the v0.13.0 release
-entry only after the release gate authorizes it.
+### Changed
+
+- **Retired the unreleased experimental model-qualification and blind-evaluation
+  subsystem.** Its development score was not reachable with the embedded model,
+  so it no longer blocks unrelated releases. The general release gate now
+  requires the maintained benchmark-budget, coverage, privacy and test gates;
+  it contains no model-promotion threshold.
+- **Generated evaluation runs are CI artifacts, not source documentation.** Local
+  runs use the ignored `.graphi/eval-runs/` directory and CI writes to runner
+  temporary storage. Historical generated archives and their development scripts
+  remain recoverable through Git history but are absent from the current tree.
+- **No shipped retrieval behavior changed.** Potion/static embeddings, Ollama,
+  lexical retrieval, semantic search, and the public CLI, MCP and HTTP surfaces
+  retain their existing contracts and privacy posture.
 
 ### Added
 
@@ -39,13 +48,7 @@ entry only after the release gate authorizes it.
   terms, hydrates bounded hits to declarations, promotes exact field and named
   declaration evidence, centers long-function windows on dense query clusters,
   completes small declarations, and keeps Markdown explanations with their
-  attached fenced examples. On the committed development gate it reaches
-  architecture-flow nDCG@10 0.46247 (required 0.45786), natural-language
-  nDCG@10 0.70290, exact-identifier Top-1 1.0, and bundle coverage 6/6.
-- **Release evidence now binds Contract 2 holdouts and records the complete
-  candidate verdict.** The candidate-bound run reproduces 64/64 MCP payloads,
-  digests and real-token counts, stays at or below 1,184/1,200 tokens, and
-  publishes its immutable decision without weakening the release gate.
+  attached fenced examples.
 - **The exact `cl100k_base` counter is hermetic in evaluation and fail-closed in
   production.** Evaluators verify a deterministic embedded artifact; the static
   model setup installs the same SHA-pinned vocabulary for the runtime. Retiring

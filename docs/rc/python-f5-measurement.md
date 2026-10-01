@@ -348,7 +348,7 @@ SQL
 ```
 
 The raw sample artifacts are published at
-[`docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/`](../../eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/).
+`historical evaluation archive in Git history: 2026-08-20-Darwin-ARM64/apple-m2-max/` (archived in Git history).
 The structured measurement is `raw/f5-measurement.json` (sha256
 `d8940e14…`); the determinism probe is `raw/dispatch-determinism.json`.
 

@@ -8,8 +8,7 @@
 // even when its literal name overlaps the question, and it cannot recover a
 // candidate that never appears in either top-K list at all — for example a
 // short unexported callee ("execute") a well-ranked wrapper ("ExecuteC")
-// calls directly (docs/eval/retrieval/runs/2026-09-06-recovery-dev/README.md,
-// "Remaining structural retrieval failure").
+// calls directly. That structural case is covered by the focused tests here.
 //
 // naturalLanguageRows instead scores the COMPLETE lexical+semantic union
 // together: every row keeps its semantic/lexical floor score and adds a

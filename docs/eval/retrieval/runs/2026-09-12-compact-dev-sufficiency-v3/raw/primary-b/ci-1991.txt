@@ -1,1 +1,0 @@
-INSUFFICIENT The response explains collecting inherited persistent flags but does not show how to read a parent flag's value.

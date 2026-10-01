@@ -59,7 +59,7 @@ story.
 What is *not* asserted here, in either direction:
 
 - The repository does contain a published two-run baseline of the frozen candidate v0.7.0
-  at `5815db5` — `docs/eval/runs/2026-07-28-ubuntu-latest/` (SW-130), referenced by the WP2
+  at `5815db5` — `historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/` (SW-130), referenced by the WP2
   and WP4 rows of the evidence index. **Whether it discharges SW-133 is unverified, and
   this checklist does not assume that it does.**
 - One of SW-133's acceptance criteria is *"Query sample floors are met"*. The published
@@ -68,7 +68,7 @@ What is *not* asserted here, in either direction:
   not a formality; at least one SW-133 criterion is visibly open against the artifact that
   would be claimed to satisfy it.
 - SW-133's stated output path, `docs/eval/p0/baseline-v070.md`, does not exist. A summary
-  table does exist, at `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md`, beside the
+  table does exist, at `historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/p0-baseline.md`, beside the
   data it summarizes.
 
 Resolving this — creating an SW-133 ticket, or recording a decision that SW-130 discharges

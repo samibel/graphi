@@ -153,67 +153,19 @@ per node 15.56 → 0.96", retracted as mislabelled by graphi's own report on
 2026-08-16, and "226.7 bytes per edge", which its own gate prints as `292.6
 bytes/edge (budget 360.0)` — inside the budget, 29 % above the old headline.
 
-### Seven of the ten performance gates, each against its budget
+### Performance gates stay current
 
-grpc-go v1.60.1 on `ubuntu-latest`, harness `p0-perf/1`, candidate **v0.7.0** at
-`5815db5` — graphi's last complete two-run series, and three minor releases behind
-the v0.10.0 this page is for. Every row but the last recomputes from the committed
-raw samples with `go run ./cmd/eval -aggregate
-docs/eval/runs/2026-07-28-ubuntu-latest/run-a/<job>/grpc-go` (and `run-b` likewise)
-→ `PASS - all N published metric(s) reproduced from the raw data`, N being 173, 136
-and 190 for the three jobs. Latencies are wall-clock on a shared CI runner. RSS and
-DB size carry an instrument wrinkle, stated rather than smoothed: their thresholds
-are declared **decimal** — `"threshold": 2, "unit": "GB"` and `"threshold": 300,
-"unit": "MB"` (`docs/eval/reference-scenario.json:68-71,88-91`) — while the harness
-converts the measurement **binary** before comparing, `mb / 1024` and
-`b / (1024 * 1024)` (`cmd/eval/coldgates.go:70-77`). So the Measured column reads
-GiB/MiB against a decimal Budget column, and the gate in effect allows 2 GiB and
-300 MiB — 7.4 % and 4.9 % more than it says. At 33.5 % and 10.9 % of budget neither
-row turns on that difference. Only the release-binary row is decimal end to end.
+Performance and size budgets are checked by CI from
+[`bench/bench-budget.yml`](bench/bench-budget.yml); generated reports are uploaded
+as workflow artifacts instead of committed as documentation. Historical run trees
+were retired from `main` because they described superseded candidates and made the
+maintained source tree harder to review. They remain available through Git history.
 
-| Gate | Budget | Measured | |
-|---|---|---|---|
-| Cold index p95 (919 files, 10 cold runs) | ≤ 120 s | 20.368 s | PASS |
-| Peak RSS | ≤ 2 GB | 0.670 GiB (686 MiB) | PASS |
-| Graph DB size | ≤ 300 MB | 32.688 MiB (34 275 328 B) | PASS |
-| Warm `search` p95 | ≤ 100 ms | 3.591 ms | PASS |
-| `callers` / `callees` / `impact` p95 (*structural*) | ≤ 200 ms | 0.999 ms | PASS |
-| Agent context p95 | ≤ 500 ms | 471.250 ms · 601.732 ms | **UNKNOWN** |
-| **Incremental freshness p95** | **≤ 2 s** | **6.315 s** | **FAIL — 3.2× over** |
-| Release binary ¹ | ≤ 36.10 MB | 35.35 MB (35 351 306 B) | PASS |
-
-**The UNKNOWN is a row on purpose.** Agent context pooled 975 of the 1000
-executions its gate requires in both runs, then landed on opposite sides of it, so
-the baseline records it as possibly a withheld FAIL — not a near-pass. Three gates
-are not shown: cold index p50 (PASS), OOM on an 8 GB host (PASS), and progress
-stall p95 (PASS, held back because its p95 does not describe the tail behind it);
-[all ten](docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md) are published with
-their verdicts. And **no verdict here is a statement about v0.10.0**: the series is
-stamped [`STALE`](docs/eval/runs/2026-07-28-ubuntu-latest/STALENESS-NOTICE.md),
-which answers *"are they statements about the current candidate?"* with *"No. Not
-one of the ten verdicts carries across, in either direction."* The current release
-has no series of its own, and a corrected instrument is a different instrument.
-
-```mermaid
-xychart-beta
-  title "Each row with a single reading, % of budget"
-  x-axis ["cold index", "peak RSS", "DB size", "search", "structural", "freshness", "binary"]
-  y-axis "% of budget" 0 --> 330
-  bar [17.0, 33.5, 10.9, 3.6, 0.5, 315.7, 97.9]
-  line [100, 100, 100, 100, 100, 100, 100]
-```
-
-**The FAIL is in the table on purpose.** `freshness_p95` is the wait between an edit
-and the graph answering about it: 6.315 s and 6.486 s against a 2 s budget, over 100
-of 100 converged changes, 2.7 % apart on two different CPUs (both AMD EPYC,
-different generations). The most reproducible number in the series is the one that
-misses — and it is the sync promise below, measured. Open work, not done work.
-
-¹ Not from that series: `bench/bench-budget.yml`, re-pinned 2026-08-28, measured
-by the canonical CGo-free release build (`internal/release.CanonicalBuildArgs`).
-No release scorecard is quoted anywhere on this page — the last one committed is a
-2026-07-29 snapshot of a superseded build, and the release gate no longer commits
-one. Nothing here is an independent rating or a benchmark against another tool.
+The general release gate verifies the maintained build, coverage, privacy and
+test gates. Experimental model-promotion scores are not release criteria. See
+[`docs/ci/bench.md`](docs/ci/bench.md) for the current measurement contract and
+[`docs/adr/0014-retire-experimental-evaluation.md`](docs/adr/0014-retire-experimental-evaluation.md)
+for the retirement decision.
 
 ### What it saves, and how that is counted
 

@@ -1,1 +1,0 @@
-INSUFFICIENT The response exposes Flags and individual-name lookup but provides no flag enumeration API or example needed to obtain a list.

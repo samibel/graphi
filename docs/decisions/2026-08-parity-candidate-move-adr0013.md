@@ -108,7 +108,7 @@ the two published reports, not inherited:
 happen.** `:209-212` also states the figure side of `g7-jvm-baseline.md` is
 "refreshed under the new candidate in the same commit". `git show --stat 9f68784`
 lists nine files and none is under `docs/eval/`; the file —
-`docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md` — is untouched by
+`historical evaluation archive in Git history: 2026-08-19-local-sandbox/g7-jvm-baseline.md` — is untouched by
 that commit and still names `3b8d43f6…` as its measured revision (`:3`). That
 refresh is outstanding work, not a delivered one, and it is not done here
 either: `docs/eval/` is owned by another in-flight story.

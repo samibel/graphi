@@ -1,1 +1,0 @@
-The preserved man generator supports recursive child-first traversal, filtering and error propagation; the answer confines Markdown/YAML claims to their visible loops.

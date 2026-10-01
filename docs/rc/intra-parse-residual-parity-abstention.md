@@ -27,8 +27,7 @@
 | yaml | **NO** | 2 realrepo + 2 fixture | **YES** | **UNKNOWN** | as above |
 
 Six languages, zero real-repository pins, twenty-four dispatches, zero PASS
-rows in the evidence posture. The raw samples are checked in under
-[`../eval/runs/2026-08-26-Darwin-ARM64/`](../eval/runs/2026-08-26-Darwin-ARM64/),
+rows in the evidence posture. The raw samples are retained in Git history,
 one leaf per language, each with its own `environment.json` and `notes.md`.
 
 ## 1. The machine, and the date
@@ -221,7 +220,7 @@ their own recipe. For a language `L` and a posture `P` ∈ {`realrepo`,
 
 ```
 $ jq -r '.classes[] | "\(.id)\t\(.snapshot_full_sha256 // "-")\t\(.snapshot_inc_sha256 // "-")"' \
-    docs/eval/runs/2026-08-26-Darwin-ARM64/L/raw/P-D.parity.json \
+    historical evaluation archive in Git history: 2026-08-26-Darwin-ARM64/L/raw/P-D.parity.json \
   | LC_ALL=C sort | shasum -a 256 | cut -c1-16
 ```
 

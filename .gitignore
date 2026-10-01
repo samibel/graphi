@@ -46,8 +46,11 @@ credentials*
 .DS_Store
 Thumbs.db
 
-# Release-gate output — published fresh by `go run ./cmd/release-gate -publish`
-# in CI; never checked in (checked-in run evidence lives under docs/eval/runs/).
+# Generated evaluation and release-gate output — created locally or uploaded
+# by CI as artifacts, never checked in.
+/.graphi/eval-runs/
+/docs/eval/runs/
+/docs/eval/retrieval/runs/
 /docs/release-scorecard.json
 /docs/release-scorecard.md
 

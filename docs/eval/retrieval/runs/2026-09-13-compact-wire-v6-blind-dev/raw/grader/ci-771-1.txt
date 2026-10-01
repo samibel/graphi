@@ -1,1 +1,0 @@
-FAIL: Mentioning the hidden commands is insufficient; it omits the required stdout wire format, final :<directive> line, stderr handling, and directive semantics.

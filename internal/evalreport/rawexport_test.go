@@ -176,16 +176,12 @@ func TestRunDirName_FollowsTheExistingConvention(t *testing.T) {
 	}
 }
 
-// The convention is anchored at the directory the historical runs already live
-// in, so a new run sits beside 2026-07-15-ubuntu-latest and compares.
-func TestRunDirPath_SitsBesideTheHistoricalRuns(t *testing.T) {
-	got := RunDirPath("2026-07-28", "ubuntu-latest")
-	want := RunsRoot + "/2026-07-28-ubuntu-latest"
-	if got != want {
-		t.Fatalf("RunDirPath = %q, want %q", got, want)
+func TestRunDirPath_UsesIgnoredWorkspaceStorage(t *testing.T) {
+	if RunsRoot != ".graphi/eval-runs" {
+		t.Fatalf("RunsRoot = %q, want ignored workspace storage", RunsRoot)
 	}
-	if RunsRoot != "docs/eval/runs" {
-		t.Fatalf("RunsRoot = %q, want the existing docs/eval/runs convention", RunsRoot)
+	if got := RunDirPath("2026-07-28", "ubuntu-latest"); got != ".graphi/eval-runs/2026-07-28-ubuntu-latest" {
+		t.Fatalf("RunDirPath = %q, want %q", got, ".graphi/eval-runs/2026-07-28-ubuntu-latest")
 	}
 }
 

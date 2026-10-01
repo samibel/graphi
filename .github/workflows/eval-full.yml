@@ -14,12 +14,9 @@
 # job red at the moment it is produced rather than at the moment somebody tries
 # to publish it.
 #
-# ubuntu-latest is the REFERENCE RUNNER CLASS (docs/eval/hero-protocol.md):
-# only numbers recorded here freeze the ADR 0003 U5 budgets. Procedure after
-# a green run: download the artifacts, commit them under
-# docs/eval/runs/<date>-ubuntu-latest/, and fill the null budgets in
-# docs/eval/hero-budgets.json as ratchets in the same reviewed PR, citing
-# this workflow run.
+# ubuntu-latest is the REFERENCE RUNNER CLASS (docs/eval/hero-protocol.md).
+# Completed reports and raw samples remain downloadable CI artifacts; generated
+# run directories are never committed to the repository.
 #
 # SW-130 (P0-C7): the four measurement jobs below MEASURE THE FROZEN CANDIDATE,
 # not the branch they were dispatched from. Three changes make that true, and
@@ -109,14 +106,15 @@ jobs:
         run: go run ./cmd/eval -check-reference-scenario
       - name: full measurement run (${{ matrix.repo }})
         run: |
+          mkdir -p "${RUNNER_TEMP}/graphi-eval/profiles-${{ matrix.repo }}"
           go run ./cmd/eval \
             -manifest corpus/manifest.json \
             -full-run "${{ matrix.repo }}" \
             -runner-class ubuntu-latest \
             -budgets docs/eval/hero-budgets.json \
             -reference-scenario docs/eval/reference-scenario.json \
-            -out "eval-full-${{ matrix.repo }}.json" \
-            -profile-dir "profiles-${{ matrix.repo }}"
+            -out "${RUNNER_TEMP}/graphi-eval/eval-full-${{ matrix.repo }}.json" \
+            -profile-dir "${RUNNER_TEMP}/graphi-eval/profiles-${{ matrix.repo }}"
       # The raw report also goes to the job log (and step summary): the run
       # page is then self-documenting, and the evidence stays retrievable via
       # the logs API even where artifact-storage domains are unreachable.
@@ -124,9 +122,9 @@ jobs:
         if: always()
         run: |
           echo "=== EVAL-FULL-REPORT-BEGIN ${{ matrix.repo }} ==="
-          cat "eval-full-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/eval-full-${{ matrix.repo }}.json"
           echo "=== EVAL-FULL-REPORT-END ${{ matrix.repo }} ==="
-          { echo '```json'; cat "eval-full-${{ matrix.repo }}.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          { echo '```json'; cat "${RUNNER_TEMP}/graphi-eval/eval-full-${{ matrix.repo }}.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: upload raw evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -138,8 +136,8 @@ jobs:
           # on a green run (nothing is profiled when nothing is missed), which is
           # why the upload does not require it to exist.
           path: |
-            eval-full-${{ matrix.repo }}.json
-            profiles-${{ matrix.repo }}
+            ${{ runner.temp }}/graphi-eval/eval-full-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/profiles-${{ matrix.repo }}
 
   # SW-124 (P0-C1): FR-8's repeated cold-index measurement over THE reference
   # scenario. Ten cold runs, one process per run (getrusage MAXRSS is a
@@ -207,7 +205,7 @@ jobs:
       - name: ten cold runs over ${{ matrix.repo }}
         run: |
           set -uo pipefail
-          mkdir -p "${RUNNER_TEMP}/out"
+          mkdir -p "${RUNNER_TEMP}/graphi-eval"
           start=$(date +%s)
           # GitHub's default shell is `bash -e`: without this the step would
           # abort on a non-zero harness exit and the run cost AC-9 asks for
@@ -224,8 +222,8 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/cold-series" \
-            -export-raw "${RUNNER_TEMP}/out/runs/cold-index" \
-            -out "${RUNNER_TEMP}/out/eval-cold-${{ matrix.repo }}.json"
+            -export-raw "${RUNNER_TEMP}/graphi-eval/runs/cold-index" \
+            -out "${RUNNER_TEMP}/graphi-eval/eval-cold-${{ matrix.repo }}.json"
           status=$?
           set -e
           end=$(date +%s)
@@ -233,8 +231,8 @@ jobs:
           # toolchain setup outside it. The job clock is not this number.
           printf '{"job":"cold-index-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
             "${{ matrix.repo }}" "$((end - start))" "$status" \
-            > "${RUNNER_TEMP}/out/cost-cold-${{ matrix.repo }}.json"
-          cat "${RUNNER_TEMP}/out/cost-cold-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+            > "${RUNNER_TEMP}/graphi-eval/cost-cold-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/cost-cold-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
           exit $status
       # SW-128 (P0-C5): reproduce every published number from the raw samples
       # the step above exported. It runs `if: always()` on purpose — a run whose
@@ -245,12 +243,12 @@ jobs:
       - name: reproduce the published numbers from the raw samples
         if: always()
         run: |
-          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/cold-index"
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/graphi-eval/runs/cold-index"
       - name: print raw evidence
         if: always()
         run: |
           echo "=== EVAL-COLD-SERIES-BEGIN ${{ matrix.repo }} ==="
-          cat "${RUNNER_TEMP}/out/eval-cold-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/eval-cold-${{ matrix.repo }}.json"
           echo "=== EVAL-COLD-SERIES-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
@@ -258,9 +256,9 @@ jobs:
         with:
           name: eval-cold-${{ matrix.repo }}
           path: |
-            ${{ runner.temp }}/out/eval-cold-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/cost-cold-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/runs/cold-index
+            ${{ runner.temp }}/graphi-eval/eval-cold-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/cost-cold-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/runs/cold-index
 
   # SW-125 (P0-C2): FR-8's query-latency measurement over THE reference
   # scenario. At least 1000 timed executions per query class AND per PRD §12.2
@@ -321,7 +319,7 @@ jobs:
       - name: at least 1000 executions per query class over ${{ matrix.repo }}
         run: |
           set -uo pipefail
-          mkdir -p "${RUNNER_TEMP}/out"
+          mkdir -p "${RUNNER_TEMP}/graphi-eval"
           start=$(date +%s)
           # GitHub's default shell is `bash -e`: without this the step would
           # abort on a non-zero harness exit and the run cost AC-9 asks for
@@ -336,25 +334,25 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/query-latency" \
-            -export-raw "${RUNNER_TEMP}/out/runs/query-latency" \
-            -out "${RUNNER_TEMP}/out/eval-query-${{ matrix.repo }}.json"
+            -export-raw "${RUNNER_TEMP}/graphi-eval/runs/query-latency" \
+            -out "${RUNNER_TEMP}/graphi-eval/eval-query-${{ matrix.repo }}.json"
           status=$?
           set -e
           end=$(date +%s)
           printf '{"job":"query-latency-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
             "${{ matrix.repo }}" "$((end - start))" "$status" \
-            > "${RUNNER_TEMP}/out/cost-query-${{ matrix.repo }}.json"
-          cat "${RUNNER_TEMP}/out/cost-query-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+            > "${RUNNER_TEMP}/graphi-eval/cost-query-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/cost-query-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
           exit $status
       - name: reproduce the published numbers from the raw samples
         if: always()
         run: |
-          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/query-latency"
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/graphi-eval/runs/query-latency"
       - name: print raw evidence
         if: always()
         run: |
           echo "=== EVAL-QUERY-LATENCY-BEGIN ${{ matrix.repo }} ==="
-          cat "${RUNNER_TEMP}/out/eval-query-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/eval-query-${{ matrix.repo }}.json"
           echo "=== EVAL-QUERY-LATENCY-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
@@ -362,9 +360,9 @@ jobs:
         with:
           name: eval-query-${{ matrix.repo }}
           path: |
-            ${{ runner.temp }}/out/eval-query-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/cost-query-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/runs/query-latency
+            ${{ runner.temp }}/graphi-eval/eval-query-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/cost-query-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/runs/query-latency
 
   # SW-126 (P0-C3): FR-8's freshness and incremental-update measurement over THE
   # reference scenario. At least 100 incremental changes as a DEFINED,
@@ -427,7 +425,7 @@ jobs:
       - name: at least 100 incremental changes over ${{ matrix.repo }}
         run: |
           set -uo pipefail
-          mkdir -p "${RUNNER_TEMP}/out"
+          mkdir -p "${RUNNER_TEMP}/graphi-eval"
           start=$(date +%s)
           # GitHub's default shell is `bash -e`: without this the step would
           # abort on a non-zero harness exit and the run cost AC-9 asks for
@@ -442,25 +440,25 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/freshness" \
-            -export-raw "${RUNNER_TEMP}/out/runs/freshness" \
-            -out "${RUNNER_TEMP}/out/eval-freshness-${{ matrix.repo }}.json"
+            -export-raw "${RUNNER_TEMP}/graphi-eval/runs/freshness" \
+            -out "${RUNNER_TEMP}/graphi-eval/eval-freshness-${{ matrix.repo }}.json"
           status=$?
           set -e
           end=$(date +%s)
           printf '{"job":"freshness-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
             "${{ matrix.repo }}" "$((end - start))" "$status" \
-            > "${RUNNER_TEMP}/out/cost-freshness-${{ matrix.repo }}.json"
-          cat "${RUNNER_TEMP}/out/cost-freshness-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+            > "${RUNNER_TEMP}/graphi-eval/cost-freshness-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/cost-freshness-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
           exit $status
       - name: reproduce the published numbers from the raw samples
         if: always()
         run: |
-          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/freshness"
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/graphi-eval/runs/freshness"
       - name: print raw evidence
         if: always()
         run: |
           echo "=== EVAL-FRESHNESS-BEGIN ${{ matrix.repo }} ==="
-          cat "${RUNNER_TEMP}/out/eval-freshness-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/eval-freshness-${{ matrix.repo }}.json"
           echo "=== EVAL-FRESHNESS-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
@@ -468,9 +466,9 @@ jobs:
         with:
           name: eval-freshness-${{ matrix.repo }}
           path: |
-            ${{ runner.temp }}/out/eval-freshness-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/cost-freshness-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/runs/freshness
+            ${{ runner.temp }}/graphi-eval/eval-freshness-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/cost-freshness-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/runs/freshness
 
   # SW-127 (P0-C4): PRD 12.2's progress-stall gate over THE reference scenario.
   # The intervals between consecutive ingest.ProgressEvents during the cold full
@@ -535,7 +533,7 @@ jobs:
       - name: measure progress stalls over ${{ matrix.repo }}
         run: |
           set -uo pipefail
-          mkdir -p "${RUNNER_TEMP}/out"
+          mkdir -p "${RUNNER_TEMP}/graphi-eval"
           start=$(date +%s)
           # GitHub's default shell is `bash -e`: without this the step would
           # abort on a non-zero harness exit and the run cost AC-9 asks for
@@ -550,25 +548,25 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/progress-stalls" \
-            -export-raw "${RUNNER_TEMP}/out/runs/progress-stalls" \
-            -out "${RUNNER_TEMP}/out/eval-stalls-${{ matrix.repo }}.json"
+            -export-raw "${RUNNER_TEMP}/graphi-eval/runs/progress-stalls" \
+            -out "${RUNNER_TEMP}/graphi-eval/eval-stalls-${{ matrix.repo }}.json"
           status=$?
           set -e
           end=$(date +%s)
           printf '{"job":"progress-stall-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
             "${{ matrix.repo }}" "$((end - start))" "$status" \
-            > "${RUNNER_TEMP}/out/cost-stalls-${{ matrix.repo }}.json"
-          cat "${RUNNER_TEMP}/out/cost-stalls-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+            > "${RUNNER_TEMP}/graphi-eval/cost-stalls-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/cost-stalls-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
           exit $status
       - name: reproduce the published numbers from the raw samples
         if: always()
         run: |
-          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/progress-stalls"
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/graphi-eval/runs/progress-stalls"
       - name: print raw evidence
         if: always()
         run: |
           echo "=== EVAL-STALLS-BEGIN ${{ matrix.repo }} ==="
-          cat "${RUNNER_TEMP}/out/eval-stalls-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/graphi-eval/eval-stalls-${{ matrix.repo }}.json"
           echo "=== EVAL-STALLS-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
@@ -576,9 +574,9 @@ jobs:
         with:
           name: eval-stalls-${{ matrix.repo }}
           path: |
-            ${{ runner.temp }}/out/eval-stalls-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/cost-stalls-${{ matrix.repo }}.json
-            ${{ runner.temp }}/out/runs/progress-stalls
+            ${{ runner.temp }}/graphi-eval/eval-stalls-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/cost-stalls-${{ matrix.repo }}.json
+            ${{ runner.temp }}/graphi-eval/runs/progress-stalls
 
   hero-suite:
     name: hero suite (20 tasks, tier-1 fixtures)
@@ -594,16 +592,17 @@ jobs:
           cache: true
       - name: run the hero suite
         run: |
+          mkdir -p "${RUNNER_TEMP}/graphi-eval"
           go run ./cmd/eval \
             -manifest corpus/manifest.json \
             -scenarios corpus/hero \
-            -out hero-report.json \
+            -out "${RUNNER_TEMP}/graphi-eval/hero-report.json" \
             -format markdown
       - name: print raw evidence
         if: always()
         run: |
           echo "=== HERO-REPORT-BEGIN ==="
-          cat hero-report.json
+          cat "${RUNNER_TEMP}/graphi-eval/hero-report.json"
           echo "=== HERO-REPORT-END ==="
       - name: upload hero report
         if: always()
@@ -611,5 +610,5 @@ jobs:
         with:
           name: hero-report
           path: |
-            hero-report.json
-            hero-report.md
+            ${{ runner.temp }}/graphi-eval/hero-report.json
+            ${{ runner.temp }}/graphi-eval/hero-report.md

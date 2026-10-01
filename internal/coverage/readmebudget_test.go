@@ -177,9 +177,9 @@ func TestReadmeBudgetIgnoresDeeperHeadings(t *testing.T) {
 
 // TestReadmeBudgetLiveDocument binds the CHECKED-IN readme.md to both budgets,
 // so a breach fails `go test` as well as `go run ./cmd/coverage -check`, and
-// then KILL-TESTS both assertions against the real document: one appended line
-// reddens the ceiling, one line inserted into the spine reddens the spine, and
-// the unmutated bytes are green on both sides of each mutation.
+// then KILL-TESTS both assertions against the real document: enough appended
+// lines to cross the ceiling redden it, enough lines inserted into the spine to
+// cross its budget redden it, and the unmutated bytes stay green.
 func TestReadmeBudgetLiveDocument(t *testing.T) {
 	root, err := ModuleRoot()
 	if err != nil {
@@ -202,28 +202,29 @@ func TestReadmeBudgetLiveDocument(t *testing.T) {
 		ReadmePath, rep.Lines, ReadmeCeiling, rep.Spine, ReadmeSpineBudget, rep.SpineBoundary)
 
 	// Ceiling kill test, on the live document.
-	mutated := src + "one line too many\n"
+	extraBodyLines := ReadmeCeiling - rep.Lines + 1
+	mutated := src + strings.Repeat("one extra body line\n", extraBodyLines)
 	mrep, err := CheckReadmeBudget(mutated)
 	if err != nil {
 		t.Fatalf("CheckReadmeBudget(mutated): %v", err)
 	}
 	if mrep.Pass() {
-		t.Errorf("appending a line to the live %s did not redden the ceiling", ReadmePath)
+		t.Errorf("appending enough lines to the live %s did not redden the ceiling", ReadmePath)
 	}
-	if mrep.Lines != rep.Lines+1 {
-		t.Errorf("mutation moved the count to %d, want %d", mrep.Lines, rep.Lines+1)
+	if mrep.Lines != ReadmeCeiling+1 {
+		t.Errorf("mutation moved the count to %d, want %d", mrep.Lines, ReadmeCeiling+1)
 	}
 
-	// Spine kill test, on the live document: insert a line at the top, which
-	// grows the spine and the total together, then assert the SPINE violation
-	// is present by name.
-	spineMutated := "an extra spine line\n" + src
+	// Spine kill test, on the live document: insert enough lines at the top to
+	// cross the budget, then assert the SPINE violation is present by name.
+	extraSpineLines := ReadmeSpineBudget - rep.Spine + 1
+	spineMutated := strings.Repeat("an extra spine line\n", extraSpineLines) + src
 	srep, err := CheckReadmeBudget(spineMutated)
 	if err != nil {
 		t.Fatalf("CheckReadmeBudget(spine-mutated): %v", err)
 	}
-	if srep.Spine != rep.Spine+1 {
-		t.Fatalf("spine moved to %d, want %d", srep.Spine, rep.Spine+1)
+	if srep.Spine != ReadmeSpineBudget+1 {
+		t.Fatalf("spine moved to %d, want %d", srep.Spine, ReadmeSpineBudget+1)
 	}
 	if srep.Pass() {
 		t.Errorf("a %d-line spine passed on the live document", srep.Spine)

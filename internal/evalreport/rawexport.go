@@ -67,10 +67,9 @@ const (
 	RawPoolGate  = "gate_pool"
 )
 
-// RunsRoot is the checked-in run directory the historical evidence already
-// lives in. AC-4 is that a new run sits beside 2026-07-15-ubuntu-latest and
-// compares, so the convention is anchored here rather than passed around.
-const RunsRoot = "docs/eval/runs"
+// RunsRoot is ignored workspace storage for generated local evaluation runs.
+// Reports intended for longer retention are uploaded by CI as artifacts.
+const RunsRoot = ".graphi/eval-runs"
 
 // RunIndexFile and EnvironmentFile are the fixed names inside a run directory.
 // AggregateFile is what the aggregator writes.
@@ -252,8 +251,7 @@ func RunDirName(date, runnerClass string) string {
 	return date + "-" + slug
 }
 
-// RunDirPath anchors the convention at the directory the historical evidence
-// already lives in, so two runs sit side by side and compare.
+// RunDirPath anchors the convention under ignored workspace storage.
 func RunDirPath(date, runnerClass string) string {
 	name := RunDirName(date, runnerClass)
 	if name == "" {

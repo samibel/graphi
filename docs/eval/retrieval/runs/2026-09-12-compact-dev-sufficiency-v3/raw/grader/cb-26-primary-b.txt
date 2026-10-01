@@ -1,1 +1,0 @@
-The preserved GetActiveHelpConfig documentation/body and global-name constant support the exact environment-variable names, normalization and override.

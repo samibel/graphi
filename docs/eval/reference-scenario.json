@@ -17,7 +17,7 @@
       "cache_state": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync && sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
       "source": "Hardware figures (4 vCPU / 16 GB RAM / 14 GB SSD for public repositories): GitHub Actions runner reference, https://docs.github.com/en/actions/reference/runners/github-hosted-runners. Image mapping (`ubuntu-latest` → `ubuntu-24.04`, x64): https://github.com/actions/runner-images. Both read 2026-07-27. Go version: go.mod at the measured commit.",
       "verification": "SW-128's environment capture records the observed CPU model and core count, MemTotal, `uname -srv`, `go version` and the work-directory filesystem into every run record. A captured value that contradicts this declaration invalidates the run rather than being published beside it.",
-      "evidence": "docs/eval/runs/2026-07-15-ubuntu-latest/ — historical evidence on this class, produced by the previous harness; retained as provenance, not as a comparable baseline.",
+      "evidence": "Historical evidence on this class is retained in Git history; it was produced by the previous harness and is not a comparable baseline.",
       "notes": "`ubuntu-latest` is the class every existing graphi gate workflow already runs on (lint, testgate, layerguard, coverage-matrix, eval, eval-full, release-dag), so declaring it the reference makes the reference the machine the project actually uses rather than a machine invented for P0. PRD Open Question 3 is answered here. It is also the FR-9 solo substitute for independent reproduction: a clean hosted runner replaces 'reproduced by another person', and that substitution is recorded rather than reported as the original gate."
     },
     {
@@ -33,7 +33,7 @@
       "filesystem": "APFS on the internal NVMe (case-insensitive)",
       "cache_state": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
       "source": "Captured on the machine 2026-07-27: `sysctl -n machdep.cpu.brand_string hw.ncpu hw.perflevel0.logicalcpu hw.perflevel1.logicalcpu hw.memsize`, `uname -srm`, `sw_vers`, `df /`, `go version`.",
-      "evidence": "docs/eval/runs/2026-07-15-local-sandbox/ — labelled PRELIMINARY at the time and still not reference evidence.",
+      "evidence": "The preliminary local-sandbox evidence is retained in Git history and remains non-reference evidence.",
       "notes": "COMPARISON CLASS ONLY. Its numbers are never reported as reference values, never satisfy a PRD 12.2 gate, and never freeze a budget. It exists to answer 'does this reproduce off CI at all', on a machine that differs from the reference in architecture (arm64 vs x64), core count (12 vs 4), memory (64 GB vs 16 GB), OS and filesystem — so a divergence between the two classes is expected and is not evidence of a regression."
     }
   ],

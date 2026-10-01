@@ -87,9 +87,8 @@ const AggregateMethod = "Closed world first: report.reproducible.dataset (id, sh
 	"lexical_full_document selects only that diagnostic universe. The report's " +
 	"baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. " +
 	"So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report " +
-	"still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that " +
-	"docs/eval/retrieval-targets.json and -budgets.json record in derived_from no longer matches it - that provenance layer, not " +
-	"this aggregate, is what binds a checked-in artifact to the report it came from. " +
+	"still carries; a tamperer who also rewrites that citation has produced a different report, and its identifying sha256 " +
+	"changes as well. This aggregate validates local self-consistency; it does not authorize a release. " +
 	"For every published baseline the query-id set is compared for EXACT equality with dataset.json and, per raw series, " +
 	"with raw/hits-<baseline>.json and raw/latency-<baseline>.json: an omitted or extra query on any side is a discrepancy. Every " +
 	"per-query metric in report.reproducible is recomputed from the raw hits and dataset.json through the same Evaluate the run used; " +

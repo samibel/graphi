@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/internal/eval/retrieval"
-	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 // init registers two test-only embedder schemes so tests can drive a real
@@ -55,10 +55,26 @@ func chdirRoot(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(wd) })
 }
 
+func TestRetrievalEval_UnknownFlagsAreRejected(t *testing.T) {
+	for _, args := range [][]string{
+		{"-definitely-unknown"},
+	} {
+		t.Run(args[0], func(t *testing.T) {
+			var stderr bytes.Buffer
+			if got := run(args, &bytes.Buffer{}, &stderr); got != exitUsage {
+				t.Fatalf("run(%v) exit %d, want %d; stderr: %s", args, got, exitUsage, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "flag provided but not defined") {
+				t.Fatalf("run(%v) did not reject the unknown flag: %s", args, stderr.String())
+			}
+		})
+	}
+}
+
 const fixtureDataset = "internal/eval/retrieval/testdata/datasets/fixture-v1.json"
 
 func TestRetrievalEval_SetupTokenizerFromLocalArtifact(t *testing.T) {
-	src := filepath.Join(repoRoot(t), "internal", "eval", "tokenizer", "testdata", "artifact")
+	src := filepath.Join(repoRoot(t), "core", "tokenizer", "testdata", "artifact")
 	if _, err := os.Stat(filepath.Join(src, evaltokenizer.PinnedVocabularyFile)); err != nil {
 		t.Fatalf("checked-in real tokenizer artifact is absent: %v", err)
 	}
@@ -162,115 +178,6 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 		}
 	})
 
-	t.Run("derive writes targets and budgets citing the report", func(t *testing.T) {
-		// Since SW-282 the targets derivation refuses a report carrying the
-		// candidate pipeline or a holdout row, so its input is a
-		// COMPARATOR-ONLY run over the DEVELOPMENT slice of the fixture
-		// dataset. The budgets derivation is unchanged and still reads the
-		// full seven-baseline report.
-		//
-		// The comparator run is given the mock embedder because the whole
-		// comparator set must have RUN: semantic_name_only reports
-		// `unavailable` without one, and AC-4 blocks the derivation rather
-		// than computing a lower bar from the comparators that did run. The
-		// blocked case is asserted below rather than being the input here.
-		src, err := retrieval.LoadDataset(fixtureDataset)
-		if err != nil {
-			t.Fatal(err)
-		}
-		slice, err := retrieval.SelectDevSplit(src)
-		if err != nil {
-			t.Fatal(err)
-		}
-		devDataset := filepath.Join(dir, "fixture-dev.json")
-		if err := os.WriteFile(devDataset, slice.Raw, 0o644); err != nil {
-			t.Fatal(err)
-		}
-		comparators := filepath.Join(dir, "comparators.json")
-		if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", devDataset,
-			"-out", comparators, "-repeats", "1", "-embedder", "mock",
-			"-baseline", "lexical", "-baseline", "hybrid_v1", "-baseline", "semantic_name_only", "-baseline", "oracle_upper_bound"},
-			&bytes.Buffer{}, &bytes.Buffer{}); code != exitOK {
-			t.Fatal("comparator-only run failed")
-		}
-		comparatorBytes, err := os.ReadFile(comparators)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		targets := filepath.Join(dir, "targets.json")
-		budgets := filepath.Join(dir, "budgets.json")
-		var w bytes.Buffer
-		if code := run([]string{"-derive", "-targets-report", comparators, "-budget-small", out,
-			"-targets-out", targets, "-budgets-out", budgets, "-date", "2026-08-30"}, &bytes.Buffer{}, &w); code != exitOK {
-			t.Fatalf("derive exit %d\n%s", code, w.String())
-		}
-		tb, err := os.ReadFile(targets)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var tg retrieval.Targets
-		if err := json.Unmarshal(tb, &tg); err != nil {
-			t.Fatal(err)
-		}
-		if tg.DerivedFrom.Report != comparators || tg.DerivedFrom.SHA256 != retrieval.SHA256Hex(comparatorBytes) || tg.ImmutableUntil != retrieval.TargetsImmutableUntil {
-			t.Errorf("targets derived_from = %+v", tg.DerivedFrom)
-		}
-		if tg.BundleCoverage == nil || tg.BundleCoverage.Threshold.MaxMisses != 0 {
-			t.Errorf("targets bundle_coverage = %+v, want a whole-query bar with zero misses", tg.BundleCoverage)
-		}
-
-		t.Run("the full seven-baseline report is refused as a derivation input", func(t *testing.T) {
-			var w2 bytes.Buffer
-			if code := run([]string{"-derive", "-targets-report", out, "-targets-out", filepath.Join(dir, "refused.json"), "-date", "2026-08-30"},
-				&bytes.Buffer{}, &w2); code == exitOK {
-				t.Fatal("derive accepted a report carrying the candidate pipeline")
-			}
-			if !strings.Contains(w2.String(), "candidate pipeline") {
-				t.Errorf("refusal text = %q", w2.String())
-			}
-		})
-
-		t.Run("a comparator-only run whose embedder is absent BLOCKS the derivation", func(t *testing.T) {
-			// The same command line minus -embedder: semantic_name_only
-			// reports `unavailable`, and the bar computed from the two
-			// comparators that did run would be a DIFFERENT bar — on the real
-			// SW-282 report exactly that dropped the exact_identifier Top-1
-			// floor from 1 to 0.75 and would have printed a recorded miss as a
-			// PASS. A comparator that cannot run is a blocked derivation, not
-			// a lower target.
-			noEmbedder := filepath.Join(dir, "comparators-no-embedder.json")
-			if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", devDataset,
-				"-out", noEmbedder, "-repeats", "1",
-				"-baseline", "lexical", "-baseline", "hybrid_v1", "-baseline", "semantic_name_only", "-baseline", "oracle_upper_bound"},
-				&bytes.Buffer{}, &bytes.Buffer{}); code != exitOK {
-				t.Fatal("comparator-only run without an embedder failed")
-			}
-			blocked := filepath.Join(dir, "blocked.json")
-			var w2 bytes.Buffer
-			if code := run([]string{"-derive", "-targets-report", noEmbedder, "-targets-out", blocked, "-date", "2026-08-30"},
-				&bytes.Buffer{}, &w2); code == exitOK {
-				t.Fatal("derive wrote a targets file from a run in which semantic_name_only did not run")
-			}
-			if !strings.Contains(w2.String(), "semantic_name_only") || !strings.Contains(w2.String(), "BLOCKED") {
-				t.Errorf("refusal text = %q", w2.String())
-			}
-			if _, err := os.Stat(blocked); !os.IsNotExist(err) {
-				t.Errorf("a blocked derivation still wrote %s (stat err %v)", blocked, err)
-			}
-		})
-		bb, err := os.ReadFile(budgets)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var bg retrieval.Budgets
-		if err := json.Unmarshal(bb, &bg); err != nil {
-			t.Fatal(err)
-		}
-		if bg.Fixtures[retrieval.FixtureSmall].Status != retrieval.StatusMeasured || bg.Fixtures[retrieval.FixtureLarge].Status != retrieval.StatusUnknown {
-			t.Errorf("budgets = %+v", bg.Fixtures)
-		}
-	})
 }
 
 func TestRetrievalEval_FieldParitySelectsOnlyDevNLBehaviour(t *testing.T) {
@@ -445,8 +352,6 @@ func TestRetrievalEval_UsageErrors(t *testing.T) {
 		{"dataset for another repo", []string{"-repo", "cobra", "-dataset", fixtureDataset, "-out", "x"}, exitUsage, "judged against"},
 		{"repo not in manifest", []string{"-repo", "nope", "-dataset", fixtureDataset, "-out", "x"}, exitUsage, "judged against"},
 		{"aggregate over a missing dir", []string{"-aggregate", filepath.Join(t.TempDir(), "missing")}, retrieval.ExitUsage, "run.json"},
-		{"derive without outputs", []string{"-derive"}, exitUsage, "-targets-out"},
-		{"budgets without a report", []string{"-derive", "-budgets-out", filepath.Join(t.TempDir(), "b.json")}, exitUsage, "-budget-small"},
 		{"unknown flag", []string{"-frobnicate"}, exitUsage, ""},
 	}
 	for _, tc := range cases {
@@ -459,33 +364,6 @@ func TestRetrievalEval_UsageErrors(t *testing.T) {
 				t.Errorf("output does not mention %q:\n%s", tc.msg, w.String())
 			}
 		})
-	}
-}
-
-func TestRetrievalEval_CheckClaimRejectsUnsafeSentence(t *testing.T) {
-	unsafe := "Semantic search beats BM25 and the CoIR lexical baseline across Go repositories."
-	var stderr bytes.Buffer
-	if code := run([]string{"-check-claim", unsafe}, &bytes.Buffer{}, &stderr); code != exitError {
-		t.Fatalf("check-claim exit %d, want %d\n%s", code, exitError, stderr.String())
-	}
-	want := "retrieval-eval: retrieval claim rejected: " +
-		"claim_shape (\"not the frozen descriptive template\"); comparator_scope (\"BM25\"); comparator_scope (\"CoIR\"); comparator_scope (\"lexical baseline\"); " +
-		"population_scope (\"across Go repositories\"); population_scope (\"Go repositories\"); " +
-		"population_scope (\"missing frozen Cobra dataset scope\"); population_scope (\"missing required pinned-Cobra limitation\"); " +
-		"semantic_superiority (\"Semantic\")\n"
-	if stderr.String() != want {
-		t.Fatalf("check-claim output:\n%s\nwant exactly:\n%s", stderr.String(), want)
-	}
-}
-
-func TestRetrievalEval_CheckClaimAcceptsOnlyNarrowDescriptiveScope(t *testing.T) {
-	var stderr bytes.Buffer
-	if code := run([]string{"-check-claim", retrieval.ClaimTemplateExample}, &bytes.Buffer{}, &stderr); code != exitOK {
-		t.Fatalf("check-claim exit %d, want %d\n%s", code, exitOK, stderr.String())
-	}
-	want := "retrieval-eval: claim accepted by " + retrieval.MeasurementContractVersion + "\n"
-	if stderr.String() != want {
-		t.Fatalf("check-claim output = %q, want %q", stderr.String(), want)
 	}
 }
 

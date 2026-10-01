@@ -1,1 +1,0 @@
-The preserved ExecuteC body supports every described setup and command-selection step, and command.go:1038-1049 supports both wrappers.

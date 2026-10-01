@@ -68,7 +68,7 @@ mit dem dokumentierten Lock-Handgriff.
 | Beleg | Evidenz |
 |-------|---------|
 | Selektive Reads als Port-Vertrag (ADR 0003), beide Backends konform | `core/graphstore/lookup.go` + Konformanz-Suite `lookup_contract_test.go`; EXPLAIN-QUERY-PLAN-Gates — `2d174c9` (SP-11), `9988ff0` (CORE-01) |
-| Alle Stable-Hotpaths selektiv, Byte-Parität bewiesen | `eb93d7c` (SW-116/CORE-02): SW-110-Golden-Tests unverändert grün; umgedrehte Scan-Pins (`TestSelectiveGate_*`); Skalen-Beweis: structural p95 ≤ 600 µs bei 43× Knoten (`docs/eval/runs/…`) |
+| Alle Stable-Hotpaths selektiv, Byte-Parität bewiesen | `eb93d7c` (SW-116/CORE-02): SW-110-Golden-Tests unverändert grün; umgedrehte Scan-Pins (`TestSelectiveGate_*`); Skalen-Beweis: structural p95 ≤ 600 µs bei 43× Knoten (`historical evaluation archive in Git history: …`) |
 | Crash-Recovery: Kill an jeder Batch-Grenze konvergiert byte-identisch | `4f2bd36` (SW-118/ING-DEC): `engine/ingest/faultmatrix_test.go`; zwei echte Defekte gefunden + gefixt (store-derived Purge, `RecoverWithRoot` produktiv verdrahtet); ADR 0004 (K1–K8) |
 | Privacy-Defaults: gitignore an, 0600/0700 + Migration, Secret-Rejection | `8a014d7` (SW-119/PRIV-01): `engine/ingest/ignore.go`, `TightenDBFileModes`, `memory.ErrSecretRejected` + Modus-Gates `privacy_modes_test.go` |
 
@@ -88,7 +88,7 @@ mit dem dokumentierten Lock-Handgriff.
 | 20 Hero-Aufgaben über exakt die 12 Stable-Ops, alle Fehlerklassen | `corpus/hero/` + Gate `cmd/eval/hero_test.go` — `660b5a3` (SW-122/EVAL-01); 20/20 grün (lokal + Report) |
 | 3 gepinnte Real-Repos inkl. JVM-Monorepo, fail-closed SHA-Pins | `corpus/manifest.json` v2: cobra / flask / **guava v33.0.0** (`2214c63670fc`, Tier 3) |
 | Full-Run-Harness + CI-Workflow | `cmd/eval -full-run` (+ hermetisches Gate `fullrun_test.go`), `.github/workflows/eval-full.yml` — `ecef54f` (SW-123/EVAL-02) |
-| Erste vollständige Roh-Evidenz, eingecheckt | `docs/eval/runs/2026-07-15-local-sandbox/` (PRELIMINARY, Runnerklasse `local-sandbox`): alle 3 Repos PASS, Pins verifiziert, Hero 20/20 |
+| Erste vollständige Roh-Evidenz, eingecheckt | `historical evaluation archive in Git history: 2026-07-15-local-sandbox/` (PRELIMINARY, Runnerklasse `local-sandbox`): alle 3 Repos PASS, Pins verifiziert, Hero 20/20 |
 | Historische Performance-Beobachtungen | Der alte Harness beobachtete separat skalierende `agent_brief`-Latenz und hohe Index-Phasen-MAXRSS. Ihr kausaler Zusammenhang und aktuelle Werte unter dem geänderten Harness sind **UNKNOWN**; siehe ADR 0003 und `docs/eval/hero-protocol.md`. |
 
 ### G5 — Design-Partner: OFFEN (Sami, non-engineering)

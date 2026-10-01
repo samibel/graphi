@@ -29,10 +29,8 @@ var exactIdentifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za
 //     base are fine; only the final ".go" is the extension).
 //
 // Shape 2 is deliberately ".go" only. It is the one extension family the
-// SW-258 dev set exercises (cb-07, cb-09) and therefore the only one the
-// before/after measurement under
-// docs/eval/retrieval/runs/2026-09-04-sw270-bare-filename-path-rule/
-// covers. The first SW-270 build recognised every extension in the
+// SW-258 dev set exercises (cb-07, cb-09). The first SW-270 build recognised
+// every extension in the
 // engine/classify catalog; review found that this silently gave path
 // precedence to unmeasured, identifier-shaped queries such as "theme.css"
 // or "config.json", so it was narrowed. Recognising other languages'

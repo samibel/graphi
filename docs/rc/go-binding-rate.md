@@ -493,7 +493,7 @@ graph is the `confirmed` tier published below.
 | rendered report file sha256 (both runs, byte-identical) | `bfbe63cc79c1357998dc73d741bd6db51b2086fcc607146e7e7dcb0d70402a91` |
 | AC-5 raw-sample binary (initial) | `/private/tmp/eval-490a632`, binary sha256 `926afabf9e4f3ca5440d3eccce3768c01e7408b1a0c278af5535d6774f2ae776`, built from tree at `490a632f`; worktree cleaned up after the initial run (one-shot artifact — fragile). |
 | AC-5 re-verification binary | `/tmp/cmd-eval-reverify`, binary sha256 `13060fd6de6f5250963012bfea0392f5b80a8c409a71c37260df65196cc41b6a`, built from this branch's tip `45be1803a286d20d6319325be545eed79d4bbd0d`; exit 0 on all four leaf dirs (cold-index, query-latency, freshness, progress-stalls). |
-| AC-5 leaf dirs | `docs/eval/runs/2026-08-20-local-grpc/{cold-index,query-latency,freshness,progress-stalls}/grpc-go/` |
+| AC-5 leaf dirs | `historical evaluation archive in Git history: 2026-08-20-local-grpc/{cold-index,query-latency,freshness,progress-stalls}/grpc-go/` |
 | AC-5 environment capture | `cpu_model: "Apple M2 Max"`, `cpu_count: 12` (darwin/arm64, local-sandbox) |
 | compiler used | none — this measurement never touches bytecode (§1.4) |
 | ast counter | `*ast.CallExpr` walk via `go/parser` + `go/ast`, identical to the resolver's parser |
@@ -528,7 +528,7 @@ in-repo `internal/gobindrate/` package (CI-only — `cmd/graphi` does NOT
 import it; `cmd/coverage -check` remains green). No file under `engine/`,
 `core/`, `surfaces/` or `cmd/` is touched by the SW-187 deliverable. The
 doc is the only durable artifact on the binding-rate side, and
-`docs/eval/runs/2026-08-20-local-grpc/` is the AC-5 leaf set.
+`historical evaluation archive in Git history: 2026-08-20-local-grpc/` is the AC-5 leaf set.
 
 **AC-7 verifier (cmd/graphi byte-identical).** Two consecutive builds from
 this branch's tip with `-trimpath -buildvcs=false`:

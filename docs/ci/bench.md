@@ -157,6 +157,11 @@ remains a hard ratchet. A future size/count metric enters this closed projection
 only through a reviewed code change; its manifest severity then controls whether
 it blocks. Removing any projected metric from the manifest fails closed.
 
+The general release gate has four required constituents: `bench-budget`,
+`coverage`, `privacy`, and `testgate`. Experimental model-promotion scores are
+not release criteria; local evaluator output belongs under `.graphi/eval-runs/`
+and CI stores it as a temporary artifact.
+
 ### Hermeticity
 
 The suite reuses the egress/telemetry posture established for the CI gates

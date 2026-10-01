@@ -1,3 +1,0 @@
-`ValidArgs` provides completion candidates for the first positional argument; `ValidArgsFunction` dynamically provides candidates for any positional argument, including the first (`zsh_completions.go:61-64`).
-
-They may not both be configured on one command: `command.go:86-87` explicitly states, “Only one of ValidArgs and ValidArgsFunction can be used for a command.”

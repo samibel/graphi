@@ -1,1 +1,0 @@
-The preserved Execute body returns only ExecuteC's error, and adjacent documentation/context wrapper support the other statements.

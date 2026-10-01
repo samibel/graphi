@@ -1,1 +1,0 @@
-It panics with `Command can't be a child of itself` (`command.go:1306`).

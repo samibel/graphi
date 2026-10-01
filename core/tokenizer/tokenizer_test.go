@@ -47,9 +47,9 @@ func TestGoldenTokenVectors_DifferFromWhitespace(t *testing.T) {
 			ids: []int{333, 1886, 1703, 9788, 72980, 41620, 13732, 1886, 976, 2139, 314, 471, 9055, 13380, 446, 96416, 25, 1034, 86, 498, 1886, 8, 335},
 		},
 		{
-			name: "long path", text: "docs/eval/retrieval/runs/2026-09-03-sw277-tokenizer/raw/task_context.jsonl",
-			real: 24, whitespace: 1,
-			ids: []int{14452, 14, 14504, 10991, 9104, 838, 49485, 82, 14, 2366, 21, 12, 2545, 12, 2839, 62979, 16367, 35941, 3213, 77009, 59286, 8634, 4421, 75},
+			name: "long path", text: ".graphi/eval-runs/2026-09-03-tokenizer/raw/task_context.jsonl",
+			real: 20, whitespace: 1,
+			ids: []int{10996, 72, 14, 14504, 3880, 11099, 14, 2366, 21, 12, 2545, 12, 2839, 35941, 3213, 77009, 59286, 8634, 4421, 75},
 		},
 		{
 			name: "UTF-8 outside ASCII", text: "Grüße, 世界 — café ☕️",

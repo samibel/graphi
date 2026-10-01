@@ -33,7 +33,7 @@ import (
 )
 
 // exportAuto is the -export-raw value that asks for the SW-128 path
-// convention — docs/eval/runs/<date>-<runner-class> — instead of a directory
+// convention — .graphi/eval-runs/<date>-<runner-class> — instead of a directory
 // the caller names. AC-4 is that the convention is a rule the tool applies, not
 // a habit an operator remembers.
 const exportAuto = "auto"

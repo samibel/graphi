@@ -1450,7 +1450,7 @@ by itself rather than being told to:
 | Provenance | **both** dispatches at run SHA `91a4ba3`, runner class `Linux-X64/ccr-container`, go1.26.6 darwin/arm64, worktree DIRTY at run time (SW-190 changes in flight; product binary unaffected — see below) |
 | Product binary | HEAD and candidate both `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — `product_diff_empty: true` |
 | Report artifacts | [`parity-matrix-jvm-wpj7-run-A.json`](parity-matrix-jvm-wpj7-run-A.json) · [`parity-matrix-jvm-wpj7-run-B.json`](parity-matrix-jvm-wpj7-run-B.json) — **substantive agreement at the byte level (87947 B each): verdict sets and per-row counts match bit-for-bit**; the dispatch-level sha256s (`38d91f6d…` run-A, `9c3e3b33…` run-B) differ only on provenance and per-dispatch timing metadata |
-| Per-run evidence | [`docs/eval/runs/2026-08-21-Linux-X64/jvm-g4-baseline/`](../../eval/runs/2026-08-21-Linux-X64/jvm-g4-baseline/) — `environment.json` (provenance), `state-okio/` (the 13 declared classes × 4 axis cells of row state) |
+| Per-run evidence | `historical evaluation archive in Git history: 2026-08-21-Linux-X64/jvm-g4-baseline/` (archived in Git history) — `environment.json` (provenance), `state-okio/` (the 13 declared classes × 4 axis cells of row state) |
 
 ## PARITY-COV-001 — closed by measurement (D6 amendment)
 
@@ -2260,7 +2260,7 @@ at per-row count granularity, 70 spurious `imports` edges (8.0% of flask's
 | Pin | flask `3.0.0` at the REAL sha `735a4701d6d5e848241e7d7535db898efb62d400` (the manifest pin `735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b` is STALE — see "Pin discrepancy" below) |
 | Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite inspection per dispatch |
 | Provenance | both dispatches at run SHA `3f23901`, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, clean worktree |
-| Report artifacts | [`docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/`](../../eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/) — `report.json`, `aggregate.json`, `raw/f5-measurement.json`, `raw/dispatch-determinism.json`, snapshot digests `dispatch-{a,b}.snapshot.sha256` (`c8808aef…` run-A, `80021620…` run-B — differ on `generated_at` only) |
+| Report artifacts | `historical evaluation archive in Git history: 2026-08-20-Darwin-ARM64/apple-m2-max/` (archived in Git history) — `report.json`, `aggregate.json`, `raw/f5-measurement.json`, `raw/dispatch-determinism.json`, snapshot digests `dispatch-{a,b}.snapshot.sha256` (`c8808aef…` run-A, `80021620…` run-B — differ on `generated_at` only) |
 | Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) |
 
 The 70 spurious edges — distribution, importer kind, target file, edge count — match the post-SW-188 re-measurement byte-for-byte (the python heuristic resolver was not touched by SW-188). The pre-SW-188 dispatch's snapshot envelope sha256 (`c8808aef…` run-A, `80021620…` run-B) is recorded here as the historical fingerprint; the post-SW-188 measurement above reproduces the per-row counts but a fresh pair of snapshots will carry a fresh timestamp-derived envelope.

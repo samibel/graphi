@@ -1,1 +1,0 @@
-PASS: The response correctly describes GenMarkdownTree's delegation and the recursive custom generator, including filtering, naming, and output, all visible in doc/md_docs.go:119-158.

@@ -1,1 +1,0 @@
-The GenMan comment/signature and complete fillHeader body support the file purpose, nil header, title/section/date defaults and invalid-epoch error.

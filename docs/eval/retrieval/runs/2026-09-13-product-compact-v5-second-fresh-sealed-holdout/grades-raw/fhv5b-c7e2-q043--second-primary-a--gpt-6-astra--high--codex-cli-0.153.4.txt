@@ -1,1 +1,0 @@
-FAIL: The response reports insufficient evidence instead of substantively explaining the API routing. The preserved bundle also omits the `GenPowerShellCompletionFileWithDesc()` implementation, leaving its required delegation unverifiable.
