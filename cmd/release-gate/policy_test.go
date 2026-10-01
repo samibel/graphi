@@ -244,15 +244,24 @@ func TestPolicy_AbsentRequiredGateIsError(t *testing.T) {
 // it silently stop running, and declaring one that is never supplied would
 // make every run ERROR.
 func TestPolicy_RequiredGatesMatchDefaultGates(t *testing.T) {
+	want := []string{"bench-budget", "coverage", "privacy", "testgate"}
+
 	var supplied []string
-	for name := range DefaultGates() {
+	defaults := DefaultGates()
+	for name := range defaults {
 		supplied = append(supplied, name)
 	}
 	sort.Strings(supplied)
 	declared := append([]string{}, requiredGates...)
 	sort.Strings(declared)
-	if strings.Join(supplied, ",") != strings.Join(declared, ",") {
-		t.Fatalf("DefaultGates supplies %v but requiredGates declares %v", supplied, declared)
+	if strings.Join(supplied, ",") != strings.Join(want, ",") {
+		t.Fatalf("DefaultGates supplies %v, want exactly %v", supplied, want)
+	}
+	if strings.Join(declared, ",") != strings.Join(want, ",") {
+		t.Fatalf("requiredGates declares %v, want exactly %v", declared, want)
+	}
+	if _, ok := defaults["retrieval-targets"]; ok {
+		t.Fatal("DefaultGates still supplies the retired retrieval-targets gate")
 	}
 }
 
