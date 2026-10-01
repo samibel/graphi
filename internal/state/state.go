@@ -135,13 +135,28 @@ func Resolve(cwd string) (Paths, error) {
 	}, nil
 }
 
-// repoRecord is the deterministic descriptor written to repo.json. The created
-// field is a static placeholder ("-"), NOT a timestamp, so the file content is
-// reproducible across runs.
-type repoRecord struct {
+// RepoDescriptor is the deterministic descriptor written to repo.json. The
+// Created field is a static placeholder ("-"), NOT a timestamp, so the file
+// content is reproducible across runs. Registration code reads this descriptor
+// as the existing source of truth instead of maintaining a second root/store
+// mapping.
+type RepoDescriptor struct {
 	AbsRoot     string `json:"abs_root"`
 	Fingerprint string `json:"fingerprint"`
 	Created     string `json:"created"`
+}
+
+// ReadRepoDescriptor decodes an existing repo.json without modifying it.
+func ReadRepoDescriptor(path string) (RepoDescriptor, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return RepoDescriptor{}, fmt.Errorf("state: read repo.json: %w", err)
+	}
+	var descriptor RepoDescriptor
+	if err := json.Unmarshal(b, &descriptor); err != nil {
+		return RepoDescriptor{}, fmt.Errorf("state: decode repo.json: %w", err)
+	}
+	return descriptor, nil
 }
 
 // Ensure creates the per-repo state directories with owner-only permissions and
@@ -173,7 +188,7 @@ func Ensure(p Paths) error {
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("state: stat repo.json: %w", err)
 	}
-	rec := repoRecord{AbsRoot: p.Root, Fingerprint: p.Fingerprint, Created: "-"}
+	rec := RepoDescriptor{AbsRoot: p.Root, Fingerprint: p.Fingerprint, Created: "-"}
 	data, err := json.Marshal(rec)
 	if err != nil {
 		return fmt.Errorf("state: marshal repo.json: %w", err)
