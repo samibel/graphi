@@ -102,7 +102,7 @@ type fullRunOptions struct {
 	candidatePath string
 	// exportRaw is SW-128's raw-sample run directory, or "" for no export.
 	// Writing it is a separate, opt-in step: a PR-path run has no business
-	// creating a directory under docs/eval/runs/.
+	// creating generated output in tracked documentation.
 	exportRaw string
 	// profileOnMiss is SW-129's automation: when a gate is missed, re-run the
 	// affected scenario under the profilers. It defaults to ON, and it costs a

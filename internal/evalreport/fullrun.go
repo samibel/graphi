@@ -6,7 +6,7 @@ package evalreport
 // These reports are raw performance evidence. Historical reports may use an
 // older measurement method, so budget comparability is established by the
 // harness metadata, not merely by matching runner class. Reports are published
-// as CI artifacts and may be committed under docs/eval/runs/.
+// as downloadable CI artifacts and are not committed as documentation.
 
 import (
 	"encoding/json"

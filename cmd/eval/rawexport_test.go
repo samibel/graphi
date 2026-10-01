@@ -13,6 +13,16 @@ import (
 	"github.com/samibel/graphi/internal/evalreport"
 )
 
+func TestResolveExportDir_UsesIgnoredWorkspaceStorage(t *testing.T) {
+	got, err := resolveExportDir(exportAuto, "ubuntu-latest", "2026-07-28")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != ".graphi/eval-runs/2026-07-28-ubuntu-latest" {
+		t.Fatalf("resolveExportDir = %q, want %q", got, ".graphi/eval-runs/2026-07-28-ubuntu-latest")
+	}
+}
+
 // A run that measured nothing but the cold index exports exactly one raw
 // series. The other three are ABSENT, not empty — the aggregator will read
 // their metrics as UNKNOWN, which is correct, because they were never
