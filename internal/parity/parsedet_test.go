@@ -634,11 +634,10 @@ func TestParseDet_AbstainsWithoutAPinAndIsNotPublishable(t *testing.T) {
 // abstention string built non-deterministically. What it cannot catch is
 // nondeterminism in the MEASUREMENT: two full index passes over a real tree
 // serialising to different bytes. That half of AC-5 is carried by artifacts,
-// not by this test — the twelve checked-in dispatch pairs under
-// docs/eval/runs/2026-08-26-Darwin-ARM64/*/raw/ — and it cannot be asserted
-// here without executing the product binary over a materialized corpus, which
-// is a network clone and a multi-minute full index per row. Filed as
-// PARITY-013 rather than papered over.
+// not by this test. It requires executing the product binary over a
+// materialized corpus and comparing temporary CI artifacts under
+// .graphi/eval-runs/, which is a network clone and a multi-minute full index
+// per row. Filed as PARITY-013 rather than papered over.
 func TestParseDet_RefusalSetsAreIdenticalAcrossTwoDispatches(t *testing.T) {
 	for _, name := range ParseDetLanguages() {
 		rows, err := LoadClasses(filepath.Join("..", "..", ParseDetClassesPath(name)))

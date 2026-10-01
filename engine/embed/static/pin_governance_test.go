@@ -1,188 +1,68 @@
 package static_test
 
 import (
-	"bytes"
-	"io/fs"
+	"encoding/json"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/engine/embed/static"
 )
 
-var pinDependentRetrievalRuns = []string{
-	"docs/eval/retrieval/runs/2026-09-01-static-local",
-	"docs/eval/retrieval/runs/2026-09-02-capsule-local",
-	"docs/eval/retrieval/runs/2026-09-02-sw263-local",
-	"docs/eval/retrieval/runs/2026-09-02-sw263-v3-restoration-local",
-	"docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local",
-}
-
 func TestStatic_PinRotationGovernance(t *testing.T) {
-	const recordPath = "PIN_ROTATION.md"
-	record, err := os.ReadFile(recordPath)
+	const (
+		wantModel              = "potion-code-16M-v2"
+		wantRevision           = "e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+		wantModelSHA           = "75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c"
+		wantTokenizerSHA       = "107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45"
+		wantCrossArchVectorSHA = "cc40f422aff6cf1cce6963e391149be0d6f21fcdd592d297469e06fd9f3c0434"
+	)
+	if static.PinnedModel != wantModel || static.PinnedRevision != wantRevision {
+		t.Fatalf("static source pin = %s@%s, want %s@%s", static.PinnedModel, static.PinnedRevision, wantModel, wantRevision)
+	}
+	if got := static.PinnedSHA256[static.FileSafetensors]; got != wantModelSHA {
+		t.Fatalf("model sha256 = %s, want %s", got, wantModelSHA)
+	}
+	if got := static.PinnedSHA256[static.FileTokenizer]; got != wantTokenizerSHA {
+		t.Fatalf("tokenizer sha256 = %s, want %s", got, wantTokenizerSHA)
+	}
+
+	recordPath := filepath.Join("..", "..", "..", "docs", "eval", "static-embedder-cross-arch", "2026-09-03-sw271", "run.json")
+	raw, err := os.ReadFile(recordPath)
 	if err != nil {
-		t.Fatalf("static pin governance: read engine/embed/static/%s: %v", recordPath, err)
+		t.Fatalf("read cross-architecture record: %v", err)
 	}
-
-	marker := "Current governed revision: `" + static.PinnedRevision + "`."
-	if !bytes.Contains(record, []byte(marker)) {
-		t.Fatalf("static pin governance: PinnedRevision %q has no matching rotation record in engine/embed/static/PIN_ROTATION.md; update the approval, re-measurement, and stale-artifact record before rotating the pin", static.PinnedRevision)
+	var record struct {
+		Model struct {
+			Selector       string            `json:"selector"`
+			ArtifactSHA256 map[string]string `json:"artifact_sha256"`
+		} `json:"model"`
+		Executions []struct {
+			CGOEnabled string `json:"cgo_enabled"`
+		} `json:"executions"`
+		Result struct {
+			Status                 string `json:"status"`
+			CanonicalVectorsSHA256 string `json:"canonical_vectors_sha256"`
+		} `json:"result"`
 	}
-
-	for _, required := range []string{
-		"## Approval",
-		"## Required rotation record and re-measurement",
-		"## Records made stale by the next rotation",
-		"CGo-free",
-		"byte-exact",
-		"docs/eval/static-embedder-cross-arch/2026-09-03-sw271/",
-	} {
-		if !bytes.Contains(record, []byte(required)) {
-			t.Errorf("static pin governance: engine/embed/static/PIN_ROTATION.md is missing required record text %q", required)
+	if err := json.Unmarshal(raw, &record); err != nil {
+		t.Fatalf("decode cross-architecture record: %v", err)
+	}
+	if record.Model.Selector != static.PinnedSelector {
+		t.Fatalf("cross-architecture selector = %q, want %q", record.Model.Selector, static.PinnedSelector)
+	}
+	if record.Model.ArtifactSHA256[static.FileSafetensors] != wantModelSHA || record.Model.ArtifactSHA256[static.FileTokenizer] != wantTokenizerSHA {
+		t.Fatalf("cross-architecture artifact pins = %v", record.Model.ArtifactSHA256)
+	}
+	if len(record.Executions) < 2 {
+		t.Fatalf("cross-architecture record has %d executions, want at least 2", len(record.Executions))
+	}
+	for i, execution := range record.Executions {
+		if execution.CGOEnabled != "0" {
+			t.Errorf("execution %d has cgo_enabled=%q, want 0", i, execution.CGOEnabled)
 		}
 	}
-	for _, run := range pinDependentRetrievalRuns {
-		if _, err := os.Stat(filepath.Join("../../..", filepath.FromSlash(run))); err != nil {
-			t.Errorf("static pin governance: recorded pin-dependent run %s is not readable: %v", run, err)
-		}
-		if !bytes.Contains(record, []byte("`"+run+"/`")) {
-			t.Errorf("static pin governance: pin-dependent run %s/ is absent from engine/embed/static/PIN_ROTATION.md", run)
-		}
-	}
-
-	runs, err := productionStaticRetrievalRuns("../../../docs/eval/retrieval/runs")
-	if err != nil {
-		t.Fatalf("static pin governance: enumerate production-static retrieval runs: %v", err)
-	}
-	if len(runs) == 0 {
-		t.Fatal("static pin governance: no revision-qualified production-static retrieval runs found; refusing a vacuous stale-artifact gate")
-	}
-	for _, run := range runs {
-		if !bytes.Contains(record, []byte("`"+run+"/`")) {
-			t.Errorf("static pin governance: production-static run %s/ is absent from engine/embed/static/PIN_ROTATION.md; enumerate it as stale before rotating the pin", run)
-		}
-	}
-}
-
-func productionStaticRetrievalRuns(root string) ([]string, error) {
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		return nil, err
-	}
-	prefix := []byte("static:" + static.PinnedModel + "@")
-	var runs []string
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		dir := filepath.Join(root, entry.Name())
-		usesProductionStatic := false
-		err := filepath.WalkDir(dir, func(path string, item fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-			if usesProductionStatic || item.IsDir() {
-				return nil
-			}
-			body, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			usesProductionStatic = bytes.Contains(body, prefix)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		if usesProductionStatic {
-			runs = append(runs, filepath.ToSlash(filepath.Join("docs/eval/retrieval/runs", entry.Name())))
-		}
-	}
-	sort.Strings(runs)
-	return runs, nil
-}
-
-func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing.T) {
-	runs, err := productionStaticRetrievalRuns("../../../docs/eval/retrieval/runs")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Each entry was reviewed before being listed: the run genuinely uses the
-	// pinned production static embedder, so a rotation invalidates it. The list
-	// is explicit on purpose — a newly landed production-static run must fail
-	// this test until a human has looked at it and recorded it in
-	// PIN_ROTATION.md. That is exactly what happened to the SW-272 entry below,
-	// which this gate caught on its first rebase past the SW-272 merge.
-	want := []string{
-		"docs/eval/retrieval/runs/2026-09-01-static-local",
-		"docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local",
-		"docs/eval/retrieval/runs/2026-09-03-sw272-field-parity",
-		// SW-270: before/after of the bare-filename exact-path rule on the
-		// dev split; both sides carry the pinned static selector stamp.
-		"docs/eval/retrieval/runs/2026-09-04-sw270-bare-filename-path-rule",
-		// SW-280: the qrel-blind smoke evaluation's 64 preserved
-		// task_context/2 bundles carry the pinned static selector stamp, so a
-		// rotation invalidates the bundles the 31/64 pass count describes.
-		"docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke",
-		"docs/eval/retrieval/runs/2026-09-06-architecture-dev",
-		"docs/eval/retrieval/runs/2026-09-06-bundle-selection-dev",
-		"docs/eval/retrieval/runs/2026-09-06-candidate-admission-dev",
-		"docs/eval/retrieval/runs/2026-09-06-qwen-dev",
-		// Development recovery measurements and the rejected source prior.
-		"docs/eval/retrieval/runs/2026-09-06-recovery-dev",
-		// SW-282: the three runs that recalibrate, gate and coverage-check
-		// docs/eval/retrieval-targets.json. The recalibration run is the one
-		// that matters most for a rotation — the targets file's bars are now
-		// derived from this embedder's semantic_name_only numbers, so rotating
-		// the pin requires re-deriving the file, not only re-measuring.
-		"docs/eval/retrieval/runs/2026-09-06-sw282-coverage-local",
-		"docs/eval/retrieval/runs/2026-09-06-sw282-gate-local",
-		"docs/eval/retrieval/runs/2026-09-06-sw282-recalibration-local",
-		"docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev",
-		"docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency",
-		"docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2",
-		"docs/eval/retrieval/runs/2026-09-13-candidate-path-dev",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-dev",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v2-dev",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v3-dev",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v4-dev",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev",
-		"docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev",
-		// The named-declaration completion capture, plus the per-stage
-		// answer-span loss decomposition its result reports. That
-		// decomposition reads retrieval ranks recorded by this embedder, so a
-		// rotation invalidates the stage attribution as well as the bytes.
-		"docs/eval/retrieval/runs/2026-09-14-compact10-dev",
-		"docs/eval/retrieval/runs/2026-09-14-compact11-dev",
-		"docs/eval/retrieval/runs/2026-09-14-compact12-dev",
-		"docs/eval/retrieval/runs/2026-09-14-compact13-followup-dev",
-		"docs/eval/retrieval/runs/2026-09-14-compact14-dev",
-		"docs/eval/retrieval/runs/2026-09-14-named-declaration-dev",
-		"docs/eval/retrieval/runs/2026-09-15-compact15-exact-path-dev",
-		"docs/eval/retrieval/runs/2026-09-15-compact16-coherent-flow-dev",
-		"docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout",
-		"docs/eval/retrieval/runs/2026-09-15-compact17-projection-dev",
-		"docs/eval/retrieval/runs/2026-09-15-compact17-release-coverage-dev",
-		"docs/eval/retrieval/runs/2026-09-15-compact17-release-dev",
-		"docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout",
-		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2",
-		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3",
-		"docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4",
-		// The embedded-model development qualification. Unlike the runs above,
-		// which merely CAPTURED evidence under this pin, two of its four arms
-		// ARE this embedder: M1_potion_512 and M2_potion_8192 preregister an
-		// embedder_id, fingerprint_canonical and admission_sha256 derived from
-		// this exact revision. Rotating the pin therefore invalidates the
-		// preregistration itself, not only the captures taken under it.
-		"docs/eval/retrieval/runs/embedded-model-qualification",
-	}
-	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
-		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)
+	if record.Result.Status != "byte_exact" || record.Result.CanonicalVectorsSHA256 != wantCrossArchVectorSHA {
+		t.Fatalf("cross-architecture result = %+v", record.Result)
 	}
 }

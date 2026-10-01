@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -179,37 +178,6 @@ func TestWriteTaskContextRunDir_PreservesIneligibleObservation(t *testing.T) {
 	}
 }
 
-func TestSW264AC9RunDoesNotPublishHomePaths(t *testing.T) {
-	root := taskContextModuleRoot(t)
-	runDir := filepath.Join(root, "docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local")
-	forbidden := [][]byte{[]byte("/Users/"), []byte("/home/")}
-	err := filepath.WalkDir(runDir, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		contents, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(runDir, path)
-		if err != nil {
-			return err
-		}
-		for _, needle := range forbidden {
-			if bytes.Contains(contents, needle) {
-				t.Errorf("generated run file %s publishes forbidden home path prefix %q", filepath.ToSlash(rel), needle)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestScoreTaskContextBundle_RefusesNonDevOrWrongStratum(t *testing.T) {
 	bundle := &contract.Result{
 		Outcome:    contract.OutcomeFound,
@@ -297,7 +265,7 @@ func TestSW264_AC9Measurement(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runDir := filepath.Join(root, "docs/eval/retrieval/runs", runDirName)
+	runDir := filepath.Join(root, ".graphi", "eval-runs", runDirName)
 	if err := WriteTaskContextRunDir(runDir, run); err != nil {
 		t.Fatal(err)
 	}

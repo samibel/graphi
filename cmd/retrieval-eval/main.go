@@ -49,12 +49,7 @@
 //	go run ./cmd/retrieval-eval -field-parity -manifest corpus/manifest.json -repo <name> -dataset <path> -out <report.json> \
 //	    -export-raw <dir> -checkout <dir> -embedder <selector>
 //	go run ./cmd/retrieval-eval -aggregate <dir>
-//	go run ./cmd/retrieval-eval -check-claim '<candidate sentence>'
-//	go run ./cmd/retrieval-eval -check-targets <report.json>
-//	go run ./cmd/retrieval-eval -answer-span-ceiling -dataset <path> -checkout <dir> [-out <report.json>] [-answer-span-detail <path>]
 //	go run ./cmd/retrieval-eval -setup-tokenizer [-tokenizer-local <dir>] [-tokenizer-dir <dir>]
-//	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
-//	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
 package main
 
 import (
@@ -79,10 +74,10 @@ import (
 	// `static:<model>@<revision>` scheme (engine/embed/static's init).
 	// Without it, the production static embedder is unreachable from this
 	// harness even when its artifact is installed and verified.
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 	_ "github.com/samibel/graphi/engine/embed/static"
 	"github.com/samibel/graphi/internal/corpus"
 	"github.com/samibel/graphi/internal/eval/retrieval"
-	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 // FixtureRepoName is the built-in repository name for the hermetic fixture.
@@ -91,8 +86,7 @@ const FixtureRepoName = "fixture"
 // fixtureRepoPath is the fixture's location relative to the repository root.
 const fixtureRepoPath = "internal/eval/retrieval/testdata/fixture-repo"
 
-// Exit codes for the run and derive modes; the aggregate mode uses
-// retrieval.Exit*.
+// Exit codes for the run mode; the aggregate mode uses retrieval.Exit*.
 const (
 	exitOK    = 0
 	exitError = 1
@@ -123,7 +117,6 @@ func run(args []string, stdout, stderr io.Writer) int {
 	exportRaw := fs.String("export-raw", "", "after the run, write the raw-sample run directory here (report, dataset copy, raw/hits-*.json, raw/latency-*.json)")
 	fieldParity := fs.Bool("field-parity", false, "SW-272 evaluator-only control: select every and only dev/nl_behaviour query at exact grade 3 and run the fixed six-cell field-parity baseline set; cannot be combined with -baseline")
 	aggregate := fs.String("aggregate", "", "recompute every published metric in this run directory from its raw samples; exit 0 reproduced, 1 discrepancy, 2 unreadable, 3 incomplete")
-	checkClaim := fs.String("check-claim", "", "validate a candidate savings sentence against the frozen scope contract; this checks wording only and never generates or publishes a claim")
 	setupTokenizer := fs.Bool("setup-tokenizer", false, "download and SHA-verify the pinned real-tokenizer artifact as a separate explicit setup step")
 	tokenizerLocal := fs.String("tokenizer-local", "", "setup-tokenizer mode: validate and install from a local artifact directory instead of downloading")
 	tokenizerDir := fs.String("tokenizer-dir", evaltokenizer.ArtifactDir(), "setup-tokenizer mode: destination directory (default $XDG_CACHE_HOME/graphi/tokenizers/<encoding@sha256>)")
@@ -131,24 +124,6 @@ func run(args []string, stdout, stderr io.Writer) int {
 	repeats := fs.Int("repeats", retrieval.DefaultRepeats, "timed executions per query and baseline")
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
 	embedder := fs.String("embedder", "", "embedder selector — one of: empty (lexical-only by intent; fusion/semantic baselines report unavailable with the typed reason), `ollama:host:port` (loopback only), `static:<model>@<revision>` (production), or `onnx:<model>` (under //go:build embed_onnx). A non-empty selector that fails to construct, register, generate, reload or serve causes exit 1 and NO publishable report")
-
-	checkTargets := fs.String("check-targets", "", "evaluate every target in "+retrieval.TargetsFilePath+" against this report and the committed coverage and smoke-evaluation artifacts; exit non-zero on the first miss and name it. A target this file states but no command evaluates is a note, not a target")
-	blindEval := fs.String("blind-eval", "", "SW-280 qrel-blind smoke evaluation phase: freeze | capture | decide. There is no phase, flag or value that lowers k, waives a query, excludes a query from N, retries a graded response or forces a pass")
-	blindEvalContract := fs.String("blind-eval-contract", "1", "qrel-blind smoke evaluation contract version: 1 | 2 (selects a version only; never a threshold, waiver or retry)")
-	blindEvalDir := fs.String("blind-eval-dir", "", "qrel-blind smoke evaluation run directory (must be inside the repository)")
-
-	answerSpanCeiling := fs.Bool("answer-span-ceiling", false, "price every reviewed grade-3 answer span in -dataset against the frozen 1,200-token candidate budget over -checkout and report, as counts only, how many questions can ever carry a complete answer span; the report names no query, path or line")
-	answerSpanDetail := fs.String("answer-span-detail", "", "answer-span-ceiling mode: additionally write per-query detail (query ids, paths, lines, costs) to this separate file; for a sealed split it must stay in the curator's custody")
-
-	derive := fs.Bool("derive", false, "derive docs/eval/retrieval-targets.json and -budgets.json from finished reports")
-	targetsReport := fs.String("targets-report", "", "derive mode: the report the targets are taken from")
-	budgetReports := map[string]*string{
-		retrieval.FixtureSmall:  fs.String("budget-small", "", "derive mode: the report measured over the small fixture class"),
-		retrieval.FixtureMedium: fs.String("budget-medium", "", "derive mode: the report measured over the medium fixture class"),
-		retrieval.FixtureLarge:  fs.String("budget-large", "", "derive mode: the report measured over the large fixture class"),
-	}
-	targetsOut := fs.String("targets-out", "", "derive mode: write the targets file here")
-	budgetsOut := fs.String("budgets-out", "", "derive mode: write the budgets file here")
 
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
@@ -175,74 +150,12 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 		fmt.Fprintf(stdout, "retrieval-eval: installed %s at %s (vocabulary_sha256=%s)\n", evaltokenizer.TokenizerID, *tokenizerDir, evaltokenizer.PinnedVocabularySHA256)
 		return exitOK
-	case *checkClaim != "":
-		if err := retrieval.CheckClaimSentence(*checkClaim); err != nil {
-			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
-			return exitError
-		}
-		fmt.Fprintf(stderr, "retrieval-eval: claim accepted by %s\n", retrieval.MeasurementContractVersion)
-		return exitOK
 	case *aggregate != "":
 		return runAggregate(*aggregate, *out, stderr)
-	case *checkTargets != "":
-		root, err := repositoryRoot()
-		if err != nil {
-			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
-			return exitError
-		}
-		return runCheckTargets(root, *checkTargets, stdout, stderr)
-	case *blindEval != "":
-		root, err := repositoryRoot()
-		if err != nil {
-			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
-			return exitError
-		}
-		dir := *blindEvalDir
-		if dir != "" && !filepath.IsAbs(dir) {
-			dir = filepath.Join(root, dir)
-		}
-		checkoutDir := *checkout
-		if checkoutDir == "" && *repo != "" && *repo != FixtureRepoName {
-			home, herr := os.UserHomeDir()
-			if herr == nil {
-				checkoutDir = filepath.Join(home, ".cache", "graphi", "corpus", *repo)
-			}
-		}
-		return runBlindEval(blindEvalOptions{
-			phase:           *blindEval,
-			contractVersion: *blindEvalContract,
-			dir:             dir,
-			root:            root,
-			dataset:         *dataset,
-			repoName:        *repo,
-			checkout:        checkoutDir,
-			embedder:        *embedder,
-		}, stdout, stderr)
-	case *answerSpanCeiling:
-		checkoutDir := *checkout
-		if checkoutDir == "" && *repo == FixtureRepoName {
-			checkoutDir = filepath.FromSlash(fixtureRepoPath)
-		}
-		if checkoutDir == "" && *repo != "" {
-			if home, herr := os.UserHomeDir(); herr == nil {
-				checkoutDir = filepath.Join(home, ".cache", "graphi", "corpus", *repo)
-			}
-		}
-		return runAnswerSpanCeiling(answerSpanOptions{
-			dataset: *dataset, checkout: checkoutDir, out: *out, detail: *answerSpanDetail,
-		}, stdout, stderr)
-	case *derive:
-		var budgets []budgetReport
-		for _, class := range retrieval.FixtureClasses {
-			if p := *budgetReports[class]; p != "" {
-				budgets = append(budgets, budgetReport{class: class, path: p})
-			}
-		}
-		return runDerive(*targetsReport, budgets, *targetsOut, *budgetsOut, *date, stderr)
 	}
 
 	if *repo == "" || *dataset == "" || *out == "" {
-		fmt.Fprintln(stderr, "retrieval-eval: -repo, -dataset and -out are required (or use -aggregate <dir> / -derive)")
+		fmt.Fprintln(stderr, "retrieval-eval: -repo, -dataset and -out are required (or use -aggregate <dir>)")
 		return exitUsage
 	}
 	if *fieldParity && len(baselines) > 0 {
