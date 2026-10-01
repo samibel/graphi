@@ -49,6 +49,11 @@ func (c Client) Configurable() bool {
 // Plan reports the Action that registering graphi (with the given binary/args)
 // would take against this client's current config, without writing.
 func (c Client) Plan(binary string, args []string) (Action, error) {
+	return c.PlanEntry("graphi", GraphiEntry(binary, args))
+}
+
+// PlanEntry reports the action for a fully specified named server entry.
+func (c Client) PlanEntry(name string, entry ServerEntry) (Action, error) {
 	path, err := c.pathFn()
 	if err != nil {
 		return "", err
@@ -57,18 +62,24 @@ func (c Client) Plan(binary string, args []string) (Action, error) {
 	if err != nil {
 		return "", err
 	}
-	return planKey(doc, c.ServersKey, "graphi", GraphiEntry(binary, args))
+	return planKey(doc, c.ServersKey, name, entry)
 }
 
 // Apply registers graphi's stdio entry under this client's servers key,
 // atomically and non-destructively (see applyKey). dryRun previews without
 // writing.
 func (c Client) Apply(binary string, args []string, dryRun bool) (Result, error) {
+	return c.ApplyEntry("graphi", GraphiEntry(binary, args), dryRun)
+}
+
+// ApplyEntry registers a fully specified named stdio entry through the same
+// non-destructive writer used by the legacy graphi wrapper.
+func (c Client) ApplyEntry(name string, entry ServerEntry, dryRun bool) (Result, error) {
 	path, err := c.pathFn()
 	if err != nil {
 		return Result{}, err
 	}
-	return applyKey(path, c.ServersKey, "graphi", GraphiEntry(binary, args), dryRun)
+	return applyKey(path, c.ServersKey, name, entry, dryRun)
 }
 
 // ContendingGraphiServers returns the names (sorted) of server entries in this

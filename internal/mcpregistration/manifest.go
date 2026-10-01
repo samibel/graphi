@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -24,8 +25,10 @@ type Registration struct {
 // Manifest records only local registration metadata. Later schema-v1 tasks add
 // receipts, pending changes, and policies without duplicating store identity.
 type Manifest struct {
-	SchemaVersion int            `json:"schema_version"`
-	Registrations []Registration `json:"registrations,omitempty"`
+	SchemaVersion int             `json:"schema_version"`
+	Registrations []Registration  `json:"registrations,omitempty"`
+	Receipts      []ClientReceipt `json:"client_receipts,omitempty"`
+	Pending       []PendingChange `json:"pending_changes,omitempty"`
 }
 
 // NewManifest returns an empty manifest using the current schema.
@@ -50,6 +53,13 @@ func LoadManifest(path string) (Manifest, error) {
 	var manifest Manifest
 	decoder := json.NewDecoder(bytes.NewReader(b))
 	if err := decoder.Decode(&manifest); err != nil {
+		return Manifest{}, fmt.Errorf("mcp registration: decode manifest: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			err = errors.New("multiple JSON values")
+		}
 		return Manifest{}, fmt.Errorf("mcp registration: decode manifest: %w", err)
 	}
 	if manifest.SchemaVersion != ManifestSchemaVersion {

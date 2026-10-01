@@ -7,11 +7,16 @@
 package mcpconfig
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -76,21 +81,51 @@ func ConfigPath() (string, error) {
 // an empty config (map is non-nil, empty) so callers can create-on-first-use.
 // The returned map is the full document so unknown keys can be preserved.
 func Load(path string) (map[string]any, error) {
+	snapshot, err := loadSnapshot(path)
+	if err != nil {
+		return nil, err
+	}
+	return snapshot.doc, nil
+}
+
+type configSnapshot struct {
+	doc    map[string]any
+	raw    []byte
+	exists bool
+}
+
+func loadSnapshot(path string) (configSnapshot, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return map[string]any{}, nil
+			return configSnapshot{doc: map[string]any{}}, nil
 		}
-		return nil, fmt.Errorf("mcpconfig: read %s: %w", path, err)
+		return configSnapshot{}, fmt.Errorf("mcpconfig: read %s: %w", path, err)
 	}
 	var doc map[string]any
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return nil, fmt.Errorf("mcpconfig: parse %s: %w", path, err)
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&doc); err != nil {
+		return configSnapshot{}, fmt.Errorf("mcpconfig: parse %s: %w", path, err)
+	}
+	if err := requireJSONEOF(decoder); err != nil {
+		return configSnapshot{}, fmt.Errorf("mcpconfig: parse %s: %w", path, err)
 	}
 	if doc == nil {
 		doc = map[string]any{}
 	}
-	return doc, nil
+	return configSnapshot{doc: doc, raw: raw, exists: true}, nil
+}
+
+func requireJSONEOF(decoder *json.Decoder) error {
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("multiple JSON values")
+		}
+		return err
+	}
+	return nil
 }
 
 // Plan determines the Action for upserting entry under mcpServers[name] given
@@ -107,18 +142,76 @@ func Plan(doc map[string]any, name string, entry ServerEntry) (Action, error) {
 // stdio servers live under a different key (e.g. VS Code's "servers") shares the
 // exact same semantic-compare logic.
 func planKey(doc map[string]any, serversKey, name string, entry ServerEntry) (Action, error) {
-	servers, _ := doc[serversKey].(map[string]any)
-	if servers == nil {
-		servers = map[string]any{}
+	servers, err := serverMap(doc, serversKey)
+	if err != nil {
+		return "", err
 	}
 	cur, ok := servers[name]
 	if !ok {
 		return ActionCreated, nil
 	}
-	if equalJSON(cur, entry) {
+	merged, err := mergeServerEntry(cur, entry)
+	if err != nil {
+		return "", fmt.Errorf("mcpconfig: server %q: %w", name, err)
+	}
+	if equalJSON(cur, merged) {
 		return ActionUnchanged, nil
 	}
 	return ActionUpdated, nil
+}
+
+func serverMap(doc map[string]any, serversKey string) (map[string]any, error) {
+	raw, exists := doc[serversKey]
+	if !exists || raw == nil {
+		return map[string]any{}, nil
+	}
+	servers, ok := raw.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("mcpconfig: %s must be a JSON object", serversKey)
+	}
+	return servers, nil
+}
+
+// mergeServerEntry changes only fields Graphi owns. Unknown fields, manual
+// enabled/disabled state, permissions, and foreign environment keys survive.
+func mergeServerEntry(current any, desired ServerEntry) (map[string]any, error) {
+	cur, ok := current.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("existing entry must be a JSON object")
+	}
+	merged := make(map[string]any, len(cur)+4)
+	for key, value := range cur {
+		merged[key] = value
+	}
+	merged["command"] = desired.Command
+	if len(desired.Args) == 0 {
+		delete(merged, "args")
+	} else {
+		merged["args"] = append([]string(nil), desired.Args...)
+	}
+	if _, exists := merged["type"]; !exists && desired.Type != "" {
+		merged["type"] = desired.Type
+	}
+	if len(desired.Env) > 0 {
+		env := map[string]any{}
+		if raw, exists := merged["env"]; exists {
+			var envOK bool
+			env, envOK = raw.(map[string]any)
+			if !envOK {
+				return nil, fmt.Errorf("existing env must be a JSON object")
+			}
+			envCopy := make(map[string]any, len(env)+len(desired.Env))
+			for key, value := range env {
+				envCopy[key] = value
+			}
+			env = envCopy
+		}
+		for key, value := range desired.Env {
+			env[key] = value
+		}
+		merged["env"] = env
+	}
+	return merged, nil
 }
 
 // equalJSON reports whether a and b are semantically equal JSON values, ignoring
@@ -173,34 +266,100 @@ func Apply(path, name string, entry ServerEntry, dryRun bool) (Result, error) {
 // verify+restore, preservation of unrelated keys) is identical regardless of
 // which key the client lists its servers under.
 func applyKey(path, serversKey, name string, entry ServerEntry, dryRun bool) (Result, error) {
-	doc, err := Load(path)
+	return applyKeyWithHooks(path, serversKey, name, entry, dryRun, writerHooks{})
+}
+
+type writerHooks struct {
+	beforeCommit func(path string) error
+	backup       func(path string, original []byte) (string, error)
+}
+
+var configPathLocks sync.Map
+
+func pathMutex(path string) *sync.Mutex {
+	canonical, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		canonical = filepath.Clean(path)
+	}
+	value, _ := configPathLocks.LoadOrStore(canonical, &sync.Mutex{})
+	return value.(*sync.Mutex)
+}
+
+func applyKeyWithHooks(path, serversKey, name string, entry ServerEntry, dryRun bool, hooks writerHooks) (Result, error) {
+	if strings.TrimSpace(name) == "" {
+		return Result{}, fmt.Errorf("mcpconfig: empty server name")
+	}
+	if dryRun {
+		return planSnapshot(path, serversKey, name, entry)
+	}
+
+	mu := pathMutex(path)
+	mu.Lock()
+	defer mu.Unlock()
+
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return Result{}, fmt.Errorf("mcpconfig: mkdir: %w", err)
+	}
+	unlock, err := lockConfig(path)
 	if err != nil {
 		return Result{}, err
 	}
-	act, err := planKey(doc, serversKey, name, entry)
+	defer unlock()
+
+	snapshot, err := loadSnapshot(path)
 	if err != nil {
 		return Result{}, err
 	}
-
-	diff := fmt.Sprintf("config: %s\naction: %s\nentry: {type:%s command:%s args:%v}\n",
-		path, act, entry.Type, entry.Command, entry.Args)
-
-	if dryRun || act == ActionUnchanged {
+	act, err := planKey(snapshot.doc, serversKey, name, entry)
+	if err != nil {
+		return Result{}, err
+	}
+	diff := redactedDiff(name, act, entry)
+	if act == ActionUnchanged {
 		return Result{Action: act, Diff: diff}, nil
 	}
 
-	servers, _ := doc[serversKey].(map[string]any)
-	if servers == nil {
-		servers = map[string]any{}
+	servers, err := serverMap(snapshot.doc, serversKey)
+	if err != nil {
+		return Result{}, err
 	}
-	servers[name] = entry
-	doc[serversKey] = servers
+	if current, exists := servers[name]; exists {
+		servers[name], err = mergeServerEntry(current, entry)
+		if err != nil {
+			return Result{}, fmt.Errorf("mcpconfig: server %q: %w", name, err)
+		}
+	} else {
+		servers[name] = entry
+	}
+	snapshot.doc[serversKey] = servers
 
-	backupPath, err := writeAtomicWithBackup(path, doc)
+	backupPath, err := writeAtomicWithBackupSnapshot(path, snapshot.doc, snapshot, hooks)
 	if err != nil {
 		return Result{}, err
 	}
 	return Result{Action: act, Diff: diff, BackupPath: backupPath}, nil
+}
+
+func planSnapshot(path, serversKey, name string, entry ServerEntry) (Result, error) {
+	snapshot, err := loadSnapshot(path)
+	if err != nil {
+		return Result{}, err
+	}
+	act, err := planKey(snapshot.doc, serversKey, name, entry)
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{Action: act, Diff: redactedDiff(name, act, entry)}, nil
+}
+
+func redactedDiff(name string, action Action, entry ServerEntry) string {
+	envKeys := make([]string, 0, len(entry.Env))
+	for key := range entry.Env {
+		envKeys = append(envKeys, key)
+	}
+	sort.Strings(envKeys)
+	return fmt.Sprintf("action: %s\nserver: %s\nmanaged: command,args,env-keys:%v\n", action, name, envKeys)
 }
 
 // backupSuffix builds the timestamped backup suffix for now in UTC, using a
@@ -217,15 +376,44 @@ func backup(path string) (string, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil // nothing to back up
+			return "", nil
 		}
 		return "", fmt.Errorf("mcpconfig: read for backup %s: %w", path, err)
 	}
-	bakPath := path + backupSuffix(time.Now())
-	if err := os.WriteFile(bakPath, raw, 0o600); err != nil {
-		return "", fmt.Errorf("mcpconfig: write backup %s: %w", bakPath, err)
+	return backupBytes(path, raw)
+}
+
+func backupBytes(path string, raw []byte) (string, error) {
+	base := path + backupSuffix(time.Now())
+	for attempt := 0; attempt < 1000; attempt++ {
+		bakPath := base
+		if attempt > 0 {
+			bakPath = fmt.Sprintf("%s-%d", base, attempt)
+		}
+		file, err := os.OpenFile(bakPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if os.IsExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", fmt.Errorf("mcpconfig: write backup %s: %w", bakPath, err)
+		}
+		if _, err := file.Write(raw); err != nil {
+			_ = file.Close()
+			_ = os.Remove(bakPath)
+			return "", fmt.Errorf("mcpconfig: write backup %s: %w", bakPath, err)
+		}
+		if err := file.Sync(); err != nil {
+			_ = file.Close()
+			_ = os.Remove(bakPath)
+			return "", fmt.Errorf("mcpconfig: sync backup %s: %w", bakPath, err)
+		}
+		if err := file.Close(); err != nil {
+			_ = os.Remove(bakPath)
+			return "", fmt.Errorf("mcpconfig: close backup %s: %w", bakPath, err)
+		}
+		return bakPath, nil
 	}
-	return bakPath, nil
+	return "", fmt.Errorf("mcpconfig: too many backups for %s", path)
 }
 
 // writeAtomicWithBackup backs up an existing file (fail-closed), then writes doc
@@ -233,20 +421,46 @@ func backup(path string) (string, error) {
 // restores the original byte-identical from the backup. It returns the backup
 // path (empty when the file did not previously exist).
 func writeAtomicWithBackup(path string, doc map[string]any) (string, error) {
+	snapshot, err := loadSnapshot(path)
+	if err != nil {
+		return "", err
+	}
+	return writeAtomicWithBackupSnapshot(path, doc, snapshot, writerHooks{})
+}
+
+func writeAtomicWithBackupSnapshot(path string, doc map[string]any, snapshot configSnapshot, hooks writerHooks) (string, error) {
 	buf, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("mcpconfig: marshal: %w", err)
+	}
+	if _, err := decodeDocument(buf); err != nil {
+		return "", fmt.Errorf("mcpconfig: validate new config: %w", err)
 	}
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("mcpconfig: mkdir: %w", err)
 	}
+	if hooks.beforeCommit != nil {
+		if err := hooks.beforeCommit(path); err != nil {
+			return "", fmt.Errorf("mcpconfig: before commit: %w", err)
+		}
+	}
+	if err := verifySnapshot(path, snapshot); err != nil {
+		return "", err
+	}
 
 	// Fail-closed backup: if the file exists and we cannot back it up, abort
 	// BEFORE touching the live config so the original stays byte-identical.
-	bakPath, err := backup(path)
-	if err != nil {
-		return "", err
+	var bakPath string
+	if snapshot.exists {
+		backupFn := hooks.backup
+		if backupFn == nil {
+			backupFn = backupBytes
+		}
+		bakPath, err = backupFn(path, snapshot.raw)
+		if err != nil {
+			return "", fmt.Errorf("mcpconfig: backup: %w", err)
+		}
 	}
 
 	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
@@ -259,11 +473,18 @@ func writeAtomicWithBackup(path string, doc map[string]any) (string, error) {
 		_ = tmp.Close()
 		return "", fmt.Errorf("mcpconfig: write: %w", err)
 	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return "", fmt.Errorf("mcpconfig: sync temp: %w", err)
+	}
 	if err := tmp.Close(); err != nil {
 		return "", fmt.Errorf("mcpconfig: close temp: %w", err)
 	}
 	if err := os.Chmod(tmpName, 0o600); err != nil {
 		return "", fmt.Errorf("mcpconfig: chmod: %w", err)
+	}
+	if err := verifySnapshot(path, snapshot); err != nil {
+		return "", err
 	}
 	if err := os.Rename(tmpName, path); err != nil {
 		// The rename never partially applied; the original is intact. No restore
@@ -279,11 +500,49 @@ func writeAtomicWithBackup(path string, doc map[string]any) (string, error) {
 			if rerr := restore(bakPath, path); rerr != nil {
 				return "", fmt.Errorf("mcpconfig: post-write verify failed (%v) AND restore failed: %w", verifyErr, rerr)
 			}
+		} else if !snapshot.exists {
+			_ = os.Remove(path)
 		}
 		return "", fmt.Errorf("mcpconfig: post-write verify failed, original restored: %w", verifyErr)
 	}
 
 	return bakPath, nil
+}
+
+func decodeDocument(raw []byte) (map[string]any, error) {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	var doc map[string]any
+	if err := decoder.Decode(&doc); err != nil {
+		return nil, err
+	}
+	if err := requireJSONEOF(decoder); err != nil {
+		return nil, err
+	}
+	if doc == nil {
+		doc = map[string]any{}
+	}
+	return doc, nil
+}
+
+func verifySnapshot(path string, snapshot configSnapshot) error {
+	current, err := os.ReadFile(path)
+	if !snapshot.exists {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("mcpconfig: re-read before replace: %w", err)
+		}
+		return fmt.Errorf("mcpconfig: config appeared during update; refusing to overwrite")
+	}
+	if err != nil {
+		return fmt.Errorf("mcpconfig: config changed during update: %w", err)
+	}
+	if !bytes.Equal(current, snapshot.raw) {
+		return fmt.Errorf("mcpconfig: config changed during update; refusing to overwrite")
+	}
+	return nil
 }
 
 // verifyWritten reads path back and confirms it equals want byte-for-byte.
