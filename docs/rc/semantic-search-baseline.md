@@ -370,7 +370,7 @@ vector store.** The guard is structural, not a flag check sprinkled through the 
   production call of `embed.OpenSQLiteVectorTable` is `runtime.go:793`, below that return; the
   only production call of `embed.NewSQLiteVectorTableDB` is `cmd/graphi/query.go:329`, below the
   `--semantic` + embedder gates at `query.go:301-316`. Every other caller of either constructor
-  is a `_test.go` file (`engine/embed/sqlite_vectorstore_test.go`,
+  is a `_test.go` file (`engine/embed/vectorstore_test.go`,
   `engine/search/semantic_reload_test.go`, `internal/canary/reload_test.go`).
 - `engine/search/semantic.go:57-60` — with no registry, `SemanticSearch` returns the typed
   unavailable response and never touches the index; lexical `Search` is a different method on

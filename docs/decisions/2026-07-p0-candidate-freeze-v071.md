@@ -122,8 +122,7 @@ produces 975 again**. It reproduced in both published runs, on an Intel Xeon Pla
 > generations, not across Intel and AMD) and the determinism claim is
 > *strengthened* (a 3-model run and a 4-model run, not a 2-model one). The
 > per-run reproducibility and the machine-independent terms of the C4 argument
-> are untouched. Sweep record:
-> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
+> are untouched. The SW-150 sweep record is retained in Git history.
 
 The full argument, including why Outcome A was tested seriously and fails, is in the
 decision record and is not restated here.
@@ -197,8 +196,7 @@ measured** (AC-9). Concretely:
   > (`p95_us` `471250` / `601732`), each independently recomputed from
   > `run-{a,b}/.../raw/query-latency.json` at nearest rank
   > `ceil(0.95 × 975) = 927`. The verdict is unchanged (UNKNOWN); no figure
-  > above is withdrawn. Sweep record:
-  > `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
+  > above is withdrawn. The SW-150 sweep record is retained in Git history.
 
 Producing an actual reading is the Final Runs slice (SW-143–145): two complete runs
 on the reference runner class with `candidate_match` true in every
