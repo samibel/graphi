@@ -201,10 +201,9 @@ Implementation is complete only when all of the following hold:
 ## Implementation status (2026-09-30)
 
 The cleanup reduced tracked documentation from 13,696 files / 811,745,116 bytes
-to 159 files / 6,185,588 bytes at the Task 7 checkpoint. That is 13,537 fewer
-tracked documentation files and 805,559,528 fewer bytes in the maintained tree.
-The one remaining `docs/superpowers` file at this checkpoint is this execution's
-temporary implementation plan; it is removed after final verification.
+to 158 files / 6,159,821 bytes in the final tree. That is 13,538 fewer tracked
+documentation files and 805,585,295 fewer bytes. The temporary implementation
+plan used during execution was removed after final verification and review.
 
 ## Consequences
 
