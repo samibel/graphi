@@ -1,1 +1,0 @@
-cobra.go:55 names the switch and command.go:770-786 directly shows exact-match precedence and the single-prefix-match condition.

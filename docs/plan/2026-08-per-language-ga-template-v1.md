@@ -168,7 +168,7 @@ means one of them is graded on the other's evidence.
 | **S8** | Applicability disposition | the `harness_row` / `deferred_to` / `known_defect` fields of S6 | G3 |
 | **S9** | Real-repository parity | `corpus/manifest.json` pins + `cmd/parity` + a published matrix under `docs/rc/` | G4 / G5 |
 | **S10** | Hero suite | `corpus/hero-<fam>/*.yaml` + `corpus/fixtures/hero-<fam>/` + `cmd/eval/hero_<fam>_test.go` | G6 |
-| **S11** | Perf + budget | `docs/eval/runs/<date>-<runner-class>/` + `bench/lang-budget.md` | G7 |
+| **S11** | Perf + budget | `historical evaluation archive in Git history: <date>-<runner-class>/` + `bench/lang-budget.md` | G7 |
 | **S12** | Honest capability surface | `docs/language-support.md` row + `surfaces/client/capability_test.go` | G8 |
 | **S13** | Abstention legibility | `trust_language_skips` / `trust_skip_provenance`, `AbstentionFacts.Registrants` | G8 |
 | **S14** | Evidence rows | `docs/rc/evidence-index.yaml` → `GA-LANG-<lang>-G<n>` | G9 |
@@ -636,7 +636,7 @@ CI checks.
 2. A `hero_suite` entry naming the family's `scenario_dir`. Today
    `hero_suite.scenario_dir` names **`corpus/hero` only**, so
    `corpus/hero-jvm` has no budget entry at all.
-3. Raw run artefacts under `docs/eval/runs/<date>-<runner-class>/`, reproducible
+3. Raw run artefacts under `historical evaluation archive in Git history: <date>-<runner-class>/`, reproducible
    exactly via `cmd/eval -export-raw` + `-aggregate` (exit 0 = every metric
    reproduced **and** environment documented; 3 = incomplete, deliberately not
    1; 1 = a discrepancy).
@@ -1382,7 +1382,7 @@ not this story** — that is stated in the ticket's own out-of-scope list.
 | S8 | Yes — Go classes mapped/adapted/`not_applicable` with reasons; six JVM classes added. | **D-5**, **template defect, corrected in this document**: the template's first draft said the disposition was machine-checked *exhaustively*. It is not — the guard compares a family table to its own twin only, and nothing enumerates the Go table. §3/S8 now states this and §12 carries it as TEMPL-P2. |
 | S9 | Partly — guava and okio at the v3 measured standard. | **D-6**, instance gap: WP-J7 (SW-176) has not run; there is no published JVM real-repo matrix. Expected by sequencing. |
 | S10 | Yes — 16 scenarios in `corpus/hero-jvm/`, `corpus/fixtures/hero-jvm/`, `cmd/eval/hero_jvm_test.go`. | **D-7**, instance gap: `hjvm-03-search-empty` anchors on `zzz_no_such_symbol_zzz` and asserts `outcome: empty` alone. Per §5 that is the easy case; the JVM instance has **no** scenario for the hard one. |
-| S11 | Partly — `guava` is in `hero-budgets.json` `real_repos.selection` with real ceilings, and in the `eval-full.yml` matrix. | **D-8**, instance gap: no `docs/eval/runs/` directory for a JVM corpus, and `hero_suite.scenario_dir` names `corpus/hero` only, so `corpus/hero-jvm` has no budget entry. G7 is SW-177, post-candidate-move by design. |
+| S11 | Partly — `guava` is in `hero-budgets.json` `real_repos.selection` with real ceilings, and in the `eval-full.yml` matrix. | **D-8**, instance gap: no `historical evaluation archive in Git history: ` directory for a JVM corpus, and `hero_suite.scenario_dir` names `corpus/hero` only, so `corpus/hero-jvm` has no budget entry. G7 is SW-177, post-candidate-move by design. |
 | S12 | Partly — `docs/language-support.md` carries the Java/Kotlin row at `cross-file-heuristic`; the derivation is live. | — |
 | S13 | Yes — `trust_language_skips` / `trust_skip_provenance`, `AbstentionFacts.Registrants`. | — |
 | S14 | **Partly, since 2026-08-19** — `docs/rc/evidence-index.yaml` carried **zero** `GA-LANG-*` rows when this register was written; SW-174 landed **18** (java and kotlin, G1–G9 with G2→G2SUB), all UNKNOWN. **Go still has none.** | **D-9**, instance gap, half closed: SW-174 creates the rows, born UNKNOWN — **and SW-174 is step 1 of the ordering constraint in §3/S14, not an independent task.** Rows first, *while the language still has no `ga-language` matrix row*; the matrix row last (SW-179), only once all of them read PASS. `galang.go:129-131` violates on every non-PASS row, so the reverse order is a red build. Stating "born UNKNOWN" without the ordering is the advice §3/S14 records as build-breaking. **New — D-9b, found by SW-174: the ordering constraint has no answer for `go`,** which already has a `ga-language` matrix row and therefore cannot do step 1 at all. Measured: nine `GA-LANG-go-*` rows added → `cmd/coverage -check` → `ga-language check FAILED — 9 violation(s)`, exit 1. Removed again, and the resolution (produce the evidence, or withdraw go's matrix row until it exists) escalated to the owner as SW-174 AC-6. See `evidence-index.yaml`'s rule 4. |

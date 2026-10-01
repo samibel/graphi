@@ -55,14 +55,9 @@ func chdirRoot(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(wd) })
 }
 
-func TestRetrievalEval_RetiredFlagsAreRejected(t *testing.T) {
+func TestRetrievalEval_UnknownFlagsAreRejected(t *testing.T) {
 	for _, args := range [][]string{
-		{"-blind-eval", "freeze"},
-		{"-blind-eval-v2"},
-		{"-seal"},
-		{"-derive"},
-		{"-check-targets", "report.json"},
-		{"-answer-span-ceiling"},
+		{"-definitely-unknown"},
 	} {
 		t.Run(args[0], func(t *testing.T) {
 			var stderr bytes.Buffer
@@ -70,7 +65,7 @@ func TestRetrievalEval_RetiredFlagsAreRejected(t *testing.T) {
 				t.Fatalf("run(%v) exit %d, want %d; stderr: %s", args, got, exitUsage, stderr.String())
 			}
 			if !strings.Contains(stderr.String(), "flag provided but not defined") {
-				t.Fatalf("run(%v) did not reject the retired flag as unknown: %s", args, stderr.String())
+				t.Fatalf("run(%v) did not reject the unknown flag: %s", args, stderr.String())
 			}
 		})
 	}

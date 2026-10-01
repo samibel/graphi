@@ -1,10 +1,9 @@
 # Hero-Task Protocol (SW-122 / EVAL-01 · SW-123 / EVAL-02)
 
 > **Status:** correctness suite COMPLETE; current-harness performance
-> re-baseline PENDING. Historical reference evidence is committed under
-> `docs/eval/runs/2026-07-15-ubuntu-latest/` (workflow run 29418826616), but it
-> was produced by the previous harness and is not directly comparable to a
-> current run.
+> re-baseline PENDING. Historical reference evidence from workflow run
+> 29418826616 remains available in Git history, but it was produced by the
+> previous harness and is not directly comparable to a current run.
 > **Suite:** `corpus/hero/` (20 tasks) · **Gates:** `cmd/eval/hero_test.go`,
 > `cmd/eval/fullrun_test.go`
 > **Budgets:** `docs/eval/hero-budgets.json` — schema v3, declared
@@ -224,16 +223,15 @@ and all three exist so their numbers can be read at all (SW-130):
    MAXRSS value was sampled immediately after ingest, before `agent_brief` or
    the other warm operations. Its cause is **UNKNOWN**; it cannot be attributed
    to Stable reads or whole-cache materialization from those reports.
-2. Preliminary sandbox reports under
-   `docs/eval/runs/2026-07-15-local-sandbox/` freeze nothing. Runner class and
-   old-harness measurements make them smoke evidence only.
+2. Preliminary sandbox reports preserved in Git history freeze nothing. Runner
+   class and old-harness measurements make them smoke evidence only.
 3. Selective hydration, aggregate brief reads, and bounded impact work are implemented.
    Impact uses indexed bounded incident reads, a `16× MaxNodes` returned-edge budget,
    and a `min(2× MaxNodes, 16)` distinct-kind probe cap; exhausting any cap marks the
    result `truncated`. Semantic checks and the extended harness are also implemented.
    Those code facts do not prove a production performance improvement.
-4. Run the current workflow matrix on the current commit. Commit the new raw
-   reports, verify all 12 semantic checks and the post-suite RSS metric, then
+4. Run the current workflow matrix on the current commit. Retain the raw
+   reports as CI artifacts, verify all 12 semantic checks and the post-suite RSS metric, then
    replace the provisional limits with reviewed comparable ratchets. Historical
    JSON remains unchanged.
 
@@ -254,10 +252,9 @@ go run ./cmd/eval -manifest corpus/manifest.json -full-run grpc-go \
   -export-raw auto
 ```
 
-`auto` applies the SW-128 path convention — `docs/eval/runs/<date>-<runner-class>/`,
-the same shape the historical runs already use — and an explicit path is for CI.
-The layout and its rules are documented in
-[`docs/eval/runs/README.md`](runs/README.md).
+`auto` writes below the ignored `.graphi/eval-runs/` workspace directory. CI
+passes an explicit directory below its temporary workspace and uploads that
+directory as an artifact. Generated run data is never committed.
 
 **The separation that matters.** `raw/` holds four sample-only files, one per
 harness (SW-124…SW-127): cold runs, timed query executions with their pool
@@ -269,7 +266,7 @@ rather than a comparison of a number with a file that already contains it.
 **Reproduce.**
 
 ```sh
-go run ./cmd/eval -aggregate docs/eval/runs/2026-07-28-ubuntu-latest
+go run ./cmd/eval -aggregate .graphi/eval-runs/<run-directory>
 ```
 
 Every statistic the report publishes is recomputed from `raw/` through the same
@@ -322,7 +319,7 @@ under four profilers and writes them into the same run directory as the raw
 samples:
 
 ```
-docs/eval/runs/2026-07-28-ubuntu-latest/
+.graphi/eval-runs/<run-directory>/
 └── profiles/
     ├── profiles.json          which gate each set answers for, with digests
     └── cold_index/
@@ -336,7 +333,7 @@ One directory per affected scenario (`cold_index`, `query_latency`,
 `incremental`, `progress_stalls`). Read any of them with:
 
 ```sh
-go tool pprof docs/eval/runs/2026-07-28-ubuntu-latest/profiles/cold_index/cpu.pprof
+go tool pprof .graphi/eval-runs/<run-directory>/profiles/cold_index/cpu.pprof
 ```
 
 `report.json` and `run.json` both reference the sets, each naming the gate it

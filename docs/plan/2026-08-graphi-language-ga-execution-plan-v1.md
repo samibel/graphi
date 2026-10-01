@@ -401,7 +401,7 @@ shipped with a local proof; none touched the shipped default.
 - **M3.1** WP-J7: run `internal/parity` over the JVM pins; publish
   `parity-matrix-real-repo.md`; file any JVM defects honestly.
 - **M3.2** WP-J10: the four perf suites over the JVM corpus; raw runs under
-  `docs/eval/runs/…`; Kotlin's 337 KB grammar blob inside the budget gate.
+  `historical evaluation archive in Git history: …`; Kotlin's 337 KB grammar blob inside the budget gate.
 - **M3.3** Create the `GA-LANG-java-G<n>` / `GA-LANG-kotlin-G<n>` evidence rows
   — **born UNKNOWN**, each naming its artifact URI + sha.
 - **Gate:** every GA-LANG-* row exists; each carries a real measurement or an

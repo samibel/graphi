@@ -116,7 +116,7 @@ produces 975 again**. It reproduced in both published runs, on an Intel Xeon Pla
 > 8573C`, `Intel Xeon Platinum 8370C`; run-a spans 3 models, run-b spans 4). The
 > per-job truth for the gate-bearing `query-latency/grpc-go` job that produced the
 > 25-execution shortfall is at
-> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`: **AMD EPYC
+> `historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/p0-baseline.md:272-304`: **AMD EPYC
 > 9V74 in run-a, AMD EPYC 7763 in run-b — both AMD EPYC**. The cross-silicon
 > reproduction claim is *weakened* for that gate (reproduced across AMD
 > generations, not across Intel and AMD) and the determinism claim is
@@ -450,7 +450,7 @@ All six edits were applied exactly as written above. Nothing was re-pointed: no 
 that was measured against `5815db5` now claims to be about `80d67ed`.
 
 Plus, outside the index: the two published runs at
-[`docs/eval/runs/2026-07-28-ubuntu-latest/`](../eval/runs/2026-07-28-ubuntu-latest/)
+`historical evaluation archive in Git history: 2026-07-28-ubuntu-latest/` (archived in Git history)
 are now evidence about a superseded candidate. They are **not** deleted, **not**
 re-labelled and **not** re-run in place — Delta PRD §6.1 requires the first honest
 baseline to be preserved, and a red baseline remains useful evidence. **Every byte of
@@ -623,11 +623,11 @@ record produces no numbers. SW-143–145 do.
 ## 13. References
 
 - Authorises this move: [`2026-07-p0-candidate-decision.md`](2026-07-p0-candidate-decision.md) (SW-135, Outcome B, D1)
-- Proves the mechanism: [`../eval/p0/partial-outcome-diagnosis.md`](../eval/p0/partial-outcome-diagnosis.md) (SW-134, F1–F5)
+- Proves the mechanism: the SW-134 partial-outcome diagnosis retained in Git history (F1–F5)
 - Supersedes (in effect): [`2026-07-p0-candidate-freeze-v070.md`](2026-07-p0-candidate-freeze-v070.md) (SW-131, v0.7.0 at `5815db5`) — §9 change control, §10 marking precedent, §11 product-tree identity, §7 reproduction procedure
 - The release itself: [`v0.7.1`](https://github.com/samibel/graphi/releases/tag/v0.7.1) at `80d67ed`, cut by `release-dag.yml` run [`30473740673`](https://github.com/samibel/graphi/actions/runs/30473740673)
 - Which superseded: [`2026-07-p0-candidate-freeze.md`](2026-07-p0-candidate-freeze.md) (SW-121, v0.6.7 at `fb3bf03`) and [`2026-07-m0-candidate-freeze.md`](2026-07-m0-candidate-freeze.md) (SW-116, `4e72637`, never published)
-- The preserved baseline: [`../eval/runs/2026-07-28-ubuntu-latest/`](../eval/runs/2026-07-28-ubuntu-latest/) + its `STALENESS-NOTICE.md`
+- The preserved baseline and its staleness notice are retained in Git history.
 - Evidence index: `docs/rc/evidence-index.yaml` (source) → `docs/rc/evidence-index.md` (generated); `go run ./cmd/evidence -check`
 - Release DAG: `.github/workflows/release-dag.yml`; ADR 0005; publish lock `.github/publish-lock.json` (`locked: false`, untouched by this story)
 - Blocks until complete: SW-143–145 (Final Runs — the first baseline on this candidate)

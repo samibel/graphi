@@ -9,7 +9,7 @@
 > -ldflags -X …version.Version=dev`), `CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 > GOAMD64=v1`, cross-built from darwin/arm64 on an Apple M2 Max. Full record,
 > raw transcripts and captured environment:
-> [`../docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md`](../docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md).
+> retained in Git history with the SW-203 campaign.
 >
 > **1. The measurement method carries a stated noise budget of ±4,096 B**, and it
 > was measured before any cost below was quoted. Three dispatches of the same
@@ -114,7 +114,7 @@
 >
 > **8. How to replay all of it, and one artifact that had to be re-captured.** The
 > whole binary-size leg is
-> [`../docs/eval/runs/2026-08-24-local-sandbox/binary-size/scripts/measure.sh`](../docs/eval/runs/2026-08-24-local-sandbox/binary-size/scripts/measure.sh)
+> retained in Git history with the SW-203 campaign
 > — one script, one subcommand per transcript, the 21 tags derived from
 > `internal/release.DefaultGrammarSubsetTags` rather than retyped. It **refuses to
 > build a `-buildvcs=true` leg on a dirty worktree**, because that is not
@@ -187,7 +187,7 @@
 > therefore robust to any cross-vs-native offset, but the **absolute** headroom
 > figure assumes a cross-built linux/amd64 binary is byte-identical to a natively
 > built one, and that assumption was **not tested** — it needs one CI dispatch.
-> Full record: [`../docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md`](../docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md) §8.
+> The full historical record remains available in Git history (G7 JVM baseline §8).
 
 This file defines the per-worker binary-size budget for graphi's tier-1 language
 grammars: which languages are in scope, how the size cost is modeled, and the

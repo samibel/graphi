@@ -1,1 +1,0 @@
-PASS: The response correctly recommends the portable Go completion hooks and identifies the hidden request commands and supported shells from the supplied documentation and constants.

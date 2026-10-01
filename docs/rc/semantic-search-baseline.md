@@ -448,9 +448,8 @@ Therefore, at the candidate:
     `memory recall` verb and its ledger hook, not a metric.
   None runs a query through `search`, `search_hybrid` or `search_semantic` and scores the
   ranked hits against judged spans; that harness is SW-258.
-- There is no `internal/eval/retrieval` package and no `docs/eval/retrieval-budgets.json`;
-  `docs/eval/` holds `hero-budgets.json`, `hero-protocol.md`, `reference-scenario.json`, `p0/`
-  and `runs/`.
+- The maintained local retrieval evaluator does not authorize releases, and its
+  generated output is not committed under `docs/`.
 - No labelled query set exists for any corpus repository.
 
 SW-258 creates the instrument; SW-266 produces the only token-savings figure this track will

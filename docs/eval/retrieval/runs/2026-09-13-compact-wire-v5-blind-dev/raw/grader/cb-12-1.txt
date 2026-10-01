@@ -1,1 +1,0 @@
-PASS: The response gives a concrete and accurate explanation of subcommand selection fully supported by the bundled Find body.

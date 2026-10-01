@@ -194,7 +194,7 @@ conditions the SW-178 brief names; the other is the index-migration story
 
 ### C6 — every JVM perf + budget gate G7 reads PASS, with the four suites over the JVM corpus
 
-**Artefact:** `docs/eval/runs/...` raw runs (SW-177, W1.d), the budgets
+**Artefact:** `historical evaluation archive in Git history: ...` raw runs (SW-177, W1.d), the budgets
 derived from them, and the G7 `GA-LANG-{java,kotlin}-G7` row's evidence_uri +
 sha.
 **Check:** all four perf suites (cold index, query latency, freshness /

@@ -1,1 +1,0 @@
-FAIL: The transcript supports delegation, buffered generation, write-error propagation, and the file wrapper, but does not establish that `includeDesc` controls description inclusion. That API behavior is asserted without preserved implementation or documentation supporting it.

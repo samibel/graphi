@@ -1,1 +1,0 @@
-PASS: The response accurately describes the children-first recursion, filtering, filename construction, and GenMan call shown in doc/man_docs.go:46-80.

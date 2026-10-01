@@ -1,1 +1,0 @@
-INSUFFICIENT — the response shows routing for three APIs but omits the `GenPowerShellCompletionFileWithDesc` implementation needed to confirm how the fourth API delegates.

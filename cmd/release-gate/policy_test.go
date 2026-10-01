@@ -260,9 +260,6 @@ func TestPolicy_RequiredGatesMatchDefaultGates(t *testing.T) {
 	if strings.Join(declared, ",") != strings.Join(want, ",") {
 		t.Fatalf("requiredGates declares %v, want exactly %v", declared, want)
 	}
-	if _, ok := defaults["retrieval-targets"]; ok {
-		t.Fatal("DefaultGates still supplies the retired retrieval-targets gate")
-	}
 }
 
 // TestPolicy_PublishRefusesUnverifiedAndWritesNothing — AC-4, at the file

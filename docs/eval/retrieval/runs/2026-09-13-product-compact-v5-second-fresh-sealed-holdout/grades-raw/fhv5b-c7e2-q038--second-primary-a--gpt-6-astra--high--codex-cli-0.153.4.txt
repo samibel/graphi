@@ -1,1 +1,0 @@
-FAIL: The response identifies missing evidence but does not answer how the annotations become handlers. The bundle omits the essential conversion branches, including handler-list registration, defaults, and subdirectory helper generation.

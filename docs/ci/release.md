@@ -130,10 +130,17 @@ npm audits for `web` and `extensions/vscode`. These checks are intentionally
 inside the publish DAG; a separate or stale dependency-security run cannot
 authorize a tag. Scanner, registry, or advisory lookup failure blocks release.
 
+### Release authorization
+
+The general release gate requires exactly `bench-budget`, `coverage`, `privacy`,
+and `testgate`. Optional model experiments do not authorize or block a release.
+This keeps product releases tied to shipped behavior while generated evaluator
+output remains a CI artifact outside the Git tree.
+
 ## Out of scope
 
-- The live runtime egress exercise, benchmarks, ledger audit, and token-parity
-  eval (see the other docs in `docs/ci/`). Static CGo/no-telemetry evidence is
+- The live runtime egress exercise, benchmarks, ledger audit, and optional
+  evaluator workflows (see the other docs in `docs/ci/`). Static CGo/no-telemetry evidence is
   now a prerequisite and output of this build, while the live egress check
   still consumes the resulting binary.
 - The opt-in `graphi-broad` CGO flavor packaging (separate track).

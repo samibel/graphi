@@ -25,6 +25,10 @@
 > see [`stability-tiers.md`](stability-tiers.md) for why that is structural rather
 > than a demotion.
 
+> **Embedding support is unchanged by the evaluation cleanup.** The shipped
+> static/Potion and loopback Ollama paths remain available with the same defaults;
+> retired development-model qualification was never a public surface.
+
 ## Contents
 
 - [Epic roadmap](#epic-roadmap)

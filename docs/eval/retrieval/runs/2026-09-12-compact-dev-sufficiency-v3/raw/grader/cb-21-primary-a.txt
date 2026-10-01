@@ -1,1 +1,0 @@
-The complete AddCommand body directly shows self-child rejection, parent assignment, length bookkeeping, normalization propagation and appending.

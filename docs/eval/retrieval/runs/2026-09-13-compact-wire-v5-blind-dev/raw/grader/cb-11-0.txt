@@ -1,1 +1,0 @@
-PASS: The answer identifies ValidateRequiredFlags and correctly explains its annotation scan, Changed check, disabled-parsing guard, and error from command.go:1146-1169.

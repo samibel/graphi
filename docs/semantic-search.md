@@ -107,13 +107,10 @@ The explicit CPU mode allows two minutes per HTTP request for long capsules;
 auto and legacy modes retain the 30-second deadline. This does not change
 source admission, query repeats, or the bundle token budget.
 
-The local GPU determinism probe failed. Single-thread CPU passed both the
-complete ranking repeats and the 44-query independent-index MCP byte check.
-However, this configuration improved architecture ranking while reducing
-complete-answer-span coverage from 33/40 to 27/40 development questions. It
-is not recommended as a replacement for the current Potion configuration.
-See [the development comparison](eval/retrieval/runs/2026-09-06-qwen-dev/README.md)
-for full results and limits; no cross-platform determinism claim is made.
+The Ollama adapter is an explicit local option, not a replacement for the
+default Potion configuration. No cross-platform ranking or determinism claim
+is made for a locally selected Ollama model; validate the exact digest and
+runtime for your own deployment.
 
 Construction and reload do not contact Ollama. Before and after an embedding
 batch the adapter verifies the installed digest and runtime version; a mismatch

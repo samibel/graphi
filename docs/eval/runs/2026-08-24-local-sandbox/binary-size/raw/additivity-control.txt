@@ -1,3 +1,0 @@
-lua-only	34179547
-toml-lua	34170765
-css-yaml	34067298

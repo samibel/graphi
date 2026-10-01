@@ -1,8 +1,8 @@
 # graphi documentation map
 
-This folder mixes three different kinds of files on purpose — user docs,
-contributor docs, and machine-written evidence. This index says which is
-which, so the difference stays visible.
+This folder contains maintained user, contributor, and architecture
+documentation. Generated evaluation runs are CI artifacts and are deliberately
+kept out of the source tree.
 
 ## User & product documentation
 
@@ -45,9 +45,9 @@ them breaks gates; the generated ones are overwritten on the next run.
 |---|---|
 | [coverage-matrix.md](coverage-matrix.md) | Generated from [coverage-matrix.yaml](coverage-matrix.yaml) by `go run ./cmd/coverage -generate`; drift fails CI (`internal/coverage`) |
 | [capability-manifest.json](capability-manifest.json) | Generated alongside the coverage matrix |
-| release-scorecard.md / release-scorecard.json | Published fresh by the release gate (`cmd/release-gate -publish`) on each CI run; not checked in — checked-in run evidence lives under [eval/](eval) |
+| release-scorecard.md / release-scorecard.json | Published fresh by the release gate (`cmd/release-gate -publish`) on each CI run; not checked in |
 | [eval-baseline.json](eval-baseline.json) · [mcp-tool-baseline.json](mcp-tool-baseline.json) | Ratchet baselines read by `cmd/eval` / `cmd/release-gate` |
-| [eval/](eval) | Hero protocol, the [reference-scenario contract](eval/reference-scenario.json) (runner class + PRD §12.2 gate→repository map), budgets, and checked-in run evidence (`eval-full.yml` CI) |
+| [eval/](eval) | Hero protocol, the [reference-scenario contract](eval/reference-scenario.json), and maintained budgets; generated runs are uploaded by `eval-full.yml` |
 | [rc/](rc) | RC evidence index — [rc/evidence-index.md](rc/evidence-index.md) is generated from [rc/evidence-index.yaml](rc/evidence-index.yaml) by `go run ./cmd/evidence` |
 
 ## Planning — not product documentation

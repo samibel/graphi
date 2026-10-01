@@ -1,1 +1,0 @@
-FAIL: It does not explain the necessary mechanism of defining --help without shorthand and a separate -h flag; overriding HelpFunc alone does not distinguish the two spellings.

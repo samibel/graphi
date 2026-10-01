@@ -1,1 +1,0 @@
-The preserved package switch and lookup branch support enabling prefix matching, preferring exact name/alias matches and requiring a unique prefix match.

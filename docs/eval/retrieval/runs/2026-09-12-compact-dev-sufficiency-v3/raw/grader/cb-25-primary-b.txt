@@ -1,1 +1,0 @@
-The field comment and initialization guard directly support setting CompletionOptions.DisableDefaultCmd to true before initialization.

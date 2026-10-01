@@ -1,1 +1,0 @@
-PASS: The answer correctly identifies HasInheritedFlags, HasAvailableInheritedFlags, InheritedFlags, and NonInheritedFlags and accurately states their visible behavior.

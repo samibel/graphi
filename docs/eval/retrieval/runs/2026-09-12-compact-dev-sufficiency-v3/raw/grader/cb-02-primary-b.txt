@@ -1,1 +1,0 @@
-The marker body explicitly appends each group annotation after looking up existing flags, supporting the API and multiple-group explanation.

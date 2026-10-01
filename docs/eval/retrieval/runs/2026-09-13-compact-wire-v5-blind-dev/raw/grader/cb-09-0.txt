@@ -1,1 +1,0 @@
-PASS: The response correctly describes required-flag and filename-completion annotations using only the provided shell_completions.go comments and bodies.

@@ -1,1 +1,0 @@
-It returns `(nil, false)`. In `completions.go:148–150`, `GetFlagCompletionFunc` calls `c.Flag(flagName)` and, when that returns `nil`, executes `return nil, false`.

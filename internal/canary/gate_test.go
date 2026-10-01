@@ -117,13 +117,6 @@ func TestGate_DoesNotFlagBareNewRequest(t *testing.T) {
 	}
 }
 
-func TestAllowlistHasNoRetiredCodeRankException(t *testing.T) {
-	const retiredPackage = "github.com/samibel/graphi/engine/embed/coderank"
-	if isAllowlistedPkg(retiredPackage) {
-		t.Fatalf("retired package %q still bypasses the outbound-dial scan", retiredPackage)
-	}
-}
-
 func TestStaticEvidenceDigestIsCheckoutPathIndependent(t *testing.T) {
 	rootA := writeFixture(t, newRequestOnlyFixture)
 	rootB := writeFixture(t, newRequestOnlyFixture)

@@ -1,1 +1,0 @@
-FAIL: It explains interleaved parent flags but fails to address positional arguments between the root and subcommand.

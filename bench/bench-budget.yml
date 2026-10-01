@@ -305,7 +305,7 @@ version: 1
 # The remaining 10,676 B is non-symbol linker metadata and section alignment.
 # The linked code is the shipped attestation/query-publication enforcement and
 # the compact retrieval seam needed to keep the optional evaluation profile
-# honest; CodeRank itself remains outside the default dependency graph.
+# honest; retired experimental embedders remain outside the default dependency graph.
 #
 # R2 — DOES NOT APPLY. `go list -deps` for the exact default build is identical
 # before and after. go.mod, go.sum and internal/release/build.go are byte-unchanged.

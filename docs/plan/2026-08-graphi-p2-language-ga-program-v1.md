@@ -113,7 +113,7 @@ lighter one, and not a prose promotion. Go's bar, named by artifact:
 | Real-repository parity with the built binary | `internal/parity` + `cmd/parity`, published at [`../rc/parity-matrix-real-repo.md`](../rc/parity-matrix-real-repo.md); defects filed (PARITY-001/002), pinned, never hidden |
 | Pinned, measured, stratified corpus | `corpus/manifest.json` v3 (six Go repos, 10-property stratification, full-sha pins, `measured` blocks from real clones) |
 | Hero gate: 20 scenarios over exactly the 12 ops | `corpus/hero/*.yaml` + `cmd/eval` hero gate on `corpus/fixtures/hero-go` |
-| Perf evidence with checked-in raw runs | cold-index / query-latency / freshness / progress-stalls under `docs/eval/runs/…` |
+| Perf evidence with checked-in raw runs | cold-index / query-latency / freshness / progress-stalls under `historical evaluation archive in Git history: …` |
 | Honest, registry-derived capability surface | `engine/trust/capability.go` fed by `typeresolve.Languages()`, `link.Linker.Languages()`, `parse.SymbolCapable` (`surfaces/client/trust_report.go:333`); re-derived by `surfaces/client/capability_test.go` |
 | Claims discipline | [`../rc/evidence-index.yaml`](../rc/evidence-index.yaml): PASS requires evidence URI + sha; UNKNOWN/STALE count as not passed |
 
@@ -164,7 +164,7 @@ rows will use (`GA-LANG-<lang>-G<n>`).
   on a checked-in `corpus/fixtures/hero-<lang>` fixture, including negative
   anchors and honest-empty/abstention scenarios.
 - **G7 — Perf + budget evidence.** The four perf suites include L's corpus with
-  raw run artifacts under `docs/eval/runs/…`; the grammar blob stays inside its
+  raw run artifacts under `historical evaluation archive in Git history: …`; the grammar blob stays inside its
   [`../../bench/lang-budget.md`](../../bench/lang-budget.md) allocation and the
   whole-binary budget gate.
 - **G8 — Honest capability surface.** Registries report L at the declared
@@ -393,7 +393,7 @@ The product never gains a toolchain dependency.
 | **WP-J7** | Real-repo parity over the JVM pins via `internal/parity`; publish; file defects | Entry criterion (ADR 0008 D8): PARITY-001/002 fixes land first, else every JVM verdict starts PARTIAL for non-JVM reasons |
 | **WP-J8** | Hero-JVM: `corpus/fixtures/hero-java` + `hero-kotlin`, ~20 scenarios each over the 12 ops, incl. confirmed-tier-pinning anchors (`tier == confirmed` witnesses) and honest-empty scenarios for the untyped gaps | Hero gate green in `cmd/eval` |
 | **WP-J9** | Differential ground-truth CI job (`jvm-groundtruth.yml`, nightly/dispatch, runner-only JDK) | Soundness direction: zero counterexamples |
-| **WP-J10** | Perf + budget: the four suites over the JVM corpus; runs published; Kotlin's 337 KB blob inside the budget gate; `GA-LANG-java-*` / `GA-LANG-kotlin-*` evidence rows created (born UNKNOWN — **and the ordering is load-bearing: create the rows only while the language has NO `ga-language` matrix row, and add the matrix row last, once every row reads PASS. `internal/coverage/galang.go:129-131` raises a violation for EVERY non-PASS row, so an UNKNOWN row under an existing matrix row is a RED build**) | Raw artifacts under `docs/eval/runs/…` |
+| **WP-J10** | Perf + budget: the four suites over the JVM corpus; runs published; Kotlin's 337 KB blob inside the budget gate; `GA-LANG-java-*` / `GA-LANG-kotlin-*` evidence rows created (born UNKNOWN — **and the ordering is load-bearing: create the rows only while the language has NO `ga-language` matrix row, and add the matrix row last, once every row reads PASS. `internal/coverage/galang.go:129-131` raises a violation for EVERY non-PASS row, so an UNKNOWN row under an existing matrix row is a RED build**) | Raw artifacts under `historical evaluation archive in Git history: …` |
 | **WP-J11** | The flip: registries report java/kotlin at `typed-confirmed`; `capability_test.go` extended; `language-support.md` + `stability-tiers.md` updated; §6 check fed `java`, `kotlin` | **Stop-ship:** any open `JVMSOUND-0xx`; any evidence row UNKNOWN/STALE |
 
 **Change-class mapping (WP-J5).** Map directly: `add_file`, `modify_file`,

@@ -186,7 +186,7 @@ fallback to a whole graph or a successful empty answer is rejected.
 
 ## Performance evidence: what is and is not proven
 
-The committed reports in `docs/eval/runs/2026-07-15-ubuntu-latest/` belong to commit
+The reports retained in Git history belong to commit
 `71353f90720e079b84b7a0549bd51fc632bcfe37` and the previous harness. They prove the
 numbers recorded in those files only:
 
