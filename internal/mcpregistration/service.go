@@ -101,7 +101,7 @@ func (s Service) executeUnlocked(request ServiceRequest) (ServiceResult, error) 
 	if err != nil {
 		return ServiceResult{}, err
 	}
-	recovered := map[string]RecoveryStatus{}
+	recovered := map[string]recoveredPending{}
 	if !request.DryRun {
 		var changed bool
 		changed, recovered, err = recoverClientPending(&manifest, clients)
@@ -364,12 +364,12 @@ func digestConfigPath(path string) string {
 	return DigestBytes(raw)
 }
 
-func (s Service) unregister(manifest *Manifest, manifestPath string, store Store, name string, clients []mcpconfig.Client, dryRun bool, recovered map[string]RecoveryStatus) ([]ServiceChange, error) {
+func (s Service) unregister(manifest *Manifest, manifestPath string, store Store, name string, clients []mcpconfig.Client, dryRun bool, recovered map[string]recoveredPending) ([]ServiceChange, error) {
 	var changes []ServiceChange
 	for _, client := range clients {
 		path, _ := client.ConfigPath()
 		pendingID := pendingChangeID(store.CheckoutID, client.ID, name)
-		if recovered[pendingID] == RecoveryCompleted {
+		if recovery := recovered[pendingID]; recovery.Status == RecoveryCompleted && recovery.Remove {
 			changes = append(changes, ServiceChange{
 				CheckoutID: store.CheckoutID, Root: store.Root, ClientID: client.ID, ConfigPath: path, ServerName: name,
 				Result: mcpconfig.Result{Action: mcpconfig.ActionRemoved, Diff: fmt.Sprintf("action: removed\nserver: %s\nmanaged: command,args,env-keys:[]\n", name)},
@@ -444,7 +444,12 @@ func pendingChangeID(checkoutID, clientID, name string) string {
 // recoverClientPending resolves interrupted writes for the exact selected
 // client targets before any ownership decision is made. It never restores a
 // whole config: target completes, before retries, and a third state conflicts.
-func recoverClientPending(manifest *Manifest, clients []mcpconfig.Client) (bool, map[string]RecoveryStatus, error) {
+type recoveredPending struct {
+	Status RecoveryStatus
+	Remove bool
+}
+
+func recoverClientPending(manifest *Manifest, clients []mcpconfig.Client) (bool, map[string]recoveredPending, error) {
 	targets := map[string]struct{}{}
 	for _, client := range clients {
 		path, err := client.ConfigPath()
@@ -455,7 +460,7 @@ func recoverClientPending(manifest *Manifest, clients []mcpconfig.Client) (bool,
 	}
 	pending := append([]PendingChange(nil), manifest.Pending...)
 	changed := false
-	statuses := map[string]RecoveryStatus{}
+	statuses := map[string]recoveredPending{}
 	for _, change := range pending {
 		key := change.Receipt.ClientID + "\x00" + filepath.Clean(change.Receipt.ConfigPath)
 		if _, selected := targets[key]; !selected {
@@ -465,7 +470,7 @@ func recoverClientPending(manifest *Manifest, clients []mcpconfig.Client) (bool,
 		if err != nil {
 			return changed, statuses, fmt.Errorf("mcp registration: recover pending change %s: %w", change.ID, err)
 		}
-		statuses[change.ID] = status
+		statuses[change.ID] = recoveredPending{Status: status, Remove: change.Remove}
 		changed = true
 	}
 	return changed, statuses, nil

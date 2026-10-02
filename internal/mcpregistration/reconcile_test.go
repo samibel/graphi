@@ -245,6 +245,59 @@ func TestDirectSetupRecoversCompletedPendingReceipt(t *testing.T) {
 	}
 }
 
+func TestUnregisterAfterCompletedPendingAddStillRemovesEntry(t *testing.T) {
+	paths := testenv.Isolate(t)
+	root, _ := indexedRepo(t, filepath.Join(paths.Root, "work"), "billing-api")
+	store, err := mcpregistration.NewResolver(state.StateDir()).Resolve(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := filepath.Join(paths.Root, "clients", "claude.json")
+	client, _ := mcpconfig.ClientByID("claude")
+	client = client.WithConfigPath(config)
+	entry := mcpconfig.GraphiEntry("/opt/graphi", []string{"mcp", "-db", store.DB, "-meta", store.Meta})
+	plan, err := client.PlanEntryState("graphi-billing-api", entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := mcpregistration.NewClientReceipt(store.CheckoutID, client.ID, config, "graphi-billing-api", entry, plan.Target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := mcpregistration.NewManifest()
+	manifest.Registrations = []mcpregistration.Registration{{CheckoutID: store.CheckoutID, Name: "graphi-billing-api", RepoFile: store.RepoFile}}
+	manifest.Pending = []mcpregistration.PendingChange{{
+		ID: store.CheckoutID + ":claude:graphi-billing-api", BeforeDigest: plan.BeforeConfigDigest,
+		TargetDigest: plan.TargetConfigDigest, Receipt: receipt,
+	}}
+	manifestPath := mcpregistration.ManifestPath(state.StateDir())
+	if err := mcpregistration.SaveManifest(manifestPath, manifest, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.ApplyEntryObserved("graphi-billing-api", entry, plan.BeforeConfigDigest, false); err != nil {
+		t.Fatal(err)
+	}
+
+	request := mcpregistration.ServiceRequest{Roots: []string{root}, Clients: []mcpconfig.Client{client}, Unregister: true}
+	if _, err := (mcpregistration.Service{StateDir: state.StateDir(), Binary: "/opt/graphi"}).Execute(request); err != nil {
+		t.Fatalf("unregister after recovered add failed: %v", err)
+	}
+	entries, err := client.Entries()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entries["graphi-billing-api"] != nil {
+		t.Fatalf("unregister skipped recovered add entry: %#v", entries)
+	}
+	got, err := mcpregistration.LoadManifest(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Pending) != 0 || len(got.Receipts) != 0 || len(got.Registrations) != 0 {
+		t.Fatalf("unregister retained recovered add state: %#v", got)
+	}
+}
+
 func TestDirectUnregisterRecoversCompletedPendingRemoval(t *testing.T) {
 	paths := testenv.Isolate(t)
 	root, _ := indexedRepo(t, filepath.Join(paths.Root, "work"), "billing-api")
