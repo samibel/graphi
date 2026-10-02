@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-02
+
 ### Changed
 
 - **Retired the unreleased experimental model-qualification and blind-evaluation
@@ -43,6 +45,16 @@ file:
 
 ### Added
 
+- **Checkout-bound global MCP registration is available for Claude Code, Codex,
+  and Devin (Labs).** `graphi setup --per-repo --client <client>` installs a
+  stable, collision-resistant global server entry for the current checkout;
+  `--all-repos`, `--dry-run`, `--unregister`, and explicit auto-registration
+  controls cover fleet setup and ongoing sync. Registrations carry checkout
+  provenance into MCP sessions, reconcile moved binaries and repositories
+  without overwriting foreign entries, and use locked, atomic, recoverable
+  client-config updates. See
+  [`docs/global-mcp-registration.md`](docs/global-mcp-registration.md) for the
+  safety and lifecycle contract.
 - **`task_context/2-compact/17` projects query-directed answer regions within
   the unchanged 1,200-token budget.** It preserves identifier-shaped query
   terms, hydrates bounded hits to declarations, promotes exact field and named
