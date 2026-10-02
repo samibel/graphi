@@ -776,6 +776,7 @@ type compactTaskContextToolResult struct {
 	} `json:"content"`
 	StructuredContent taskcompact.Structured `json:"structuredContent"`
 	IsError           bool                   `json:"isError"`
+	Meta              map[string]any         `json:"_meta,omitempty"`
 }
 
 func derefInt(p *int) int {
