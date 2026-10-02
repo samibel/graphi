@@ -29,7 +29,7 @@ func TestGlobalMCPDocumentationStatesSafetyLimits(t *testing.T) {
 			t.Errorf("global MCP documentation omits %q", required)
 		}
 	}
-	for _, private := range []string{"SBELAKH", "/Users/", "Documents/Graphi", "sk-"} {
+	for _, private := range []string{"/Users/", "/home/", "sk-"} {
 		if strings.Contains(doc, private) {
 			t.Errorf("global MCP documentation contains private-looking marker %q", private)
 		}
