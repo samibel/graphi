@@ -50,8 +50,8 @@ file:
   stable, collision-resistant global server entry for the current checkout;
   `--all-repos`, `--dry-run`, `--unregister`, and explicit auto-registration
   controls cover fleet setup and ongoing sync. Registrations carry checkout
-  provenance into MCP sessions, reconcile moved binaries and repositories
-  without overwriting foreign entries, and use locked, atomic, recoverable
+  provenance into MCP sessions, reconcile binary-path updates without
+  overwriting foreign entries, and use locked, atomic, recoverable
   client-config updates. See
   [`docs/global-mcp-registration.md`](docs/global-mcp-registration.md) for the
   safety and lifecycle contract.
