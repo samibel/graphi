@@ -154,6 +154,14 @@ func (s *Server) toolDescriptors() []map[string]any {
 		tools = stableToolDescriptors()
 	}
 	tools = filterSupportedToolDescriptors(binding.client, tools)
+	suffix := repoDescriptionSuffix(binding.repoContext)
+	if suffix != "" {
+		for _, descriptor := range tools {
+			if description, ok := descriptor["description"].(string); ok {
+				descriptor["description"] = description + suffix
+			}
+		}
+	}
 	s.catalogBinding = binding
 	s.catalog = tools
 	return tools

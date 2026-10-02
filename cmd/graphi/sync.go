@@ -15,11 +15,29 @@ import (
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/internal/freshness"
 	"github.com/samibel/graphi/internal/gitinfo"
+	"github.com/samibel/graphi/internal/mcpconfig"
+	"github.com/samibel/graphi/internal/mcpregistration"
 	"github.com/samibel/graphi/internal/state"
 )
 
 // errNotARepo marks an ingest verb run outside any detectable repository.
 var errNotARepo = errors.New("not a repository")
+
+// syncIntegrationFailureExit distinguishes "the graph synchronized, but one
+// or more consented client configs did not" from an ingest failure (exit 1).
+const syncIntegrationFailureExit = 2
+
+var reconcileAfterExplicitSync = func(root string) (mcpregistration.ReconcileResult, error) {
+	stateDir, err := state.StrictStateDir()
+	if err != nil {
+		return mcpregistration.ReconcileResult{}, err
+	}
+	binary, err := os.Executable()
+	if err != nil {
+		return mcpregistration.ReconcileResult{}, fmt.Errorf("resolve executable for auto-registration: %w", err)
+	}
+	return (mcpregistration.Reconciler{StateDir: stateDir, Binary: binary}).Reconcile(root)
+}
 
 // ingestTarget is the resolved (root, store, sidecar) triple an ingest verb
 // operates on. autoManaged marks the zero-flag path: the per-repo state layout
@@ -230,7 +248,12 @@ func runSyncAt(cwd string, args []string, stdout io.Writer) int {
 		fmt.Fprintf(os.Stderr, "graphi: sync: %v\n", err)
 		return 1
 	}
-	defer cleanup()
+	cleanupPending := true
+	defer func() {
+		if cleanupPending {
+			cleanup()
+		}
+	}()
 
 	ctx := context.Background()
 	info, gitOK := gitinfo.Head(target.root)
@@ -244,6 +267,30 @@ func runSyncAt(cwd string, args []string, stdout io.Writer) int {
 		return 1
 	}
 	fmt.Fprintln(stdout, syncSummary(stats))
+
+	// Config reconciliation is an explicit CLI-sync epilogue, never an ingest
+	// hook. Close the ingester/store first; SyncRepo has already released its
+	// cross-process ingest lock, and no client writer runs while it is held.
+	cleanup()
+	cleanupPending = false
+	if target.autoManaged {
+		registration, registrationErr := reconcileAfterExplicitSync(target.root)
+		for _, change := range registration.Changes {
+			if change.Result.Action == mcpconfig.ActionUnchanged {
+				continue
+			}
+			fmt.Fprintf(stdout, "graphi sync: registered %s for %s\n", change.ServerName, change.ClientID)
+		}
+		for _, failure := range registration.Failures {
+			fmt.Fprintf(os.Stderr, "graphi: sync: auto-registration %s (%s): %v\n", failure.ClientID, failure.ConfigPath, failure.Err)
+		}
+		if registrationErr != nil {
+			if len(registration.Failures) == 0 {
+				fmt.Fprintf(os.Stderr, "graphi: sync: auto-registration: %v\n", registrationErr)
+			}
+			return syncIntegrationFailureExit
+		}
+	}
 	return 0
 }
 

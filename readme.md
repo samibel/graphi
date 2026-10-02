@@ -195,6 +195,35 @@ graphi sync                  # pull in changes (run it after a branch switch)
 graphi callers <node-id>     # who calls it — ids come from `graphi search <name>`
 ```
 
+### Named global MCP servers per checkout (Labs)
+
+After `graphi sync` has created a current local index, graphi can register that
+specific checkout as a stable, named global MCP server in Claude Code, Codex,
+or Devin. Preview the exact target first:
+
+```bash
+graphi setup --per-repo --client claude --dry-run
+graphi setup --per-repo --client claude
+```
+
+Use `codex`, `devin`, or `all` instead of `claude`; `--all-repos` registers all
+valid existing Graphi stores. Future explicit CLI syncs update global client
+configs only after opt-in:
+
+```bash
+graphi setup --per-repo --client claude --auto-register --yes
+graphi setup --per-repo --client claude --no-auto-register
+```
+
+Registration writes no integration file into the consumer repository. Global
+visibility is convenience, not repository isolation: the selected client can
+see the server outside that checkout, tool metadata/results follow the client's
+account policy, and a model is not guaranteed to choose the intended server.
+Keep the index fresh with `graphi sync`; use `--unregister` to remove an
+unchanged Graphi-owned entry without deleting its index. Adoption, conflicts,
+backups, recovery, client versions, and the full safety contract are documented
+in [global MCP registration](docs/global-mcp-registration.md).
+
 The rest of the surface — `status`, `rebuild`, `ui`, `claude`, `setup`, the one-call Labs bundles, `snapshot`/`compare`, the per-repo graph under `~/.graphi/<fingerprint>/` that re-syncs on every start and tracks what is checked out, and the browser UI that bare `graphi` opens — is in [docs/HOWTO.md](docs/HOWTO.md), tiered in [docs/cli-reference.md](docs/cli-reference.md); sync **misses its freshness budget** (3.2× over), as the FAIL row above says.
 
 ## What is GA (and what is not)
@@ -307,7 +336,7 @@ units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 | `graphi search <query>` | **GA** | Lexical / symbol search |
 | `graphi agent-brief` · `explain-symbol` · `related-files` · `change-risk` | **GA** | Cited agent-context operations |
 | `graphi mcp` | **GA** | MCP stdio server (the agent-first surface) |
-| `graphi setup` | labs | Wire graphi into local MCP clients |
+| `graphi setup` | labs | Wire graphi into local MCP clients, including checkout-bound named global servers with `--per-repo` |
 | `graphi analyze <analyzer>` | labs | Deep analyzers (taint, pdg, call-chain, …) |
 | `graphi daemon` · `http` | labs | Hot-index daemon, loopback HTTP/SSE |
 | `graphi extension validate\|install\|list\|doctor\|enable\|disable\|remove` (`init` · `lint` · `conform` for pack authors) | labs | Declarative rule packs: offline, SHA-256-pinned YAML/JSON data that adds architecture or taint rules — graphi executes nothing a pack ships ([docs/cli-reference.md](docs/cli-reference.md#graphi-extension)) |

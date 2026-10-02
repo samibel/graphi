@@ -61,6 +61,11 @@ func runMCP(args []string) int {
 	// three surfaces reading the same configured-vs-unconfigured answer.
 	options = append(options, mcp.WithEmbedderRegistry(runtimeEmbedderRegistryFromEnv(os.Getenv(embed.EnvSelector))))
 	if dbPath != "" || socket != "" {
+		repoContext, err := attachRepoContext(dbPath, metaDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
+			return 1
+		}
 		rt, err := rtime.Attach(dbPath, socket, metaDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
@@ -72,8 +77,8 @@ func runMCP(args []string) int {
 		// from the process working directory. A socket attach leaves it zero —
 		// no local repository was bound, and there is nothing honest to name.
 		options = append(options, mcp.WithRepository(client.Repository{
-			Root: rt.Root, DBPath: rt.DBPath, MetaDir: rt.MetaDir,
-		}))
+			Root: repoContext.Root, DBPath: rt.DBPath, MetaDir: rt.MetaDir,
+		}), mcp.WithRepoContext(repoContext))
 		srv = mcp.NewServerWithClient(rt.Client, options...)
 	} else {
 		cwd := getwd()

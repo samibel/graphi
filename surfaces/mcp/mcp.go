@@ -87,6 +87,9 @@ type Binding struct {
 	// precisely for it). Leaving it zero keeps the cwd fallback, which is
 	// correct only for a socket attach, where no repository was ever bound.
 	Repository client.Repository
+	// RepoContext is validated provenance for Repository. A zero value is
+	// intentionally preserved as unknown; the surface never guesses from cwd.
+	RepoContext RepoContext
 }
 
 // BindFunc creates a repository-scoped binding. roots is authoritative when
@@ -101,6 +104,9 @@ type boundClient struct {
 	// roots rebind can never leave a tool call pairing the new client with the
 	// old repository's paths.
 	repo client.Repository
+	// repoContext is validated provenance for this exact binding. It travels
+	// with the client and repository paths so roots rebinds remain atomic.
+	repoContext RepoContext
 }
 
 // ServerOption configures an MCP server profile without widening the default
@@ -140,6 +146,8 @@ type Server struct {
 	// initialRepo is the repository a pre-bound server was constructed over
 	// (WithRepository); the binder path carries it per Binding instead.
 	initialRepo client.Repository
+	// initialRepoContext is immutable provenance for a pre-bound attach.
+	initialRepoContext RepoContext
 	// evaluationLexicalCompactControl is an explicit offline-evaluation seam;
 	// no request or environment variable can enable it.
 	evaluationLexicalCompactControl bool
@@ -223,7 +231,7 @@ func NewServerWithClient(c client.Client, opts ...ServerOption) *Server {
 	for _, opt := range opts {
 		opt(s)
 	}
-	s.bound.Store(&boundClient{client: c, stable: client.AsStable(c), repo: s.initialRepo})
+	s.bound.Store(&boundClient{client: c, stable: client.AsStable(c), repo: s.initialRepo, repoContext: s.initialRepoContext})
 	return s
 }
 
@@ -436,6 +444,7 @@ func (s *Server) handleForTransport(ctx context.Context, req rpcRequest, support
 			"protocolVersion": protocolVersion,
 			"capabilities":    map[string]any{"tools": map[string]any{"listChanged": true}},
 			"serverInfo":      map[string]any{"name": "graphi-query", "version": "1"},
+			"instructions":    s.repoInstructions(),
 		}
 	case "notifications/initialized", "initialized":
 		return resp, true, s.requestRootsIfNeeded()
@@ -459,7 +468,7 @@ func (s *Server) handleForTransport(ctx context.Context, req rpcRequest, support
 			if rerr != nil {
 				resp.Error = rerr
 			} else {
-				resp.Result = result
+				resp.Result = s.withRepoProvenance(result)
 			}
 		}
 		s.dispatch.RUnlock()

@@ -53,7 +53,7 @@ var subcommandHelp = map[string]subHelp{
 		"graphi index -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta",
 	},
 	"sync": {
-		"bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch)",
+		"bring the graph up to date with the checked-out code (incremental; after auto-registration opt-in, exit 2 means the index synced but a client integration failed)",
 		"graphi sync [-root <repo>] [-db path] [-meta dir] [-profile name]",
 		"git switch feature/login && graphi sync",
 	},
@@ -273,9 +273,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi doctor --json",
 	},
 	"setup": {
-		"register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta)",
-		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>] [--attach]",
-		"graphi setup --project",
+		"register graphi's MCP stdio server into local MCP clients' configs; --per-repo creates a global, checkout-bound named entry without writing into the repo; --project remains the project-file variant",
+		"graphi setup [--client claude|codex|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --per-repo [--root <repo>|--all-repos] --client claude|codex|devin|all [--name graphi-...] [--adopt|--unregister] [--auto-register --yes|--no-auto-register] | graphi setup --project [--root <repo>] [--attach]",
+		"graphi setup --per-repo --client claude --dry-run",
 	},
 	"extension": {
 		"declarative rule packs + the developer kit: init/lint/conform, validate, install (offline, sha256-pinned), list, doctor, enable/disable/remove — data only, no pack code is ever executed (labs)",
