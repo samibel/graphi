@@ -53,7 +53,7 @@ var subcommandHelp = map[string]subHelp{
 		"graphi index -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta",
 	},
 	"sync": {
-		"bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch)",
+		"bring the graph up to date with the checked-out code (incremental; after auto-registration opt-in, exit 2 means the index synced but a client integration failed)",
 		"graphi sync [-root <repo>] [-db path] [-meta dir] [-profile name]",
 		"git switch feature/login && graphi sync",
 	},

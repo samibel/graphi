@@ -110,3 +110,97 @@ exit `1` means sync itself failed (so registration did not run), and exit `2`
 means the index sync succeeded but at least one client integration failed. In
 the exit-2 case the valid index and any successful client updates are retained;
 the per-client error identifies what can be retried.
+
+## Operational workflow
+
+1. Run `graphi sync` inside a checkout. Registration never creates or refreshes
+   an index on its own.
+2. Preview the exact client target with `graphi setup --per-repo --client
+   <client> --dry-run`.
+3. Run the same command without `--dry-run` to create one global named entry.
+   The entry pins the validated DB and matching meta directory; changing the
+   shell or client working directory does not reroute it.
+4. Add `--auto-register --yes` only when future explicit CLI syncs should add
+   newly synchronized checkouts to that concrete client/config target. A newly
+   installed client or a newly resolved config path is not automatically added
+   to the consent snapshot.
+5. Use `--no-auto-register` to stop future sync writes. This changes policy
+   only; it does not remove existing entries or indexes. Use `--unregister` for
+   an unchanged, receipt-owned entry. The index is still retained.
+
+`--name` is a complete `graphi-...` server key for a first registration.
+Existing names remain stable. A foreign collision fails rather than being
+overwritten or causing an existing Graphi server to be renamed.
+
+## Visibility, selection, and provenance
+
+A global server is visible to the selected client outside the checkout that it
+describes. This is convenience, not repository isolation or an authorization
+boundary. Tool metadata and requested results are delivered to that client and
+may be sent onward according to the client's own behavior and account policy.
+Graphi does not claim that a model will always choose the intended named server.
+The stable name and short repository description are selection hints; explicit
+user requests remain the reliable way to choose another registered checkout.
+
+Each managed attach validates its `repo.json`, checkout fingerprint, DB, meta
+sidecar, and registration reference before serving. MCP `initialize`
+instructions identify only that bound checkout. Tool descriptions repeat only
+its short label, and tool-result `_meta` carries namespaced provenance without
+changing existing content or input schemas. A legacy arbitrary `-db` attach
+remains supported but reports repository provenance as unavailable. A path that
+looks managed but contradicts its descriptor fails closed.
+
+Registration says which index a server reads; it does not prove index freshness.
+Run `graphi status` and `graphi sync` after source or branch changes.
+Unsaved editor changes are not implied to be indexed.
+
+## Ownership, backups, and recovery
+
+Graphi never treats the `graphi-` prefix as ownership. A matching manual entry
+is left alone unless `--adopt` is supplied, and adoption succeeds only when its
+binary, DB, meta path, and checkout binding match. Unknown fields, foreign
+environment keys, and manual enabled/disabled state are preserved.
+
+Before a client config replacement, Graphi records only digests and a redacted
+managed-field snapshot in the private manifest. The writer takes a per-target
+lock, validates the complete new JSON or TOML, creates a protected backup, and
+atomically replaces the target. On restart, a pending digest matching the
+target confirms the receipt; a digest matching the old state permits a retry;
+any third state is reported as a conflict. Graphi does not blindly restore an
+entire config. Separate client files are not one transaction, so a partial
+success is reported and can be retried. A non-cooperating client can still
+write after Graphi's last observed-state check; no stronger cross-application
+transaction guarantee is claimed.
+
+## Version evidence and untested variants
+
+The public configuration contracts above were rechecked against official
+documentation on 2026-10-02. Read-only local version discovery observed
+Claude Code 2.1.287, Codex CLI 0.157.1, and Devin CLI 3000.11.3; it did not authenticate,
+connect a model, or modify their real profiles. Automated tests cover Claude's
+JSON shape, Codex TOML, Devin's dedicated and legacy JSON paths, and the
+fail-closed ambiguous Devin-path case. Other client versions and undocumented
+config variants remain unknown and must not be inferred as supported.
+
+Real Claude/Codex/Devin connection smoke tests and model-selection experiments
+were **NOT RUN** because no separate permission was given to exercise installed
+clients. Consequently, no server-selection rate, startup benchmark, memory
+scaling result, or token-use reduction is claimed.
+
+## Deterministic acceptance evidence
+
+All fixtures below use temporary synthetic checkouts and isolated home/state
+directories. They require no account or network access.
+
+| Matrix | Automated evidence |
+| --- | --- |
+| A01, A05, A07, A18, A19 | `TestGlobalMCPAcceptanceMatrixSynthetic` creates three named servers, checks distinct stores, byte-identical repeat setup, unchanged consumer trees, and a cross-repo attach from a foreign CWD. |
+| A02–A04 | `TestSameBasenameDifferentRoots`, `TestSameRemoteDifferentCheckouts`, `TestSymlinkAliasKeepsLegacyID`, and `TestMultipleAliasStoresConflict`. |
+| A06 | `TestTwoServersKeepSeparateContext`. |
+| A08–A12 | Named-entry, unknown-field/number, invalid-config, dry-run, adoption, backup-failure, and disabled-state tests in `internal/mcpconfig` and `internal/mcpregistration`. |
+| A13–A15 | `TestSuccessfulExplicitSyncRegisters`, `TestOnlyConsentedClientsUpdated`, `TestFailedSyncDoesNotRegister`, `TestMCPAutoBindDoesNotChangeConfigs`, and `TestPartialClientFailureKeepsIndex`. |
+| A16 | `TestPendingReceiptRecovery` covers target/old/conflict digests without whole-config restore. |
+| A17 | Missing-repo, fingerprint-mismatch, alias-conflict, and `TestManagedDescriptorMismatchFailsClosed` tests. |
+| A20 | The visibility and selection section above is the product contract; no isolation claim is made. |
+| A21 | Synthetic fixture names plus the final changed-file/diff privacy scan; real profiles and repositories are outside test scope. |
+| A22 | Claude JSON, Codex TOML, Devin dedicated/legacy/ambiguous-path adapter tests; real authenticated smoke tests are explicitly NOT RUN. |
