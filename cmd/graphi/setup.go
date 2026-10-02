@@ -101,8 +101,9 @@ func runSetup(args []string) int {
 			return 1
 		}
 		entry := mcpconfig.GraphiEntry(bin, nil)
+		c = c.WithConfigPath(*cfgPath)
 		return reportSetup(c.Display, *cfgPath, entry, *dryRun, func() (mcpconfig.Result, error) {
-			return mcpconfig.Apply(*cfgPath, "graphi", entry, *dryRun) // claude key; --config implies the claude shape
+			return c.ApplyEntry("graphi", entry, *dryRun)
 		})
 	}
 

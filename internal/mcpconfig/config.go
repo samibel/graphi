@@ -433,7 +433,14 @@ func writeAtomicWithBackupSnapshot(path string, doc map[string]any, snapshot con
 	if err != nil {
 		return "", fmt.Errorf("mcpconfig: marshal: %w", err)
 	}
-	if _, err := decodeDocument(buf); err != nil {
+	return writeAtomicBytesWithBackupSnapshot(path, buf, snapshot, hooks, func(raw []byte) error {
+		_, err := decodeDocument(raw)
+		return err
+	})
+}
+
+func writeAtomicBytesWithBackupSnapshot(path string, buf []byte, snapshot configSnapshot, hooks writerHooks, validate func([]byte) error) (string, error) {
+	if err := validate(buf); err != nil {
 		return "", fmt.Errorf("mcpconfig: validate new config: %w", err)
 	}
 	dir := filepath.Dir(path)
@@ -457,9 +464,10 @@ func writeAtomicWithBackupSnapshot(path string, doc map[string]any, snapshot con
 		if backupFn == nil {
 			backupFn = backupBytes
 		}
-		bakPath, err = backupFn(path, snapshot.raw)
-		if err != nil {
-			return "", fmt.Errorf("mcpconfig: backup: %w", err)
+		var backupErr error
+		bakPath, backupErr = backupFn(path, snapshot.raw)
+		if backupErr != nil {
+			return "", fmt.Errorf("mcpconfig: backup: %w", backupErr)
 		}
 	}
 

@@ -8,6 +8,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/odvcencio/gotreesitter v0.20.2
+	github.com/pelletier/go-toml/v2 v2.4.3
 	golang.org/x/sys v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.52.0

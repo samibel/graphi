@@ -1,10 +1,21 @@
 package mcpconfig
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+)
+
+// Format selects the parser/writer used for a client's real configuration
+// syntax. The zero value remains JSON for existing adapters and tests.
+type Format string
+
+const (
+	FormatJSON Format = "json"
+	FormatTOML Format = "toml"
 )
 
 // Client is a local MCP client graphi can register itself into. The mcpconfig
@@ -22,13 +33,22 @@ import (
 type Client struct {
 	ID         string // stable identifier, e.g. "claude", "cursor"
 	Display    string // human label, e.g. "Claude Code"
-	ServersKey string // top-level JSON key holding the server map
+	ServersKey string // top-level JSON/TOML key holding the server map
+	Format     Format // JSON by default; Codex uses TOML
 	pathFn     func() (string, error)
 }
 
 // ConfigPath resolves this client's config file path. It is best-effort and may
 // point at a not-yet-created file (detection is parent-dir aware).
 func (c Client) ConfigPath() (string, error) { return c.pathFn() }
+
+// WithConfigPath overrides only the target path. The adapter's selected parser
+// and format remain unchanged, so a Codex override is still TOML regardless of
+// its filename extension.
+func (c Client) WithConfigPath(path string) Client {
+	c.pathFn = func() (string, error) { return path, nil }
+	return c
+}
 
 // Configurable reports whether this client looks installed: its config file or
 // its parent directory exists. Pure file-ops, never dials, conservative on error.
@@ -58,6 +78,9 @@ func (c Client) PlanEntry(name string, entry ServerEntry) (Action, error) {
 	if err != nil {
 		return "", err
 	}
+	if c.Format == FormatTOML {
+		return planCodex(path, name, entry)
+	}
 	doc, err := Load(path)
 	if err != nil {
 		return "", err
@@ -79,6 +102,9 @@ func (c Client) ApplyEntry(name string, entry ServerEntry, dryRun bool) (Result,
 	if err != nil {
 		return Result{}, err
 	}
+	if c.Format == FormatTOML {
+		return applyCodex(path, name, entry, dryRun)
+	}
 	return applyKey(path, c.ServersKey, name, entry, dryRun)
 }
 
@@ -95,7 +121,19 @@ func (c Client) ContendingGraphiServers() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	doc, err := Load(path)
+	var doc map[string]any
+	if c.Format == FormatTOML {
+		raw, readErr := os.ReadFile(path)
+		if os.IsNotExist(readErr) {
+			return nil, nil
+		}
+		if readErr != nil {
+			return nil, readErr
+		}
+		doc, err = decodeTOML(raw)
+	} else {
+		doc, err = Load(path)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +216,7 @@ func graphiEntryIsPinned(entry map[string]any) bool {
 func Clients() []Client {
 	return []Client{
 		{ID: "claude", Display: "Claude Code", ServersKey: "mcpServers", pathFn: ConfigPath},
+		{ID: "codex", Display: "Codex", ServersKey: "mcp_servers", Format: FormatTOML, pathFn: codexConfigPath},
 		{ID: "copilot", Display: "GitHub Copilot (VS Code)", ServersKey: "servers", pathFn: vscodeConfigPath},
 		{ID: "cursor", Display: "Cursor", ServersKey: "mcpServers", pathFn: cursorConfigPath},
 		{ID: "devin", Display: "Devin CLI", ServersKey: "mcpServers", pathFn: devinConfigPath},
@@ -238,7 +277,39 @@ func cursorConfigPath() (string, error) { return homeJoin(".cursor", "mcp.json")
 // devinConfigPath is the Devin CLI's config. Devin uses an XDG-style fixed
 // ~/.config dotdir on every platform (NOT os.UserConfigDir, which would map to
 // ~/Library/Application Support on macOS).
-func devinConfigPath() (string, error) { return homeJoin(".config", "devin", "config.json") }
+func devinConfigPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return resolveDevinConfigPath(runtime.GOOS, home, os.Getenv("APPDATA"))
+}
+
+func resolveDevinConfigPath(goos, home, appData string) (string, error) {
+	base := filepath.Join(home, ".config", "devin")
+	if goos == "windows" {
+		if strings.TrimSpace(appData) == "" {
+			return "", fmt.Errorf("mcpconfig: APPDATA is required for Devin on Windows")
+		}
+		base = filepath.Join(appData, "devin")
+	}
+	dedicated := filepath.Join(base, "mcp_config.json")
+	legacy := filepath.Join(base, "config.json")
+	dedicatedExists := pathExists(dedicated)
+	legacyExists := pathExists(legacy)
+	if dedicatedExists && legacyExists {
+		return "", fmt.Errorf("mcpconfig: ambiguous Devin MCP configs at %s and %s; use an explicit config path", dedicated, legacy)
+	}
+	if legacyExists {
+		return legacy, nil
+	}
+	return dedicated, nil
+}
+
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
 
 // windsurfConfigPath is Windsurf's (Codeium) global MCP config.
 func windsurfConfigPath() (string, error) { return homeJoin(".codeium", "windsurf", "mcp_config.json") }

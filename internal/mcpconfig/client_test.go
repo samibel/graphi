@@ -161,6 +161,7 @@ func TestClient_ClaudeParity(t *testing.T) {
 func TestRegistry_KnownClientsAndKeys(t *testing.T) {
 	want := map[string]string{
 		"claude":         "mcpServers",
+		"codex":          "mcp_servers",
 		"copilot":        "servers",
 		"cursor":         "mcpServers",
 		"devin":          "mcpServers",

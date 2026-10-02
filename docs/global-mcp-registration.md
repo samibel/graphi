@@ -30,7 +30,24 @@ The implementation starts from these existing contracts:
   must remain safe when named registrations and new formats are added.
 
 The repository requires Go 1.26.6. The default build and tests run with
-`CGO_ENABLED=0`. No TOML library is present in the baseline dependency graph.
+`CGO_ENABLED=0`. No TOML library was present in the baseline dependency graph.
+
+## TOML editing choice
+
+Codex configuration uses `github.com/pelletier/go-toml/v2` v2.4.3. It is a
+pure-Go, MIT-licensed TOML parser. Graphi validates the complete document with
+the stable decoder, then uses the pinned parser's raw syntax-tree ranges to
+replace only Graphi-managed values. Unrelated bytes, comments, table order,
+manual `enabled` settings, and nested tool policy remain untouched. Duplicate,
+invalid, or structurally ambiguous tables fail closed. The raw AST API is
+explicitly marked unstable by its upstream project, so the dependency stays
+pinned and its focused preservation tests are the upgrade gate.
+
+JSON and TOML writes share private backups, per-target Graphi locking,
+same-filesystem temporary files, syntax validation, and a final observed-state
+check before atomic replacement. A non-cooperating client can still write in
+the narrow interval after that final check; Graphi does not claim a transaction
+with external processes.
 
 ## Client compatibility
 
