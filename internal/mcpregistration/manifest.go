@@ -25,10 +25,11 @@ type Registration struct {
 // Manifest records only local registration metadata. Later schema-v1 tasks add
 // receipts, pending changes, and policies without duplicating store identity.
 type Manifest struct {
-	SchemaVersion int             `json:"schema_version"`
-	Registrations []Registration  `json:"registrations,omitempty"`
-	Receipts      []ClientReceipt `json:"client_receipts,omitempty"`
-	Pending       []PendingChange `json:"pending_changes,omitempty"`
+	SchemaVersion int                  `json:"schema_version"`
+	Registrations []Registration       `json:"registrations,omitempty"`
+	Receipts      []ClientReceipt      `json:"client_receipts,omitempty"`
+	Pending       []PendingChange      `json:"pending_changes,omitempty"`
+	Policies      []AutoRegisterPolicy `json:"auto_register_policies,omitempty"`
 }
 
 // NewManifest returns an empty manifest using the current schema.

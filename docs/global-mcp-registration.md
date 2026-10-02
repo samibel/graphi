@@ -11,10 +11,11 @@ The implementation starts from these existing contracts:
   historical server key `graphi`. Its separate `--project` mode writes
   `<repo>/.mcp.json`; `--attach` pins `mcp -db ... -meta ...` to the existing
   per-repository state layout.
-- `internal/mcpconfig` already has adapters for several JSON clients. Its
-  writer creates a private backup before atomic replacement and preserves
-  unrelated top-level keys and sibling servers. It does not yet provide TOML,
+- At the verified baseline, `internal/mcpconfig` had adapters for several JSON
+  clients and a private backup/atomic replacement writer, but no TOML,
   ownership receipts, cross-process serialization, or managed-field merging.
+  The implementation below extends that single writer path rather than adding
+  a competing config subsystem.
 - `internal/state` derives checkout state from an absolute repository root and
   its path fingerprint. `Ensure` creates the state directory and `repo.json`;
   read-only registration discovery must not call it or inherit its current
@@ -78,3 +79,25 @@ Generated registrations bind an absolute Graphi binary to one validated
 existing `db.sqlite` and its matching metadata directory. Registration does
 not refresh an index, grant isolation from the selected AI client, or guarantee
 which MCP server a model chooses.
+
+## Named registration examples
+
+```bash
+# Preview or register the current already-synchronized checkout globally.
+graphi setup --per-repo --client claude --dry-run
+graphi setup --per-repo --client claude
+
+# Select an existing checkout and its client-native config format.
+graphi setup --per-repo --root /tmp/synthetic/service --client codex
+
+# Consent once to future registration after explicit CLI syncs.
+graphi setup --per-repo --client all --auto-register --yes
+
+# Disable only that future policy; do not inspect a repo or remove an index.
+graphi setup --per-repo --client claude --no-auto-register
+```
+
+`--all-repos` reads only existing Graphi `repo.json` descriptors. `--adopt`
+requires an explicit matching name and store binding. `--unregister` requires a
+matching ownership receipt and unchanged full entry; it never removes the DB or
+metadata. Dry-run creates no config, backup, lock, manifest, or policy file.

@@ -1,6 +1,9 @@
 package mcpconfig
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,6 +39,15 @@ type Client struct {
 	ServersKey string // top-level JSON/TOML key holding the server map
 	Format     Format // JSON by default; Codex uses TOML
 	pathFn     func() (string, error)
+}
+
+// EntryState is a read-only semantic plan for one named server entry.
+type EntryState struct {
+	Action             Action
+	Current            any
+	Target             any
+	BeforeConfigDigest string
+	TargetConfigDigest string
 }
 
 // ConfigPath resolves this client's config file path. It is best-effort and may
@@ -106,6 +118,111 @@ func (c Client) ApplyEntry(name string, entry ServerEntry, dryRun bool) (Result,
 		return applyCodex(path, name, entry, dryRun)
 	}
 	return applyKey(path, c.ServersKey, name, entry, dryRun)
+}
+
+// Entries returns the selected client's named server map without modifying it.
+func (c Client) Entries() (map[string]any, error) {
+	path, err := c.pathFn()
+	if err != nil {
+		return nil, err
+	}
+	var doc map[string]any
+	if c.Format == FormatTOML {
+		raw, readErr := os.ReadFile(path)
+		if os.IsNotExist(readErr) {
+			return map[string]any{}, nil
+		}
+		if readErr != nil {
+			return nil, readErr
+		}
+		doc, err = decodeTOML(raw)
+		if err != nil {
+			return nil, err
+		}
+		return tomlObject(doc, c.ServersKey)
+	}
+	doc, err = Load(path)
+	if err != nil {
+		return nil, err
+	}
+	return serverMap(doc, c.ServersKey)
+}
+
+// PlanEntryState returns the current and post-merge entry values used for
+// ownership and pending-change digests.
+func (c Client) PlanEntryState(name string, desired ServerEntry) (EntryState, error) {
+	if c.Format == FormatTOML {
+		path, err := c.pathFn()
+		if err != nil {
+			return EntryState{}, err
+		}
+		return planCodexEntryState(path, name, desired)
+	}
+	path, err := c.pathFn()
+	if err != nil {
+		return EntryState{}, err
+	}
+	snapshot, err := loadSnapshot(path)
+	if err != nil {
+		return EntryState{}, err
+	}
+	servers, err := serverMap(snapshot.doc, c.ServersKey)
+	if err != nil {
+		return EntryState{}, err
+	}
+	current, exists := servers[name]
+	target := any(desired)
+	action := ActionCreated
+	if exists {
+		target, err = mergeServerEntry(current, desired)
+		if err != nil {
+			return EntryState{}, err
+		}
+		action = ActionUpdated
+		if equalJSON(current, target) {
+			action = ActionUnchanged
+		}
+	}
+	beforeDigest := configDigest(snapshot.raw)
+	targetDigest := beforeDigest
+	if action != ActionUnchanged {
+		docCopy := make(map[string]any, len(snapshot.doc)+1)
+		for key, value := range snapshot.doc {
+			docCopy[key] = value
+		}
+		serversCopy := make(map[string]any, len(servers)+1)
+		for key, value := range servers {
+			serversCopy[key] = value
+		}
+		serversCopy[name] = target
+		docCopy[c.ServersKey] = serversCopy
+		raw, marshalErr := json.MarshalIndent(docCopy, "", "  ")
+		if marshalErr != nil {
+			return EntryState{}, marshalErr
+		}
+		targetDigest = configDigest(raw)
+	}
+	return EntryState{
+		Action: action, Current: current, Target: target,
+		BeforeConfigDigest: beforeDigest, TargetConfigDigest: targetDigest,
+	}, nil
+}
+
+func configDigest(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// RemoveEntry removes one named entry through the client's real format writer.
+func (c Client) RemoveEntry(name string, dryRun bool) (Result, error) {
+	path, err := c.pathFn()
+	if err != nil {
+		return Result{}, err
+	}
+	if c.Format == FormatTOML {
+		return removeCodex(path, name, dryRun)
+	}
+	return removeKey(path, c.ServersKey, name, dryRun)
 }
 
 // ContendingGraphiServers returns the names (sorted) of server entries in this

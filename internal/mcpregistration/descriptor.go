@@ -39,6 +39,50 @@ type Resolver struct {
 // NewResolver returns a resolver rooted at an explicit Graphi state directory.
 func NewResolver(stateDir string) Resolver { return Resolver{StateDir: stateDir} }
 
+// List validates only checkouts named by descriptors immediately below the
+// Graphi state directory. It never searches a home directory or repository
+// remotes. Invalid and stale descriptors are returned as issues while valid
+// stores remain available to callers such as --all-repos.
+func (r Resolver) List() (stores []Store, issues []error, err error) {
+	if !filepath.IsAbs(r.StateDir) {
+		return nil, nil, errors.New("mcp registration: state directory must be absolute")
+	}
+	entries, readErr := os.ReadDir(r.StateDir)
+	if os.IsNotExist(readErr) {
+		return nil, nil, nil
+	}
+	if readErr != nil {
+		return nil, nil, fmt.Errorf("mcp registration: read state directory: %w", readErr)
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	seen := map[string]struct{}{}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		repoFile := filepath.Join(r.StateDir, entry.Name(), "repo.json")
+		descriptor, descriptorErr := state.ReadRepoDescriptor(repoFile)
+		if descriptorErr != nil {
+			if !os.IsNotExist(unwrapPathError(descriptorErr)) {
+				issues = append(issues, descriptorErr)
+			}
+			continue
+		}
+		store, resolveErr := r.Resolve(descriptor.AbsRoot)
+		if resolveErr != nil {
+			issues = append(issues, resolveErr)
+			continue
+		}
+		if _, duplicate := seen[store.CheckoutID]; duplicate {
+			continue
+		}
+		seen[store.CheckoutID] = struct{}{}
+		stores = append(stores, store)
+	}
+	sort.Slice(stores, func(i, j int) bool { return stores[i].CheckoutID < stores[j].CheckoutID })
+	return stores, issues, nil
+}
+
 // Resolve validates the existing descriptor, graph database, and ingest
 // sidecar for root. It never creates or migrates an index.
 func (r Resolver) Resolve(root string) (Store, error) {

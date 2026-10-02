@@ -106,7 +106,7 @@ known subcommands:
   search-ast         [labs] structural AST pattern query
   search-hybrid      [labs] embedding-free hybrid search: identifier segments + path + graph degree (labs)
   semantic           [labs] report the canonical semantic status document (installed, configured, indexed, fresh, typed state, active generation, languages, exact repair); byte-identical to `semantic_status` MCP tool and `GET /semantic/status`
-  setup              [labs] register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta)
+  setup              [labs] register graphi's MCP stdio server into local MCP clients' configs; --per-repo creates a global, checkout-bound named entry without writing into the repo; --project remains the project-file variant
   setup-embedder     [labs] print how to opt in to the optional semantic search (offline); for `static:<model>@<revision>` actually downloads the SHA-pinned artifact over HTTPS into the model cache
   skillgen           [labs] deterministic skill generation from a procedure description
   snapshot           [labs] list, freeze, or delete named graph states of this repo (for graphi compare)
@@ -461,9 +461,9 @@ usage:   graphi semantic status [--json] [-root <repo>] [-db path] [-meta dir]
 example: graphi semantic status --json
 
 --- graphi help setup ---
-graphi setup — [labs] register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta)
-usage:   graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>] [--attach]
-example: graphi setup --project
+graphi setup — [labs] register graphi's MCP stdio server into local MCP clients' configs; --per-repo creates a global, checkout-bound named entry without writing into the repo; --project remains the project-file variant
+usage:   graphi setup [--client claude|codex|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --per-repo [--root <repo>|--all-repos] --client claude|codex|devin|all [--name graphi-...] [--adopt|--unregister] [--auto-register --yes|--no-auto-register] | graphi setup --project [--root <repo>] [--attach]
+example: graphi setup --per-repo --client claude --dry-run
 
 --- graphi help setup-embedder ---
 graphi setup-embedder — [labs] print how to opt in to the optional semantic search (offline); for `static:<model>@<revision>` actually downloads the SHA-pinned artifact over HTTPS into the model cache

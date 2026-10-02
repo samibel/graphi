@@ -20,9 +20,10 @@ import (
 // configs in one command (SW-044, generalized). Idempotent, non-destructive,
 // atomic; --dry-run previews without writing. Offline.
 //
-//	graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all]
+//	graphi setup [--client claude|codex|copilot|cursor|devin|windsurf|claude-desktop|all]
 //	             [--dry-run] [--binary path] [--config path]
 //	graphi setup --project [--root <repo>] [--attach] [--dry-run] [--binary path]
+//	graphi setup --per-repo [--root <repo>|--all-repos] --client <client|all>
 //
 // Default (--client all): always target Claude Code (created if absent, matching
 // historical behavior) plus every OTHER local client that looks installed. A
@@ -50,8 +51,16 @@ func runSetup(args []string) int {
 	cfgPath := fs.String("config", "", "config file path override (single client; default: that client's path)")
 	client := fs.String("client", "all", "client to wire: "+strings.Join(mcpconfig.ClientIDs(), "|")+"|all")
 	project := fs.Bool("project", false, "write the project-scoped .mcp.json at the repository root with the session root pinned (mcp -root)")
-	rootFlag := fs.String("root", "", "repository root for --project (default: detected from the working directory)")
+	perRepo := fs.Bool("per-repo", false, "register a validated existing checkout as a named global MCP server")
+	rootFlag := fs.String("root", "", "repository root for --project or --per-repo (default: detected from the working directory)")
 	attach := fs.Bool("attach", false, "with --project: pin the auto-managed per-repo store instead (mcp -db/-meta; Attach mode, no auto-ingest)")
+	allRepos := fs.Bool("all-repos", false, "with --per-repo: reconcile only existing Graphi repo descriptors")
+	name := fs.String("name", "", "with --per-repo: full graphi- server name for first registration or adoption")
+	adopt := fs.Bool("adopt", false, "with --per-repo: explicitly adopt a matching manual named entry")
+	unregister := fs.Bool("unregister", false, "with --per-repo: remove only a receipt-owned named entry; keep the index")
+	autoRegister := fs.Bool("auto-register", false, "with --per-repo: consent to registration after future explicit CLI syncs")
+	noAutoRegister := fs.Bool("no-auto-register", false, "with --per-repo: disable future sync registration for selected clients only")
+	yes := fs.Bool("yes", false, "confirm --auto-register non-interactively; does not bypass validation")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: setup: %v\n", err)
 		return 1
@@ -66,13 +75,35 @@ func runSetup(args []string) int {
 		bin = exe
 	}
 
-	if *rootFlag != "" && !*project {
-		fmt.Fprintln(os.Stderr, "graphi: setup: --root requires --project (client configs are global; only the project file pins a repository)")
+	if *rootFlag != "" && !*project && !*perRepo {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --root requires --project or --per-repo")
 		return 1
 	}
 	if *attach && !*project {
 		fmt.Fprintln(os.Stderr, "graphi: setup: --attach requires --project (the per-repo store paths only make sense in the project file)")
 		return 1
+	}
+	if *perRepo && *project {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --per-repo and --project are mutually exclusive")
+		return 1
+	}
+	if *perRepo && *attach {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --attach applies only to --project")
+		return 1
+	}
+	if !*perRepo && (*allRepos || *name != "" || *adopt || *unregister || *autoRegister || *noAutoRegister || *yes) {
+		fmt.Fprintln(os.Stderr, "graphi: setup: named registration options require --per-repo")
+		return 1
+	}
+	if *perRepo {
+		visited := map[string]bool{}
+		fs.Visit(func(f *flag.Flag) { visited[f.Name] = true })
+		return runSetupPerRepo(setupPerRepoOptions{
+			CWD: getwd(), Binary: bin, Root: *rootFlag, ClientID: *client, ConfigPath: *cfgPath,
+			ClientExplicit: visited["client"], AllRepos: *allRepos, Name: *name, Adopt: *adopt,
+			Unregister: *unregister, DryRun: *dryRun, AutoRegister: *autoRegister,
+			NoAutoRegister: *noAutoRegister, Yes: *yes,
+		})
 	}
 	if *project {
 		clientSet := false

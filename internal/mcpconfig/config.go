@@ -42,6 +42,7 @@ type Action string
 const (
 	ActionCreated   Action = "created"   // entry was absent and is now added
 	ActionUpdated   Action = "updated"   // entry existed but differed and is now replaced
+	ActionRemoved   Action = "removed"   // managed entry was removed
 	ActionUnchanged Action = "unchanged" // entry already matched exactly; no write needed
 )
 
@@ -267,6 +268,70 @@ func Apply(path, name string, entry ServerEntry, dryRun bool) (Result, error) {
 // which key the client lists its servers under.
 func applyKey(path, serversKey, name string, entry ServerEntry, dryRun bool) (Result, error) {
 	return applyKeyWithHooks(path, serversKey, name, entry, dryRun, writerHooks{})
+}
+
+func removeKey(path, serversKey, name string, dryRun bool) (Result, error) {
+	if strings.TrimSpace(name) == "" {
+		return Result{}, fmt.Errorf("mcpconfig: empty server name")
+	}
+	if dryRun {
+		snapshot, err := loadSnapshot(path)
+		if err != nil {
+			return Result{}, err
+		}
+		servers, err := serverMap(snapshot.doc, serversKey)
+		if err != nil {
+			return Result{}, err
+		}
+		action := ActionRemoved
+		if _, exists := servers[name]; !exists {
+			action = ActionUnchanged
+		}
+		return Result{Action: action, Diff: redactedDiff(name, action, ServerEntry{})}, nil
+	}
+
+	mu := pathMutex(path)
+	mu.Lock()
+	defer mu.Unlock()
+	snapshot, err := loadSnapshot(path)
+	if err != nil {
+		return Result{}, err
+	}
+	servers, err := serverMap(snapshot.doc, serversKey)
+	if err != nil {
+		return Result{}, err
+	}
+	if _, exists := servers[name]; !exists {
+		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return Result{}, fmt.Errorf("mcpconfig: mkdir: %w", err)
+	}
+	unlock, err := lockConfig(path)
+	if err != nil {
+		return Result{}, err
+	}
+	defer unlock()
+	// Re-read under the cross-process lock so another Graphi writer cannot be
+	// lost between the initial existence check and removal.
+	snapshot, err = loadSnapshot(path)
+	if err != nil {
+		return Result{}, err
+	}
+	servers, err = serverMap(snapshot.doc, serversKey)
+	if err != nil {
+		return Result{}, err
+	}
+	if _, exists := servers[name]; !exists {
+		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
+	}
+	delete(servers, name)
+	snapshot.doc[serversKey] = servers
+	backupPath, err := writeAtomicWithBackupSnapshot(path, snapshot.doc, snapshot, writerHooks{})
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{Action: ActionRemoved, Diff: redactedDiff(name, ActionRemoved, ServerEntry{}), BackupPath: backupPath}, nil
 }
 
 type writerHooks struct {

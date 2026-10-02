@@ -1,6 +1,7 @@
 package mcpregistration
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -232,7 +233,17 @@ func digestJSON(value any) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("mcp registration: digest JSON: %w", err)
 	}
-	return DigestBytes(b), nil
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	decoder.UseNumber()
+	var normalized any
+	if err := decoder.Decode(&normalized); err != nil {
+		return "", fmt.Errorf("mcp registration: normalize digest JSON: %w", err)
+	}
+	canonical, err := json.Marshal(normalized)
+	if err != nil {
+		return "", fmt.Errorf("mcp registration: canonical digest JSON: %w", err)
+	}
+	return DigestBytes(canonical), nil
 }
 
 // DigestBytes returns a SHA-256 digest suitable for pending-state comparison.

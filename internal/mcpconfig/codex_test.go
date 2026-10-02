@@ -133,6 +133,37 @@ func TestCodexDisabledEntryPreserved(t *testing.T) {
 	}
 }
 
+func TestCodexRemovePreservesUnrelatedTables(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	original := `# keep
+model = "synthetic"
+
+[mcp_servers.graphi-service]
+command = "/bin/graphi"
+args = ["mcp"]
+
+[mcp_servers.graphi-service.tool_policy]
+allow = ["query"]
+
+[mcp_servers.foreign]
+command = "/bin/foreign"
+`
+	if err := os.WriteFile(path, []byte(original), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	result, err := codexFixture(path).RemoveEntry("graphi-service", false)
+	if err != nil || result.Action != ActionRemoved {
+		t.Fatalf("remove = (%q, %v)", result.Action, err)
+	}
+	raw := string(readBytes(t, path))
+	if strings.Contains(raw, "graphi-service") || !strings.Contains(raw, "# keep") || !strings.Contains(raw, "[mcp_servers.foreign]") {
+		t.Fatalf("target removal damaged unrelated TOML:\n%s", raw)
+	}
+	if err := validateTOML([]byte(raw)); err != nil {
+		t.Fatalf("removal produced invalid TOML: %v", err)
+	}
+}
+
 func TestCodexHomeOverride(t *testing.T) {
 	paths := testenv.Isolate(t)
 	codexHome := filepath.Join(paths.Root, "custom-codex")

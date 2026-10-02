@@ -101,6 +101,53 @@ func planCodexDocument(doc map[string]any, name string, entry ServerEntry) (Acti
 	return ActionUpdated, nil
 }
 
+func planCodexEntryState(path, name string, desired ServerEntry) (EntryState, error) {
+	snapshot, err := loadCodexSnapshot(path)
+	if err != nil {
+		return EntryState{}, err
+	}
+	servers, err := tomlObject(snapshot.doc, "mcp_servers")
+	if err != nil {
+		return EntryState{}, err
+	}
+	current, exists := servers[name]
+	var target any = map[string]any{"command": desired.Command, "args": append([]string(nil), desired.Args...)}
+	if len(desired.Env) > 0 {
+		env := make(map[string]any, len(desired.Env))
+		for key, value := range desired.Env {
+			env[key] = value
+		}
+		target.(map[string]any)["env"] = env
+	}
+	action := ActionCreated
+	if exists {
+		target, err = mergeCodexEntry(current, desired)
+		if err != nil {
+			return EntryState{}, err
+		}
+		action = ActionUpdated
+		if equalJSON(current, target) {
+			action = ActionUnchanged
+		}
+	}
+	beforeDigest := configDigest(snapshot.raw)
+	targetDigest := beforeDigest
+	if action != ActionUnchanged {
+		updated, editErr := editCodexTOML(snapshot.raw, snapshot.doc, name, desired)
+		if editErr != nil {
+			return EntryState{}, editErr
+		}
+		if err := validateTOML(updated); err != nil {
+			return EntryState{}, err
+		}
+		targetDigest = configDigest(updated)
+	}
+	return EntryState{
+		Action: action, Current: current, Target: target,
+		BeforeConfigDigest: beforeDigest, TargetConfigDigest: targetDigest,
+	}, nil
+}
+
 func tomlObject(doc map[string]any, key string) (map[string]any, error) {
 	raw, exists := doc[key]
 	if !exists || raw == nil {
@@ -196,6 +243,57 @@ func applyCodex(path, name string, entry ServerEntry, dryRun bool) (Result, erro
 	return Result{Action: action, Diff: diff, BackupPath: backupPath}, nil
 }
 
+func removeCodex(path, name string, dryRun bool) (Result, error) {
+	snapshot, err := loadCodexSnapshot(path)
+	if err != nil {
+		return Result{}, err
+	}
+	servers, err := tomlObject(snapshot.doc, "mcp_servers")
+	if err != nil {
+		return Result{}, err
+	}
+	if _, exists := servers[name]; !exists {
+		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
+	}
+	if dryRun {
+		return Result{Action: ActionRemoved, Diff: redactedDiff(name, ActionRemoved, ServerEntry{})}, nil
+	}
+
+	mu := pathMutex(path)
+	mu.Lock()
+	defer mu.Unlock()
+	unlock, err := lockConfig(path)
+	if err != nil {
+		return Result{}, err
+	}
+	defer unlock()
+	snapshot, err = loadCodexSnapshot(path)
+	if err != nil {
+		return Result{}, err
+	}
+	servers, err = tomlObject(snapshot.doc, "mcp_servers")
+	if err != nil {
+		return Result{}, err
+	}
+	if _, exists := servers[name]; !exists {
+		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
+	}
+	layout, err := inspectCodexLayout(snapshot.raw, name)
+	if err != nil {
+		return Result{}, err
+	}
+	if !layout.tableFound || layout.tableStart < 0 || layout.tableEnd < layout.tableStart {
+		return Result{}, fmt.Errorf("mcpconfig: Codex server %q is not an editable explicit table", name)
+	}
+	updated := append([]byte(nil), snapshot.raw[:layout.tableStart]...)
+	updated = append(updated, snapshot.raw[layout.tableEnd:]...)
+	backupPath, err := writeAtomicBytesWithBackupSnapshot(path, updated, snapshot.configSnapshot, writerHooks{}, validateTOML)
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{Action: ActionRemoved, Diff: redactedDiff(name, ActionRemoved, ServerEntry{}), BackupPath: backupPath}, nil
+}
+
 type tomlValueEdit struct {
 	start int
 	end   int
@@ -204,6 +302,8 @@ type tomlValueEdit struct {
 
 type codexLayout struct {
 	tableFound  bool
+	tableStart  int
+	tableEnd    int
 	headerEnd   int
 	valueRanges map[string]unstable.Range
 	nestedEnv   bool
@@ -284,12 +384,18 @@ func inspectCodexLayout(raw []byte, name string) (codexLayout, error) {
 		expression := parser.Expression()
 		switch expression.Kind {
 		case unstable.Table:
-			current = nodeKey(expression)
+			nextTable := nodeKey(expression)
+			start := tableLineStart(raw, expression)
+			if layout.tableFound && layout.tableEnd == 0 && !pathHasPrefix(nextTable, target) {
+				layout.tableEnd = start
+			}
+			current = nextTable
 			if reflect.DeepEqual(current, target) {
 				if layout.tableFound {
 					return codexLayout{}, fmt.Errorf("mcpconfig: duplicate Codex server table %q", name)
 				}
 				layout.tableFound = true
+				layout.tableStart = start
 				first := expression.Key()
 				if !first.Next() {
 					return codexLayout{}, errors.New("mcpconfig: empty TOML table key")
@@ -300,7 +406,11 @@ func inspectCodexLayout(raw []byte, name string) (codexLayout, error) {
 				layout.nestedEnv = true
 			}
 		case unstable.ArrayTable:
-			current = nodeKey(expression)
+			nextTable := nodeKey(expression)
+			if layout.tableFound && layout.tableEnd == 0 && !pathHasPrefix(nextTable, target) {
+				layout.tableEnd = tableLineStart(raw, expression)
+			}
+			current = nextTable
 		case unstable.KeyValue:
 			if !reflect.DeepEqual(current, target) {
 				continue
@@ -318,7 +428,32 @@ func inspectCodexLayout(raw []byte, name string) (codexLayout, error) {
 	if err := parser.Error(); err != nil {
 		return codexLayout{}, fmt.Errorf("mcpconfig: parse Codex TOML layout: %w", err)
 	}
+	if layout.tableFound && layout.tableEnd == 0 {
+		layout.tableEnd = len(raw)
+	}
 	return layout, nil
+}
+
+func tableLineStart(raw []byte, expression *unstable.Node) int {
+	iterator := expression.Key()
+	if !iterator.Next() {
+		return 0
+	}
+	offset := int(iterator.Node().Raw.Offset)
+	if offset > len(raw) {
+		return len(raw)
+	}
+	if index := bytes.LastIndexByte(raw[:offset], '\n'); index >= 0 {
+		return index + 1
+	}
+	return 0
+}
+
+func pathHasPrefix(path, prefix []string) bool {
+	if len(path) < len(prefix) {
+		return false
+	}
+	return reflect.DeepEqual(path[:len(prefix)], prefix)
 }
 
 func keyValueRange(raw []byte, expression *unstable.Node) (unstable.Range, error) {

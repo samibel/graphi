@@ -13,6 +13,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,6 +32,22 @@ func StateDir() string {
 		home = "."
 	}
 	return filepath.Join(home, ".graphi")
+}
+
+// StrictStateDir resolves the user state directory for write paths that must
+// never inherit StateDir's historical current-directory fallback.
+func StrictStateDir() (string, error) {
+	if xdg := os.Getenv("XDG_STATE_HOME"); xdg != "" {
+		if !filepath.IsAbs(xdg) {
+			return "", errors.New("state: XDG_STATE_HOME must be absolute")
+		}
+		return filepath.Join(xdg, "graphi"), nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || !filepath.IsAbs(home) {
+		return "", errors.New("state: absolute user home is required for registration")
+	}
+	return filepath.Join(home, ".graphi"), nil
 }
 
 // RepoRoot resolves the repository root for cwd. It cleans+absolutizes cwd,
