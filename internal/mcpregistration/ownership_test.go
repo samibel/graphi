@@ -68,3 +68,22 @@ func TestPendingReceiptRecovery(t *testing.T) {
 		t.Fatalf("conflict recovery = (%q, %v), pending=%#v", status, err, manifest.Pending)
 	}
 }
+
+func TestPendingRemovalRecoveryDropsReceipt(t *testing.T) {
+	receipt := mcpregistration.ClientReceipt{
+		CheckoutID: "1111111111111111", ClientID: "claude", ConfigPath: "/config/claude.json", ServerName: "graphi-service",
+		ManagedDigest: "managed", EntryDigest: "entry",
+	}
+	manifest := mcpregistration.NewManifest()
+	manifest.Receipts = []mcpregistration.ClientReceipt{receipt}
+	manifest.Pending = []mcpregistration.PendingChange{{
+		ID: "remove-1", BeforeDigest: "before", TargetDigest: "target", Receipt: receipt, Remove: true,
+	}}
+	status, err := mcpregistration.RecoverPending(&manifest, "remove-1", "target")
+	if err != nil || status != mcpregistration.RecoveryCompleted {
+		t.Fatalf("removal recovery = (%q, %v)", status, err)
+	}
+	if len(manifest.Pending) != 0 || len(manifest.Receipts) != 0 {
+		t.Fatalf("completed removal recovery retained ownership: %#v", manifest)
+	}
+}

@@ -43,6 +43,11 @@ func indexedSetupRepo(t *testing.T, parent, name string) (string, state.Paths) {
 		_ = store.Close()
 		t.Fatal(err)
 	}
+	if err := meta.IngestAll(t.Context(), root); err != nil {
+		_ = meta.Close()
+		_ = store.Close()
+		t.Fatal(err)
+	}
 	if err := meta.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -188,6 +193,52 @@ func TestAutoConsentRequiresTTYOrYes(t *testing.T) {
 	manifest := mcpregistration.ManifestPath(state.StateDir())
 	if _, err := os.Stat(manifest); !os.IsNotExist(err) {
 		t.Fatalf("rejected consent wrote manifest: %v", err)
+	}
+}
+
+func TestAutoConsentDisclosesGlobalVisibilityWithYes(t *testing.T) {
+	paths := testenv.Isolate(t)
+	repo, _ := indexedSetupRepo(t, filepath.Join(paths.Root, "consumer"), "service")
+	output := captureStdout(t, func() {
+		if rc := runSetup([]string{"--per-repo", "--root", repo, "--client", "claude", "--config", paths.ClaudeConfigPath, "--auto-register", "--yes", "--dry-run", "--binary", "/opt/graphi"}); rc != 0 {
+			t.Fatalf("auto-register dry-run rc=%d", rc)
+		}
+	})
+	for _, want := range []string{"visible to the selected client outside their repositories", "Tool metadata and results are delivered to that AI client"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("consent disclosure missing %q:\n%s", want, output)
+		}
+	}
+}
+
+func TestPerRepoBinaryPathIsAbsolute(t *testing.T) {
+	paths := testenv.Isolate(t)
+	repo, _ := indexedSetupRepo(t, filepath.Join(paths.Root, "consumer"), "service")
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	work := t.TempDir()
+	if err := os.Chdir(work); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+
+	config := filepath.Join(paths.Root, "client.json")
+	if rc := runSetup([]string{"--per-repo", "--root", repo, "--client", "claude", "--config", config, "--binary", "bin/graphi"}); rc != 0 {
+		t.Fatalf("relative binary registration rc=%d", rc)
+	}
+	doc, err := mcpconfig.Load(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := doc["mcpServers"].(map[string]any)["graphi-service"].(map[string]any)
+	want, err := filepath.Abs(filepath.Join("bin", "graphi"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := entry["command"]; got != want {
+		t.Fatalf("registered command = %v, want absolute %q", got, want)
 	}
 }
 

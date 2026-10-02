@@ -148,6 +148,27 @@ func planCodexEntryState(path, name string, desired ServerEntry) (EntryState, er
 	}, nil
 }
 
+func planCodexRemovalState(path, name string) (RemovalState, error) {
+	snapshot, err := loadCodexSnapshot(path)
+	if err != nil {
+		return RemovalState{}, err
+	}
+	servers, err := tomlObject(snapshot.doc, "mcp_servers")
+	if err != nil {
+		return RemovalState{}, err
+	}
+	current, exists := servers[name]
+	beforeDigest := configDigest(snapshot.raw)
+	if !exists {
+		return RemovalState{Action: ActionUnchanged, BeforeConfigDigest: beforeDigest, TargetConfigDigest: beforeDigest}, nil
+	}
+	updated, err := removeCodexBytes(snapshot, name)
+	if err != nil {
+		return RemovalState{}, err
+	}
+	return RemovalState{Action: ActionRemoved, Current: current, BeforeConfigDigest: beforeDigest, TargetConfigDigest: configDigest(updated)}, nil
+}
+
 func tomlObject(doc map[string]any, key string) (map[string]any, error) {
 	raw, exists := doc[key]
 	if !exists || raw == nil {
@@ -197,6 +218,10 @@ func mergeCodexEntry(current any, desired ServerEntry) (map[string]any, error) {
 }
 
 func applyCodex(path, name string, entry ServerEntry, dryRun bool) (Result, error) {
+	return applyCodexObserved(path, name, entry, "", dryRun)
+}
+
+func applyCodexObserved(path, name string, entry ServerEntry, beforeConfigDigest string, dryRun bool) (Result, error) {
 	if strings.TrimSpace(name) == "" {
 		return Result{}, errors.New("mcpconfig: empty Codex server name")
 	}
@@ -224,6 +249,9 @@ func applyCodex(path, name string, entry ServerEntry, dryRun bool) (Result, erro
 	if err != nil {
 		return Result{}, err
 	}
+	if err := requireObservedDigest(snapshot.raw, beforeConfigDigest); err != nil {
+		return Result{}, err
+	}
 	action, err := planCodexDocument(snapshot.doc, name, entry)
 	if err != nil {
 		return Result{}, err
@@ -244,54 +272,72 @@ func applyCodex(path, name string, entry ServerEntry, dryRun bool) (Result, erro
 }
 
 func removeCodex(path, name string, dryRun bool) (Result, error) {
+	return removeCodexObserved(path, name, nil, "", dryRun)
+}
+
+func removeCodexObserved(path, name string, expectedCurrent any, beforeConfigDigest string, dryRun bool) (Result, error) {
+	if dryRun {
+		state, err := planCodexRemovalState(path, name)
+		if err != nil {
+			return Result{}, err
+		}
+		return Result{Action: state.Action, Diff: redactedDiff(name, state.Action, ServerEntry{})}, nil
+	}
+
+	mu := pathMutex(path)
+	mu.Lock()
+	defer mu.Unlock()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return Result{}, fmt.Errorf("mcpconfig: mkdir Codex config: %w", err)
+	}
+	unlock, err := lockConfig(path)
+	if err != nil {
+		return Result{}, err
+	}
+	defer unlock()
 	snapshot, err := loadCodexSnapshot(path)
 	if err != nil {
+		return Result{}, err
+	}
+	if err := requireObservedDigest(snapshot.raw, beforeConfigDigest); err != nil {
 		return Result{}, err
 	}
 	servers, err := tomlObject(snapshot.doc, "mcp_servers")
 	if err != nil {
 		return Result{}, err
 	}
-	if _, exists := servers[name]; !exists {
+	current, exists := servers[name]
+	if !exists {
 		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
 	}
-	if dryRun {
-		return Result{Action: ActionRemoved, Diff: redactedDiff(name, ActionRemoved, ServerEntry{})}, nil
+	if expectedCurrent != nil && !equalJSON(current, expectedCurrent) {
+		return Result{}, fmt.Errorf("mcpconfig: named entry changed after authorization; refusing removal")
 	}
-
-	mu := pathMutex(path)
-	mu.Lock()
-	defer mu.Unlock()
-	unlock, err := lockConfig(path)
+	updated, err := removeCodexBytes(snapshot, name)
 	if err != nil {
 		return Result{}, err
 	}
-	defer unlock()
-	snapshot, err = loadCodexSnapshot(path)
-	if err != nil {
-		return Result{}, err
-	}
-	servers, err = tomlObject(snapshot.doc, "mcp_servers")
-	if err != nil {
-		return Result{}, err
-	}
-	if _, exists := servers[name]; !exists {
-		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
-	}
-	layout, err := inspectCodexLayout(snapshot.raw, name)
-	if err != nil {
-		return Result{}, err
-	}
-	if !layout.tableFound || layout.tableStart < 0 || layout.tableEnd < layout.tableStart {
-		return Result{}, fmt.Errorf("mcpconfig: Codex server %q is not an editable explicit table", name)
-	}
-	updated := append([]byte(nil), snapshot.raw[:layout.tableStart]...)
-	updated = append(updated, snapshot.raw[layout.tableEnd:]...)
 	backupPath, err := writeAtomicBytesWithBackupSnapshot(path, updated, snapshot.configSnapshot, writerHooks{}, validateTOML)
 	if err != nil {
 		return Result{}, err
 	}
 	return Result{Action: ActionRemoved, Diff: redactedDiff(name, ActionRemoved, ServerEntry{}), BackupPath: backupPath}, nil
+}
+
+func removeCodexBytes(snapshot codexSnapshot, name string) ([]byte, error) {
+	layout, err := inspectCodexLayout(snapshot.raw, name)
+	if err != nil {
+		return nil, err
+	}
+	if !layout.tableFound || layout.tableStart < 0 || layout.tableEnd < layout.tableStart {
+		return nil, fmt.Errorf("mcpconfig: Codex server %q is not an editable explicit table", name)
+	}
+	updated := append([]byte(nil), snapshot.raw[:layout.tableStart]...)
+	updated = append(updated, snapshot.raw[layout.tableEnd:]...)
+	if err := validateTOML(updated); err != nil {
+		return nil, err
+	}
+	return updated, nil
 }
 
 type tomlValueEdit struct {

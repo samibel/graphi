@@ -101,6 +101,19 @@ func (s Service) executeUnlocked(request ServiceRequest) (ServiceResult, error) 
 	if err != nil {
 		return ServiceResult{}, err
 	}
+	recovered := map[string]RecoveryStatus{}
+	if !request.DryRun {
+		var changed bool
+		changed, recovered, err = recoverClientPending(&manifest, clients)
+		if err != nil {
+			return ServiceResult{}, err
+		}
+		if changed {
+			if err := SaveManifest(manifestPath, manifest, false); err != nil {
+				return ServiceResult{}, err
+			}
+		}
+	}
 	if request.DisableAutoRegister {
 		if request.DryRun {
 			return ServiceResult{}, nil
@@ -158,7 +171,7 @@ func (s Service) executeUnlocked(request ServiceRequest) (ServiceResult, error) 
 	for _, store := range stores {
 		name := names[store.CheckoutID]
 		if request.Unregister {
-			changes, unregisterErr := s.unregister(&manifest, manifestPath, store, name, clients, request.DryRun)
+			changes, unregisterErr := s.unregister(&manifest, manifestPath, store, name, clients, request.DryRun, recovered)
 			result.Changes = append(result.Changes, changes...)
 			if unregisterErr != nil {
 				return result, unregisterErr
@@ -304,14 +317,14 @@ func (s Service) applyOne(manifest *Manifest, manifestPath string, store Store, 
 		return ServiceChange{}, err
 	}
 	pending := PendingChange{
-		ID:           store.CheckoutID + ":" + client.ID + ":" + name,
+		ID:           pendingChangeID(store.CheckoutID, client.ID, name),
 		BeforeDigest: plan.BeforeConfigDigest, TargetDigest: plan.TargetConfigDigest, Receipt: receipt,
 	}
 	upsertPending(manifest, pending)
 	if err := SaveManifest(manifestPath, *manifest, false); err != nil {
 		return ServiceChange{}, err
 	}
-	change.Result, err = client.ApplyEntry(name, entry, false)
+	change.Result, err = client.ApplyEntryObserved(name, entry, plan.BeforeConfigDigest, false)
 	if err != nil {
 		observedDigest := digestConfigPath(path)
 		_, _ = RecoverPending(manifest, pending.ID, observedDigest)
@@ -351,39 +364,68 @@ func digestConfigPath(path string) string {
 	return DigestBytes(raw)
 }
 
-func (s Service) unregister(manifest *Manifest, manifestPath string, store Store, name string, clients []mcpconfig.Client, dryRun bool) ([]ServiceChange, error) {
+func (s Service) unregister(manifest *Manifest, manifestPath string, store Store, name string, clients []mcpconfig.Client, dryRun bool, recovered map[string]RecoveryStatus) ([]ServiceChange, error) {
 	var changes []ServiceChange
 	for _, client := range clients {
 		path, _ := client.ConfigPath()
+		pendingID := pendingChangeID(store.CheckoutID, client.ID, name)
+		if recovered[pendingID] == RecoveryCompleted {
+			changes = append(changes, ServiceChange{
+				CheckoutID: store.CheckoutID, Root: store.Root, ClientID: client.ID, ConfigPath: path, ServerName: name,
+				Result: mcpconfig.Result{Action: mcpconfig.ActionRemoved, Diff: fmt.Sprintf("action: removed\nserver: %s\nmanaged: command,args,env-keys:[]\n", name)},
+			})
+			continue
+		}
 		receiptIndex := receiptIndex(*manifest, store.CheckoutID, client.ID, path, name)
 		if receiptIndex < 0 {
 			return changes, fmt.Errorf("mcp registration: no ownership receipt for %s/%s", client.ID, name)
 		}
-		entries, err := client.Entries()
+		plan, err := client.PlanRemoveEntryState(name)
 		if err != nil {
 			return changes, err
 		}
-		current, exists := entries[name]
-		if !exists {
+		if plan.Current == nil {
 			return changes, fmt.Errorf("mcp registration: owned entry %s is missing from %s", name, client.ID)
 		}
-		digest, err := EntryDigest(current)
+		digest, err := EntryDigest(plan.Current)
 		if err != nil {
 			return changes, err
 		}
 		if digest != manifest.Receipts[receiptIndex].EntryDigest {
 			return changes, fmt.Errorf("mcp registration: %s entry %s was edited; refusing removal", client.ID, name)
 		}
-		result, err := client.RemoveEntry(name, dryRun)
+		if dryRun {
+			result, err := client.RemoveEntryObserved(name, plan.Current, plan.BeforeConfigDigest, true)
+			if err != nil {
+				return changes, err
+			}
+			changes = append(changes, ServiceChange{CheckoutID: store.CheckoutID, Root: store.Root, ClientID: client.ID, ConfigPath: path, ServerName: name, Result: result})
+			continue
+		}
+		pending := PendingChange{
+			ID: pendingID, BeforeDigest: plan.BeforeConfigDigest, TargetDigest: plan.TargetConfigDigest,
+			Receipt: manifest.Receipts[receiptIndex], Remove: true,
+		}
+		upsertPending(manifest, pending)
+		if err := SaveManifest(manifestPath, *manifest, false); err != nil {
+			return changes, err
+		}
+		result, err := client.RemoveEntryObserved(name, plan.Current, plan.BeforeConfigDigest, false)
 		if err != nil {
+			_, _ = RecoverPending(manifest, pending.ID, digestConfigPath(path))
+			_ = SaveManifest(manifestPath, *manifest, false)
 			return changes, err
 		}
 		changes = append(changes, ServiceChange{CheckoutID: store.CheckoutID, Root: store.Root, ClientID: client.ID, ConfigPath: path, ServerName: name, Result: result})
-		if !dryRun {
-			manifest.Receipts = append(manifest.Receipts[:receiptIndex], manifest.Receipts[receiptIndex+1:]...)
-			if err := SaveManifest(manifestPath, *manifest, false); err != nil {
-				return changes, err
-			}
+		status, err := RecoverPending(manifest, pending.ID, digestConfigPath(path))
+		if err != nil {
+			return changes, fmt.Errorf("mcp registration: confirm client removal: %w", err)
+		}
+		if status != RecoveryCompleted {
+			return changes, fmt.Errorf("mcp registration: confirm client removal: unexpected recovery state %s", status)
+		}
+		if err := SaveManifest(manifestPath, *manifest, false); err != nil {
+			return changes, err
 		}
 	}
 	if !dryRun && !hasReceiptForCheckout(*manifest, store.CheckoutID) {
@@ -393,6 +435,40 @@ func (s Service) unregister(manifest *Manifest, manifestPath string, store Store
 		}
 	}
 	return changes, nil
+}
+
+func pendingChangeID(checkoutID, clientID, name string) string {
+	return checkoutID + ":" + clientID + ":" + name
+}
+
+// recoverClientPending resolves interrupted writes for the exact selected
+// client targets before any ownership decision is made. It never restores a
+// whole config: target completes, before retries, and a third state conflicts.
+func recoverClientPending(manifest *Manifest, clients []mcpconfig.Client) (bool, map[string]RecoveryStatus, error) {
+	targets := map[string]struct{}{}
+	for _, client := range clients {
+		path, err := client.ConfigPath()
+		if err != nil {
+			return false, nil, err
+		}
+		targets[client.ID+"\x00"+filepath.Clean(path)] = struct{}{}
+	}
+	pending := append([]PendingChange(nil), manifest.Pending...)
+	changed := false
+	statuses := map[string]RecoveryStatus{}
+	for _, change := range pending {
+		key := change.Receipt.ClientID + "\x00" + filepath.Clean(change.Receipt.ConfigPath)
+		if _, selected := targets[key]; !selected {
+			continue
+		}
+		status, err := RecoverPending(manifest, change.ID, digestConfigPath(change.Receipt.ConfigPath))
+		if err != nil {
+			return changed, statuses, fmt.Errorf("mcp registration: recover pending change %s: %w", change.ID, err)
+		}
+		statuses[change.ID] = status
+		changed = true
+	}
+	return changed, statuses, nil
 }
 
 func ensureOutsideCheckout(canonicalRoot, target string) error {

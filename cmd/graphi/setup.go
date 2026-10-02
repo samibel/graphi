@@ -74,6 +74,11 @@ func runSetup(args []string) int {
 		}
 		bin = exe
 	}
+	bin, err := filepath.Abs(filepath.Clean(bin))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: resolve binary path: %v\n", err)
+		return 1
+	}
 
 	if *rootFlag != "" && !*project && !*perRepo {
 		fmt.Fprintln(os.Stderr, "graphi: setup: --root requires --project or --per-repo")

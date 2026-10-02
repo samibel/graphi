@@ -26,6 +26,45 @@ func readJSON(t *testing.T, path string) map[string]any {
 	return doc
 }
 
+func TestClientConfigPathIsAbsolute(t *testing.T) {
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	work := t.TempDir()
+	if err := os.Chdir(work); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+
+	client := fakeClient("test", "mcpServers", filepath.Join("profiles", "client.json"))
+	got, err := client.ConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := filepath.Abs(filepath.Join("profiles", "client.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("ConfigPath = %q, want %q", got, want)
+	}
+}
+
+func TestClaudeConfigDirOverride(t *testing.T) {
+	t.Setenv(EnvOverride, "")
+	profile := filepath.Join(t.TempDir(), "claude-profile")
+	t.Setenv(ClaudeConfigDirEnv, profile)
+
+	got, err := ConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(profile, ".claude.json"); got != want {
+		t.Fatalf("ConfigPath = %q, want CLAUDE_CONFIG_DIR profile %q", got, want)
+	}
+}
+
 func TestClient_Apply_KeyAndMergePreservesOthers(t *testing.T) {
 	cases := []struct {
 		name string

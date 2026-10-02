@@ -164,6 +164,26 @@ command = "/bin/foreign"
 	}
 }
 
+func TestCodexObservedMutationRejectsExternalEdit(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	client := codexFixture(path)
+	entry := GraphiEntry("/opt/graphi", []string{"mcp", "-db", "/state/db.sqlite"})
+	plan, err := client.PlanEntryState("graphi-service", entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	external := []byte("# external edit\nmodel = \"synthetic\"\n")
+	if err := os.WriteFile(path, external, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.ApplyEntryObserved("graphi-service", entry, plan.BeforeConfigDigest, false); err == nil {
+		t.Fatal("Codex observed writer overwrote an external edit")
+	}
+	if got := readBytes(t, path); string(got) != string(external) {
+		t.Fatalf("external Codex config changed after refusal:\n%s", got)
+	}
+}
+
 func TestCodexHomeOverride(t *testing.T) {
 	paths := testenv.Isolate(t)
 	codexHome := filepath.Join(paths.Root, "custom-codex")

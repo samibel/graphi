@@ -24,6 +24,11 @@ import (
 // default config path. Primarily for testing and non-standard installs.
 const EnvOverride = "CLAUDE_CONFIG_PATH"
 
+// ClaudeConfigDirEnv is Claude Code's supported profile/config-directory
+// override. Claude stores the user MCP map in .claude.json below this
+// directory when the override is active.
+const ClaudeConfigDirEnv = "CLAUDE_CONFIG_DIR"
+
 // DefaultName is the Claude Code global config filename (verified live).
 const DefaultName = ".claude.json"
 
@@ -69,7 +74,14 @@ func GraphiEntry(binary string, args []string) ServerEntry {
 // satisfied honestly via one canonical path rather than per-OS special cases.
 func ConfigPath() (string, error) {
 	if v := os.Getenv(EnvOverride); v != "" {
-		return v, nil
+		return filepath.Abs(filepath.Clean(v))
+	}
+	if v := os.Getenv(ClaudeConfigDirEnv); v != "" {
+		root, err := filepath.Abs(filepath.Clean(v))
+		if err != nil {
+			return "", fmt.Errorf("mcpconfig: resolve CLAUDE_CONFIG_DIR: %w", err)
+		}
+		return filepath.Join(root, DefaultName), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -267,10 +279,14 @@ func Apply(path, name string, entry ServerEntry, dryRun bool) (Result, error) {
 // verify+restore, preservation of unrelated keys) is identical regardless of
 // which key the client lists its servers under.
 func applyKey(path, serversKey, name string, entry ServerEntry, dryRun bool) (Result, error) {
-	return applyKeyWithHooks(path, serversKey, name, entry, dryRun, writerHooks{})
+	return applyKeyObserved(path, serversKey, name, entry, "", dryRun)
 }
 
 func removeKey(path, serversKey, name string, dryRun bool) (Result, error) {
+	return removeKeyObserved(path, serversKey, name, nil, "", dryRun)
+}
+
+func removeKeyObserved(path, serversKey, name string, expectedCurrent any, beforeConfigDigest string, dryRun bool) (Result, error) {
 	if strings.TrimSpace(name) == "" {
 		return Result{}, fmt.Errorf("mcpconfig: empty server name")
 	}
@@ -293,17 +309,6 @@ func removeKey(path, serversKey, name string, dryRun bool) (Result, error) {
 	mu := pathMutex(path)
 	mu.Lock()
 	defer mu.Unlock()
-	snapshot, err := loadSnapshot(path)
-	if err != nil {
-		return Result{}, err
-	}
-	servers, err := serverMap(snapshot.doc, serversKey)
-	if err != nil {
-		return Result{}, err
-	}
-	if _, exists := servers[name]; !exists {
-		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
-	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return Result{}, fmt.Errorf("mcpconfig: mkdir: %w", err)
 	}
@@ -314,16 +319,23 @@ func removeKey(path, serversKey, name string, dryRun bool) (Result, error) {
 	defer unlock()
 	// Re-read under the cross-process lock so another Graphi writer cannot be
 	// lost between the initial existence check and removal.
-	snapshot, err = loadSnapshot(path)
+	snapshot, err := loadSnapshot(path)
 	if err != nil {
 		return Result{}, err
 	}
-	servers, err = serverMap(snapshot.doc, serversKey)
+	if err := requireObservedDigest(snapshot.raw, beforeConfigDigest); err != nil {
+		return Result{}, err
+	}
+	servers, err := serverMap(snapshot.doc, serversKey)
 	if err != nil {
 		return Result{}, err
 	}
-	if _, exists := servers[name]; !exists {
+	current, exists := servers[name]
+	if !exists {
 		return Result{Action: ActionUnchanged, Diff: redactedDiff(name, ActionUnchanged, ServerEntry{})}, nil
+	}
+	if expectedCurrent != nil && !equalJSON(current, expectedCurrent) {
+		return Result{}, fmt.Errorf("mcpconfig: named entry changed after authorization; refusing removal")
 	}
 	delete(servers, name)
 	snapshot.doc[serversKey] = servers
@@ -351,6 +363,14 @@ func pathMutex(path string) *sync.Mutex {
 }
 
 func applyKeyWithHooks(path, serversKey, name string, entry ServerEntry, dryRun bool, hooks writerHooks) (Result, error) {
+	return applyKeyObservedWithHooks(path, serversKey, name, entry, "", dryRun, hooks)
+}
+
+func applyKeyObserved(path, serversKey, name string, entry ServerEntry, beforeConfigDigest string, dryRun bool) (Result, error) {
+	return applyKeyObservedWithHooks(path, serversKey, name, entry, beforeConfigDigest, dryRun, writerHooks{})
+}
+
+func applyKeyObservedWithHooks(path, serversKey, name string, entry ServerEntry, beforeConfigDigest string, dryRun bool, hooks writerHooks) (Result, error) {
 	if strings.TrimSpace(name) == "" {
 		return Result{}, fmt.Errorf("mcpconfig: empty server name")
 	}
@@ -374,6 +394,9 @@ func applyKeyWithHooks(path, serversKey, name string, entry ServerEntry, dryRun 
 
 	snapshot, err := loadSnapshot(path)
 	if err != nil {
+		return Result{}, err
+	}
+	if err := requireObservedDigest(snapshot.raw, beforeConfigDigest); err != nil {
 		return Result{}, err
 	}
 	act, err := planKey(snapshot.doc, serversKey, name, entry)
@@ -404,6 +427,13 @@ func applyKeyWithHooks(path, serversKey, name string, entry ServerEntry, dryRun 
 		return Result{}, err
 	}
 	return Result{Action: act, Diff: diff, BackupPath: backupPath}, nil
+}
+
+func requireObservedDigest(raw []byte, expected string) error {
+	if expected != "" && configDigest(raw) != expected {
+		return fmt.Errorf("mcpconfig: config changed after authorization; refusing to overwrite")
+	}
+	return nil
 }
 
 func planSnapshot(path, serversKey, name string, entry ServerEntry) (Result, error) {

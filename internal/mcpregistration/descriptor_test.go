@@ -20,6 +20,9 @@ func indexedRepo(t *testing.T, parent, name string) (string, state.Paths) {
 	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o700); err != nil {
 		t.Fatalf("create synthetic repo: %v", err)
 	}
+	if err := os.WriteFile(filepath.Join(root, "synthetic.go"), []byte("package synthetic\n"), 0o600); err != nil {
+		t.Fatalf("write synthetic source: %v", err)
+	}
 	p, err := state.Resolve(root)
 	if err != nil {
 		t.Fatalf("resolve state: %v", err)
@@ -36,6 +39,11 @@ func indexedRepo(t *testing.T, parent, name string) (string, state.Paths) {
 		_ = store.Close()
 		t.Fatalf("create ingest metadata: %v", err)
 	}
+	if err := meta.IngestAll(t.Context(), root); err != nil {
+		_ = meta.Close()
+		_ = store.Close()
+		t.Fatalf("ingest synthetic source: %v", err)
+	}
 	if err := meta.Close(); err != nil {
 		t.Fatalf("close ingest metadata: %v", err)
 	}
@@ -43,6 +51,24 @@ func indexedRepo(t *testing.T, parent, name string) (string, state.Paths) {
 		t.Fatalf("close graph store: %v", err)
 	}
 	return root, p
+}
+
+func TestCheckoutReplacementAtSamePathRequiresSync(t *testing.T) {
+	paths := testenv.Isolate(t)
+	root, _ := indexedRepo(t, filepath.Join(paths.Root, "work"), "service")
+	if err := os.RemoveAll(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "replacement.go"), []byte("package replacement\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := mcpregistration.NewResolver(state.StateDir()).Resolve(root); err == nil {
+		t.Fatal("Resolve advertised the old index for a replacement checkout at the same path")
+	}
 }
 
 func TestSameBasenameDifferentRoots(t *testing.T) {

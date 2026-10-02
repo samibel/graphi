@@ -43,6 +43,7 @@ type PendingChange struct {
 	BeforeDigest string        `json:"before_digest"`
 	TargetDigest string        `json:"target_digest"`
 	Receipt      ClientReceipt `json:"receipt"`
+	Remove       bool          `json:"remove,omitempty"`
 }
 
 // OwnershipRequest describes an authorization check immediately before a
@@ -274,7 +275,11 @@ func RecoverPending(manifest *Manifest, id, observedDigest string) (RecoveryStat
 		}
 		switch observedDigest {
 		case pending.TargetDigest:
-			upsertReceipt(manifest, pending.Receipt)
+			if pending.Remove {
+				removeReceipt(manifest, pending.Receipt)
+			} else {
+				upsertReceipt(manifest, pending.Receipt)
+			}
 			manifest.Pending = append(manifest.Pending[:index], manifest.Pending[index+1:]...)
 			return RecoveryCompleted, nil
 		case pending.BeforeDigest:
@@ -285,6 +290,16 @@ func RecoverPending(manifest *Manifest, id, observedDigest string) (RecoveryStat
 		}
 	}
 	return RecoveryConflict, fmt.Errorf("mcp registration: pending change %q not found", id)
+}
+
+func removeReceipt(manifest *Manifest, receipt ClientReceipt) {
+	for index, current := range manifest.Receipts {
+		if current.CheckoutID == receipt.CheckoutID && current.ClientID == receipt.ClientID &&
+			current.ConfigPath == receipt.ConfigPath && current.ServerName == receipt.ServerName {
+			manifest.Receipts = append(manifest.Receipts[:index], manifest.Receipts[index+1:]...)
+			return
+		}
+	}
 }
 
 func upsertReceipt(manifest *Manifest, receipt ClientReceipt) {

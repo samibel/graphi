@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,9 +51,33 @@ type EntryState struct {
 	TargetConfigDigest string
 }
 
-// ConfigPath resolves this client's config file path. It is best-effort and may
-// point at a not-yet-created file (detection is parent-dir aware).
-func (c Client) ConfigPath() (string, error) { return c.pathFn() }
+// RemovalState is the read-only before/after plan for deleting one entry.
+// Current and the complete-config digests let a caller authorize the exact
+// observed state and require the writer to compare it again under its lock.
+type RemovalState struct {
+	Action             Action
+	Current            any
+	BeforeConfigDigest string
+	TargetConfigDigest string
+}
+
+// ConfigPath resolves this client's config file path to a stable absolute
+// identity. It may point at a not-yet-created file (detection is parent-dir
+// aware), but it never remains dependent on a later working directory.
+func (c Client) ConfigPath() (string, error) {
+	path, err := c.pathFn()
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(path) == "" {
+		return "", errors.New("mcpconfig: empty config path")
+	}
+	abs, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		return "", fmt.Errorf("mcpconfig: resolve config path: %w", err)
+	}
+	return abs, nil
+}
 
 // WithConfigPath overrides only the target path. The adapter's selected parser
 // and format remain unchanged, so a Codex override is still TOML regardless of
@@ -65,7 +90,7 @@ func (c Client) WithConfigPath(path string) Client {
 // Configurable reports whether this client looks installed: its config file or
 // its parent directory exists. Pure file-ops, never dials, conservative on error.
 func (c Client) Configurable() bool {
-	path, err := c.pathFn()
+	path, err := c.ConfigPath()
 	if err != nil {
 		return false
 	}
@@ -86,7 +111,7 @@ func (c Client) Plan(binary string, args []string) (Action, error) {
 
 // PlanEntry reports the action for a fully specified named server entry.
 func (c Client) PlanEntry(name string, entry ServerEntry) (Action, error) {
-	path, err := c.pathFn()
+	path, err := c.ConfigPath()
 	if err != nil {
 		return "", err
 	}
@@ -110,19 +135,26 @@ func (c Client) Apply(binary string, args []string, dryRun bool) (Result, error)
 // ApplyEntry registers a fully specified named stdio entry through the same
 // non-destructive writer used by the legacy graphi wrapper.
 func (c Client) ApplyEntry(name string, entry ServerEntry, dryRun bool) (Result, error) {
-	path, err := c.pathFn()
+	return c.ApplyEntryObserved(name, entry, "", dryRun)
+}
+
+// ApplyEntryObserved applies only if the complete config still has the digest
+// authorized by the caller. The comparison happens after both in-process and
+// cross-process writer locks are held.
+func (c Client) ApplyEntryObserved(name string, entry ServerEntry, beforeConfigDigest string, dryRun bool) (Result, error) {
+	path, err := c.ConfigPath()
 	if err != nil {
 		return Result{}, err
 	}
 	if c.Format == FormatTOML {
-		return applyCodex(path, name, entry, dryRun)
+		return applyCodexObserved(path, name, entry, beforeConfigDigest, dryRun)
 	}
-	return applyKey(path, c.ServersKey, name, entry, dryRun)
+	return applyKeyObserved(path, c.ServersKey, name, entry, beforeConfigDigest, dryRun)
 }
 
 // Entries returns the selected client's named server map without modifying it.
 func (c Client) Entries() (map[string]any, error) {
-	path, err := c.pathFn()
+	path, err := c.ConfigPath()
 	if err != nil {
 		return nil, err
 	}
@@ -152,13 +184,13 @@ func (c Client) Entries() (map[string]any, error) {
 // ownership and pending-change digests.
 func (c Client) PlanEntryState(name string, desired ServerEntry) (EntryState, error) {
 	if c.Format == FormatTOML {
-		path, err := c.pathFn()
+		path, err := c.ConfigPath()
 		if err != nil {
 			return EntryState{}, err
 		}
 		return planCodexEntryState(path, name, desired)
 	}
-	path, err := c.pathFn()
+	path, err := c.ConfigPath()
 	if err != nil {
 		return EntryState{}, err
 	}
@@ -208,6 +240,47 @@ func (c Client) PlanEntryState(name string, desired ServerEntry) (EntryState, er
 	}, nil
 }
 
+// PlanRemoveEntryState returns the exact current entry and the complete config
+// digests before and after its removal without modifying the file.
+func (c Client) PlanRemoveEntryState(name string) (RemovalState, error) {
+	path, err := c.ConfigPath()
+	if err != nil {
+		return RemovalState{}, err
+	}
+	if c.Format == FormatTOML {
+		return planCodexRemovalState(path, name)
+	}
+	snapshot, err := loadSnapshot(path)
+	if err != nil {
+		return RemovalState{}, err
+	}
+	servers, err := serverMap(snapshot.doc, c.ServersKey)
+	if err != nil {
+		return RemovalState{}, err
+	}
+	current, exists := servers[name]
+	beforeDigest := configDigest(snapshot.raw)
+	if !exists {
+		return RemovalState{Action: ActionUnchanged, BeforeConfigDigest: beforeDigest, TargetConfigDigest: beforeDigest}, nil
+	}
+	docCopy := make(map[string]any, len(snapshot.doc)+1)
+	for key, value := range snapshot.doc {
+		docCopy[key] = value
+	}
+	serversCopy := make(map[string]any, len(servers))
+	for key, value := range servers {
+		if key != name {
+			serversCopy[key] = value
+		}
+	}
+	docCopy[c.ServersKey] = serversCopy
+	raw, err := json.MarshalIndent(docCopy, "", "  ")
+	if err != nil {
+		return RemovalState{}, err
+	}
+	return RemovalState{Action: ActionRemoved, Current: current, BeforeConfigDigest: beforeDigest, TargetConfigDigest: configDigest(raw)}, nil
+}
+
 func configDigest(raw []byte) string {
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
@@ -215,14 +288,20 @@ func configDigest(raw []byte) string {
 
 // RemoveEntry removes one named entry through the client's real format writer.
 func (c Client) RemoveEntry(name string, dryRun bool) (Result, error) {
-	path, err := c.pathFn()
+	return c.RemoveEntryObserved(name, nil, "", dryRun)
+}
+
+// RemoveEntryObserved removes only the entry/config state the caller already
+// authorized. Both comparisons are repeated under the writer locks.
+func (c Client) RemoveEntryObserved(name string, expectedCurrent any, beforeConfigDigest string, dryRun bool) (Result, error) {
+	path, err := c.ConfigPath()
 	if err != nil {
 		return Result{}, err
 	}
 	if c.Format == FormatTOML {
-		return removeCodex(path, name, dryRun)
+		return removeCodexObserved(path, name, expectedCurrent, beforeConfigDigest, dryRun)
 	}
-	return removeKey(path, c.ServersKey, name, dryRun)
+	return removeKeyObserved(path, c.ServersKey, name, expectedCurrent, beforeConfigDigest, dryRun)
 }
 
 // ContendingGraphiServers returns the names (sorted) of server entries in this
@@ -234,7 +313,7 @@ func (c Client) RemoveEntry(name string, dryRun bool) (Result, error) {
 // rest block, and every one of them reports "repository is not bound" until
 // the winner finishes. A missing config yields an empty list.
 func (c Client) ContendingGraphiServers() ([]string, error) {
-	path, err := c.pathFn()
+	path, err := c.ConfigPath()
 	if err != nil {
 		return nil, err
 	}

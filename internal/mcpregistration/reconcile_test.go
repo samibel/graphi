@@ -200,3 +200,91 @@ func TestParallelSyncsDoNotLoseEntries(t *testing.T) {
 		t.Fatalf("parallel manifest lost state: registrations=%d receipts=%d", len(manifest.Registrations), len(manifest.Receipts))
 	}
 }
+
+func TestDirectSetupRecoversCompletedPendingReceipt(t *testing.T) {
+	paths := testenv.Isolate(t)
+	root, _ := indexedRepo(t, filepath.Join(paths.Root, "work"), "billing-api")
+	store, err := mcpregistration.NewResolver(state.StateDir()).Resolve(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := filepath.Join(paths.Root, "clients", "claude.json")
+	client, _ := mcpconfig.ClientByID("claude")
+	client = client.WithConfigPath(config)
+	entry := mcpconfig.GraphiEntry("/opt/graphi", []string{"mcp", "-db", store.DB, "-meta", store.Meta})
+	plan, err := client.PlanEntryState("graphi-billing-api", entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := mcpregistration.NewClientReceipt(store.CheckoutID, client.ID, config, "graphi-billing-api", entry, plan.Target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := mcpregistration.NewManifest()
+	manifest.Registrations = []mcpregistration.Registration{{CheckoutID: store.CheckoutID, Name: "graphi-billing-api", RepoFile: store.RepoFile}}
+	manifest.Pending = []mcpregistration.PendingChange{{
+		ID: store.CheckoutID + ":claude:graphi-billing-api", BeforeDigest: plan.BeforeConfigDigest,
+		TargetDigest: plan.TargetConfigDigest, Receipt: receipt,
+	}}
+	if err := mcpregistration.SaveManifest(mcpregistration.ManifestPath(state.StateDir()), manifest, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.ApplyEntryObserved("graphi-billing-api", entry, plan.BeforeConfigDigest, false); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := (mcpregistration.Service{StateDir: state.StateDir(), Binary: "/opt/graphi"}).Execute(mcpregistration.ServiceRequest{Roots: []string{root}, Clients: []mcpconfig.Client{client}}); err != nil {
+		t.Fatalf("setup restart did not recover completed pending write: %v", err)
+	}
+	got, err := mcpregistration.LoadManifest(mcpregistration.ManifestPath(state.StateDir()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Pending) != 0 || len(got.Receipts) != 1 {
+		t.Fatalf("recovered manifest = %#v", got)
+	}
+}
+
+func TestDirectUnregisterRecoversCompletedPendingRemoval(t *testing.T) {
+	paths := testenv.Isolate(t)
+	root, _ := indexedRepo(t, filepath.Join(paths.Root, "work"), "billing-api")
+	config := filepath.Join(paths.Root, "clients", "claude.json")
+	client, _ := mcpconfig.ClientByID("claude")
+	client = client.WithConfigPath(config)
+	service := mcpregistration.Service{StateDir: state.StateDir(), Binary: "/opt/graphi"}
+	request := mcpregistration.ServiceRequest{Roots: []string{root}, Clients: []mcpconfig.Client{client}}
+	if _, err := service.Execute(request); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := mcpregistration.ManifestPath(state.StateDir())
+	manifest, err := mcpregistration.LoadManifest(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := client.PlanRemoveEntryState("graphi-billing-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest.Pending = []mcpregistration.PendingChange{{
+		ID: manifest.Receipts[0].CheckoutID + ":claude:graphi-billing-api", BeforeDigest: plan.BeforeConfigDigest,
+		TargetDigest: plan.TargetConfigDigest, Receipt: manifest.Receipts[0], Remove: true,
+	}}
+	if err := mcpregistration.SaveManifest(manifestPath, manifest, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.RemoveEntryObserved("graphi-billing-api", plan.Current, plan.BeforeConfigDigest, false); err != nil {
+		t.Fatal(err)
+	}
+
+	request.Unregister = true
+	if _, err := service.Execute(request); err != nil {
+		t.Fatalf("unregister restart did not recover completed removal: %v", err)
+	}
+	got, err := mcpregistration.LoadManifest(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Pending) != 0 || len(got.Receipts) != 0 || len(got.Registrations) != 0 {
+		t.Fatalf("recovered removal manifest = %#v", got)
+	}
+}

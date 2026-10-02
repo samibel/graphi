@@ -15,6 +15,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/internal/freshness/probe"
 	"github.com/samibel/graphi/internal/state"
 )
 
@@ -210,6 +211,13 @@ func validateStore(store Store) error {
 	}
 	if storeCloseErr != nil {
 		return fmt.Errorf("mcp registration: close graph store: %w", storeCloseErr)
+	}
+	report, err := probe.Compute(context.Background(), store.Root, store.DB, store.Meta)
+	if err != nil {
+		return fmt.Errorf("mcp registration: validate index freshness: %w", err)
+	}
+	if !report.Current {
+		return fmt.Errorf("mcp registration: existing store is not current for %s; run graphi sync first", store.Root)
 	}
 	return nil
 }

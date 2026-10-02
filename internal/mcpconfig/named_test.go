@@ -28,6 +28,49 @@ func TestNamedEntryCreateAndNoOp(t *testing.T) {
 	}
 }
 
+func TestAuthorizedUpsertRejectsEditBeforeWriterLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "client.json")
+	client := fakeClient("test", "mcpServers", path)
+	entry := GraphiEntry("/opt/graphi", []string{"mcp", "-db", "/state/a/db.sqlite", "-meta", "/state/a/meta"})
+	plan, err := client.PlanEntryState("graphi-service", entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	external := []byte(`{"mcpServers":{"foreign":{"command":"manual"}}}`)
+	if err := os.WriteFile(path, external, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.ApplyEntryObserved("graphi-service", entry, plan.BeforeConfigDigest, false); err == nil {
+		t.Fatal("observed upsert overwrote a config edited after authorization")
+	}
+	if got := readBytes(t, path); string(got) != string(external) {
+		t.Fatalf("external edit changed after refused upsert: %s", got)
+	}
+}
+
+func TestAuthorizedRemovalRejectsEditBeforeWriterLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "client.json")
+	client := fakeClient("test", "mcpServers", path)
+	entry := GraphiEntry("/opt/graphi", []string{"mcp", "-db", "/state/a/db.sqlite", "-meta", "/state/a/meta"})
+	if _, err := client.ApplyEntry("graphi-service", entry, false); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := client.PlanRemoveEntryState("graphi-service")
+	if err != nil {
+		t.Fatal(err)
+	}
+	external := []byte(`{"mcpServers":{"graphi-service":{"command":"/manual/edit","args":["mcp"]}}}`)
+	if err := os.WriteFile(path, external, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.RemoveEntryObserved("graphi-service", plan.Current, plan.BeforeConfigDigest, false); err == nil {
+		t.Fatal("observed removal deleted an entry edited after authorization")
+	}
+	if got := readBytes(t, path); string(got) != string(external) {
+		t.Fatalf("external edit changed after refused removal: %s", got)
+	}
+}
+
 func TestPreserveForeignServersAndFields(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "client.json")
 	original := `{

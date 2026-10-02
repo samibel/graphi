@@ -52,14 +52,20 @@ func runSetupPerRepo(options setupPerRepoOptions) int {
 	if options.ConfigPath != "" {
 		clients[0] = clients[0].WithConfigPath(options.ConfigPath)
 	}
-	if options.AutoRegister && !options.Yes {
-		if !setupStdinIsTerminal() {
-			fmt.Fprintln(os.Stderr, "graphi: setup --per-repo: --auto-register requires an interactive confirmation or --yes")
+	if options.AutoRegister {
+		if err := printAutoRegistrationDisclosure(clients); err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: setup --per-repo: resolve consent target: %v\n", err)
 			return 1
 		}
-		if !confirmAutoRegistration(clients) {
-			fmt.Fprintln(os.Stderr, "graphi: setup --per-repo: auto-registration not confirmed")
-			return 1
+		if !options.Yes {
+			if !setupStdinIsTerminal() {
+				fmt.Fprintln(os.Stderr, "graphi: setup --per-repo: --auto-register requires an interactive confirmation or --yes")
+				return 1
+			}
+			if !confirmAutoRegistration() {
+				fmt.Fprintln(os.Stderr, "graphi: setup --per-repo: auto-registration not confirmed")
+				return 1
+			}
 		}
 	}
 	var roots []string
@@ -165,16 +171,21 @@ func perRepoClients(id string) ([]mcpconfig.Client, error) {
 	return clients, nil
 }
 
-func confirmAutoRegistration(clients []mcpconfig.Client) bool {
+func printAutoRegistrationDisclosure(clients []mcpconfig.Client) error {
 	var targets []string
 	for _, client := range clients {
 		path, err := client.ConfigPath()
 		if err != nil {
-			return false
+			return err
 		}
 		targets = append(targets, client.Display+" ("+path+")")
 	}
-	fmt.Printf("Allow future explicit 'graphi sync' commands to update these global MCP configs?\n  %s\n[y/N]: ", strings.Join(targets, "\n  "))
+	fmt.Printf("Global MCP servers are visible to the selected client outside their repositories. Tool metadata and results are delivered to that AI client according to its account policy.\nFuture explicit 'graphi sync' commands may update these global MCP configs:\n  %s\n", strings.Join(targets, "\n  "))
+	return nil
+}
+
+func confirmAutoRegistration() bool {
+	fmt.Print("Allow these future global config updates? [y/N]: ")
 	answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	answer = strings.ToLower(strings.TrimSpace(answer))
 	return answer == "y" || answer == "yes"
