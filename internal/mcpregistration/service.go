@@ -65,6 +65,33 @@ func (s Service) Execute(request ServiceRequest) (ServiceResult, error) {
 	if len(request.Clients) == 0 {
 		return ServiceResult{}, errors.New("mcp registration: at least one client is required")
 	}
+	if request.DryRun {
+		return s.executeUnlocked(request)
+	}
+	if err := os.MkdirAll(s.StateDir, 0o700); err != nil {
+		return ServiceResult{}, fmt.Errorf("mcp registration: create state directory: %w", err)
+	}
+	if err := os.Chmod(s.StateDir, 0o700); err != nil {
+		return ServiceResult{}, fmt.Errorf("mcp registration: protect state directory: %w", err)
+	}
+	unlock, err := lockManifest(ManifestPath(s.StateDir))
+	if err != nil {
+		return ServiceResult{}, err
+	}
+	defer unlock()
+	return s.executeUnlocked(request)
+}
+
+// executeUnlocked assumes the caller either holds the manifest lock or is a
+// dry-run that must not create one. Reconcile uses it to keep one frozen policy
+// snapshot and all resulting config writes under the same lock ordering.
+func (s Service) executeUnlocked(request ServiceRequest) (ServiceResult, error) {
+	if !filepath.IsAbs(s.StateDir) {
+		return ServiceResult{}, errors.New("mcp registration: state directory must be absolute")
+	}
+	if len(request.Clients) == 0 {
+		return ServiceResult{}, errors.New("mcp registration: at least one client is required")
+	}
 	clients, err := sortedClients(request.Clients)
 	if err != nil {
 		return ServiceResult{}, err

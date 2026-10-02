@@ -101,3 +101,12 @@ graphi setup --per-repo --client claude --no-auto-register
 requires an explicit matching name and store binding. `--unregister` requires a
 matching ownership receipt and unchanged full entry; it never removes the DB or
 metadata. Dry-run creates no config, backup, lock, manifest, or policy file.
+
+Auto-registration runs only after a successful, explicit CLI `graphi sync` and
+after the ingest session and lock have been released. MCP startup, tool calls,
+library ingest, and `graphi rebuild` do not write client configurations. For
+`graphi sync`, exit `0` means both sync and all consented integrations succeeded,
+exit `1` means sync itself failed (so registration did not run), and exit `2`
+means the index sync succeeded but at least one client integration failed. In
+the exit-2 case the valid index and any successful client updates are retained;
+the per-client error identifies what can be retried.
