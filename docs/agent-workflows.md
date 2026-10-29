@@ -179,6 +179,25 @@ explain_symbol {"symbol": "auth.Middleware"}
 change_risk    {"target": "auth.Middleware"}
 ```
 
+### Making Claude Code actually use the graph (graphi-shunt, labs)
+
+An agent that has the tools still reaches for `grep` out of habit. The
+[graphi-shunt plugin](../extensions/claude-plugin/README.md) closes that gap with a
+`PreToolUse` hook: a repo-wide **symbol** search (`Grep` tool, or `grep -r` / `rg` /
+`git grep` in Bash) is blocked and the message names the graphi tool that answers it.
+
+```bash
+claude plugin marketplace add samibel/graphi
+claude plugin install graphi-shunt@graphi
+```
+
+It is deliberately conservative and fails open: nothing is blocked unless `graphi` and
+`jq` are on `PATH` **and** the repository has an index. Text searches (`TODO`, error
+strings, multi-word phrases), single-file reads and non-code directories pass through,
+the identical search is allowed the second time, and `GRAPHI_SHUNT_DISABLE=1` turns it
+off. The plugin also ships a skill with the workflow above and the graph-versus-grep
+decision table.
+
 ## Codex-style CLI agents
 
 The same tools are plain CLI verbs with byte-identical output (parity is

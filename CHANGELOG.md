@@ -26,6 +26,17 @@ file:
 
 ## [Unreleased]
 
+### Added
+
+- **`graphi-shunt` Claude Code plugin** (`extensions/claude-plugin`, **Labs**): `PreToolUse`
+  hooks on the `Grep` and `Bash` tools block repo-wide *symbol* searches (`grep -r`, `rg`,
+  `ag`, `git grep`) and point the agent at graphi's stable tools; a bundled skill teaches
+  the `agent_brief` → `related_files` → `explain_symbol` → `change_risk` workflow. It fails
+  open (no `graphi`, no `jq`, no index for the repository, non-symbol searches, the
+  identical second attempt, `GRAPHI_SHUNT_DISABLE=1`). Installable from this repository as
+  a Claude Code marketplace (`.claude-plugin/marketplace.json`). Idea borrowed from
+  Spotify's `shunt` plugin.
+
 ## [0.13.0] - 2026-10-02
 
 ### Changed
