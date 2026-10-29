@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-const minimumSecureGoPatch = "1.26.6"
+const minimumSecureGoPatch = "1.26.10"
 
 // TestEveryWorkflowActionIsSHAPinned applies the release-DAG's immutable-action
 // policy to the complete repository. A workflow with a write-capable token is
@@ -152,13 +152,17 @@ func TestDependencySecurityWorkflowPinsAllThreeGates(t *testing.T) {
 }
 
 // TestGoDirectiveStaysAboveKnownCVEs locks the minimum patched Go toolchain
-// used by every setup-go step through go-version-file. Go 1.26.6 fixes the
-// standard-library vulnerabilities GO-2026-6218 (net/url resolvePath
-// complexity), GO-2026-6090 (crypto/tls post-handshake message limit),
-// GO-2026-6089 (net/http h2c ReadHeaderTimeout), GO-2026-5972
-// (encoding/asn1 recursion depth), and GO-2026-5026 (x/net idna Punycode) —
-// the TLS/HTTP ones sit on graphi's loopback surfaces. Go 1.26.5 previously
-// fixed GO-2026-5856, GO-2026-5039, GO-2026-5037, and GO-2026-4970.
+// used by every setup-go step through go-version-file. Go 1.26.10 fixes
+// GO-2026-6809 (crypto/x509); Go 1.26.9 fixes GO-2026-6603, GO-2026-6605,
+// GO-2026-6609, GO-2026-6610, GO-2026-6611, GO-2026-6612 and GO-2026-6617
+// (net/http), GO-2026-6608 (net/textproto), GO-2026-6607 (crypto/tls) and
+// GO-2026-6604 (os) — all twelve were reachable from graphi's loopback HTTP,
+// SSE and daemon surfaces per govulncheck. Go 1.26.6 previously fixed
+// GO-2026-6218 (net/url resolvePath complexity), GO-2026-6090 (crypto/tls
+// post-handshake message limit), GO-2026-6089 (net/http h2c
+// ReadHeaderTimeout), GO-2026-5972 (encoding/asn1 recursion depth) and
+// GO-2026-5026 (x/net idna Punycode); Go 1.26.5 fixed GO-2026-5856,
+// GO-2026-5039, GO-2026-5037 and GO-2026-4970.
 func TestGoDirectiveStaysAboveKnownCVEs(t *testing.T) {
 	for _, path := range []string{"../../go.mod", "../../go.work"} {
 		t.Run(filepath.Base(path), func(t *testing.T) {

@@ -1,0 +1,11 @@
+{
+  "name": "graphi",
+  "owner": { "name": "graphi" },
+  "plugins": [
+    {
+      "name": "graphi-shunt",
+      "source": "./extensions/claude-plugin",
+      "description": "Routes code-structure questions to graphi's code graph instead of repo-wide grep. Fails open when graphi or its index is absent."
+    }
+  ]
+}

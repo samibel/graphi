@@ -26,6 +26,28 @@ file:
 
 ## [Unreleased]
 
+### Added
+
+- **`graphi-shunt` Claude Code plugin** (`extensions/claude-plugin`, **Labs**): `PreToolUse`
+  hooks on the `Grep` and `Bash` tools block repo-wide *symbol* searches (`grep -r`, `rg`,
+  `ag`, `git grep`) and point the agent at graphi's stable tools; a bundled skill teaches
+  the `agent_brief` → `related_files` → `explain_symbol` → `change_risk` workflow. It fails
+  open (no `graphi`, no `jq`, no index for the repository, non-symbol searches, the
+  identical second attempt, `GRAPHI_SHUNT_DISABLE=1`). Installable from this repository as
+  a Claude Code marketplace (`.claude-plugin/marketplace.json`). Idea borrowed from
+  Spotify's `shunt` plugin.
+
+### Changed
+
+- **The Go toolchain floor is now go1.26.10** (`go.mod`, `go.work`, and the GitHub
+  Action's pinned `go-version`), raised for twelve reachable standard-library
+  vulnerabilities govulncheck reported against go1.26.6: GO-2026-6809
+  (`crypto/x509`, fixed in 1.26.10) and GO-2026-6603/6604/6605/6607/6608/6609/6610/
+  6611/6612/6617 (`net/http`, `net/textproto`, `crypto/tls`, `os`; fixed in 1.26.9).
+  It binds anyone building graphi from source; the canonical CGo-free release build
+  grows by about 21 KB under the new toolchain and stays inside the
+  `binary_size_bytes` budget.
+
 ## [0.13.0] - 2026-10-02
 
 ### Changed

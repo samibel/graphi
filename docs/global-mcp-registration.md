@@ -30,7 +30,7 @@ The implementation starts from these existing contracts:
 - `graphi doctor` is read-only. Its MCP check asks each adapter for a plan and
   must remain safe when named registrations and new formats are added.
 
-The repository requires Go 1.26.6. The default build and tests run with
+The repository requires Go 1.26.10. The default build and tests run with
 `CGO_ENABLED=0`. No TOML library was present in the baseline dependency graph.
 
 ## TOML editing choice

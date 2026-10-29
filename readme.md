@@ -319,7 +319,7 @@ units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 | **Architecture & dead code** | `architecture` · `architecture-violations` · `dead-code` · `framework-map` |
 | **Agent, test, change & git intelligence** | `symbol-context` · `task-context` · `repo-overview` · `test-impact` · `change-impact` · `hotspots` |
 | **Analysis & trust** | `analyze` over 22 analyzers (taint, pdg, call-chain, communities, …) · `trust-report` · `query-strict` · `diagnose` · `doctor` · `privacy-audit` |
-| **Surfaces past CLI + MCP stdio** | `daemon` · `http` (loopback HTTP/SSE) · `ui` (web) · the [VS Code editor extension](extensions/vscode) (blast radius, citations, loopback SSE — an editor plugin, *not* the `graphi extension` rule packs below) · the [GitHub Action](extensions/github-action) |
+| **Surfaces past CLI + MCP stdio** | `daemon` · `http` (loopback HTTP/SSE) · `ui` (web) · the [VS Code editor extension](extensions/vscode) (blast radius, citations, loopback SSE — an editor plugin, *not* the `graphi extension` rule packs below) · the [GitHub Action](extensions/github-action) · the [Claude Code plugin](extensions/claude-plugin) (`graphi-shunt`: redirects an agent's repo-wide symbol greps to the graph) |
 
 <details>
 <summary><b>The short list of subcommands</b> — all <b>60</b>, with flags and tier tags, are in <a href="docs/cli-reference.md">docs/cli-reference.md</a> or <code>graphi help</code></summary>

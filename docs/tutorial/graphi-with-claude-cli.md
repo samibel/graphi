@@ -82,6 +82,10 @@ flowchart LR
     GR -. "SQLite sidecar + hot in-mem graph" .- DB[("~/.graphi/graph.db")]
 ```
 
+> Claude still reaching for `grep`? The optional [graphi-shunt plugin](../../extensions/claude-plugin/README.md)
+> blocks repo-wide symbol searches and points the agent at graphi's tools instead
+> (`claude plugin marketplace add samibel/graphi`, then `claude plugin install graphi-shunt@graphi`).
+
 > For non-Claude MCP clients: start the server directly with `./graphi mcp -db ~/.graphi/graph.db`
 > (add `-meta <dir>` to reload durable semantic vectors, exactly as with the CLI verbs).
 > If your client launches the server outside the repository (cwd=`$HOME` is common) and supplies no
