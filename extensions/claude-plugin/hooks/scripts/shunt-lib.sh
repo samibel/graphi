@@ -4,10 +4,13 @@
 #
 # Contract: every unexpected condition FAILS OPEN (the gate allows the tool
 # call). A gate only blocks when graphi is installed AND an index for this
-# repository exists AND the search looks like a symbol lookup.
+# repository exists AND the search looks like a symbol lookup of this repo.
 #
-# The store layout below mirrors internal/state (StateDir + Fingerprint):
-#   <state>/<fp>/db.sqlite   with  fp = first 16 hex of sha256(clean(repo root))
+# The store layout below mirrors internal/state (RepoRoot + StateDir +
+# Fingerprint):
+#   root    = nearest ancestor of the project dir holding .git, else go.work,
+#             else go.mod, else the project dir itself
+#   <state>/<fp>/db.sqlite   with  fp = first 16 hex of sha256(clean(root))
 #   <state> = $XDG_STATE_HOME/graphi, else $HOME/.graphi
 # extensions/claude-plugin/validate pins this copy to the Go source of truth.
 
@@ -29,28 +32,57 @@ shunt_sha256() {
 	fi
 }
 
-# shunt_fingerprint prints the 16-hex store fingerprint of an absolute path,
-# equivalent to internal/state.Fingerprint (trailing slashes cleaned).
-shunt_fingerprint() {
-	_root=$1
-	while [ "${#_root}" -gt 1 ] && [ "${_root%/}" != "$_root" ]; do
-		_root=${_root%/}
+# shunt_clean_path strips trailing slashes (the part of filepath.Clean that
+# matters for a path produced by a shell or an editor).
+shunt_clean_path() {
+	_c=$1
+	while [ "${#_c}" -gt 1 ] && [ "${_c%/}" != "$_c" ]; do
+		_c=${_c%/}
 	done
-	_sum=$(printf '%s' "$_root" | shunt_sha256) || return 1
+	printf '%s' "$_c"
+}
+
+# shunt_repo_root prints the repository root for an absolute directory, with
+# the walk order of internal/state.RepoRoot: the nearest ancestor holding a
+# .git entry (dir or file); failing that go.work; failing that go.mod;
+# otherwise the directory itself.
+shunt_repo_root() {
+	_start=$(shunt_clean_path "$1")
+	for _marker in .git go.work go.mod; do
+		_d=$_start
+		while :; do
+			if [ -e "$_d/$_marker" ]; then
+				printf '%s' "$_d"
+				return 0
+			fi
+			[ "$_d" != "/" ] || break
+			_parent=${_d%/*}
+			[ -n "$_parent" ] || _parent=/
+			[ "$_parent" != "$_d" ] || break
+			_d=$_parent
+		done
+	done
+	printf '%s' "$_start"
+}
+
+# shunt_fingerprint prints the 16-hex store fingerprint of an absolute path,
+# equivalent to internal/state.Fingerprint.
+shunt_fingerprint() {
+	_sum=$(printf '%s' "$(shunt_clean_path "$1")" | shunt_sha256) || return 1
 	[ -n "$_sum" ] || return 1
 	printf '%s' "$_sum" | cut -c1-16
 }
 
-# shunt_enabled succeeds only when the gate should be active for this call.
+# shunt_enabled succeeds only when the gate should be active for this call,
+# and then exports SHUNT_ROOT (the indexed repository root).
 shunt_enabled() {
 	[ -z "${GRAPHI_SHUNT_DISABLE:-}" ] || return 1
 	command -v jq >/dev/null 2>&1 || return 1
 	command -v graphi >/dev/null 2>&1 || return 1
-	_root=${CLAUDE_PROJECT_DIR:-}
-	if [ -z "$_root" ]; then
-		_root=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
-	fi
-	[ -n "$_root" ] || return 1
+	_project=${CLAUDE_PROJECT_DIR:-$PWD}
+	case "$_project" in /*) ;; *) return 1 ;; esac
+	[ -d "$_project" ] || return 1
+	_root=$(shunt_repo_root "$_project")
 	_fp=$(shunt_fingerprint "$_root") || return 1
 	if [ -n "${XDG_STATE_HOME:-}" ]; then
 		_state="$XDG_STATE_HOME/graphi"
@@ -67,6 +99,34 @@ shunt_enabled() {
 # shunt_jq prints one field of the hook input ("" when absent).
 shunt_jq() {
 	printf '%s' "$SHUNT_INPUT" | jq -r "$1 // empty" 2>/dev/null
+}
+
+# shunt_in_root succeeds when a path (absolute, or relative to the current
+# directory) lies inside SHUNT_ROOT. Existing paths are resolved through cd so
+# that ".." and symlinked parents are honoured; when the path cannot be
+# resolved the answer is "not inside", which callers treat as allow.
+shunt_in_root() {
+	_p=$1
+	[ -n "$_p" ] || return 1
+	if [ -d "$_p" ]; then
+		_p=$(cd -- "$_p" 2>/dev/null && pwd) || return 1
+	else
+		case "$_p" in
+		*/*) _dn=${_p%/*} _bn=${_p##*/} ;;
+		*) _dn=. _bn=$_p ;;
+		esac
+		[ -n "$_dn" ] || _dn=/
+		if [ -d "$_dn" ]; then
+			_p=$(cd -- "$_dn" 2>/dev/null && pwd)/$_bn || return 1
+		else
+			case "$_p" in /*) ;; *) _p="$PWD/$_p" ;; esac
+		fi
+	fi
+	_p=$(shunt_clean_path "$_p")
+	case "$_p" in
+	"$SHUNT_ROOT" | "$SHUNT_ROOT"/*) return 0 ;;
+	esac
+	return 1
 }
 
 # shunt_noncode_path succeeds when a path points into a directory graphi does
@@ -109,6 +169,43 @@ shunt_noncode_glob() {
 	return 0
 }
 
+# shunt_stopword succeeds for lowercase words an agent greps as TEXT far more
+# often than as a symbol: language keywords and common English words that
+# happen to be six letters or longer. Anything here is allowed through.
+shunt_stopword() {
+	case "$1" in
+	abstract | arguments | assert | author | boolean | breaking | callback | \
+		catch | changed | changelog | changes | client | command | comment | comments | \
+		compile | config | configs | console | constant | content | context | continue | \
+		copyright | create | created | current | custom | database | debug | declare | \
+		default | defer | define | delete | deleted | deprecated | describe | \
+		description | disable | disabled | docker | document | double | elseif | \
+		enable | enabled | endpoint | environment | errors | example | examples | \
+		except | exception | expected | export | exports | extends | extern | failed | \
+		failure | fatal | feature | finally | fixture | fixtures | footer | foreach | \
+		format | function | global | handle | handler | header | headers | import | \
+		imports | include | includes | inline | input | insert | install | instance | \
+		integer | interface | internal | invalid | lambda | length | license | \
+		listen | loading | logger | logging | message | messages | method | missing | \
+		module | modules | namespace | native | nothing | notice | number | object | \
+		offset | option | options | output | override | package | packages | params | \
+		parent | partial | password | pending | private | process | protected | public | \
+		readme | readonly | reason | record | remove | removed | render | replace | \
+		request | require | required | resolve | response | result | results | return | \
+		returns | runtime | schema | script | search | secret | select | server | \
+		service | session | setting | settings | should | signal | signed | single | \
+		skipped | source | sources | static | status | storage | stream | string | \
+		struct | submit | success | summary | support | switch | symbol | syntax | \
+		target | template | testing | thread | throws | timeout | typedef | \
+		unknown | unsafe | update | updated | upgrade | upload | usage | username | \
+		utility | values | verbose | version | virtual | volatile | warning | warnings | \
+		window | without | yield)
+		return 0
+		;;
+	esac
+	return 1
+}
+
 # shunt_symbol_shaped succeeds when a search pattern looks like a symbol name
 # (identifier, qualified name, definition probe or call probe) rather than a
 # text search. Deliberately conservative: when unsure, it says "not a symbol"
@@ -132,8 +229,9 @@ shunt_symbol_shaped() {
 			printf '%s\n' "$_p" | grep -Eq '[A-Z]'; then
 			return 0
 		fi
-		[ "${#_p}" -ge 6 ] && return 0
-		return 1
+		[ "${#_p}" -ge 6 ] || return 1
+		shunt_stopword "$_p" && return 1
+		return 0
 	fi
 
 	# Qualified name: pkg.Func, pkg::Func, obj->field. File names are not symbols.
@@ -159,32 +257,29 @@ shunt_symbol_shaped() {
 }
 
 # shunt_seen_before implements the retry ledger: the first time a signature is
-# seen it is recorded and the gate blocks; the identical second attempt is
-# allowed. If the ledger cannot be written the gate allows (fail open), so an
-# agent can never be trapped by an unwritable temp directory.
+# seen in a session it is recorded and the gate blocks; the identical later
+# attempt is allowed, with no time limit. The ledger keeps the last 200
+# signatures per session. If it cannot be written the gate allows (fail open),
+# so an agent can never be trapped by an unwritable temp directory.
 shunt_seen_before() {
 	_sig=$(printf '%s' "$1" | shunt_sha256) || return 0
 	[ -n "$_sig" ] || return 0
 	_sid=$(printf '%s' "$SHUNT_INPUT" | jq -j '.session_id // "nosession"' 2>/dev/null | tr -c 'A-Za-z0-9_-' '_')
 	[ -n "$_sid" ] || _sid=nosession
-	_dir=${TMPDIR:-/tmp}
-	_ledger="$_dir/graphi-shunt-$_sid.log"
-	_now=$(date +%s) || return 0
-	(
-		umask 077
-		if [ -f "$_ledger" ]; then
-			_tmp="$_ledger.$$"
-			awk -v now="$_now" 'now - $1 <= 900' "$_ledger" 2>/dev/null | tail -n 200 >"$_tmp" &&
-				mv "$_tmp" "$_ledger" 2>/dev/null
-			rm -f "$_tmp" 2>/dev/null
-		fi
-	)
+	_ledger="${TMPDIR:-/tmp}/graphi-shunt-$_sid.log"
 	if [ -f "$_ledger" ] && awk -v s="$_sig" '$2 == s { f = 1 } END { exit !f }' "$_ledger" 2>/dev/null; then
 		return 0
 	fi
+	_now=$(date +%s) || return 0
 	if ! (umask 077 && printf '%s %s\n' "$_now" "$_sig" >>"$_ledger") 2>/dev/null; then
 		return 0
 	fi
+	(
+		umask 077
+		_tmp="$_ledger.$$"
+		tail -n 200 "$_ledger" >"$_tmp" 2>/dev/null && mv "$_tmp" "$_ledger" 2>/dev/null
+		rm -f "$_tmp" 2>/dev/null
+	)
 	return 1
 }
 

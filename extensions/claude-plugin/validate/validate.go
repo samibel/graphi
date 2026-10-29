@@ -17,6 +17,7 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -118,12 +119,21 @@ func ValidateScript(name, text string) []string {
 	if !strings.HasPrefix(text, "#!/bin/sh\n") {
 		errs = append(errs, fmt.Sprintf("%s must start with a #!/bin/sh shebang (POSIX sh, no bashisms)", name))
 	}
-	for _, bashism := range []string{"[[ ", "declare ", "local ", "<<<", "function "} {
-		if strings.Contains(text, bashism) {
-			errs = append(errs, fmt.Sprintf("%s uses the bashism %q", name, strings.TrimSpace(bashism)))
+	for _, bashism := range bashisms {
+		if bashism.MatchString(text) {
+			errs = append(errs, fmt.Sprintf("%s uses the bashism %q", name, bashism.String()))
 		}
 	}
 	return errs
+}
+
+// bashisms are constructs POSIX sh lacks: [[ ]] tests, here-strings, and the
+// declare / local / function keywords in statement position (a word such as
+// "function" inside a case pattern is fine).
+var bashisms = []*regexp.Regexp{
+	regexp.MustCompile(`(?m)^\s*(if|elif|while|until)?\s*\[\[\s`),
+	regexp.MustCompile(`<<<`),
+	regexp.MustCompile(`(?m)^\s*(declare|local|function)\s`),
 }
 
 // ValidateLib checks that the shared library carries every fail-open marker.
@@ -235,30 +245,48 @@ func ValidateSkill(text string) (name string, errs []string) {
 	return name, errs
 }
 
-// ValidateToolNames checks that text recommends only tools in stable (when it
-// is the deny text, every DenyReasonTools entry must also be present) and none
-// of the Labs tools.
-func ValidateToolNames(label, text string, stable []string, requireAll bool) []string {
+// ValidateToolNames checks the graphi tools a text recommends: every known
+// tool name it mentions (known = the full MCP catalog plus LabsToolNames) must
+// be stable-tier, and with requireAll every DenyReasonTools entry must appear.
+func ValidateToolNames(label, text string, stable, known []string, requireAll bool) []string {
 	var errs []string
 	isStable := map[string]bool{}
 	for _, s := range stable {
 		isStable[s] = true
 	}
-	for _, t := range DenyReasonTools {
-		if !isStable[t] {
-			errs = append(errs, fmt.Sprintf("deny-reason tool %q is not in the stable MCP tool list", t))
-		}
-		if requireAll && !strings.Contains(text, t) {
-			errs = append(errs, fmt.Sprintf("%s does not mention the stable tool %q", label, t))
-		}
+	isKnown := map[string]bool{}
+	for _, k := range append(append([]string{}, known...), LabsToolNames...) {
+		isKnown[k] = true
 	}
-	for _, l := range LabsToolNames {
-		if strings.Contains(text, l) {
-			errs = append(errs, fmt.Sprintf("%s recommends the Labs tool %q (not in the default tool list)", label, l))
+	// A snake_case name counts wherever it appears; a one-word catalog name
+	// (memory, undo, implements, ...) is also ordinary English, so it counts
+	// only when set in backticks, the way the texts cite a tool.
+	mentioned := snakeCasePattern.FindAllString(text, -1)
+	for _, m := range codeSpanPattern.FindAllStringSubmatch(text, -1) {
+		mentioned = append(mentioned, m[1])
+	}
+	seen := map[string]bool{}
+	for _, id := range mentioned {
+		if seen[id] || !isKnown[id] || isStable[id] {
+			continue
+		}
+		seen[id] = true
+		errs = append(errs, fmt.Sprintf("%s recommends %q, which is not a stable-tier tool", label, id))
+	}
+	if requireAll {
+		for _, t := range DenyReasonTools {
+			if !strings.Contains(text, t) {
+				errs = append(errs, fmt.Sprintf("%s does not mention the stable tool %q", label, t))
+			}
 		}
 	}
 	return errs
 }
+
+var (
+	snakeCasePattern = regexp.MustCompile(`\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b`)
+	codeSpanPattern  = regexp.MustCompile("`([a-z][a-z0-9_]*)`")
+)
 
 func keys[V any](m map[string]V) []string {
 	out := make([]string, 0, len(m))

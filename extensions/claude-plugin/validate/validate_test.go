@@ -55,6 +55,18 @@ func stableTools(t *testing.T) []string {
 	return names
 }
 
+// knownTools is the full MCP tool catalog (stable + labs) the plugin texts are
+// checked against: any catalog name they mention must be stable.
+func knownTools(t *testing.T) []string {
+	t.Helper()
+	raw := readFile(t, filepath.Join(repoRoot(t), "docs", "mcp-tool-baseline.json"))
+	var names []string
+	if err := json.Unmarshal([]byte(raw), &names); err != nil || len(names) == 0 {
+		t.Fatalf("mcp-tool-baseline.json has an unexpected shape: %v", err)
+	}
+	return names
+}
+
 func fail(t *testing.T, what string, errs []string) {
 	t.Helper()
 	if len(errs) != 0 {
@@ -104,11 +116,14 @@ func TestSkillFrontMatterAndToolNames(t *testing.T) {
 	if name != "graphi-code-graph" {
 		t.Fatalf("skill name = %q, want graphi-code-graph (must match its directory)", name)
 	}
-	stable := stableTools(t)
-	fail(t, "SKILL.md tool names", ValidateToolNames("SKILL.md", skill, stable, true))
+	stable, known := stableTools(t), knownTools(t)
+	fail(t, "SKILL.md tool names", ValidateToolNames("SKILL.md", skill, stable, known, true))
 
 	lib := readFile(t, filepath.Join(dir, "hooks", "scripts", "shunt-lib.sh"))
-	fail(t, "deny text tool names", ValidateToolNames("shunt-lib.sh", lib, stable, true))
+	fail(t, "deny text tool names", ValidateToolNames("shunt-lib.sh", lib, stable, known, true))
+
+	readme := readFile(t, filepath.Join(dir, "README.md"))
+	fail(t, "README tool names", ValidateToolNames("README.md", readme, stable, known, false))
 }
 
 func TestStableToolFixtureCoversDenyReasonTools(t *testing.T) {
@@ -142,8 +157,12 @@ func TestHooksJSONRejectsDrift(t *testing.T) {
 }
 
 func TestScriptRejectsBashisms(t *testing.T) {
-	if errs := ValidateScript("x.sh", "#!/bin/bash\nif [[ -n $x ]]; then :; fi\n"); len(errs) < 2 {
-		t.Fatalf("expected shebang and bashism violations, got %v", errs)
+	if errs := ValidateScript("x.sh", "#!/bin/bash\nif [[ -n $x ]]; then :; fi\nlocal y=1\n"); len(errs) < 3 {
+		t.Fatalf("expected shebang and two bashism violations, got %v", errs)
+	}
+	// Words in case patterns or comments are not statements.
+	if errs := ValidateScript("x.sh", "#!/bin/sh\ncase $1 in function | declare | local) ;; esac\n# a function\n"); len(errs) != 0 {
+		t.Fatalf("false bashism positives: %v", errs)
 	}
 }
 
@@ -179,12 +198,26 @@ func TestSkillRejectsMissingFrontMatter(t *testing.T) {
 	}
 }
 
-func TestToolNamesRejectLabs(t *testing.T) {
-	text := "search definition callers callees references impact agent_brief related_files task_context"
-	if errs := ValidateToolNames("x", text, DenyReasonTools, true); len(errs) == 0 {
-		t.Fatal("expected a Labs-tool violation")
+func TestToolNamesRejectNonStable(t *testing.T) {
+	all := "search definition callers callees references impact agent_brief related_files"
+	known := append([]string{"graph_diff"}, DenyReasonTools...)
+	if errs := ValidateToolNames("x", all+" task_context", DenyReasonTools, known, true); len(errs) != 1 {
+		t.Fatalf("expected exactly one Labs-tool violation, got %v", errs)
 	}
-	if errs := ValidateToolNames("x", "search", DenyReasonTools, true); len(errs) == 0 {
+	if errs := ValidateToolNames("x", all+" graph_diff", DenyReasonTools, known, true); len(errs) != 1 {
+		t.Fatalf("expected exactly one catalog non-stable violation, got %v", errs)
+	}
+	if errs := ValidateToolNames("x", all+" tool_input session_id", DenyReasonTools, known, true); len(errs) != 0 {
+		t.Fatalf("identifiers outside the catalog must be ignored, got %v", errs)
+	}
+	oneWord := append([]string{"memory"}, DenyReasonTools...)
+	if errs := ValidateToolNames("x", all+" keep the memory of it", DenyReasonTools, oneWord, true); len(errs) != 0 {
+		t.Fatalf("a one-word catalog name in prose must be ignored, got %v", errs)
+	}
+	if errs := ValidateToolNames("x", all+" use `memory`", DenyReasonTools, oneWord, true); len(errs) != 1 {
+		t.Fatalf("a one-word catalog name in backticks must be flagged, got %v", errs)
+	}
+	if errs := ValidateToolNames("x", "search", DenyReasonTools, known, true); len(errs) == 0 {
 		t.Fatal("expected missing-tool violations")
 	}
 }

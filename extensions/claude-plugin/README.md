@@ -44,9 +44,11 @@ A gate blocks only when **all** of these hold, and allows the call otherwise:
 
 - `GRAPHI_SHUNT_DISABLE` is unset
 - `jq` and `graphi` are on `PATH`
-- an index for this repository exists (`<state>/<fingerprint>/db.sqlite`, the
-  same layout as `internal/state`; checked with one `stat`, no `graphi` process)
-- the search looks like a symbol lookup
+- an index for this repository exists: the repository root is found the way
+  `internal/state.RepoRoot` finds it (nearest `.git`, else `go.work`, else
+  `go.mod`, walking up from the session directory) and
+  `<state>/<fingerprint>/db.sqlite` is checked with one `stat`, no `graphi` process
+- the search targets the indexed repository and looks like a symbol lookup
 - this exact search has not been attempted before in the session
 
 Any unexpected condition (unparsable input, missing tool, unwritable temp
@@ -61,22 +63,25 @@ directory, timeout) allows the call.
 | gate not enabled (see above) | otherwise |
 | `path` is a single existing file | |
 | `path` under `docs/`, `site/`, `corpus/`, `testdata/`, `node_modules/`, `.git/` | |
+| `path` outside the indexed repository (a dependency, `/usr/include`, another checkout) | |
 | `type` / `glob` selects only non-code (`md`, `json`, `yaml`, `toml`, `csv`, ...) | |
 | pattern is not symbol-shaped | |
 | identical search already blocked once this session | |
 
 ### `Bash` tool (`grep -r`, `rg`, `ag`, `ack`, `git grep`)
 
-The command is split on `&&`, `;` and newlines; each segment is judged on its
-own. Only the first command of a pipeline can be a repo search.
+The command is split on `&&`, `||`, `;` and newlines; each segment is judged on
+its own, and a `cd` segment moves the hook's view of relative paths along with
+it. Only the first command of a pipeline can be a repo search.
 
 | Allowed | Blocked |
 | --- | --- |
-| no search tool in the command (pure-shell prefilter, nothing is spawned) | a repo-wide search for a symbol-shaped pattern |
+| no search tool in the command (pure-shell prefilter, nothing is spawned) | a repo-wide search for a symbol-shaped pattern: no operand, or only existing directories inside the repository |
 | the search reads from a pipe (`git log \| grep Foo`) | |
 | `grep` without `-r` / `-R` | |
-| every operand is an existing file or under a non-code directory | |
-| command substitution, backticks, heredocs (not parsed) | |
+| an operand is an existing file, under a non-code directory, or outside the repository | |
+| an operand is a glob or does not exist (cannot be judged) | |
+| command substitution, backticks, heredocs, unbalanced quotes (not parsed) | |
 | pattern not symbol-shaped or not confidently extractable | |
 | identical command already blocked once this session | |
 
@@ -86,7 +91,9 @@ Conservative on purpose: a miss only costs the agent a grep it was going to run
 anyway, while a false block costs a round trip.
 
 - CamelCase or snake_case identifiers (`IngestAll`, `parse_config`)
-- bare lowercase identifiers of six or more characters (`scheduler`)
+- bare lowercase identifiers of six or more characters (`scheduler`), except a
+  stop list of language keywords and common English words (`version`,
+  `license`, `timeout`, `package`, `import`, ...)
 - qualified names (`auth.Middleware`, `ingest::IngestAll`), except file names
 - definition probes (`func Foo`, `class Foo`, `type Foo`)
 - call probes (`Foo\(`)
@@ -104,9 +111,10 @@ phrases, regexes, literals.
 
 ## Latency
 
-The `Bash` gate runs on every Bash call. A pure-shell `case` test on the raw
-payload exits before anything is spawned unless the command could contain a
-search tool. Enablement is `command -v` plus one `sha256sum` and one `stat`;
+The `Bash` gate runs on every Bash call. The command text is sliced out of the
+raw payload with shell parameter expansion and a `case` test on that slice
+exits before anything is spawned unless the command could contain a search
+tool (a test pins this: a plain `ls` never starts `jq`). Enablement is `command -v` plus one `sha256sum` and one `stat`;
 `graphi` itself is never started. Hooks run with a 5 s timeout, which fails open.
 
 ## Limitations
@@ -114,11 +122,13 @@ search tool. Enablement is `command -v` plus one `sha256sum` and one `stat`;
 - The gate checks that an index **exists**, not that it is fresh. A stale index
   can still send the agent to outdated answers; run `graphi sync` after large
   edits and trust the source when it disagrees with the graph (the skill says so).
-- The project directory comes from `CLAUDE_PROJECT_DIR` (fallback:
-  `git rev-parse --show-toplevel`). If that is not the root graphi indexed, the
-  index is not found and the gate stays off.
+- The repository root is derived from `CLAUDE_PROJECT_DIR` with the same
+  walk-up as graphi itself. A directory graphi indexed as its own root but that
+  sits inside another `.git` tree resolves to the outer root, and the gate
+  stays off there.
 - Search commands hidden inside `$(...)`, backticks or heredocs are not parsed
-  and pass through.
+  and pass through, as are operands the hook cannot resolve (globs, paths that
+  do not exist from its point of view).
 - Requires a POSIX `sh`; not supported on native Windows.
 
 ## Troubleshooting
@@ -137,11 +147,14 @@ test gate) runs it with no extra wiring:
 
 - static checks on `hooks.json`, both manifests, `SKILL.md` front matter, POSIX-sh
   conformance and the fail-open guards
-- the deny text and the skill recommend only tools from the stable MCP descriptor
-  fixture (`surfaces/mcp/testdata/mcp-descriptors-stdio-stable.json`)
+- the deny text, the skill and this README recommend only stable tools: any name
+  from the MCP catalog (`docs/mcp-tool-baseline.json`) they mention must be in the
+  stable descriptor fixture (`surfaces/mcp/testdata/mcp-descriptors-stdio-stable.json`)
 - behavioural tests that execute the real gate scripts against hook payloads and
-  assert every row of the tables above, the retry ledger, every fail-open path,
-  and that the shell fingerprint finds the store `internal/state.Fingerprint` creates
+  assert every row of the tables above, the retry ledger (including that it has
+  no time window), every fail-open path, that the prefilter spawns nothing for a
+  plain command, and that the shell root walk-up and fingerprint find the store
+  `internal/state` creates - from the root and from subdirectories of it
 
 The behavioural tests skip when `jq` or a SHA-256 tool is missing; the static
 checks always run.

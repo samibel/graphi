@@ -17,12 +17,21 @@ path=$(shunt_jq '.tool_input.path')
 glob=$(shunt_jq '.tool_input.glob')
 type=$(shunt_jq '.tool_input.type')
 
-# A targeted read of one file is not exploration.
-if [ -n "$path" ] && [ -f "$path" ]; then
-	exit 0
+# Relative paths in the payload are relative to the session's cwd, not to the
+# directory the hook happens to run in.
+cwd=$(shunt_jq '.cwd')
+if [ -n "$cwd" ] && [ -d "$cwd" ]; then
+	cd "$cwd" 2>/dev/null || true
+elif [ -d "$SHUNT_ROOT" ]; then
+	cd "$SHUNT_ROOT" 2>/dev/null || true
 fi
-if [ -n "$path" ] && shunt_noncode_path "$path"; then
-	exit 0
+
+if [ -n "$path" ]; then
+	# A targeted read of one file is not exploration.
+	[ -f "$path" ] && exit 0
+	shunt_noncode_path "$path" && exit 0
+	# Only the indexed repository is graphi's domain.
+	shunt_in_root "$path" || exit 0
 fi
 if [ -n "$type" ] && shunt_noncode_ext "$type"; then
 	exit 0
