@@ -192,7 +192,9 @@ claude plugin install graphi-shunt@graphi
 ```
 
 It is deliberately conservative and fails open: nothing is blocked unless `graphi` and
-`jq` are on `PATH` **and** the repository has an index. Text searches (`TODO`, error
+`jq` are on `PATH` **and** the searched path lies in a repository that has an index — the
+hook resolves that per search, so a session in a portfolio directory still gates searches
+into the indexed product clones beneath it. Text searches (`TODO`, error
 strings, multi-word phrases), single-file reads and non-code directories pass through,
 the identical search is allowed the second time, and `GRAPHI_SHUNT_DISABLE=1` turns it
 off. The plugin also ships a skill with the workflow above and the graph-versus-grep

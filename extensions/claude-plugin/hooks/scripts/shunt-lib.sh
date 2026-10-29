@@ -73,60 +73,69 @@ shunt_fingerprint() {
 	printf '%s' "$_sum" | cut -c1-16
 }
 
-# shunt_enabled succeeds only when the gate should be active for this call,
-# and then exports SHUNT_ROOT (the indexed repository root).
-shunt_enabled() {
+# shunt_available succeeds when the gate may run at all: not disabled, and jq
+# and graphi on PATH. Whether a search touches an indexed repository is decided
+# per path by shunt_root_for.
+shunt_available() {
 	[ -z "${GRAPHI_SHUNT_DISABLE:-}" ] || return 1
 	command -v jq >/dev/null 2>&1 || return 1
 	command -v graphi >/dev/null 2>&1 || return 1
-	_project=${CLAUDE_PROJECT_DIR:-$PWD}
-	case "$_project" in /*) ;; *) return 1 ;; esac
-	[ -d "$_project" ] || return 1
-	_root=$(shunt_repo_root "$_project")
-	_fp=$(shunt_fingerprint "$_root") || return 1
+	return 0
+}
+
+shunt_state_dir() {
 	if [ -n "${XDG_STATE_HOME:-}" ]; then
-		_state="$XDG_STATE_HOME/graphi"
+		printf '%s' "$XDG_STATE_HOME/graphi"
 	elif [ -n "${HOME:-}" ]; then
-		_state="$HOME/.graphi"
+		printf '%s' "$HOME/.graphi"
 	else
 		return 1
 	fi
+}
+
+# shunt_index_at succeeds when graphi has an index for exactly the repository
+# root $1, and exports that root as SHUNT_ROOT.
+shunt_index_at() {
+	_fp=$(shunt_fingerprint "$1") || return 1
+	_state=$(shunt_state_dir) || return 1
 	[ -f "$_state/$_fp/db.sqlite" ] || return 1
-	SHUNT_ROOT=$_root
+	SHUNT_ROOT=$(shunt_clean_path "$1")
 	return 0
+}
+
+# shunt_root_for finds the indexed repository a path belongs to. The path is
+# resolved against the current directory (a file counts as its directory, a
+# path that does not exist as its nearest existing ancestor), the repo-root
+# walk runs from there, and when that root has no index the walk continues
+# from the root's parent - so a product clone that sits inside a portfolio
+# repository (portfolio/.git, portfolio/workspace/<name>/.git) is found from
+# either side. Succeeds with SHUNT_ROOT set, or fails when no enclosing
+# repository has an index.
+shunt_root_for() {
+	_p=$1
+	[ -n "$_p" ] || return 1
+	case "$_p" in /*) ;; *) _p="$PWD/$_p" ;; esac
+	_p=$(shunt_clean_path "$_p")
+	while [ ! -d "$_p" ]; do
+		[ "$_p" != "/" ] || return 1
+		_p=${_p%/*}
+		[ -n "$_p" ] || _p=/
+	done
+	_p=$(cd -- "$_p" 2>/dev/null && pwd) || return 1
+	while :; do
+		_root=$(shunt_repo_root "$_p")
+		if shunt_index_at "$_root"; then
+			return 0
+		fi
+		[ "$_root" != "/" ] || return 1
+		_p=${_root%/*}
+		[ -n "$_p" ] || _p=/
+	done
 }
 
 # shunt_jq prints one field of the hook input ("" when absent).
 shunt_jq() {
 	printf '%s' "$SHUNT_INPUT" | jq -r "$1 // empty" 2>/dev/null
-}
-
-# shunt_in_root succeeds when a path (absolute, or relative to the current
-# directory) lies inside SHUNT_ROOT. Existing paths are resolved through cd so
-# that ".." and symlinked parents are honoured; when the path cannot be
-# resolved the answer is "not inside", which callers treat as allow.
-shunt_in_root() {
-	_p=$1
-	[ -n "$_p" ] || return 1
-	if [ -d "$_p" ]; then
-		_p=$(cd -- "$_p" 2>/dev/null && pwd) || return 1
-	else
-		case "$_p" in
-		*/*) _dn=${_p%/*} _bn=${_p##*/} ;;
-		*) _dn=. _bn=$_p ;;
-		esac
-		[ -n "$_dn" ] || _dn=/
-		if [ -d "$_dn" ]; then
-			_p=$(cd -- "$_dn" 2>/dev/null && pwd)/$_bn || return 1
-		else
-			case "$_p" in /*) ;; *) _p="$PWD/$_p" ;; esac
-		fi
-	fi
-	_p=$(shunt_clean_path "$_p")
-	case "$_p" in
-	"$SHUNT_ROOT" | "$SHUNT_ROOT"/*) return 0 ;;
-	esac
-	return 1
 }
 
 # shunt_noncode_path succeeds when a path points into a directory graphi does
@@ -137,6 +146,7 @@ shunt_noncode_path() {
 		site | site/* | */site | */site/* | \
 		corpus | corpus/* | */corpus | */corpus/* | \
 		testdata | testdata/* | */testdata | */testdata/* | \
+		resources | resources/* | */resources | */resources/* | \
 		node_modules | node_modules/* | */node_modules | */node_modules/* | \
 		.git | .git/* | */.git | */.git/*)
 		return 0
@@ -288,14 +298,14 @@ shunt_seen_before() {
 shunt_deny() {
 	_pat=$1
 	_mode=${2:-tool}
-	_mcp="Use the graphi MCP tools: search (find the symbol), definition, callers / callees, references (who uses it) and impact (blast radius); for a whole task start with agent_brief, then related_files."
-	_cli="From the shell the same answers are 'graphi search \"$_pat\"', 'graphi references \"$_pat\"', 'graphi callers \"$_pat\"' and 'graphi impact \"$_pat\"'."
+	_mcp="Use the graphi MCP tools (the server registered for that checkout, if several are): search (find the symbol), definition, callers / callees, references (who uses it) and impact (blast radius); for a whole task start with agent_brief, then related_files."
+	_cli="From the shell, run inside that checkout: cd \"$SHUNT_ROOT\" && graphi search \"$_pat\" (likewise graphi references / callers / impact \"$_pat\")."
 	if [ "$_mode" = "cli" ]; then
 		_how="$_cli $_mcp"
 	else
 		_how="$_mcp $_cli"
 	fi
-	_reason="graphi-shunt: \"$_pat\" looks like a symbol lookup, and this repository has a graphi code-graph index that answers it with file:line citations and confidence tiers instead of raw text matches. $_how If graphi returns empty / ambiguous / unavailable, or you really need a literal-text match, repeat the exact same search once more - the second identical attempt is allowed. Set GRAPHI_SHUNT_DISABLE=1 to turn this gate off."
+	_reason="graphi-shunt: \"$_pat\" looks like a symbol lookup, and the repository at $SHUNT_ROOT has a graphi code-graph index that answers it with file:line citations and confidence tiers instead of raw text matches. $_how If graphi returns empty / ambiguous / unavailable, or you really need a literal-text match, repeat the exact same search once more - the second identical attempt is allowed. Set GRAPHI_SHUNT_DISABLE=1 to turn this gate off."
 	jq -n --arg r "$_reason" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}' 2>/dev/null || exit 0
 	exit 0
 }

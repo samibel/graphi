@@ -44,11 +44,13 @@ A gate blocks only when **all** of these hold, and allows the call otherwise:
 
 - `GRAPHI_SHUNT_DISABLE` is unset
 - `jq` and `graphi` are on `PATH`
-- an index for this repository exists: the repository root is found the way
-  `internal/state.RepoRoot` finds it (nearest `.git`, else `go.work`, else
-  `go.mod`, walking up from the session directory) and
-  `<state>/<fingerprint>/db.sqlite` is checked with one `stat`, no `graphi` process
-- the search targets the indexed repository and looks like a symbol lookup
+- the searched tree belongs to a repository graphi has indexed: starting from
+  the search's own path (the Grep `path`, a Bash operand, the directory after a
+  `cd`, else the session directory) the hook walks up to the nearest `.git`,
+  `go.work` or `go.mod` the way `internal/state.RepoRoot` does and checks
+  `<state>/<fingerprint>/db.sqlite` with one `stat`; if that root has no index
+  it keeps walking up through enclosing repositories. No `graphi` process runs.
+- the search looks like a symbol lookup
 - this exact search has not been attempted before in the session
 
 Any unexpected condition (unparsable input, missing tool, unwritable temp
@@ -62,8 +64,8 @@ directory, timeout) allows the call.
 | --- | --- |
 | gate not enabled (see above) | otherwise |
 | `path` is a single existing file | |
-| `path` under `docs/`, `site/`, `corpus/`, `testdata/`, `node_modules/`, `.git/` | |
-| `path` outside the indexed repository (a dependency, `/usr/include`, another checkout) | |
+| `path` under `docs/`, `site/`, `corpus/`, `testdata/`, `resources/`, `node_modules/`, `.git/` | |
+| `path` in no indexed repository (a dependency, `/usr/include`, a clone without an index) | |
 | `type` / `glob` selects only non-code (`md`, `json`, `yaml`, `toml`, `csv`, ...) | |
 | pattern is not symbol-shaped | |
 | identical search already blocked once this session | |
@@ -72,14 +74,15 @@ directory, timeout) allows the call.
 
 The command is split on `&&`, `||`, `;` and newlines; each segment is judged on
 its own, and a `cd` segment moves the hook's view of relative paths along with
-it. Only the first command of a pipeline can be a repo search.
+it. Only the first command of a pipeline can be a repo search. A search without
+operands runs in the effective working directory, which must itself be indexed.
 
 | Allowed | Blocked |
 | --- | --- |
 | no search tool in the command (pure-shell prefilter, nothing is spawned) | a repo-wide search for a symbol-shaped pattern: no operand, or only existing directories inside the repository |
 | the search reads from a pipe (`git log \| grep Foo`) | |
 | `grep` without `-r` / `-R` | |
-| an operand is an existing file, under a non-code directory, or outside the repository | |
+| an operand is an existing file, under a non-code directory, or in no indexed repository | |
 | an operand is a glob or does not exist (cannot be judged) | |
 | command substitution, backticks, heredocs, unbalanced quotes (not parsed) | |
 | pattern not symbol-shaped or not confidently extractable | |
@@ -122,10 +125,15 @@ tool (a test pins this: a plain `ls` never starts `jq`). Enablement is `command 
 - The gate checks that an index **exists**, not that it is fresh. A stale index
   can still send the agent to outdated answers; run `graphi sync` after large
   edits and trust the source when it disagrees with the graph (the skill says so).
-- The repository root is derived from `CLAUDE_PROJECT_DIR` with the same
-  walk-up as graphi itself. A directory graphi indexed as its own root but that
-  sits inside another `.git` tree resolves to the outer root, and the gate
-  stays off there.
+- The repository root is derived per search path, not once per session, so a
+  portfolio layout works: the session runs in `portfolio/` (its own repository,
+  not indexed) while `portfolio/workspace/<name>/` are product clones with
+  their own `.git` and their own graphi index. `rg Foo workspace/mdp/src` or
+  `cd workspace/mdp && rg Foo` is gated against `workspace/mdp`'s index; a bare
+  `rg Foo` from `portfolio/` is not gated, because the portfolio itself has no
+  index. The deny message names the checkout it found so the agent can run the
+  CLI from there (`cd <root> && graphi search ...`) or pick that checkout's MCP
+  server.
 - Search commands hidden inside `$(...)`, backticks or heredocs are not parsed
   and pass through, as are operands the hook cannot resolve (globs, paths that
   do not exist from its point of view).
@@ -154,7 +162,8 @@ test gate) runs it with no extra wiring:
   assert every row of the tables above, the retry ledger (including that it has
   no time window), every fail-open path, that the prefilter spawns nothing for a
   plain command, and that the shell root walk-up and fingerprint find the store
-  `internal/state` creates - from the root and from subdirectories of it
+  `internal/state` creates - from the root, from subdirectories of it, and in
+  the portfolio layout (unindexed outer repository, indexed clones beneath it)
 
 The behavioural tests skip when `jq` or a SHA-256 tool is missing; the static
 checks always run.

@@ -173,7 +173,7 @@ func TestLibRejectsMissingFailOpenGuards(t *testing.T) {
 }
 
 func TestGateRejectsDenyBeforeEnablement(t *testing.T) {
-	text := "#!/bin/sh\n. shunt-lib.sh\nshunt_deny x\nshunt_enabled\n"
+	text := "#!/bin/sh\n. shunt-lib.sh\nshunt_deny x\nshunt_available\nshunt_root_for .\n"
 	if errs := ValidateGate("g.sh", text); len(errs) == 0 {
 		t.Fatal("expected a violation for deny-before-enabled ordering")
 	}

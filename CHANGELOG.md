@@ -26,7 +26,18 @@ file:
 
 ## [Unreleased]
 
-## [0.13.1] - 2026-10-29
+### Fixed
+
+- **`graphi-shunt` now finds the index from the searched path, not only from the
+  session directory.** In a portfolio layout — the session runs in an unindexed
+  parent repository while the product clones under `workspace/<name>/` carry their
+  own `.git` and their own graphi index — the gate was silently inert, because it
+  fingerprinted the session root alone. It now resolves the repository per search
+  (Grep `path`, Bash operand, the directory after a `cd`, else the session
+  directory), walking up through enclosing repositories until one has an index,
+  and the deny message names the checkout it found. `resources/` joins the
+  non-code directories that are never gated.
+
 
 **A toolchain rebuild, not a behaviour change.** No operation, wire name, request
 schema, canonical result byte or error code moves, and the eleven-tool default MCP
