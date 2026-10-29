@@ -15,8 +15,8 @@ file:
 - **Shipping ≠ supported.** An entry below announcing a capability records that it
   landed, **not** that it is GA. Only the 12 frozen operations, on **Go**, over
   **CLI + MCP stdio**, are GA. Every non-Go language is Preview; HTTP, the daemon,
-  the web UI, VS Code, the GitHub Action, refactorings, taint, memory, the
-  wiki and semantic search are Labs.
+  the web UI, VS Code, the GitHub Action, the Claude Code plugin, refactorings,
+  taint, memory, the wiki and semantic search are Labs.
 - **Entries are historical and are not rewritten.** Each describes the state at its
   release date; where an older entry's tier language differs from today's, the
   canonical file wins. In particular, the `[experimental]` description prefix
@@ -25,6 +25,17 @@ file:
   *names* have never carried a tier tag; they are frozen wire identifiers.
 
 ## [Unreleased]
+
+## [0.13.1] - 2026-10-29
+
+**A toolchain rebuild, not a behaviour change.** No operation, wire name, request
+schema, canonical result byte or error code moves, and the eleven-tool default MCP
+profile is unchanged. The published 0.13.0 binaries were built with go1.26.6, whose
+standard library carries twelve vulnerabilities that govulncheck reports as
+reachable from graphi's loopback HTTP, SSE and daemon surfaces (all Labs, all off
+by default; the stdio MCP path opens no socket). This release rebuilds the same
+code on go1.26.10. Anyone running a prebuilt 0.13.0 binary should upgrade; anyone
+building from source already gets the fix from `go.mod`.
 
 ### Added
 
