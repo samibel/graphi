@@ -1,7 +1,7 @@
 {
   "name": "graphi-shunt",
   "description": "Routes code-structure questions (callers, references, definitions, blast radius) to graphi's code graph instead of repo-wide grep. Fails open when graphi or its index is absent.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": { "name": "graphi" },
   "homepage": "https://github.com/samibel/graphi",
   "license": "Apache-2.0",
