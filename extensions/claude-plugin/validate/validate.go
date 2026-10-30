@@ -147,17 +147,18 @@ func ValidateLib(text string) []string {
 	return errs
 }
 
-// ValidateGate checks one gate script wires the shared library and the
-// enablement check before it can emit a decision.
+// ValidateGate checks one gate script wires the shared library, the
+// availability check and the per-path index lookup before it can emit a
+// decision.
 func ValidateGate(name, text string) []string {
 	var errs []string
-	for _, need := range []string{"shunt-lib.sh", "shunt_enabled", "shunt_deny"} {
+	for _, need := range []string{"shunt-lib.sh", "shunt_available", "shunt_root_for", "shunt_deny"} {
 		if !strings.Contains(text, need) {
 			errs = append(errs, fmt.Sprintf("%s must reference %q", name, need))
 		}
 	}
-	if strings.Index(text, "shunt_enabled") > strings.Index(text, "shunt_deny") {
-		errs = append(errs, fmt.Sprintf("%s calls shunt_deny before shunt_enabled", name))
+	if strings.Index(text, "shunt_available") > strings.Index(text, "shunt_deny") {
+		errs = append(errs, fmt.Sprintf("%s calls shunt_deny before shunt_available", name))
 	}
 	return errs
 }

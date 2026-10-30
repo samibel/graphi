@@ -135,6 +135,19 @@ func newEnv(t *testing.T, o envOpts) *env {
 	return e
 }
 
+// indexFor creates the store graphi would keep for dir, so the gate treats dir
+// as an indexed repository root.
+func (e *env) indexFor(dir string) {
+	e.t.Helper()
+	store := filepath.Join(e.state, "graphi", state.Fingerprint(dir))
+	if err := os.MkdirAll(store, 0o755); err != nil {
+		e.t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(store, "db.sqlite"), nil, 0o644); err != nil {
+		e.t.Fatal(err)
+	}
+}
+
 // run executes a gate script the way Claude Code does: from an unrelated
 // working directory, with the session directory only in the environment and
 // the payload. The hook must not depend on its own cwd.
@@ -461,5 +474,87 @@ func TestShellFingerprintMatchesGo(t *testing.T) {
 		e := newEnv(t, c.opts)
 		out, exit := e.run("gate-grep.sh", grepPayload("fp", "", grepInput{pattern: "IngestAll"}))
 		assertDecision(t, "fingerprint parity ("+c.name+")", out, exit, true, "IngestAll")
+	}
+}
+
+// TestPortfolioWorkspaceLayout covers the delivery-workflow layout the plugin
+// is mostly used in: the session runs in a portfolio repository that is not
+// indexed, while the product clones under workspace/<name>/ are their own git
+// repositories with their own graphi indexes. The gate must find the clone's
+// index from the searched path (operand, Grep path or cd target), never from
+// the session directory alone, and must stay quiet for clones without one.
+func TestPortfolioWorkspaceLayout(t *testing.T) {
+	e := newEnv(t, envOpts{graphi: true, jq: true, index: false, marker: ".git"})
+	portfolio := e.root
+	mdp := filepath.Join(portfolio, "workspace", "mdp")
+	mars := filepath.Join(portfolio, "workspace", "mars")
+	for _, d := range []string{
+		filepath.Join(mdp, ".git"),
+		filepath.Join(mdp, "src", "main", "kotlin", "com", "x"),
+		filepath.Join(mdp, "src", "main", "resources"),
+		filepath.Join(mars, ".git"),
+		filepath.Join(mars, "src", "main", "kotlin"),
+	} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	entity := filepath.Join(mdp, "src", "main", "kotlin", "com", "x", "Entity.kt")
+	if err := os.WriteFile(entity, []byte("class Entity\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	e.indexFor(mdp) // mars deliberately has no index; neither has the portfolio
+
+	wantRoot := mdp
+	assertRoot := func(name, out string) {
+		t.Helper()
+		var d decision
+		if err := json.Unmarshal([]byte(out), &d); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if !strings.Contains(d.Out.Reason, wantRoot) {
+			t.Fatalf("%s: deny reason must name the indexed checkout %s: %s", name, wantRoot, d.Out.Reason)
+		}
+	}
+
+	bash := []struct {
+		name, command string
+		deny          bool
+	}{
+		{"operand inside the indexed clone", "rg -n headUnitEStand workspace/mdp/src/main/kotlin", true},
+		{"operand is the clone itself", "rg headUnitEStand workspace/mdp", true},
+		{"cd into the clone first", "cd workspace/mdp && rg -n headUnitEStand", true},
+		{"no operand from the portfolio root", "rg -n headUnitEStand", false},
+		{"operand in a clone without an index", "rg -n headUnitEStand workspace/mars/src", false},
+		{"resources are specs and config, not code", "rg -rn headUnitEStand workspace/mdp/src/main/resources | head", false},
+		{"single file in the clone", "rg -n headUnitEStand workspace/mdp/src/main/kotlin/com/x/Entity.kt", false},
+		{"portfolio documents", "rg -n headUnitEStand projects", false},
+	}
+	for i, c := range bash {
+		out, exit := e.run("gate-bash.sh", bashPayload("pf-"+string(rune('a'+i)), portfolio, c.command))
+		assertDecision(t, c.name, out, exit, c.deny, "headUnitEStand")
+		if c.deny {
+			assertRoot(c.name, out)
+		}
+	}
+
+	grep := []struct {
+		name string
+		in   grepInput
+		cwd  string
+		deny bool
+	}{
+		{"Grep path inside the clone", grepInput{pattern: "headUnitEStand", path: "workspace/mdp/src"}, portfolio, true},
+		{"Grep absolute path inside the clone", grepInput{pattern: "headUnitEStand", path: filepath.Join(mdp, "src")}, "", true},
+		{"Grep with no path from the portfolio root", grepInput{pattern: "headUnitEStand"}, portfolio, false},
+		{"Grep with no path from inside the clone", grepInput{pattern: "headUnitEStand"}, filepath.Join(mdp, "src"), true},
+		{"Grep path in the unindexed clone", grepInput{pattern: "headUnitEStand", path: "workspace/mars"}, portfolio, false},
+	}
+	for i, c := range grep {
+		out, exit := e.run("gate-grep.sh", grepPayload("pg-"+string(rune('a'+i)), c.cwd, c.in))
+		assertDecision(t, c.name, out, exit, c.deny, "headUnitEStand")
+		if c.deny {
+			assertRoot(c.name, out)
+		}
 	}
 }

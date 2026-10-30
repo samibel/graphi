@@ -26,15 +26,16 @@ case "$cmdslice" in
 *) exit 0 ;;
 esac
 
-shunt_enabled || exit 0
+shunt_available || exit 0
 
 command=$(shunt_jq '.tool_input.command')
 [ -n "$command" ] || exit 0
 cwd=$(shunt_jq '.cwd')
+if [ -z "$cwd" ] || [ ! -d "$cwd" ]; then
+	cwd=${CLAUDE_PROJECT_DIR:-}
+fi
 if [ -n "$cwd" ] && [ -d "$cwd" ]; then
 	cd "$cwd" 2>/dev/null || true
-elif [ -d "$SHUNT_ROOT" ]; then
-	cd "$SHUNT_ROOT" 2>/dev/null || true
 fi
 
 shunt_unquote() {
@@ -196,12 +197,14 @@ $_t"
 	[ "$_have_pattern" -eq 1 ] || return 0
 	[ "$_recursive" -eq 1 ] || return 0
 	_pattern=$(shunt_unquote "$_pattern")
+	shunt_symbol_shaped "$_pattern" || return 0
 
 	# Operands: the search is repo-wide only if it names at least one existing
-	# directory inside the indexed repository and nothing else. Files, non-code
-	# trees and paths outside the repo are not graphi's domain; globs and paths
-	# that do not exist (from this hook's view) cannot be judged. Any of those
-	# allows the command.
+	# directory inside an indexed repository and nothing else. Files, non-code
+	# trees and directories no indexed repository encloses are not graphi's
+	# domain; globs and paths that do not exist (from this hook's view) cannot
+	# be judged. Any of those allows the command. Without operands the search
+	# runs in the effective working directory, which must itself be indexed.
 	if [ -n "$_operands" ]; then
 		_repo_dir=0
 		_old_ifs=$IFS
@@ -219,7 +222,7 @@ $_t"
 			if [ -f "$_o" ] || shunt_noncode_path "$_o"; then
 				continue
 			fi
-			if [ -d "$_o" ] && shunt_in_root "$_o"; then
+			if [ -d "$_o" ] && shunt_root_for "$_o"; then
 				_repo_dir=1
 				continue
 			fi
@@ -229,9 +232,9 @@ $_t"
 		set +f
 		IFS=$_old_ifs
 		[ "$_repo_dir" -eq 1 ] || return 0
+	else
+		shunt_root_for "$PWD" || return 0
 	fi
-
-	shunt_symbol_shaped "$_pattern" || return 0
 
 	if shunt_seen_before "bash|$command"; then
 		return 0
