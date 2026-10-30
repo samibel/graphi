@@ -28,6 +28,14 @@ file:
 
 ### Fixed
 
+- **`graphi-shunt` plugin version raised to 0.1.1 so installed copies update.**
+  Claude Code detects a plugin update by its version string, not by file content,
+  so users who installed 0.1.0 would have kept the original hook scripts through
+  `claude plugin update` however many fixes landed after it (the per-path
+  repository fix below among them). After `claude plugin marketplace update graphi`
+  and `claude plugin update graphi-shunt@graphi`, run `/reload-plugins` or restart
+  Claude Code. No graphi release is involved; the plugin installs from the
+  repository, not from the binary.
 - **`graphi-shunt` now finds the index from the searched path, not only from the
   session directory.** In a portfolio layout — the session runs in an unindexed
   parent repository while the product clones under `workspace/<name>/` carry their

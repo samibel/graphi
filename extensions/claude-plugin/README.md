@@ -147,6 +147,24 @@ tool (a test pins this: a plain `ls` never starts `jq`). Enablement is `command 
 | A legitimate text search is blocked | repeat it once; if the pattern shape keeps tripping, set `GRAPHI_SHUNT_DISABLE=1` and open an issue with the pattern |
 | The agent ignores the redirect | confirm `graphi doctor` reports the MCP server registered |
 
+## Releasing a change
+
+Claude Code caches an installed plugin and treats it as updated only when its
+version string changes ("users stay on their cached copy until the string
+changes", per its marketplace docs). **Raise `version` in
+`.claude-plugin/plugin.json` in the same commit as any change to the hooks, the
+skill or the manifest**, and keep `version` out of the repository-root
+`marketplace.json` entry (the manifest wins, and setting both only hides which
+one is in effect). Users then run:
+
+```bash
+claude plugin marketplace update graphi
+claude plugin update graphi-shunt@graphi
+```
+
+and `/reload-plugins` (or restart) in an open session, because a running session
+keeps the previous hooks. This is independent of graphi's own release version.
+
 ## Development
 
 The package under [`validate/`](validate) is a Go test suite in the root module,
